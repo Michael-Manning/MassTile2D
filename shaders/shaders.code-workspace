@@ -1,0 +1,28 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"glsllint.languageSettings": {
+			"javascript": {
+				"parser": "TSAST"
+			},
+			"javascriptreact": {
+				"parser": "TSAST"
+			},
+			"typescript": {
+				"parser": "TSAST"
+			},
+			"typescriptreact": {
+				"parser": "TSAST"
+			},
+			"elm": {
+				"parser": "REGEX",
+				"patternStart": "\\[glsl",
+				"patternEnd": "\\|\\]"
+			}
+		}
+	}
+}

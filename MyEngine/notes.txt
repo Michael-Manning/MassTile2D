@@ -1,0 +1,21 @@
+
+create descriptor pool should call a static function from every pipline asking it's descriptor requirements for each descriptor type
+or something similar. Should actually be supplied to prevent pipeline awareness
+
+
+
+
+
+How to add a component:
+
+- Add new component header and class inheriting component
+- impliment serialize/static deserialize
+- add scene map keyed by entityID
+- add component registerComponent function to scene
+- have scene serialize when saving loading scene
+- add component to entity data accessor
+- add component to entity getComponent
+- impliment a duplicate function and update entity copy 
+- add to prefab
+- add to instantiate
+- add to scene -> duplicate entity

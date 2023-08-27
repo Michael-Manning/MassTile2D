@@ -1,0 +1,42 @@
+
+delete large chunk transfer buffer after world is loaded in. Create functions to repeate this process easily
+
+could have some sort of optional set on an entity listing what components it's using to make it faster to delete them
+
+reserve scene component maps with max count to prevenent rehashing which would break getComponent pointers. GPT told me this is it even real?
+- same with pipiline texture references which use raw pointers
+
+camera should live in a uniform
+
+
+integrate vk-bootstrap to simplify initializion
+
+
+- more physics features. raycast, collision detection, layers, user entity variable in body
+
+- instancing
+
+- texture atlas
+
+- partical system
+
+- text
+
+- shader auto workflow
+
+- make shaders less verbose. Get rig of c style struct typedefs?
+
+
+things to abstract:
+
+- buffer management (group allocation and buffer, see vkguide)
+
+- group together descriptor layout, set, and write creation in a class
+
+- abstract common descriptor writes
+
+- push constant pipeline setup
+
+- imgui sprite rendering from sprite ID
+
+- default quad vertex management

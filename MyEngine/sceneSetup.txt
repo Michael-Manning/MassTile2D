@@ -1,0 +1,34 @@
+auto spra = scene->GenerateSprite("../data/flower.png");
+auto sprb = scene->GenerateSprite("../data/test_cat.png");
+
+{
+	auto qa = make_shared<Entity>("flower", true);
+	qa->transform.position = vec2(0.5, 0.0);
+	qa->transform.scale = vec2(1.0, 1.0);
+	scene->RegisterEntity(qa);
+	scene->registerComponent(qa->ID, SpriteRenderer(spra->ID));
+}
+{
+	auto qb = make_shared<Entity>("ground", true);
+	qb->transform.position = vec2(0.0, -3.0);
+	qb->transform.scale = vec2(100.0, 1.0);
+	scene->RegisterEntity(qb);
+	scene->registerComponent(qb->ID, ColorRenderer(vec4(1.0, 0.5, 0.5, 1.0)));
+	scene->registerComponent(qb->ID, Staticbody(engine.bworld, make_shared<BoxCollider>(qb->transform.scale)));  // pass transform pointer
+}
+{
+	auto qb = make_shared<Entity>("cat2", true);
+	qb->transform.position = vec2(0.2, 5.5);
+	qb->transform.scale = vec2(1.0, 1.0);
+	scene->RegisterEntity(qb);
+	scene->registerComponent(qb->ID, SpriteRenderer(sprb->ID));
+	scene->registerComponent(qb->ID, Rigidbody(make_shared<BoxCollider>(vec2(1.0, 1.0))));
+}
+{
+	auto qb = make_shared<Entity>("cat3", true);
+	qb->transform.position = vec2(-0.2, 0.5);
+	qb->transform.scale = vec2(1.0, 1.0);
+	scene->RegisterEntity(qb);
+	scene->registerComponent(qb->ID, SpriteRenderer(sprb->ID));
+	scene->registerComponent(qb->ID, Rigidbody(make_shared<BoxCollider>(vec2(1.0, 1.0))));
+}
