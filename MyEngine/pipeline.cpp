@@ -174,7 +174,8 @@ void Pipeline::buildSetLayout(std::vector<VkDescriptorSetLayoutBinding>& binding
 	setInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
 	setInfo.pBindings = bindings.data();
 
-	assert(vkCreateDescriptorSetLayout(engine->device, &setInfo, nullptr, &layout) == VK_SUCCESS);
+	auto res = vkCreateDescriptorSetLayout(engine->device, &setInfo, nullptr, &layout);
+	assert(res == VK_SUCCESS);
 }
 
 void Pipeline::buildPipelineLayout(std::vector<VkDescriptorSetLayout>& descriptorSetLayouts, uint32_t pushConstantSize, VkShaderStageFlags pushConstantStages) {
@@ -186,8 +187,8 @@ void Pipeline::buildPipelineLayout(std::vector<VkDescriptorSetLayout>& descripto
 	pipelineLayoutInfo.setLayoutCount = descriptorSetLayouts.size();
 	pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts.data();;
 
+	VkPushConstantRange push_constant;
 	if (pushConstantSize > 0) {
-		VkPushConstantRange push_constant;
 		push_constant.offset = 0;
 		push_constant.size = pushConstantSize;
 		push_constant.stageFlags = pushConstantStages;
@@ -195,7 +196,9 @@ void Pipeline::buildPipelineLayout(std::vector<VkDescriptorSetLayout>& descripto
 		pipelineLayoutInfo.pPushConstantRanges = &push_constant;
 	}
 
-	assert(vkCreatePipelineLayout(engine->device, &pipelineLayoutInfo, nullptr, &pipelineLayout) == VK_SUCCESS);
+
+	auto res = vkCreatePipelineLayout(engine->device, &pipelineLayoutInfo, nullptr, &pipelineLayout);
+	assert(res == VK_SUCCESS);
 }
 
 void Pipeline::buidDBDescriptorSet(VkDescriptorSetLayout& layout, std::array<VkDescriptorSet, FRAMES_IN_FLIGHT>& sets) {
@@ -208,5 +211,8 @@ void Pipeline::buidDBDescriptorSet(VkDescriptorSetLayout& layout, std::array<VkD
 	allocInfo.descriptorSetCount = static_cast<uint32_t>(FRAMES_IN_FLIGHT);
 	allocInfo.pSetLayouts = layouts.data();
 
-	assert(vkAllocateDescriptorSets(engine->device, &allocInfo, sets.data()) == VK_SUCCESS);
+
+
+	auto res = vkAllocateDescriptorSets(engine->device, &allocInfo, sets.data());
+	assert(res == VK_SUCCESS);
 }

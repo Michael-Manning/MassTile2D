@@ -185,6 +185,9 @@ void Engine::Start(std::string windowName, int winW, int winH, std::string shade
 		tilemapPipeline.createUniformBuffers();
 		//tilemapPipeline.createSSBOBuffer();
 		tilemapPipeline.createVertices();
+
+		tilemapPipeline.createWorldBuffer();
+		tilemapPipeline.createChunkTransferBuffers();
 	}
 
 	// copy DATA
@@ -205,8 +208,6 @@ void Engine::Start(std::string windowName, int winW, int winH, std::string shade
 		//}
 
 
-		//tilemapPipeline.createWorldBuffer();
-		//tilemapPipeline.createChunkTransferBuffers();
 
 		//constexpr int transferCount = TilemapPL_MAX_TILES / largeChunkCount;
 		//for (size_t i = 0; i < transferCount; i++) {
@@ -290,13 +291,6 @@ bool Engine::QueueNextFrame() {
 
 	rengine->beginRenderpass(imageIndex);
 
-	// tilemap
-	{
-		if (tilemapPipeline.textureAtlas.has_value()) {
-			tilemapPipeline.updateCamera(camera);
-			tilemapPipeline.recordCommandBuffer(cmdBuffer);
-		}
-	}
 
 	// colored quad
 	{
@@ -318,6 +312,15 @@ bool Engine::QueueNextFrame() {
 		colorPipeline.updateCamera(camera.position, camera.zoom);
 		colorPipeline.recordCommandBuffer(cmdBuffer, drawlist);
 	}
+
+	// tilemap
+	{
+		if (tilemapPipeline.textureAtlas.has_value()) {
+			tilemapPipeline.updateCamera(camera);
+			tilemapPipeline.recordCommandBuffer(cmdBuffer);
+		}
+	}
+
 
 	// Instanced quad
 	{

@@ -21,9 +21,13 @@ layout(location = 2) in flat int instance_index;
 layout(location = 1) in vec2 uv;
 layout(location = 0) out vec4 outColor;
 
+// #define chunkSize 32
+// #define chunkTileCount 1024
+// #define chunksX  128
+
 #define chunkSize 32
 #define chunkTileCount 1024
-#define chunksX  128
+#define chunksX  64 
 
 int getTile(int x, int y) {
     int cx = (x / chunkSize);

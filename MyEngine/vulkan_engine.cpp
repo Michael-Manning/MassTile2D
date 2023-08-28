@@ -334,7 +334,8 @@ void VKEngine::createTextureSamplers() {
 		samplerInfo.minLod = 0.0f;
 		samplerInfo.maxLod = 1.0f;
 
-		assert(vkCreateSampler(device, &samplerInfo, nullptr, &textureSampler_linear) == VK_SUCCESS);
+		auto res = vkCreateSampler(device, &samplerInfo, nullptr, &textureSampler_linear);
+		assert(res == VK_SUCCESS);
 	}
 	// nearest sampler
 	{
@@ -353,7 +354,8 @@ void VKEngine::createTextureSamplers() {
 		samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
 		samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
 
-		assert(vkCreateSampler(device, &samplerInfo, nullptr, &textureSampler_nearest) == VK_SUCCESS);
+		auto res = vkCreateSampler(device, &samplerInfo, nullptr, &textureSampler_nearest);
+		assert(res == VK_SUCCESS);
 	}
 
 }

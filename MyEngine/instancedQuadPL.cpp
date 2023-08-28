@@ -33,7 +33,7 @@ using namespace std;
 
 namespace {
 
-	
+
 
 	struct pushConstant_s {
 		vec2 cameraTranslation;
@@ -99,6 +99,32 @@ void InstancedQuadPL::CreateGraphicsPipline(std::string vertexSrc, std::string f
 
 	vector< VkDescriptorSetLayout> setLayouts = { descriptorSetLayout, SSBOSetLayout };
 	buildPipelineLayout(setLayouts, sizeof(pushConstant_s), VK_SHADER_STAGE_VERTEX_BIT);
+
+
+
+	//	// setup layout
+	//volatile int psize = sizeof(pushConstant_s);
+
+	//VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+	//pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	//pipelineLayoutInfo.pushConstantRangeCount = psize == 0 ? 0 : 1;
+	//pipelineLayoutInfo.setLayoutCount = setLayouts.size();
+	//pipelineLayoutInfo.pSetLayouts = setLayouts.data();;
+
+	//VkPushConstantRange push_constant;
+	//if (psize > 0) {
+	//	push_constant.offset = 0;
+	//	push_constant.size = psize;
+	//	push_constant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+	//	pipelineLayoutInfo.pPushConstantRanges = &push_constant;
+	//}
+
+
+	//auto res = vkCreatePipelineLayout(engine->device, &pipelineLayoutInfo, nullptr, &pipelineLayout);
+	//assert(res == VK_SUCCESS);
+
+
 
 	auto inputAssembly = defaultInputAssembly();
 	auto viewportState = defaultViewportState();
