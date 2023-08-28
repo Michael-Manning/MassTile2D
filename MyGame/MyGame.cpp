@@ -29,6 +29,7 @@
 
 #include "BehaviorRegistry.h"
 #include "ball.h"
+#include "player.h"
 
 #include "benchmark.h"
 
@@ -47,6 +48,17 @@ const uint32_t winH = 800;
 using namespace std;
 using namespace glm;
 using namespace nlohmann;
+
+
+
+
+std::unordered_map<uint32_t, std::pair<std::string, std::function<std::shared_ptr<Entity>()>>> BehaviorMap = {
+		REG_BEHAVIOR(Ball),
+		REG_BEHAVIOR(Player),
+};
+
+
+
 
 
 
@@ -125,14 +137,14 @@ int main() {
 		FastNoise::SmartNode<> ironGenerator = FastNoise::NewFromEncodedNodeTree(ironDist.c_str(), FastSIMD::CPUMaxSIMDLevel());
 		fnGenerator->GenUniformGrid2D(noiseOutput.data(), 0, -mapH + 100, mapW, mapH, 0.032f, rd());
 		ironGenerator->GenUniformGrid2D(ironOutput.data(), 0, 0, mapW, mapH, 0.003f, rd());
-		
-		
+
+
 		for (size_t i = 0; i < mapCount; i++) {
 			blockPresence[i] = noiseOutput[i] > 0.4f;
 			ironPresence[i] = ironOutput[i] > 0.6f;
 		}
 
-		
+
 
 
 

@@ -16,16 +16,21 @@
 #include "Utils.h"
 
 #include "ball.h"
-#include "player.h"
+//#include "player.h"
 
 
 
 #define REG_BEHAVIOR(classname) {cHash(#classname), {#classname, []() -> std::shared_ptr<Entity> { return std::make_shared<classname>(); } } }
 
 
-static std::unordered_map<uint32_t, std::pair<std::string, std::function<std::shared_ptr<Entity>()>>> BehaviorMap = {
-	REG_BEHAVIOR(Ball),
-	REG_BEHAVIOR(Player),
-};
+//typedef std::unordered_map<uint32_t, std::pair<std::string, std::function<std::shared_ptr<Entity>()>>> BehaviorMap_t;
+
+
+extern std::unordered_map<uint32_t, std::pair<std::string, std::function<std::shared_ptr<Entity>()>>> BehaviorMap;
+
+//static std::unordered_map<uint32_t, std::pair<std::string, std::function<std::shared_ptr<Entity>()>>> BehaviorMap = {
+//	REG_BEHAVIOR(Ball),
+//	REG_BEHAVIOR(Player),
+//};
 
 //{cHash("Ball"), []() -> std::shared_ptr<Entity> { return std::make_shared<Ball>(); } }

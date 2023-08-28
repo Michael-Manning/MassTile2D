@@ -11,7 +11,7 @@
 
 using namespace glm;
 
-class Player : public Entity {
+class old_Player : public Entity {
 
 
 public:
