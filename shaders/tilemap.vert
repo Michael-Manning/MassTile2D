@@ -73,20 +73,10 @@ void main() {
    mat4 model = mat4(1.0);
    model *= translate(vec2(0.0));
    model *= rotate(0.0);
-   model *= scale(vec2(40, 20));
+   model *= scale(vec2(512, 256));
    // model *= scale(vec2(1, 1));
 
    gl_Position = view * model  * vec4(inPosition, 0.0, 1.0) * vec4(vec2( ubo.aspect, 1.0), 1.0, 1.0);
-
-
-
-
-   // mat4 model = mat4(1.0);
-   // model *= translate(vec2(0.0));
-   // model *= rotate(0.0);
-   // model *= scale(vec2(2.0, -2.0));
-
-   // gl_Position = model  * vec4(inPosition, 0.0, 1.0) * vec4(vec2( ubo.aspect, 1.0), 1.0, 1.0);
 
 
    instance_index = gl_InstanceIndex;

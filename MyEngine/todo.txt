@@ -1,4 +1,9 @@
 
+- add zoom editor to selected entity shortcut
+
+- add way to deselect entity and hide transform widget
+
+
 delete large chunk transfer buffer after world is loaded in. Create functions to repeate this process easily
 
 could have some sort of optional set on an entity listing what components it's using to make it faster to delete them
