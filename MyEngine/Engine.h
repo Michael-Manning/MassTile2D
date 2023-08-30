@@ -179,6 +179,8 @@ public:
 		}
 	};
 
+	TilemapPL tilemapPipeline;
+
 private:
 
 	double lastTime = 0.0;
@@ -194,7 +196,6 @@ private:
 	TexturedQuadPL texturePipeline;
 	ColoredQuadPL colorPipeline;
 	InstancedQuadPL instancedPipeline;
-	TilemapPL tilemapPipeline;
 
 	uint32_t frameCounter = 0;
 	bool firstFrame = true;

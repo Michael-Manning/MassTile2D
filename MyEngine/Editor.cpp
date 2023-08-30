@@ -170,7 +170,16 @@ void Editor::entityWindow(Engine& engine) {
 
 			if (Selectable(entity.second->name.c_str(), selectedEntityIndex == i)) {
 				selectedEntityIndex = i;
-				selectedEntity = entity.second;
+
+				// already selected. deselect
+				if (selectedEntity == entity.second) {
+					selectedEntity = nullptr;
+					selectedEntityIndex = -1;
+				}
+				// select new
+				else {
+					selectedEntity = entity.second;
+				}
 			}
 
 			if (ImGui::BeginPopupContextItem()) {
@@ -353,7 +362,15 @@ void Editor::Run(Engine& engine) {
 
 		if (input->getKeyDown('g'))
 			showGrid = !showGrid;
+
+		if (selectedEntity != nullptr && input->getKeyDown('f')) {
+			camSlerpStart = engine.camera.position;
+			camSlerpEnd = selectedEntity->transform.position;
+			cameraEntityFocus = true;
+			cameraSlepStartTime = engine.time;
+		}
 	}
+
 
 	// panning
 	{
@@ -362,9 +379,16 @@ void Editor::Run(Engine& engine) {
 
 		if (input->getMouseBtn(MouseBtn::Right)) {
 			engine.camera.position -= ((delta * vec2(2.0, -2.0)) / engine.getWindowSize().y) / engine.camera.zoom;
+			cameraEntityFocus = false;
 		}
 	}
 
+	if (cameraEntityFocus == true) {
+		float fracComplete = (engine.time - cameraSlepStartTime) / 0.8f;
+		engine.camera.position = smoothstep(camSlerpStart, camSlerpEnd, fracComplete);
+		if (fracComplete >= 1.0f)
+			cameraEntityFocus = false;
+	}
 
 	DrawGrid(engine);
 

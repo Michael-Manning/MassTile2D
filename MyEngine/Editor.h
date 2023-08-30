@@ -73,6 +73,11 @@ private:
 	bool allowZoomThisFrame = true;
 	float zoomP = 0.4f;
 
+	glm::vec2 camSlerpStart;
+	glm::vec2 camSlerpEnd;
+	float cameraSlepStartTime;
+	bool cameraEntityFocus = false;
+
 	// set every frame, read by different functions
 	glm::vec2 screenSize;
 	ImDrawList* drawlist;

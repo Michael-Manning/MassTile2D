@@ -14,6 +14,9 @@
 #include <fstream>
 #include <typeinfo>
 #include <random>
+#include <algorithm>
+#include <execution>
+#include <omp.h>
 
 #include "VKEngine.h"
 #include "Engine.h"
@@ -32,7 +35,7 @@
 #include "player.h"
 
 #include "benchmark.h"
-
+#include "profiling.h"
 //#include <FastSIMD>
 
 #include <FastNoise/FastNoise.h>
@@ -124,61 +127,100 @@ int main() {
 
 
 
-	if(true)
+	if (true)
 	{
 		std::random_device rd; // obtain a random number from hardware
 
+
+		PROFILE_START(World_Gen);
 		vector<float> noiseOutput(mapW * mapH);
 		vector<float> ironOutput(mapW * mapH);
 		vector<bool> blockPresence(mapW * mapH);
 		vector<bool> ironPresence(mapW * mapH);
 
-		FastNoise::SmartNode<> fnGenerator = FastNoise::NewFromEncodedNodeTree(baseTerrainGen.c_str(), FastSIMD::CPUMaxSIMDLevel());
-		FastNoise::SmartNode<> ironGenerator = FastNoise::NewFromEncodedNodeTree(ironDist.c_str(), FastSIMD::CPUMaxSIMDLevel());
-		fnGenerator->GenUniformGrid2D(noiseOutput.data(), 0, -mapH + 100, mapW, mapH, 0.032f, rd());
-		ironGenerator->GenUniformGrid2D(ironOutput.data(), 0, 0, mapW, mapH, 0.003f, rd());
+		//FastNoise::SmartNode<> fnGenerator = FastNoise::NewFromEncodedNodeTree(baseTerrainGen.c_str(), FastSIMD::CPUMaxSIMDLevel());
+		//FastNoise::SmartNode<> ironGenerator = FastNoise::NewFromEncodedNodeTree(ironDist.c_str(), FastSIMD::CPUMaxSIMDLevel());
+		//fnGenerator->GenUniformGrid2D(noiseOutput.data(), 0, -mapH + 100, mapW, mapH, 0.032f, rd());
+		//ironGenerator->GenUniformGrid2D(ironOutput.data(), 0, 0, mapW, mapH, 0.003f, rd());
 
 
 		for (size_t i = 0; i < mapCount; i++) {
 			blockPresence[i] = noiseOutput[i] > 0.4f;
 			ironPresence[i] = ironOutput[i] > 0.6f;
 		}
-
+		PROFILE_END(World_Gen);
 
 
 
 
 		// upload world data
 
+		//PROFILE_START(world_post_process);
 
-		for (size_t y = 0; y < mapH; y++)
-		{
-			for (size_t x = 0; x < mapW; x++)
-			{
+		//#pragma parallel for
+		//for (size_t y = 0; y < mapH; y++)
+		//{
+		//	for (size_t x = 0; x < mapW; x++)
+		//	{
 
-				blockID id = 99;
-				if (blockPresence[y * mapW + x]) {
-					id = 1;
+		//		blockID id = 99;
+		//		if (blockPresence[y * mapW + x]) {
+		//			id = 1;
 
-					//if (y > (mapH - 50) && y < (mapH - 1) && blockPresence[(y - 1) * mapW + x] == false) {
-					if (y < (mapH - 1) && y >(mapH - 205) && blockPresence[(y + 1) * mapW + x] == false) {
-						id = 0;
-					}
-					if (y < mapH - 195) {
-						id = 2;
+		//			//if (y > (mapH - 50) && y < (mapH - 1) && blockPresence[(y - 1) * mapW + x] == false) {
+		//			if (y < (mapH - 1) && y >(mapH - 205) && blockPresence[(y + 1) * mapW + x] == false) {
+		//				id = 0;
+		//			}
+		//			if (y < mapH - 195) {
+		//				id = 2;
 
-						if (ironPresence[y * mapW + x]) {
-							id = 3;
-						}
-					}
-				}
+		//				if (ironPresence[y * mapW + x]) {
+		//					id = 3;
+		//				}
+		//			}
+		//		}
 
 
-				//blockID id = noiseOutput[i] > 0.0f ? 286 : 930;
-				engine.preloadWorldTile(x, mapH - y - 1, id);
+		//		//blockID id = noiseOutput[i] > 0.0f ? 286 : 930;
+		//		engine.preloadWorldTile(x, mapH - y - 1, id);
 
-			}
-		}
+		//	}
+		//}
+
+		//PROFILE_END(world_post_process);
+
+
+
+		PROFILE_START(world_post_process);
+		vector<int> indexes(mapCount);
+		std::iota(indexes.begin(), indexes.end(), 0);
+		
+		std::for_each(std::execution::par_unseq, indexes.begin(), indexes.end(), [&engine, &blockPresence, &ironPresence](const int& i) {
+
+			int y = i / mapW;
+			int x = i % mapW;
+
+			blockID id = 99;
+			//if (blockPresence[y * mapW + x]) {
+			//	id = 1;
+
+			//	//if (y > (mapH - 50) && y < (mapH - 1) && blockPresence[(y - 1) * mapW + x] == false) {
+			//	if (y < (mapH - 1) && y >(mapH - 205) && blockPresence[(y + 1) * mapW + x] == false) {
+			//		id = 0;
+			//	}
+			//	if (y < mapH - 195) {
+			//		id = 2;
+
+			//		if (ironPresence[y * mapW + x]) {
+			//			id = 3;
+			//		}
+			//	}
+			//}
+
+			engine.preloadWorldTile(x, mapH - y - 1, id);
+
+			});
+		PROFILE_END(world_post_process);
 
 		{
 			//for (size_t i = 0; i < mapCount; i++) {

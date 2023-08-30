@@ -15,7 +15,6 @@ using namespace glm;
 glm::vec2 decellerate(const glm::vec2& A, const glm::vec2& B) {
 	glm::vec2 result;
 
-	// Handle the x-component
 	if (A.x < 0) {
 		result.x = A.x + B.x;
 	}
@@ -26,7 +25,6 @@ glm::vec2 decellerate(const glm::vec2& A, const glm::vec2& B) {
 		result.x = 0;
 	}
 
-	// Handle the y-component
 	if (A.y < 0) {
 		result.y = A.y + B.y;
 	}
