@@ -1,0 +1,12 @@
+{
+    "sprite": {
+        "fileName": "man.png",
+        "filterMode": 0,
+        "resolution": [
+            120.0,
+            240.0
+        ],
+        "spriteID": 7,
+        "textureID": 352955894
+    }
+}

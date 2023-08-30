@@ -34,5 +34,8 @@
     <ClInclude Include="Player.h">
       <Filter>Entities</Filter>
     </ClInclude>
+    <ClInclude Include="global.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

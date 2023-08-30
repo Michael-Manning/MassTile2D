@@ -61,9 +61,9 @@ std::unordered_map<uint32_t, std::pair<std::string, std::function<std::shared_pt
 };
 
 
-
-
-
+// temporary until I deside how to make this data accessible through a tilemap renderer
+static TilemapPL* tileWolrdGlobalRef;
+static vec2 GcameraPos;
 
 bool showingEditor = false;
 
@@ -94,7 +94,7 @@ int main() {
 	engine.Start("video game", winW, winH, shaderPath);
 
 
-
+	tileWolrdGlobalRef = &engine.tilemapPipeline;
 
 	const auto input = engine.GetInput();
 
@@ -277,7 +277,11 @@ int main() {
 
 		ImGui::NewFrame();
 
+		GcameraPos = engine.camera.position;
+
 		engine.EntityStartUpdate();
+
+		engine.camera.position = GcameraPos;
 
 		if (ImGui::GetIO().WantTextInput == false) {
 			if (input->getKeyDown('e')) {
@@ -293,6 +297,19 @@ int main() {
 
 		if (showingEditor) {
 			editor.Run(engine);
+		}
+
+		//if (input->getMouseBtnDown(MouseBtn::Left)) {
+		if (input->getMouseBtn(MouseBtn::Left)) {
+			vec2 worldClick = engine.screenToWorldPos(input->getMousePos());
+
+			int tileX = worldClick.x / tileWorldSize + mapW / 2;
+			int tileY = worldClick.y / tileWorldSize + mapH / 2;
+
+			if (tileX > 0 && tileX < mapW && tileY > 0 && tileY < mapH) {
+				engine.setWorldTile(tileX, mapH - tileY - 1, 3);
+			}
+
 		}
 
 		engine.QueueNextFrame();

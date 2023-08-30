@@ -1,8 +1,13 @@
 
-- add zoom editor to selected entity shortcut
+- expose camera to gameobject (should have some sort of generalized data struct?)
 
-- add way to deselect entity and hide transform widget
+- tilemap renderer class
 
+- prefabs broken
+
+- cant exit choose sprite asset and then choose again
+
+- color renderer automatically added to player
 
 delete large chunk transfer buffer after world is loaded in. Create functions to repeate this process easily
 
