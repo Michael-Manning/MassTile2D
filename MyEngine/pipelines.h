@@ -285,6 +285,8 @@ constexpr int chunksX = mapW / chunkSize;
 constexpr int chunksY = mapH / chunkSize;
 constexpr int chunkCount = chunksX * chunksY;
 
+constexpr float tileWorldSize = 0.25f;
+
 static_assert(mapCount == TilemapPL_MAX_TILES);
 static_assert(mapW% chunkSize == 0);
 static_assert(mapH% chunkSize == 0);
@@ -322,6 +324,14 @@ public:
 	void updateUBO(float aspect);
 
 	void recordCommandBuffer(VkCommandBuffer commandBuffer);
+
+	inline blockID getTile(uint32_t x, uint32_t y) {
+		int cx = (x / chunkSize);
+		int cy = (y / chunkSize);
+		int chunk = cy * chunksX + cx;
+		int chuckIndexOffset = chunk * chunkTileCount;
+		return mapData[chuckIndexOffset + (y % chunkSize) * chunkSize + (x % chunkSize)];
+	}
 
 	void setTile(uint32_t x, uint32_t y, blockID block) {
 		uint32_t cx = (x / chunkSize);

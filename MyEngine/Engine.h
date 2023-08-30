@@ -159,6 +159,8 @@ public:
 		tilemapPipeline.updateUBO((float)winH / (float)winW);
 	};
 
+
+
 	inline void setWorldTile(uint32_t x, uint32_t y, blockID block) {
 		tilemapPipeline.setTile(x, y, block);
 	};
@@ -179,6 +181,8 @@ public:
 		}
 	};
 
+	TilemapPL tilemapPipeline;
+
 private:
 
 	double lastTime = 0.0;
@@ -194,7 +198,6 @@ private:
 	TexturedQuadPL texturePipeline;
 	ColoredQuadPL colorPipeline;
 	InstancedQuadPL instancedPipeline;
-	TilemapPL tilemapPipeline;
 
 	uint32_t frameCounter = 0;
 	bool firstFrame = true;

@@ -2,31 +2,83 @@
     "colorRenderers": [
         {
             "color": [
-                0.9298245906829834,
                 0.0,
-                0.0,
+                0.40155932307243347,
+                0.6023391485214233,
                 1.0
             ],
-            "entityID": 1,
+            "entityID": 2,
+            "shape": 0
+        },
+        {
+            "color": [
+                0.01754385232925415,
+                0.00964398868381977,
+                0.00964398868381977,
+                1.0
+            ],
+            "entityID": 3,
             "shape": 0
         }
     ],
     "entities": [
         {
-            "behaviorHash": 3757936288,
-            "id": 1,
-            "name": "entity 1",
+            "behaviorHash": 0,
+            "id": 2,
+            "name": "entity 2",
             "transform": {
                 "position": [
-                    -1.9999992847442627,
-                    17.0
+                    5.7220458984375e-06,
+                    129.87637329101563
                 ],
                 "rotation": 0.0,
                 "scale": [
-                    0.5,
-                    1.0
+                    526.0,
+                    100.0
+                ]
+            }
+        },
+        {
+            "behaviorHash": 0,
+            "id": 3,
+            "name": "entity 2_copy",
+            "transform": {
+                "position": [
+                    6.198883056640625e-06,
+                    29.876304626464844
+                ],
+                "rotation": 0.0,
+                "scale": [
+                    526.0,
+                    100.0
+                ]
+            }
+        },
+        {
+            "behaviorHash": 3757936288,
+            "id": 4,
+            "name": "entity 4",
+            "transform": {
+                "position": [
+                    9.600000381469727,
+                    106.19999694824219
+                ],
+                "rotation": 0.0,
+                "scale": [
+                    0.47999998927116394,
+                    0.9800000190734863
                 ]
             }
         }
+    ],
+    "spriteRenderers": [
+        {
+            "atlasIndex": 0,
+            "entityID": 4,
+            "spriteID": 7
+        }
+    ],
+    "usedSprites": [
+        7
     ]
 }

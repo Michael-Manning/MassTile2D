@@ -362,7 +362,7 @@ void TilemapPL::stageChunkUpdates(VkCommandBuffer commandBuffer) {
 			{
 				VkBufferCopy copyRegion{};
 				copyRegion.size = chunkTileCount * sizeof(uboData);
-				copyRegion.dstOffset = 0;
+				copyRegion.dstOffset = i * chunkTileCount * sizeof(ssboObjectData);
 				copyRegion.srcOffset = 0;
 
 				// expand by increasing size of transfer buffer. Upload multiple chunks by specifying multiple copy regions
