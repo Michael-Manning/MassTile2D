@@ -144,7 +144,7 @@ int main() {
 				id = Tiles::Dirt;
 
 				if (y < (mapH - 1) && y >(mapH - 205) && blockPresence[(y + 1) * mapW + x] == false) {
-					id = Tiles::Dirt;
+					id = Tiles::Grass;
 				}
 				if (y < mapH - 195) {
 					id = Tiles::Stone;

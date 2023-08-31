@@ -56,13 +56,13 @@ public:
 
 
 	// settings
-	const float groundAccel = 40.0f;
-	const float airAccel = 30.0f;
-	const float topMoveSpeed = 8.0f; // max speed achieved through self movement
-	const float terminalVelocity = 18.0f; // maximum speed achieved through gravity acceleration
+	const float groundAccel = 30.0f;
+	const float airAccel = 20.0f;
+	const float topMoveSpeed = 7.0f; // max speed achieved through self movement
+	const float terminalVelocity = 12.0f; // maximum speed achieved through gravity acceleration
 	const float idleDecelleratiom = 45.0f;
 	const float gravityAccel = 18;
-	const float jumpVel = 8;
+	const float jumpVel = 6;
 	const float skin = 0.01f;
 
 	// variables
@@ -88,6 +88,10 @@ public:
 		return false;
 	}
 
+	bool queryTile(ivec2 coord) {
+		return tileWolrdGlobalRef->getTile(coord.x, coord.y);
+	}
+
 	ivec2 getTileXY(vec2 pos) {
 		int tileX = pos.x / tileWorldSize + mapW / 2;
 		int tileY = pos.y / tileWorldSize + mapH / 2;
@@ -98,23 +102,25 @@ public:
 	}
 
 	vector<vec2> tpoints;
-	float sx=0;
-	float sy=0;
+	float sx = 0;
+	float sy = 0;
 	void Start() override {
 
 		//renderer = getComponent<ColorRenderer>();
 
-		tpoints.resize(8);
+		tpoints.resize(10);
 		float sx = transform.scale.x / 2.0;
 		float sy = transform.scale.y / 2.0;
 		tpoints[0] = vec2(sx, sy);
 		tpoints[1] = vec2(-sx, sy);
 		tpoints[2] = vec2(sx, -sy);
 		tpoints[3] = vec2(-sx, -sy);
-		tpoints[4] = vec2(-sx, 0);
-		tpoints[5] = vec2(sx, 0);
+		tpoints[4] = vec2(-sx, sy / 2.0f);
+		tpoints[5] = vec2(sx, sy / 2.0f);
 		tpoints[6] = vec2(0, -sy);
 		tpoints[7] = vec2(0, sy);
+		tpoints[8] = vec2(-sx, -sy / 2.0f);
+		tpoints[9] = vec2(sx, -sy / 2.0f);
 	};
 	void Update() override {
 
@@ -126,10 +132,12 @@ public:
 		leftCast |= queryTile(transform.position + tpoints[1] + vec2(-skin * 2, 0));
 		leftCast |= queryTile(transform.position + tpoints[3] + vec2(-skin * 2, 0));
 		leftCast |= queryTile(transform.position + tpoints[4] + vec2(-skin * 2, 0));
+		leftCast |= queryTile(transform.position + tpoints[8] + vec2(-skin * 2, 0));
 
 		rightCast |= queryTile(transform.position + tpoints[0] + vec2(skin * 2, 0));
 		rightCast |= queryTile(transform.position + tpoints[2] + vec2(skin * 2, 0));
 		rightCast |= queryTile(transform.position + tpoints[5] + vec2(skin * 2, 0));
+		rightCast |= queryTile(transform.position + tpoints[9] + vec2(skin * 2, 0));
 
 		topCast |= queryTile(transform.position + tpoints[0] + vec2(0, skin * 2));
 		topCast |= queryTile(transform.position + tpoints[1] + vec2(0, skin * 2));
@@ -160,7 +168,7 @@ public:
 			velocity.y = jumpVel;
 			grounded = false;
 		}
-		else if(!bottomCast) {
+		else if (!bottomCast) {
 			velocity.y -= gravityAccel * DeltaTime;
 		}
 
@@ -198,30 +206,45 @@ public:
 			if (queryTile(npos + tpoints[i]) == false)
 				continue;
 
+
+			bool resolveLeft = false;
+			bool resolveRight = false;
+			bool resolveUp = false;
+			bool resolveDown = false;
+
 			volatile ivec2 prevTile = getTileXY(transform.position + tpoints[i]);
 			volatile ivec2 curTile = getTileXY(npos + tpoints[i]);
 
 			int dx = curTile.x - prevTile.x;
 			int dy = -(curTile.y - prevTile.y);
 
+
+			// test points on edge should be able to skip corner calculations if moving < 1 tile/fram
+#if 1
+			if (i > 3) {
+				if (i == 4 || i == 8)
+					resolveRight = true;
+				else if (i == 5 || i ==9)
+					resolveLeft = true;
+				else if (i == 6)
+					resolveUp = true;
+				else if (i == 7)
+					resolveDown = true;
+			}
+			else if (dx != 0 && dy == 0) {
+#else
 			if (dx != 0 && dy == 0) {
+#endif
 				if (dx > 0)
-					resolvedXAvg += (curTile.x - mapW / 2) * tileWorldSize - tpoints[i].x - skin;
+					resolveLeft = true;
 				else
-					resolvedXAvg += (curTile.x - mapW / 2 + 1) * tileWorldSize - tpoints[i].x + skin;
-				avgSamplesX++;
-				velocity.x = 0;
+					resolveRight = true;
 			}
 			else if (dy != 0 && dx == 0) {
-				if (dy > 0) {
-					resolvedYAvg += (mapH / 2 - curTile.y - 1) * tileWorldSize - tpoints[i].y - skin;
-				}
-				else {
-					resolvedYAvg += (mapH / 2 - curTile.y) * tileWorldSize - tpoints[i].y + skin;
-					grounded = true;
-				}
-				avgSamplesY++;
-				velocity.y = 0;
+				if (dy > 0)
+					resolveDown = true;
+				else
+					resolveUp = true;
 			}
 			else {
 				if (dy == 0 && dx == 0) {
@@ -240,36 +263,75 @@ public:
 				float bottom_x = (bottom_y - y1) / slope + x1;
 				float top_x = (top_y - y1) / slope + x1;
 
-				bool left_edge = (bottom_y <= left_y && left_y <= top_y);
-				bool right_edge = (bottom_y <= right_y && right_y <= top_y);
-				bool bottom_edge = (left_x <= bottom_x && bottom_x <= right_x);
-				bool top_edge = (left_x <= top_x && top_x <= right_x);
-
+				bool left_edge = dx == 1 && (bottom_y <= left_y && left_y <= top_y);
+				bool right_edge = dx == -1 && (bottom_y <= right_y && right_y <= top_y);
+				bool bottom_edge = dy == 1 && (left_x <= bottom_x && bottom_x <= right_x);
+				bool top_edge = dy == -1 && (left_x <= top_x && top_x <= right_x);
 
 				if (right_edge) {
-					resolvedXAvg += (curTile.x - mapW / 2 + 1) * tileWorldSize + sx + 0.0001f;
-					avgSamplesX++;
-					velocity.x = 0;
+					if (queryTile(ivec2(curTile.x + 1, curTile.y))) {
+						if (dy < 0)
+							resolveUp = true;
+						else
+							resolveDown = true;
+					}
+					else
+						resolveRight = true;
 				}
 				else if (left_edge) {
-					resolvedXAvg += (curTile.x - mapW / 2 + 1) * tileWorldSize + sx + 0.0001f;
-					avgSamplesX++;
-					velocity.x = 0;
+					if (queryTile(ivec2(curTile.x - 1, curTile.y))) {
+						if (dy < 0)
+							resolveUp = true;
+						else
+							resolveDown = true;
+					}
+					else
+						resolveLeft = true;
 				}
 				else if (bottom_edge) {
-					resolvedYAvg += (mapH / 2 - curTile.y - 1) * tileWorldSize - sy - 0.0001f;
-					avgSamplesY++;
-					velocity.y = 0;
+					if (queryTile(ivec2(curTile.x, curTile.y + 1))) {
+						if (dx < 0)
+							resolveRight = true;
+						else
+							resolveLeft = true;
+					}
+					else
+						resolveDown = true;
 				}
-				else {
-					resolvedYAvg += (mapH / 2 - curTile.y) * tileWorldSize + sy + 0.0001f;
-					avgSamplesY++;
-					velocity.y = 0;
-					grounded = true;
+				else if (top_edge) {
+					if (queryTile(ivec2(curTile.x, curTile.y - 1))) {
+						if (dx < 0)
+							resolveRight = true;
+						else
+							resolveLeft = true;
+					}
+					else
+						resolveUp = true;
 				}
 			}
 
-		}
+			if (resolveUp) {
+				resolvedYAvg += (mapH / 2 - curTile.y) * tileWorldSize - tpoints[i].y + skin;
+				avgSamplesY++;
+				velocity.y = 0;
+				grounded = true;
+			}
+			else if (resolveLeft) {
+				resolvedXAvg += (curTile.x - mapW / 2) * tileWorldSize - tpoints[i].x - skin;
+				avgSamplesX++;
+				velocity.x = 0;
+			}
+			else if (resolveRight) {
+				resolvedXAvg += (curTile.x - mapW / 2 + 1) * tileWorldSize - tpoints[i].x + skin;
+				avgSamplesX++;
+				velocity.x = 0;
+			}
+			else if (resolveDown) {
+				resolvedYAvg += (mapH / 2 - curTile.y - 1) * tileWorldSize - tpoints[i].y - skin;
+				avgSamplesY++;
+				velocity.y = 0;
+			}
+			}
 
 		if (avgSamplesX > 0)
 			npos.x = resolvedXAvg / (float)avgSamplesX;
@@ -287,8 +349,8 @@ public:
 				GcameraPos = npos;
 			}
 		}
+		};
 	};
-};
 
 
 #if 0
@@ -317,8 +379,8 @@ for (size_t i = 0; i < 4; i++) {
 	if (queryTile(npos + tpoints[i]) == false)
 		continue;
 
-			ivec2 prevTile = getTileXY(transform.position + tpoints[i]);
-			ivec2 curTile = getTileXY(npos + tpoints[i]);
+	ivec2 prevTile = getTileXY(transform.position + tpoints[i]);
+	ivec2 curTile = getTileXY(npos + tpoints[i]);
 
 	int dx = curTile.x - prevTile.x;
 	int dy = -(curTile.y - prevTile.y);
