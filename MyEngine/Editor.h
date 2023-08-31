@@ -3,7 +3,7 @@
 #include <memory>
 #include <glm/glm.hpp>
 #include"Engine.h"
-
+#include "typedefs.h"
 
 class Editor {
 public:
@@ -29,13 +29,20 @@ public:
 	bool drawInspector<Staticbody>(Staticbody& r, Engine& engine);
 
 	bool showingCreateWindow = false;
+	
+	Camera editorCamera;
 
 private:
+
+	
 
 	void DrawGrid(Engine& engine);
 	void controlWindow(Engine& engine);
 	void entityWindow(Engine& engine);
 	void assetWindow(Engine& engine);
+
+	glm::vec2 DrawSpriteAtlas(Engine& engine, spriteID id, glm::vec2 maxSize, int atlasIndex);
+	glm::vec2 DrawSprite(Engine& engine, spriteID id, glm::vec2 maxSize);
 
 	bool showingStats = false;
 	void debugDataWindow(Engine& engine);

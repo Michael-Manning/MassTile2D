@@ -13,6 +13,7 @@
 #include <functional>
 #include <memory>
 #include <filesystem>
+#include <Windows.h>
 
 #include "typedefs.h"
 
@@ -47,4 +48,25 @@ static std::vector<std::string> getAllFilesInDirectory(const std::filesystem::pa
     }
 
     return files;
+}
+
+static std::filesystem::path get_executable_directory() {
+    char buffer[MAX_PATH];
+    HMODULE hModule = GetModuleHandle(nullptr);
+    if (GetModuleFileName(hModule, buffer, MAX_PATH)) {
+        std::filesystem::path exePath(buffer);
+        return exePath.parent_path();
+    }
+    return "";
+}
+
+static std::string makePathAbsolute(std::filesystem::path originatingPath, std::string relativePath) {
+    // Specifying a relative path
+    std::filesystem::path _relativePath(relativePath);
+
+    // Converting to an absolute path
+    std::filesystem::path absolutePath = originatingPath / _relativePath;
+    absolutePath = std::filesystem::absolute(absolutePath);
+    absolutePath = std::filesystem::canonical(absolutePath);  // Normalize the path
+    return absolutePath.string();
 }

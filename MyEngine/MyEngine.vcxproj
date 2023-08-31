@@ -102,7 +102,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(VULKAN_SDK)/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
@@ -121,7 +121,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(VULKAN_SDK)/include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
@@ -138,7 +138,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="AssetManager.cpp" />
-    <ClCompile Include="ball.h" />
     <ClCompile Include="bechmark.cpp" />
     <ClCompile Include="Entity.cpp" />
     <ClCompile Include="instancedQuadPL.cpp" />
@@ -153,9 +152,9 @@
     <ClCompile Include="Scene.cpp" />
     <ClCompile Include="texturedQuadPL.cpp" />
     <ClCompile Include="tilemapPL.cpp" />
+    <ClCompile Include="TileWorldRenderer.h" />
     <ClCompile Include="vulkan_engine.cpp" />
     <ClCompile Include="vulkan_setup.cpp" />
-    <ClCompile Include="main.cpp" />
     <ClCompile Include="vulkan_util.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -164,6 +163,7 @@
     <ClInclude Include="benchmark.h" />
     <ClInclude Include="ColorRenderer.h" />
     <ClInclude Include="Component.h" />
+    <ClInclude Include="Constants.h" />
     <ClInclude Include="ECS.h" />
     <ClInclude Include="Editor.h" />
     <ClInclude Include="engine.h" />
@@ -172,7 +172,6 @@
     <ClInclude Include="Input.h" />
     <ClInclude Include="MyMath.h" />
     <ClInclude Include="Physics.h" />
-    <ClInclude Include="player.h" />
     <ClInclude Include="Prefab.h" />
     <ClInclude Include="profiling.h" />
     <ClInclude Include="Scene.h" />

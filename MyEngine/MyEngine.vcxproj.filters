@@ -25,9 +25,6 @@
     <Filter Include="Source Files\Engine\ECS">
       <UniqueIdentifier>{8b19e8d6-dc8d-4f94-bd55-798906cde58b}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\game">
-      <UniqueIdentifier>{966d6cb9-2f4b-43bb-bf1d-da94b9b5f99c}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\Engine\ECS\Components">
       <UniqueIdentifier>{a8f67d16-c2cd-44ad-8fc7-659331a3bbd9}</UniqueIdentifier>
     </Filter>
@@ -36,9 +33,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="vulkan_setup.cpp">
       <Filter>Source Files\vulkan</Filter>
     </ClCompile>
@@ -78,9 +72,6 @@
     <ClCompile Include="AssetManager.cpp">
       <Filter>Source Files\Engine</Filter>
     </ClCompile>
-    <ClCompile Include="ball.h">
-      <Filter>Source Files\game</Filter>
-    </ClCompile>
     <ClCompile Include="Entity.cpp">
       <Filter>Source Files\Engine\ECS</Filter>
     </ClCompile>
@@ -95,6 +86,9 @@
     </ClCompile>
     <ClCompile Include="tilemapPL.cpp">
       <Filter>Source Files\vulkan\piplines</Filter>
+    </ClCompile>
+    <ClCompile Include="TileWorldRenderer.h">
+      <Filter>Source Files\Engine\ECS\Components</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -158,9 +152,6 @@
     <ClInclude Include="Component.h">
       <Filter>Source Files\Engine\ECS</Filter>
     </ClInclude>
-    <ClInclude Include="BehaviorRegistry.h">
-      <Filter>Source Files\game</Filter>
-    </ClInclude>
     <ClInclude Include="Prefab.h">
       <Filter>Source Files\Engine\ECS</Filter>
     </ClInclude>
@@ -170,14 +161,17 @@
     <ClInclude Include="Editor.h">
       <Filter>Source Files\Editor</Filter>
     </ClInclude>
-    <ClInclude Include="player.h">
-      <Filter>Source Files\game</Filter>
-    </ClInclude>
     <ClInclude Include="benchmark.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="profiling.h">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Constants.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BehaviorRegistry.h">
+      <Filter>Source Files\Engine</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

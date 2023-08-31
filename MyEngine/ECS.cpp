@@ -155,8 +155,6 @@ Rigidbody Rigidbody::deserializeJson(const nlohmann::json& j, std::shared_ptr<b2
 	return r;
 }
 
-
-
 nlohmann::json Staticbody::serializeJson(entityID entId) {
 	nlohmann::json j;
 	j["entityID"] = entId;
@@ -172,3 +170,14 @@ Staticbody Staticbody::deserializeJson(const nlohmann::json& j, std::shared_ptr<
 }
 
 
+nlohmann::json TileWorldRenderer::serializeJson(entityID entId) {
+	nlohmann::json j;
+	j["entityID"] = entId;
+	j["spriteID"] = sprite;
+	return j;
+}
+TileWorldRenderer TileWorldRenderer::deserializeJson(nlohmann::json j) {
+	spriteID id = j["spriteID"].get<uint32_t>();
+	TileWorldRenderer s(id);
+	return s;
+}

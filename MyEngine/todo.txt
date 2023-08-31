@@ -1,13 +1,10 @@
 
+- Inter-bahaviour entity accessor
+
 - expose camera to gameobject (should have some sort of generalized data struct?)
 
 - tilemap renderer class
 
-- prefabs broken
-
-- cant exit choose sprite asset and then choose again
-
-- color renderer automatically added to player
 
 delete large chunk transfer buffer after world is loaded in. Create functions to repeate this process easily
 
@@ -26,15 +23,13 @@ integrate vk-bootstrap to simplify initializion
 
 - instancing
 
-- texture atlas
+- texture animators
 
 - partical system
 
 - text
 
-- shader auto workflow
-
-- make shaders less verbose. Get rig of c style struct typedefs?
+- shader auto workflow with sprv reflect
 
 
 things to abstract:
@@ -42,10 +37,6 @@ things to abstract:
 - buffer management (group allocation and buffer, see vkguide)
 
 - group together descriptor layout, set, and write creation in a class
-
-- abstract common descriptor writes
-
-- push constant pipeline setup
 
 - imgui sprite rendering from sprite ID
 

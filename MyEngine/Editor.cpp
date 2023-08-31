@@ -75,20 +75,81 @@ namespace {
 	const float inspectorWindowWidth = 300;
 }
 
+vec2 Editor::DrawSprite(Engine& engine, spriteID id, glm::vec2 maxSize) {
+	const auto& sprite = engine.assetManager->spriteAssets[id];
+	const auto& texture = engine.assetManager->textureAssets[sprite->texture];
+
+	if (texture.imTexture.has_value() == false) {
+		Text("Could not display texture in Editor");
+		return ImGui::GetItemRectSize();
+	}
+
+	vec2 imSize = sprite->resolution;
+	float iaspect = imSize.x / imSize.y;
+	float daspect = maxSize.x / maxSize.y;
+
+	vec2 dispSize;
+
+	if (iaspect > daspect) {
+		dispSize.x = maxSize.x;
+		dispSize.y = maxSize.x / iaspect;
+	}
+	else {
+		dispSize.y = maxSize.y;
+		dispSize.x = maxSize.y * iaspect;
+	}
+
+	Image((ImTextureID)texture.imTexture.value(), dispSize);
+	return dispSize;
+}
+vec2 Editor::DrawSpriteAtlas(Engine& engine, spriteID id, glm::vec2 maxSize, int atlasIndex) {
+	const auto& sprite = engine.assetManager->spriteAssets[id];
+	const auto& texture = engine.assetManager->textureAssets[sprite->texture];
+
+	if (texture.imTexture.has_value() == false) {
+		Text("Could not display texture in Editor");
+		return ImGui::GetItemRectSize();
+	}
+
+	if (sprite->Atlas.size() > 0) {
+		auto atlasEntry = sprite->Atlas[atlasIndex];
+
+		vec2 uvSize = atlasEntry.uv_max - atlasEntry.uv_min;
+		float iaspect = uvSize.x / uvSize.y;
+		float daspect = maxSize.x / maxSize.y;
+
+		vec2 dispSize;
+
+		if (iaspect > daspect) {
+			dispSize.x = maxSize.x;
+			dispSize.y = maxSize.x / iaspect;
+		}
+		else {
+			dispSize.y = maxSize.y;
+			dispSize.x = maxSize.y * iaspect;
+		}
+
+		Text(atlasEntry.name.c_str());
+		Image((ImTextureID)texture.imTexture.value(), dispSize, atlasEntry.uv_min, atlasEntry.uv_max);
+		return dispSize;
+	}
+}
+
+
 
 void Editor::DrawGrid(Engine& engine) {
 	if (showGrid)
 	{
-		float gridSize = GetWorldGridSize(engine.camera.zoom);
+		float gridSize = GetWorldGridSize(editorCamera.zoom);
 		const int gridOpacity = (int)(0.2 * 255);
 
 		{
 
 			float x0 = engine.screenToWorldPos(vec2(0)).x;
-			x0 = getWorldGridRounding(x0, engine.camera.zoom);
+			x0 = getWorldGridRounding(x0, editorCamera.zoom);
 			x0 = engine.worldToScreenPos(vec2(x0, 0)).x;
 
-			float inc = (gridSize * (screenSize.y / 2.0f)) * engine.camera.zoom;
+			float inc = (gridSize * (screenSize.y / 2.0f)) * editorCamera.zoom;
 
 			float xi = x0;
 			while (xi <= screenSize.x) {
@@ -98,10 +159,10 @@ void Editor::DrawGrid(Engine& engine) {
 		}
 		{
 			float y0 = engine.screenToWorldPos(vec2(0)).y;
-			y0 = getWorldGridRounding(y0, engine.camera.zoom);
+			y0 = getWorldGridRounding(y0, editorCamera.zoom);
 			y0 = engine.worldToScreenPos(vec2(0, y0)).y;
 
-			float inc = (gridSize * (screenSize.y / 2.0f)) * engine.camera.zoom;
+			float inc = (gridSize * (screenSize.y / 2.0f)) * editorCamera.zoom;
 
 			float yi = y0;
 			while (yi <= screenSize.x) {
@@ -147,7 +208,7 @@ void Editor::controlWindow(Engine& engine) {
 		Text("playing");
 	}
 	SameLine();
-	Text("zoom: %.2f", engine.camera.zoom);
+	Text("zoom: %.2f", editorCamera.zoom);
 
 	End();
 }
@@ -208,6 +269,7 @@ void Editor::entityWindow(Engine& engine) {
 					char filename[MAX_PATH];
 					if (saveFileDialog(filename, MAX_PATH, "prefab", "Prefab File\0*.prefab\0")) {
 						p.serializeJson(filename);
+						engine.assetManager->loadPrefabs(engine.bworld);
 					}
 
 					break;
@@ -364,7 +426,7 @@ void Editor::Run(Engine& engine) {
 			showGrid = !showGrid;
 
 		if (selectedEntity != nullptr && input->getKeyDown('f')) {
-			camSlerpStart = engine.camera.position;
+			camSlerpStart = editorCamera.position;
 			camSlerpEnd = selectedEntity->transform.position;
 			cameraEntityFocus = true;
 			cameraSlepStartTime = engine.time;
@@ -378,14 +440,14 @@ void Editor::Run(Engine& engine) {
 		lastMpos = mpos;
 
 		if (input->getMouseBtn(MouseBtn::Right)) {
-			engine.camera.position -= ((delta * vec2(2.0, -2.0)) / engine.getWindowSize().y) / engine.camera.zoom;
+			editorCamera.position -= ((delta * vec2(2.0, -2.0)) / engine.getWindowSize().y) / editorCamera.zoom;
 			cameraEntityFocus = false;
 		}
 	}
 
 	if (cameraEntityFocus == true) {
 		float fracComplete = (engine.time - cameraSlepStartTime) / 0.8f;
-		engine.camera.position = smoothstep(camSlerpStart, camSlerpEnd, fracComplete);
+		editorCamera.position = smoothstep(camSlerpStart, camSlerpEnd, fracComplete);
 		if (fracComplete >= 1.0f)
 			cameraEntityFocus = false;
 	}
@@ -454,7 +516,7 @@ void Editor::Run(Engine& engine) {
 					if (input->getKey(KeyCode::LeftControl))
 						yHandlePos.y = roundf(mouseWorldObjPos * 100) / 100; // two decimal places
 					else
-						mouseWorldObjPos = getWorldGridRounding(mouseWorldObjPos, engine.camera.zoom);
+						mouseWorldObjPos = getWorldGridRounding(mouseWorldObjPos, editorCamera.zoom);
 
 					objScreenPos.y = engine.worldToScreenPos(vec2(0, mouseWorldObjPos)).y;
 					yHandlePos.y = objScreenPos.y - lineLen;
@@ -467,7 +529,7 @@ void Editor::Run(Engine& engine) {
 					if (input->getKey(KeyCode::LeftControl))
 						xHandlePos.x = roundf(mouseWorldObjPos * 100) / 100; // two decimal places
 					else
-						mouseWorldObjPos = getWorldGridRounding(mouseWorldObjPos, engine.camera.zoom);
+						mouseWorldObjPos = getWorldGridRounding(mouseWorldObjPos, editorCamera.zoom);
 
 					objScreenPos.x = engine.worldToScreenPos(vec2(mouseWorldObjPos, 0.0)).x;
 					xHandlePos.x = objScreenPos.x + lineLen;
@@ -530,7 +592,7 @@ void Editor::Run(Engine& engine) {
 
 
 
-			if (Combo("Create", &comboSelected, "Sprite Renderer\0Color Renderer\0Box Collider\0Circle Collider\0Box Rigidbody\0Circle Rigidbody")) {
+			if (Combo("Create", &comboSelected, "Sprite Renderer\0Color Renderer\0Box Staticbody\0Circle Staticbody\0Box Rigidbody\0Circle Rigidbody")) {
 				switch (comboSelected)
 				{
 				case 0:
@@ -643,7 +705,11 @@ void Editor::Run(Engine& engine) {
 		}
 		else if (selectedSprite != nullptr) {
 
-			// make sprite display utility
+
+
+			vec2 avail = GetContentRegionAvail();
+			avail.x -= 20; // room for scrollbar
+			avail.y = 220;
 
 			auto& texAsset = engine.assetManager->textureAssets[selectedSprite->texture];
 
@@ -654,12 +720,10 @@ void Editor::Run(Engine& engine) {
 
 			if (selectedSprite->Atlas.size() > 0) {
 				SliderInt("Atlas index", &selectedSpriteAtlasIndex, 0, selectedSprite->Atlas.size() - 1);
-				auto atlasEntry = selectedSprite->Atlas[selectedSpriteAtlasIndex];
-				Text(atlasEntry.name.c_str());
-				Image((ImTextureID)texAsset.imTexture.value(), vec2(200), atlasEntry.uv_min, atlasEntry.uv_max);
+				DrawSpriteAtlas(engine, selectedSprite->ID, avail, selectedSpriteAtlasIndex);
 			}
 			else {
-				Image((ImTextureID)texAsset.imTexture.value(), vec2(200));
+				DrawSprite(engine, selectedSprite->ID, avail);
 			}
 		}
 		End();
@@ -675,7 +739,7 @@ void Editor::Run(Engine& engine) {
 		float off = input->GetScrollDelta();
 		zoomP += off * 0.02f;
 		zoomP = glm::clamp(zoomP, 0.0f, 1.0f);
-		engine.camera.zoom = exponentialScale(zoomP, 0.01, 15.1);
+		editorCamera.zoom = exponentialScale(zoomP, 0.01, 15.1);
 	}
 }
 
@@ -710,26 +774,30 @@ bool Editor::drawInspector<SpriteRenderer>(SpriteRenderer& r, Engine& engine) {
 	SeparatorText("Sprite Renderer");
 
 	if (Button("choose asset")) {
+		assetModel = true;
 		OpenPopup("Available Assets");
 	}
 
-	if (BeginPopupModal("Available Assets", &assetModel)) {
+	auto modelFlags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+	float modelWidth = 360;
+	if (assetModel) {
+		SetNextWindowPos(vec2(glm::clamp(engine.winW / 2 - (int)modelWidth / 2, 0, engine.winW), 50));
+		SetNextWindowSize(vec2(modelWidth, glm::max(400, engine.winH -100)));
+	}
+	if (BeginPopupModal("Available Assets", &assetModel, modelFlags)) {
 
-		constexpr float displayHeight = 280;
+		// make room for scrollbar
+		const vec2 displaySize = vec2(modelWidth - 20, modelWidth);
 
 		int i = 0;
 		for (auto& sprite : engine.assetManager->spriteAssets)
 		{
-			auto text = engine.assetManager->textureAssets[sprite.second->texture];
-			if (text.imTexture.has_value()) {
-				vec2 displaySize = vec2((float)text.resolutionX / (float)text.resolutionY * displayHeight, displayHeight);
-				auto pos = GetCursorPos();
-				Image((ImTextureID)text.imTexture.value(), displaySize);
-				SetCursorPos(pos);
-				if (InvisibleButton((string("invbtn") + to_string(i)).c_str(), displaySize)) {
-					rendererSelectedSprite = sprite.first;
-					ImGui::CloseCurrentPopup();
-				}
+			auto pos = GetCursorPos();
+			vec2 dispSize = DrawSprite(engine, sprite.first, displaySize);
+			SetCursorPos(pos);
+			if (InvisibleButton((string("invbtn") + to_string(i)).c_str(), displaySize)) {
+				rendererSelectedSprite = sprite.first;
+				ImGui::CloseCurrentPopup();
 			}
 			i++;
 		}
@@ -748,30 +816,16 @@ bool Editor::drawInspector<SpriteRenderer>(SpriteRenderer& r, Engine& engine) {
 
 	Text("%d x %d", (int)sprite->resolution.x, (int)sprite->resolution.y);
 
-	if (sprite->Atlas.size() > 0) {
-		SliderInt("Atlas index", &r.atlasIndex, 0, sprite->Atlas.size() - 1);
-		auto atlasEntry = sprite->Atlas[r.atlasIndex];
-		Text(atlasEntry.name.c_str());
-		Image((ImTextureID)texture.imTexture.value(), vec2(200), atlasEntry.uv_min, atlasEntry.uv_max);
-	}
-
 	vec2 avail = GetContentRegionAvail();
 	avail.x -= 20; // room for scrollbar
-	vec2 size;
-	if (texture.resolutionX > texture.resolutionY) {
-		size = vec2(avail.x, avail.x * ((float)texture.resolutionY / (float)texture.resolutionX));
-	}
-	else {
-		size = vec2(avail.x, avail.x * ((float)texture.resolutionX / (float)texture.resolutionY));
+	avail.y = 220;
+
+	if (sprite->Atlas.size() > 0) {
+		SliderInt("Atlas index", &r.atlasIndex, 0, sprite->Atlas.size() - 1);
+		DrawSpriteAtlas(engine, sprite->ID, avail, r.atlasIndex);
 	}
 
-	if (texture.imTexture.has_value()) {
-		ImGui::Image((ImTextureID)texture.imTexture.value(), size);
-	}
-	else {
-		Text("Could not display texture in Editor");
-	}
-
+	DrawSprite(engine, r.sprite, avail);
 	return false;
 }
 
@@ -780,7 +834,7 @@ bool CircleCollider::drawInspector() {
 	SeparatorText("Circle Collider");
 	bool change = ImGui::SliderFloat("Radius", &radius, 0.0f, 100.0f);
 	if (change) {
-		radius = max(radius, 0.01f);
+		radius = glm::max(radius, 0.01f);
 	}
 	return change;
 }
@@ -790,8 +844,8 @@ bool BoxCollider::drawInspector() {
 	bool change = ImGui::SliderFloat2("Scale", value_ptr(nScale), 0.0f, 100.0f);
 	scale = nScale;
 	if (change) {
-		scale.x = max(scale.x, 0.01f);
-		scale.y = max(scale.y, 0.01f);
+		scale.x = glm::max(scale.x, 0.01f);
+		scale.y = glm::max(scale.y, 0.01f);
 	}
 	return change;
 }

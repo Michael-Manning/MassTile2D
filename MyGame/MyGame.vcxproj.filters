@@ -21,6 +21,9 @@
     <ClCompile Include="MyGame.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\MyEngine\ball.h">
+      <Filter>Entities</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CopyFileToFolders Include="..\lib\FastNoise2\lib\FastNoiseD.dll">

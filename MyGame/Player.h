@@ -82,10 +82,7 @@ public:
 
 			blockID block = tileWolrdGlobalRef->getTile(tileX, tileY);
 
-			return block != 99;
-			//if (block != 99) {
-			//	cout << "CONTACT" << endl;
-			//}
+			return block != Tiles::Air;
 		}
 	}
 
@@ -100,11 +97,8 @@ public:
 
 	void Start() override {
 
-		//renderer = getComponent<ColorRenderer>();
 	};
 	void Update() override {
-
-		//vec2 vel = rigidbody->GetLinearVelocity();
 
 		//left and right movement
 		bool left = input->getKey(KeyCode::LeftArrow);
@@ -160,8 +154,8 @@ public:
 			if (queryTile(npos + tpoints[i]) == false)
 				continue;
 
-			volatile ivec2 prevTile = getTileXY(transform.position + tpoints[i]);
-			volatile ivec2 curTile = getTileXY(npos + tpoints[i]);
+			ivec2 prevTile = getTileXY(transform.position + tpoints[i]);
+			ivec2 curTile = getTileXY(npos + tpoints[i]);
 
 			int dx = curTile.x - prevTile.x;
 			int dy = -(curTile.y - prevTile.y);

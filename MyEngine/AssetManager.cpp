@@ -68,6 +68,8 @@ void AssetManager::updateTexture(texID id, FilterMode filterMode) {
 
 void AssetManager::loadPrefabs(std::shared_ptr<b2World> world) {
 	auto files = getAllFilesInDirectory(std::filesystem::path(directories.prefabDir));
+	
+	prefabs.clear();
 
 	for (auto& i : files)
 	{

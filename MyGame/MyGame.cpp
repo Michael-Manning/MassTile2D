@@ -1,6 +1,5 @@
 
 #define GLFW_INCLUDE_VULKAN
-#define NOMINMAX
 #include <GLFW/glfw3.h>
 
 #include <iostream>
@@ -12,7 +11,6 @@
 #include <memory>
 #include <iostream>
 #include <fstream>
-#include <typeinfo>
 #include <random>
 #include <algorithm>
 #include <execution>
@@ -36,7 +34,7 @@
 
 #include "benchmark.h"
 #include "profiling.h"
-//#include <FastSIMD>
+#include "Utils.h"
 
 #include <FastNoise/FastNoise.h>
 #include <FastNoise/SmartNode.h>
@@ -56,8 +54,8 @@ using namespace nlohmann;
 
 
 std::unordered_map<uint32_t, std::pair<std::string, std::function<std::shared_ptr<Entity>()>>> BehaviorMap = {
-		REG_BEHAVIOR(Ball),
-		REG_BEHAVIOR(Player),
+	REG_BEHAVIOR(Ball),
+	REG_BEHAVIOR(Player),
 };
 
 
@@ -69,22 +67,16 @@ bool showingEditor = false;
 
 #include "pipelines.h"
 
-const char* shaderPath = "../shaders/compiled/";
-//const char* shaderPath = "C:/Users/Michael/source/repos/MyEngine/MyEngine/shaders/compiled/";
-//const char* shaderPath = "C:/Users/mmanning/source/repos/MyEngine/MyEngine/shaders/compiled/";
-
 int main() {
 
+	auto exePath = get_executable_directory();
+
+	string shaderPath = makePathAbsolute(exePath, "../../shaders/compiled/") + "/";
 	AssetManager::AssetPaths AssetDirectories;
-	AssetDirectories.prefabDir = "../data/Prefabs/";
-	AssetDirectories.assetDir = "../data/Assets/";
-	AssetDirectories.textureSrcDir = "../data/Assets/";
-	//AssetDirectories.prefabDir = "C:/Users/Michael/source/repos/MyEngine/MyEngine/data/Prefabs/";
-	//AssetDirectories.assetDir = "C:/Users/Michael/source/repos/MyEngine/MyEngine/data/Assets/";
-	//AssetDirectories.textureSrcDir = "C:/Users/Michael/source/repos/MyEngine/MyEngine/data/Assets/";
-	//AssetDirectories.prefabDir = "C:/Users/mmanning/source/repos/MyEngine/MyEngine/data/Prefabs/";
-	//AssetDirectories.assetDir = "C:/Users/mmanning/source/repos/MyEngine/MyEngine/data/Assets/";
-	//AssetDirectories.textureSrcDir = "C:/Users/mmanning/source/repos/MyEngine/MyEngine/data/Assets/";
+	AssetDirectories.prefabDir = makePathAbsolute(exePath, "../../data/Prefabs/") + "/";
+	AssetDirectories.assetDir = makePathAbsolute(exePath, "../../data/Assets/") + "/";
+	AssetDirectories.textureSrcDir = makePathAbsolute(exePath, "../../data/Assets/") + "/";
+
 
 
 	auto rengine = std::make_shared<VKEngine>();
@@ -103,32 +95,18 @@ int main() {
 
 
 
-	auto lebeltemp = FastSIMD::CPUMaxSIMDLevel();
 
-	//std::ifstream file(AssetDirectories.assetDir + "worldgen.txt");
-	//std::stringstream buffer;
-	//buffer << file.rdbuf(); // Read the file into the stringstream
-	//std::string fileContents = buffer.str();
-
-
-	string baseTerrainGen;
-	string ironDist;
 	{
-		std::ifstream input(AssetDirectories.assetDir + "worldgen.json");
-		nlohmann::json j;
-		input >> j;
-		baseTerrainGen = j["baseTerrain"];
-		ironDist = j["ironDist"];
-	}
+		string baseTerrainGen;
+		string ironDist;
+		{
+			std::ifstream input(AssetDirectories.assetDir + "worldgen.json");
+			nlohmann::json j;
+			input >> j;
+			baseTerrainGen = j["baseTerrain"];
+			ironDist = j["ironDist"];
+		}
 
-
-
-
-
-
-
-	if (true)
-	{
 		std::random_device rd; // obtain a random number from hardware
 
 
@@ -138,10 +116,10 @@ int main() {
 		vector<bool> blockPresence(mapW * mapH);
 		vector<bool> ironPresence(mapW * mapH);
 
-		//FastNoise::SmartNode<> fnGenerator = FastNoise::NewFromEncodedNodeTree(baseTerrainGen.c_str(), FastSIMD::CPUMaxSIMDLevel());
-		//FastNoise::SmartNode<> ironGenerator = FastNoise::NewFromEncodedNodeTree(ironDist.c_str(), FastSIMD::CPUMaxSIMDLevel());
-		//fnGenerator->GenUniformGrid2D(noiseOutput.data(), 0, -mapH + 100, mapW, mapH, 0.032f, rd());
-		//ironGenerator->GenUniformGrid2D(ironOutput.data(), 0, 0, mapW, mapH, 0.003f, rd());
+		FastNoise::SmartNode<> fnGenerator = FastNoise::NewFromEncodedNodeTree(baseTerrainGen.c_str(), FastSIMD::CPUMaxSIMDLevel());
+		FastNoise::SmartNode<> ironGenerator = FastNoise::NewFromEncodedNodeTree(ironDist.c_str(), FastSIMD::CPUMaxSIMDLevel());
+		fnGenerator->GenUniformGrid2D(noiseOutput.data(), 0, -mapH + 100, mapW, mapH, 0.032f, rd());
+		ironGenerator->GenUniformGrid2D(ironOutput.data(), 0, 0, mapW, mapH, 0.003f, rd());
 
 
 		for (size_t i = 0; i < mapCount; i++) {
@@ -151,118 +129,43 @@ int main() {
 		PROFILE_END(World_Gen);
 
 
-
-
 		// upload world data
-
-		//PROFILE_START(world_post_process);
-
-		//#pragma parallel for
-		//for (size_t y = 0; y < mapH; y++)
-		//{
-		//	for (size_t x = 0; x < mapW; x++)
-		//	{
-
-		//		blockID id = 99;
-		//		if (blockPresence[y * mapW + x]) {
-		//			id = 1;
-
-		//			//if (y > (mapH - 50) && y < (mapH - 1) && blockPresence[(y - 1) * mapW + x] == false) {
-		//			if (y < (mapH - 1) && y >(mapH - 205) && blockPresence[(y + 1) * mapW + x] == false) {
-		//				id = 0;
-		//			}
-		//			if (y < mapH - 195) {
-		//				id = 2;
-
-		//				if (ironPresence[y * mapW + x]) {
-		//					id = 3;
-		//				}
-		//			}
-		//		}
-
-
-		//		//blockID id = noiseOutput[i] > 0.0f ? 286 : 930;
-		//		engine.preloadWorldTile(x, mapH - y - 1, id);
-
-		//	}
-		//}
-
-		//PROFILE_END(world_post_process);
-
-
-
 		PROFILE_START(world_post_process);
 		vector<int> indexes(mapCount);
 		std::iota(indexes.begin(), indexes.end(), 0);
-		
+
 		std::for_each(std::execution::par_unseq, indexes.begin(), indexes.end(), [&engine, &blockPresence, &ironPresence](const int& i) {
 
 			int y = i / mapW;
 			int x = i % mapW;
 
-			blockID id = 99;
-			//if (blockPresence[y * mapW + x]) {
-			//	id = 1;
+			blockID id = Tiles::Air;
+			if (blockPresence[y * mapW + x]) {
+				id = Tiles::Dirt;
 
-			//	//if (y > (mapH - 50) && y < (mapH - 1) && blockPresence[(y - 1) * mapW + x] == false) {
-			//	if (y < (mapH - 1) && y >(mapH - 205) && blockPresence[(y + 1) * mapW + x] == false) {
-			//		id = 0;
-			//	}
-			//	if (y < mapH - 195) {
-			//		id = 2;
+				if (y < (mapH - 1) && y >(mapH - 205) && blockPresence[(y + 1) * mapW + x] == false) {
+					id = Tiles::Dirt;
+				}
+				if (y < mapH - 195) {
+					id = Tiles::Stone;
 
-			//		if (ironPresence[y * mapW + x]) {
-			//			id = 3;
-			//		}
-			//	}
-			//}
+					if (ironPresence[y * mapW + x]) {
+						id = Tiles::Iron;
+					}
+				}
+			}
 
 			engine.preloadWorldTile(x, mapH - y - 1, id);
 
 			});
 		PROFILE_END(world_post_process);
 
-		{
-			//for (size_t i = 0; i < mapCount; i++) {
-
-
-			//	blockID id = 99;
-			//	if (blockPresence[i] > 0.2f) {
-			//		id = 1;
-			//	}
-
-			//	//blockID id = noiseOutput[i] > 0.0f ? 286 : 930;
-			//	engine.preloadWorldTile(i % mapW, mapH - i / mapW - 1, id);
-			//}
-
-			engine.uploadWorldPreloadData();
-		}
+		engine.uploadWorldPreloadData();
 	}
-
-
-	//{
-	//	vector<uint32_t> atlasLookup = { 0,3,8,10,14,107,132,137,297, 291,948,749,932, 937, 354 };
-	//	int len = atlasLookup.size() - 1;
-
-
-	//	for (size_t i = 0; i < mapCount; i++) {
-	//		//tilemapPipeline.mapData[i] = atlasLookup[ran(0, len)];
-
-	//		if (i < mapW)
-	//			engine.preloadWorldTile(i % mapW, i / mapW, 930);
-	//		else
-	//			engine.preloadWorldTile(i % mapW, i / mapW, 962);
-	//	}
-
-	//	engine.uploadWorldPreloadData();
-	//}
-
 
 
 
 	engine.setAtlasTexture(engine.assetManager->spriteAssets[5]->texture);
-
-
 
 
 
@@ -277,12 +180,6 @@ int main() {
 
 		ImGui::NewFrame();
 
-		GcameraPos = engine.camera.position;
-
-		engine.EntityStartUpdate();
-
-		engine.camera.position = GcameraPos;
-
 		if (ImGui::GetIO().WantTextInput == false) {
 			if (input->getKeyDown('e')) {
 				showingEditor = !showingEditor;
@@ -295,11 +192,19 @@ int main() {
 			}
 		}
 
+		GcameraPos = engine.camera.position;
+
+		engine.EntityStartUpdate();
+
+		if (showingEditor == false)
+			engine.camera.position = GcameraPos;
+
 		if (showingEditor) {
+			editor.editorCamera = engine.camera;
 			editor.Run(engine);
+			engine.camera = editor.editorCamera;
 		}
 
-		//if (input->getMouseBtnDown(MouseBtn::Left)) {
 		if (input->getMouseBtn(MouseBtn::Left)) {
 			vec2 worldClick = engine.screenToWorldPos(input->getMousePos());
 
@@ -307,7 +212,7 @@ int main() {
 			int tileY = worldClick.y / tileWorldSize + mapH / 2;
 
 			if (tileX > 0 && tileX < mapW && tileY > 0 && tileY < mapH) {
-				engine.setWorldTile(tileX, mapH - tileY - 1, 3);
+				engine.setWorldTile(tileX, mapH - tileY - 1, Tiles::Iron);
 			}
 
 		}
