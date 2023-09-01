@@ -139,7 +139,9 @@
   <ItemGroup>
     <ClCompile Include="AssetManager.cpp" />
     <ClCompile Include="bechmark.cpp" />
+    <ClCompile Include="descriptorSetBuilder.cpp" />
     <ClCompile Include="Entity.cpp" />
+    <ClCompile Include="globalBufferDefinitions.h" />
     <ClCompile Include="instancedQuadPL.cpp" />
     <ClCompile Include="coloredQuadPL.cpp" />
     <ClCompile Include="ECS.cpp" />
@@ -150,7 +152,6 @@
     <ClCompile Include="Physics.cpp" />
     <ClCompile Include="pipeline.cpp" />
     <ClCompile Include="Scene.cpp" />
-    <ClCompile Include="texturedQuadPL.cpp" />
     <ClCompile Include="tilemapPL.cpp" />
     <ClCompile Include="TileWorldRenderer.h" />
     <ClCompile Include="vulkan_engine.cpp" />
@@ -161,15 +162,18 @@
     <ClInclude Include="AssetManager.h" />
     <ClInclude Include="BehaviorRegistry.h" />
     <ClInclude Include="benchmark.h" />
+    <ClInclude Include="coloredQuadPL.h" />
     <ClInclude Include="ColorRenderer.h" />
     <ClInclude Include="Component.h" />
     <ClInclude Include="Constants.h" />
+    <ClInclude Include="descriptorSetBuilder.h" />
     <ClInclude Include="ECS.h" />
     <ClInclude Include="Editor.h" />
     <ClInclude Include="engine.h" />
     <ClInclude Include="Entity.h" />
     <ClInclude Include="FileDialog.h" />
     <ClInclude Include="Input.h" />
+    <ClInclude Include="instancedQuadPL.h" />
     <ClInclude Include="MyMath.h" />
     <ClInclude Include="Physics.h" />
     <ClInclude Include="Prefab.h" />
@@ -178,11 +182,12 @@
     <ClInclude Include="serialization.h" />
     <ClInclude Include="Sprite.h" />
     <ClInclude Include="SpriteRenderer.h" />
+    <ClInclude Include="tilemapPL.h" />
     <ClInclude Include="typedefs.h" />
     <ClInclude Include="Utils.h" />
+    <ClInclude Include="Vertex.h" />
     <ClInclude Include="VKEngine.h" />
     <ClInclude Include="pipeline.h" />
-    <ClInclude Include="pipelines.h" />
     <ClInclude Include="texture.h" />
     <ClInclude Include="vulkan_util.h" />
   </ItemGroup>

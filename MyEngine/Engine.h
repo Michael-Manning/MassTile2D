@@ -10,13 +10,15 @@
 
 #include <vulkan/vulkan.h>
 #include <glm/glm.hpp>
-//#include<box2d/box2d.h>
+#include<box2d/box2d.h>
 
 #include <vk_mem_alloc.h>
 
 #include "texture.h"
 #include "VKEngine.h"
-#include "pipelines.h"
+#include "coloredQuadPL.h"
+#include "instancedQuadPL.h"
+#include "tilemapPL.h"
 #include "IDGenerator.h"
 #include "typedefs.h"
 #include "Physics.h"
@@ -28,13 +30,9 @@
 #include "ECS.h"
 #include "Input.h"
 #include "Scene.h"
+#include "vulkan_util.h"
+#include "globalBufferDefinitions.h"
 
-
-// store this as simple data in a header. Not portable
-//const std::string textureNotFoundPath = "../data/default.png";
-//const std::string defaultSpritePath = "../data/default.png";
-//const std::string textureNotFoundPath = "C:/Users/mmanning/source/repos/MyEngine/MyEngine/data/default.png";
-//const std::string defaultSpritePath = "C:/Users/mmanning/source/repos/MyEngine/MyEngine/data/default.png";
 
 #ifdef NDEBUG
 
@@ -64,7 +62,6 @@ public:
 
 	Engine(std::shared_ptr<VKEngine> rengine, AssetManager::AssetPaths assetPaths) : rengine(rengine),
 		assetManager(std::make_shared<AssetManager>(rengine, assetPaths)),
-		texturePipeline(rengine),
 		instancedPipeline(rengine),
 		colorPipeline(rengine),
 		tilemapPipeline(rengine)
@@ -89,7 +86,7 @@ public:
 			return;
 
 		Entity::DeltaTime = deltaTime;
-		for (auto& i : scene->sceneData.entities){
+		for (auto& i : scene->sceneData.entities) {
 			i.second->_runStartUpdate();
 		}
 	};
@@ -107,7 +104,6 @@ public:
 	};
 
 	std::shared_ptr<Scene> scene;
-
 
 	std::shared_ptr<b2World> bworld = nullptr;
 
@@ -130,14 +126,13 @@ public:
 	}
 
 	glm::vec2 screenToWorldPos(glm::vec2 pos) {
-		
+
 		pos /= glm::vec2(winH / 2.0f);
 		pos -= glm::vec2((float)winW / winH, 1.0f);
 		pos /= camera.zoom;
 		pos -= glm::vec2(-camera.position.x, camera.position.y);
 		pos /= glm::vec2(1.0f, -1.0f);
-		
-		
+
 		return pos;
 	}
 
@@ -148,15 +143,13 @@ public:
 	void setAtlasTexture(texID texture) {
 		assert(tilemapPipeline.textureAtlas.has_value() == false);
 		tilemapPipeline.textureAtlas = assetManager->textureAssets[texture];
-		tilemapPipeline.createDescriptorSets();
+		tilemapPipeline.createDescriptorSets(cameraUploader.transferBuffers);
 	};
 
 	int winW = 0, winH = 0;
 
 	void _onWindowResize() {
-		colorPipeline.updateUBO((float)winH / (float)winW);
-		instancedPipeline.updateUBO((float)winH / (float)winW);
-		tilemapPipeline.updateUBO((float)winH / (float)winW);
+		// used to update piplines. use for something else or delete
 	};
 
 
@@ -192,12 +185,12 @@ private:
 
 	std::shared_ptr<VKEngine> rengine = nullptr;
 
-	Texture texNotFound;
-	Texture NotFound;
+	Texture texNotFound; // displayed when indexing incorrectly 
 
-	TexturedQuadPL texturePipeline;
 	ColoredQuadPL colorPipeline;
 	InstancedQuadPL instancedPipeline;
+
+	VKUtil::UBOUploader<cameraUBO_s> cameraUploader;
 
 	uint32_t frameCounter = 0;
 	bool firstFrame = true;

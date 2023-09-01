@@ -1,5 +1,9 @@
 #pragma once
 
+
+constexpr int FRAMES_IN_FLIGHT = 2;
+
+
 //
 //constexpr int TilemapPL_MAX_TILES = 1048576 * 8;
 //constexpr int largeChunkCount = 131072;

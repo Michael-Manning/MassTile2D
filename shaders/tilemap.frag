@@ -1,5 +1,4 @@
 #version 460
-
 precision highp float;
 
 layout(binding = 1) uniform sampler2D atlasTexture;
@@ -10,12 +9,9 @@ layout(std430, set = 1, binding = 0) readonly buffer ObjectBuffer{
 } ;
 
 layout(push_constant) uniform constants {
-   vec2 cameraTranslation;
-   float cameraZoom;
    int mapw;
    int maph;
 } ;
-
 
 layout(location = 2) in flat int instance_index;
 layout(location = 1) in vec2 uv;
@@ -44,10 +40,7 @@ void main() {
     int yi = int(uv.y * maph);
     yi = min(yi, maph - 1);
 
-    //int si = yi * mapw + xi;
-    //int atlasIndex = ssboData[si];
     int atlasIndex = getTile(xi, yi);
-
 
     int atlasX = atlasIndex % atlasCount;
     int atlasY = atlasIndex / atlasCount;
@@ -58,7 +51,6 @@ void main() {
 
     vec2 localUV = vec2(fract(uv.x * mapw), mod(uv.y * maph, 1.0));
     vec2 umin = localUV * atlasUvSize + vec2(float(atlasX), float(atlasY)) * atlasUvSize;
-    //   outColor = texelFetch(atlasTexture, ivec2(int(umin.x * 512), umin.y * 512), 0); 
 
     outColor = texture(atlasTexture, umin);
 }

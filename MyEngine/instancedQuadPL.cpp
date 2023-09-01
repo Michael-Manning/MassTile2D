@@ -16,71 +16,19 @@
 #include <vulkan/vulkan.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-
 #include <vk_mem_alloc.h>
 #include <stb_image.h>
 
-#include <omp.h>
-
 #include "VKengine.h"
-#include "pipelines.h"
 #include "typedefs.h"
-
 #include "vulkan_util.h"
+#include "instancedQuadPL.h"
+#include "globalBufferDefinitions.h"
+#include "Vertex.h"
 
 using namespace glm;
 using namespace std;
 
-namespace {
-
-
-
-	struct pushConstant_s {
-		vec2 cameraTranslation;
-		float cameraZoom;
-	};
-
-	struct Vertex {
-		glm::vec2 pos;
-		glm::vec2 texCoord;
-
-		static VkVertexInputBindingDescription getBindingDescription() {
-			VkVertexInputBindingDescription bindingDescription{};
-			bindingDescription.binding = 0;
-			bindingDescription.stride = sizeof(Vertex);
-			bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-			return bindingDescription;
-		}
-
-		static std::array<VkVertexInputAttributeDescription, 2> getAttributeDescriptions() {
-			std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions{};
-
-			attributeDescriptions[0].binding = 0;
-			attributeDescriptions[0].location = 0;
-			attributeDescriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
-			attributeDescriptions[0].offset = offsetof(Vertex, pos);
-
-			attributeDescriptions[1].binding = 0;
-			attributeDescriptions[1].location = 2;
-			attributeDescriptions[1].format = VK_FORMAT_R32G32_SFLOAT;
-			attributeDescriptions[1].offset = offsetof(Vertex, texCoord);
-
-			return attributeDescriptions;
-		}
-	};
-
-	const std::vector<Vertex> vertices = {
-		{{-0.5f, -0.5f}, {1.0f, 0.0f}},
-		{{0.5f, -0.5f}, {0.0f, 0.0f}},
-		{{0.5f, 0.5f}, {0.0f, 1.0f}},
-		{{-0.5f, 0.5f}, {1.0f, 1.0f}}
-	};
-
-	const std::vector<uint16_t> indices = {
-		0, 1, 2, 2, 3, 0
-	};
-}
 
 void InstancedQuadPL::CreateGraphicsPipline(std::string vertexSrc, std::string fragmentSrc) {
 
@@ -98,33 +46,7 @@ void InstancedQuadPL::CreateGraphicsPipline(std::string vertexSrc, std::string f
 	vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 
 	vector< VkDescriptorSetLayout> setLayouts = { descriptorSetLayout, SSBOSetLayout };
-	buildPipelineLayout(setLayouts, sizeof(pushConstant_s), VK_SHADER_STAGE_VERTEX_BIT);
-
-
-
-	//	// setup layout
-	//volatile int psize = sizeof(pushConstant_s);
-
-	//VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-	//pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	//pipelineLayoutInfo.pushConstantRangeCount = psize == 0 ? 0 : 1;
-	//pipelineLayoutInfo.setLayoutCount = setLayouts.size();
-	//pipelineLayoutInfo.pSetLayouts = setLayouts.data();;
-
-	//VkPushConstantRange push_constant;
-	//if (psize > 0) {
-	//	push_constant.offset = 0;
-	//	push_constant.size = psize;
-	//	push_constant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-
-	//	pipelineLayoutInfo.pPushConstantRanges = &push_constant;
-	//}
-
-
-	//auto res = vkCreatePipelineLayout(engine->device, &pipelineLayoutInfo, nullptr, &pipelineLayout);
-	//assert(res == VK_SUCCESS);
-
-
+	buildPipelineLayout(setLayouts);
 
 	auto inputAssembly = defaultInputAssembly();
 	auto viewportState = defaultViewportState();
@@ -159,7 +81,7 @@ void InstancedQuadPL::CreateGraphicsPipline(std::string vertexSrc, std::string f
 	}
 }
 
-void InstancedQuadPL::createDescriptorSets() {
+void InstancedQuadPL::createDescriptorSets(MappedDoubleBuffer& cameradb) {
 
 	assert(defaultTexture.textureImageAllocation != nullptr);
 
@@ -170,9 +92,9 @@ void InstancedQuadPL::createDescriptorSets() {
 		// one time update from UBO descriptor sets
 		for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++) {
 			VkDescriptorBufferInfo bufferInfo{};
-			bufferInfo.buffer = uniformBuffers[i];
+			bufferInfo.buffer = cameradb.buffers[i];
 			bufferInfo.offset = 0;
-			bufferInfo.range = sizeof(UBO_s);
+			bufferInfo.range = sizeof(cameraUBO_s);
 
 			std::array<VkWriteDescriptorSet, 1> descriptorWrites{};
 
@@ -239,16 +161,9 @@ void InstancedQuadPL::createDescriptorSets() {
 			descriptorWrites[0].descriptorCount = 1;
 			descriptorWrites[0].pBufferInfo = &objectBufferInfo;
 
-
 			vkUpdateDescriptorSets(engine->device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
-
 		}
 	}
-}
-
-void InstancedQuadPL::updateUBO(float aspect) {
-	uboData.aspectRatio = aspect;
-	invalidateAspectUBO();
 }
 
 // For now, update every descriptor array element. Could update individual elements as an optimization
@@ -279,7 +194,6 @@ void InstancedQuadPL::updateDescriptorSets() {
 
 		bindIndexes[engine->currentFrame][textures[i].first] = i;
 	}
-
 
 	std::array<VkWriteDescriptorSet, 1> descriptorWrites{};
 
@@ -313,20 +227,6 @@ void InstancedQuadPL::createDescriptorSetLayout() {
 	buildSetLayout(set1Bindings, SSBOSetLayout);
 }
 
-void InstancedQuadPL::createUniformBuffers() {
-
-	VkDeviceSize bufferSize = sizeof(UBO_s);
-
-	uniformBuffers.resize(FRAMES_IN_FLIGHT);
-	uniformBuffersAllocation.resize(FRAMES_IN_FLIGHT);
-	uniformBuffersMapped.resize(FRAMES_IN_FLIGHT);
-
-	for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++) {
-		engine->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT, uniformBuffers[i], uniformBuffersAllocation[i]);
-		vmaMapMemory(engine->allocator, uniformBuffersAllocation[i], &uniformBuffersMapped[i]);
-	}
-}
-
 void InstancedQuadPL::createSSBOBuffer() {
 
 	engine->createMappedBuffer(sizeof(ssboObjectData) * InstancedQuadPL_MAX_OBJECTS, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, ssboMappedDB);
@@ -334,7 +234,7 @@ void InstancedQuadPL::createSSBOBuffer() {
 
 void InstancedQuadPL::createVertices() {
 	{
-		VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
+		VkDeviceSize bufferSize = sizeof(quadVertices[0]) * quadVertices.size();
 
 		VkBuffer stagingBuffer;
 		VmaAllocation stagingBufferAllocation;
@@ -342,7 +242,7 @@ void InstancedQuadPL::createVertices() {
 
 		void* data;
 		vmaMapMemory(engine->allocator, stagingBufferAllocation, &data);
-		memcpy(data, vertices.data(), (size_t)bufferSize);
+		memcpy(data, quadVertices.data(), (size_t)bufferSize);
 		vmaUnmapMemory(engine->allocator, stagingBufferAllocation);
 
 		engine->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 0, vertexBuffer, vertexBufferAllocation);
@@ -354,7 +254,7 @@ void InstancedQuadPL::createVertices() {
 	}
 
 	{
-		VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
+		VkDeviceSize bufferSize = sizeof(QuadIndices[0]) * QuadIndices.size();
 
 		VkBuffer stagingBuffer;
 		VmaAllocation stagingBufferAllocation;
@@ -362,7 +262,7 @@ void InstancedQuadPL::createVertices() {
 
 		void* data;
 		vmaMapMemory(engine->allocator, stagingBufferAllocation, &data);
-		memcpy(data, indices.data(), (size_t)bufferSize);
+		memcpy(data, QuadIndices.data(), (size_t)bufferSize);
 		vmaUnmapMemory(engine->allocator, stagingBufferAllocation);
 
 		engine->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, 0, indexBuffer, indexBufferAllocation);
@@ -382,18 +282,11 @@ void InstancedQuadPL::recordCommandBuffer(VkCommandBuffer commandBuffer, std::ve
 
 	assert(drawlist.size() <= InstancedQuadPL_MAX_OBJECTS);
 
-	if (uboDirtyFlags[engine->currentFrame] == true) {
-		memcpy(uniformBuffersMapped[engine->currentFrame], &uboData, sizeof(uboData));
-		uboDirtyFlags[engine->currentFrame] = false;
-	}
-
 	{
-
 		for (auto& i : drawlist) {
 			i.index = bindIndexes[engine->currentFrame][i.index];
 		}
 
-		//memcpy(ssboBuffersMapped[engine->currentFrame], drawlist.data(), sizeof(ssboObjectData) * drawlist.size());
 		memcpy(ssboMappedDB.buffersMapped[engine->currentFrame], drawlist.data(), sizeof(ssboObjectData) * drawlist.size());
 	}
 
@@ -412,20 +305,11 @@ void InstancedQuadPL::recordCommandBuffer(VkCommandBuffer commandBuffer, std::ve
 	vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 	vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT16);
 
-
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &generalDescriptorSets[engine->currentFrame], 0, nullptr);
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &ssboDescriptorSets[engine->currentFrame], 0, nullptr);
 
-	pushConstant_s pushData{
-		cameraPosition,
-		cameraZoom
-	};
-
-	vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(pushConstant_s), &pushData);
-
-	vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()), drawlist.size(), 0, 0, 0);
+	vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(QuadIndices.size()), drawlist.size(), 0, 0, 0);
 }
-
 
 void InstancedQuadPL::addTextureBinding(texID ID, Texture* texture) {
 	// map a binding in the next availble slot of the vector

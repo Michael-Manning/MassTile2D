@@ -1,6 +1,5 @@
 #version 460
 
-
 struct ssboObject{
    vec2 uvMin;
    vec2 uvMax;
@@ -8,7 +7,7 @@ struct ssboObject{
    vec2 scale;
    float rotation;
 
-   int index;
+   int index; // texture index
 };
 
 layout(std140, set = 1, binding = 0) readonly buffer ObjectBuffer{

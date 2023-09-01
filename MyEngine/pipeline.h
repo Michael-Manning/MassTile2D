@@ -23,9 +23,8 @@ public:
 	// abstract
 	virtual void CreateGraphicsPipline(std::string vertexSrc, std::string fragmentSrc) = 0;
 	virtual void createDescriptorSetLayout() = 0;
-	virtual void createDescriptorSets() = 0;
+//	virtual void createDescriptorSets() = 0;
 	virtual void createVertices() = 0;
-	void recordCommandBuffer(VkCommandBuffer commandBuffer);
 
 protected:
 
@@ -39,13 +38,11 @@ protected:
 	VkPipelineLayout pipelineLayout;
 
 
-	std::vector<VkBuffer> uniformBuffers;
-	std::vector<VmaAllocation> uniformBuffersAllocation;
-	std::vector<void*> uniformBuffersMapped;
+	//std::vector<VkBuffer> uniformBuffers;
+	//std::vector<VmaAllocation> uniformBuffersAllocation;
+	//std::vector<void*> uniformBuffersMapped;
 
-	//std::vector<VkBuffer> ssboBuffers;
-	//std::vector<VmaAllocation> ssboAllocations;
-	//std::vector<void*> ssboBuffersMapped;
+
 
 	VkBuffer vertexBuffer;
 	VmaAllocation vertexBufferAllocation;

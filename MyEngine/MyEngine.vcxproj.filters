@@ -45,9 +45,6 @@
     <ClCompile Include="vulkan_util.cpp">
       <Filter>Source Files\vulkan</Filter>
     </ClCompile>
-    <ClCompile Include="texturedQuadPL.cpp">
-      <Filter>Source Files\vulkan\piplines</Filter>
-    </ClCompile>
     <ClCompile Include="engine.cpp">
       <Filter>Source Files\Engine</Filter>
     </ClCompile>
@@ -90,6 +87,12 @@
     <ClCompile Include="TileWorldRenderer.h">
       <Filter>Source Files\Engine\ECS\Components</Filter>
     </ClCompile>
+    <ClCompile Include="descriptorSetBuilder.cpp">
+      <Filter>Source Files\vulkan\piplines</Filter>
+    </ClCompile>
+    <ClCompile Include="globalBufferDefinitions.h">
+      <Filter>Source Files\vulkan</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pipeline.h">
@@ -97,9 +100,6 @@
     </ClInclude>
     <ClInclude Include="texture.h">
       <Filter>Source Files\vulkan</Filter>
-    </ClInclude>
-    <ClInclude Include="pipelines.h">
-      <Filter>Source Files\vulkan\piplines</Filter>
     </ClInclude>
     <ClInclude Include="vulkan_util.h">
       <Filter>Source Files\vulkan</Filter>
@@ -172,6 +172,21 @@
     </ClInclude>
     <ClInclude Include="BehaviorRegistry.h">
       <Filter>Source Files\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="descriptorSetBuilder.h">
+      <Filter>Source Files\vulkan\piplines</Filter>
+    </ClInclude>
+    <ClInclude Include="coloredQuadPL.h">
+      <Filter>Source Files\vulkan\piplines</Filter>
+    </ClInclude>
+    <ClInclude Include="instancedQuadPL.h">
+      <Filter>Source Files\vulkan\piplines</Filter>
+    </ClInclude>
+    <ClInclude Include="tilemapPL.h">
+      <Filter>Source Files\vulkan\piplines</Filter>
+    </ClInclude>
+    <ClInclude Include="Vertex.h">
+      <Filter>Source Files\vulkan\piplines</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

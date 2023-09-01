@@ -65,7 +65,7 @@ static vec2 GcameraPos;
 
 bool showingEditor = false;
 
-#include "pipelines.h"
+#include "tilemapPL.h"
 
 int main() {
 
@@ -116,16 +116,21 @@ int main() {
 		vector<bool> blockPresence(mapW * mapH);
 		vector<bool> ironPresence(mapW * mapH);
 
+#ifdef  NDEBUG
 		FastNoise::SmartNode<> fnGenerator = FastNoise::NewFromEncodedNodeTree(baseTerrainGen.c_str(), FastSIMD::CPUMaxSIMDLevel());
 		FastNoise::SmartNode<> ironGenerator = FastNoise::NewFromEncodedNodeTree(ironDist.c_str(), FastSIMD::CPUMaxSIMDLevel());
 		fnGenerator->GenUniformGrid2D(noiseOutput.data(), 0, -mapH + 100, mapW, mapH, 0.032f, rd());
 		ironGenerator->GenUniformGrid2D(ironOutput.data(), 0, 0, mapW, mapH, 0.003f, rd());
 
 
+
 		for (size_t i = 0; i < mapCount; i++) {
 			blockPresence[i] = noiseOutput[i] > 0.4f;
 			ironPresence[i] = ironOutput[i] > 0.6f;
 		}
+
+#endif //  NDEBUG
+
 		PROFILE_END(World_Gen);
 
 

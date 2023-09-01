@@ -2,23 +2,56 @@
 
 layout(push_constant) uniform constants {
    mat4 model;
-   mat4 view;
    vec4 color;
    int circle;
-} pConstants;
+};
 
-layout(binding = 0) uniform UniformBufferObject {
-   float aspect;
-} ubo;
+layout(binding = 0) uniform CamerUBO {
+   vec2 position;
+	float zoom;
+	float aspectRatio;
+} camera;
 
 layout(location = 0) in vec2 inPosition;
 layout(location = 2) in vec2 inFragCoord;
 
 layout(location = 1) out vec2 uv;
 
+mat4 translate(vec2 v) {
+    return mat4(
+        1.0, 0.0, 0.0, 0.0,
+        0.0, 1.0, 0.0, 0.0,
+        0.0, 0.0, 1.0, 0.0,
+        v.x, v.y, 0.0, 1.0
+    );
+}
+mat4 scale(vec2 v) {
+    return mat4(
+        v.x, 0.0, 0.0, 0.0,
+        0.0, v.y, 0.0, 0.0,
+        0.0, 0.0, 1.0, 0.0,
+        0.0, 0.0, 0.0, 1.0
+    );
+}
+mat4 rotate(float angle) {
+    float c = cos(angle);
+    float s = sin(angle);
+    return mat4(
+        c,   s,   0.0, 0.0,
+       -s,   c,   0.0, 0.0,
+        0.0, 0.0, 1.0, 0.0,
+        0.0, 0.0, 0.0, 1.0
+    );
+}
 
 void main() {
-   gl_Position = pConstants.view * pConstants.model * vec4(inPosition, 0.0, 1.0) * vec4(vec2( ubo.aspect, 1.0), 1.0, 1.0);
+
+   mat4 view = mat4(1.0);
+   view *= scale(vec2(camera.zoom));
+   view *= translate(vec2(-camera.position.x, camera.position.y));
+   view *= scale(vec2(1.0, -1.0));
+
+   gl_Position = view * model * vec4(inPosition, 0.0, 1.0) * vec4(vec2( camera.aspectRatio, 1.0), 1.0, 1.0);
    
    uv = inFragCoord;
 }

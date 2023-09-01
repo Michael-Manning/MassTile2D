@@ -17,12 +17,10 @@
 
 #include "texture.h"
 #include "VKEngine.h"
-
-#include "unordered_map"
-
+#include "coloredQuadPL.h"
+#include "instancedQuadPL.h"
+#include "tilemapPL.h"
 #include "engine.h"
-#include "pipelines.h"
-
 #include "SpriteRenderer.h"	
 #include "Physics.h"
 #include "Entity.h"
@@ -76,14 +74,11 @@ namespace {
 }
 
 
-
 // physics settings
 b2Vec2 gravity(0.0f, -10.0f);
 constexpr double timeStep = 1.0f / 60.0f;
 int32 velocityIterations = 6;
 int32 positionIterations = 2;
-
-
 
 static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
 	auto app = reinterpret_cast<Engine*>(glfwGetWindowUserPointer(window));
@@ -145,25 +140,19 @@ void Engine::Start(std::string windowName, int winW, int winH, std::string shade
 	genCheckerboard(400, vec4(1, 0, 0, 1), vec4(0, 0, 1, 1), 6, checkerData);
 	texNotFound = rengine->genTexture(400, 400, checkerData, FilterMode::Nearest);
 
+	// create some buffers
+	{
+		tilemapPipeline.createWorldBuffer(); // move buffer somehwere else
+		cameraUploader.CreateBuffers(rengine);
+	}
+
 	// section can be done in parrallel
-
-	// configure texture pipeline
-	//{
-	//	//texturePipeline.setDefaultTexture(rengine->genTexture(textureNotFoundPath));
-	//	texturePipeline.setDefaultTexture(texNotFound);
-	//	texturePipeline.createDescriptorSetLayout();
-	//	texturePipeline.CreateGraphicsPipline(shaderDir + "vert.spv", shaderDir + "frag.spv");
-	//	texturePipeline.createUniformBuffers();
-	//	texturePipeline.createDescriptorSets();
-	//	texturePipeline.createVertices();
-	//}
-
+	
 	// configure texture pipeline
 	{
 		colorPipeline.createDescriptorSetLayout();
 		colorPipeline.CreateGraphicsPipline(shaderDir + "color_vert.spv", shaderDir + "color_frag.spv");
-		colorPipeline.createUniformBuffers();
-		colorPipeline.createDescriptorSets();
+		colorPipeline.createDescriptorSets(cameraUploader.transferBuffers);
 		colorPipeline.createVertices();
 	}
 
@@ -174,7 +163,7 @@ void Engine::Start(std::string windowName, int winW, int winH, std::string shade
 		instancedPipeline.CreateGraphicsPipline(shaderDir + "instance_vert.spv", shaderDir + "instance_frag.spv");
 		instancedPipeline.createUniformBuffers();
 		instancedPipeline.createSSBOBuffer();
-		instancedPipeline.createDescriptorSets();
+		instancedPipeline.createDescriptorSets(cameraUploader.transferBuffers);
 		instancedPipeline.createVertices();
 	}
 
@@ -182,51 +171,18 @@ void Engine::Start(std::string windowName, int winW, int winH, std::string shade
 	{
 		tilemapPipeline.createDescriptorSetLayout();
 		tilemapPipeline.CreateGraphicsPipline(shaderDir + "tilemap_vert.spv", shaderDir + "tilemap_frag.spv");
-		tilemapPipeline.createUniformBuffers();
-		//tilemapPipeline.createSSBOBuffer();
 		tilemapPipeline.createVertices();
 
-		tilemapPipeline.createWorldBuffer();
 		tilemapPipeline.createChunkTransferBuffers();
-	}
-
-	// copy DATA
-	{
-
-		//vector<uint32_t> atlasLookup = { 0,3,8,10,14,107,132,137,297, 291,948,749,932, 937, 354 };
-		//int len = atlasLookup.size() - 1;
-
-
-		//for (size_t i = 0; i < mapCount; i++) {
-		//	//tilemapPipeline.mapData[i] = atlasLookup[ran(0, len)];
-
-		//	if (i < mapW)
-		//		tilemapPipeline.preloadTile(i % mapW, i / mapW, 930);
-		//	else
-		//		tilemapPipeline.preloadTile(i % mapW, i / mapW, 962);
-		//		//tilemapPipeline.setTile(i % mapW, i / mapW, atlasLookup[ran(0, len)]);
-		//}
-
-
-
-		//constexpr int transferCount = TilemapPL_MAX_TILES / largeChunkCount;
-		//for (size_t i = 0; i < transferCount; i++) {
-
-		//	tilemapPipeline.copyToLargeChunkTransferbuffer(tilemapPipeline.mapData.data() + i * largeChunkCount);
-		//	tilemapPipeline.copyLargeChunkToDevice(i);
-		//}
 	}
 
 	rengine->createSyncObjects();
 	initPhysics();
 
-	/*auto sprite = scene->GenerateSprite(defaultSpritePath, false);
-	scene->defaultSprite = sprite->ID;*/
 
 	InitImgui(); // imgui needs to be initialized to register a sprite with it
 
 	genCheckerboard(400, vec4(1, 1, 0, 1), vec4(0, 0, 1, 1), 6, checkerData);
-	//scene->CreateDefaultSprite(400, 400, checkerData);
 	assetManager->CreateDefaultSprite(400, 400, checkerData);
 
 	DebugLog("Initialized pipelines");
@@ -286,11 +242,22 @@ bool Engine::QueueNextFrame() {
 	// command buffer can be split into secondary buffers and recorded in parallel
 	auto cmdBuffer = rengine->getNextCommandBuffer(imageIndex);
 
-	// transfer tiles before starting renderpass
+	// transfer tiles to read-only memory before starting renderpass
 	tilemapPipeline.stageChunkUpdates(cmdBuffer);
 
 	rengine->beginRenderpass(imageIndex);
 
+	// update global buffers
+	{
+		cameraUploader.Invalidate();
+
+		cameraUBO_s camData;
+		camData.aspectRatio = (float)winH / (float)winW;
+		camData.position = camera.position;
+		camData.zoom = camera.zoom;
+
+		cameraUploader.SyncBufferData(camData, rengine->currentFrame);
+	}
 
 	// colored quad
 	{
@@ -309,18 +276,15 @@ bool Engine::QueueNextFrame() {
 				});
 		}
 
-		colorPipeline.updateCamera(camera.position, camera.zoom);
 		colorPipeline.recordCommandBuffer(cmdBuffer, drawlist);
 	}
 
 	// tilemap
 	{
 		if (tilemapPipeline.textureAtlas.has_value()) {
-			tilemapPipeline.updateCamera(camera);
 			tilemapPipeline.recordCommandBuffer(cmdBuffer);
 		}
 	}
-
 
 	// Instanced quad
 	{
@@ -357,7 +321,6 @@ bool Engine::QueueNextFrame() {
 				instancedPipeline.invalidateTextureDescriptors();
 
 			instancedPipeline.updateDescriptorSets();
-			instancedPipeline.updateCamera(camera.position, camera.zoom);
 			instancedPipeline.recordCommandBuffer(cmdBuffer, drawlist);
 
 			runningStats.sprite_render_count = drawlist.size();

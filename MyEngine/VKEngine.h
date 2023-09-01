@@ -16,8 +16,8 @@
 
 #include "texture.h"
 #include "typedefs.h"
+#include "Constants.h"
 
-constexpr int FRAMES_IN_FLIGHT = 2;
 
 struct QueueFamilyIndices {
     std::optional<uint32_t> graphicsFamily;

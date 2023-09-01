@@ -16,69 +16,24 @@
 #include <vulkan/vulkan.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-
 #include <vk_mem_alloc.h>
 #include <stb_image.h>
 
-#include <omp.h>
-
 #include "VKengine.h"
-#include "pipelines.h"
 #include "typedefs.h"
-
 #include "vulkan_util.h"
+#include "globalBufferDefinitions.h"
+#include "Vertex.h"
+
+#include "tilemapPL.h"
 
 using namespace glm;
 using namespace std;
 
 namespace {
-
 	struct pushConstant_s {
-		vec2 cameraTranslation;
-		float cameraZoom;
 		int mapw;
 		int maph;
-	};
-
-	struct Vertex {
-		glm::vec2 pos;
-		glm::vec2 texCoord;
-
-		static VkVertexInputBindingDescription getBindingDescription() {
-			VkVertexInputBindingDescription bindingDescription{};
-			bindingDescription.binding = 0;
-			bindingDescription.stride = sizeof(Vertex);
-			bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-			return bindingDescription;
-		}
-
-		static std::array<VkVertexInputAttributeDescription, 2> getAttributeDescriptions() {
-			std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions{};
-
-			attributeDescriptions[0].binding = 0;
-			attributeDescriptions[0].location = 0;
-			attributeDescriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
-			attributeDescriptions[0].offset = offsetof(Vertex, pos);
-
-			attributeDescriptions[1].binding = 0;
-			attributeDescriptions[1].location = 2;
-			attributeDescriptions[1].format = VK_FORMAT_R32G32_SFLOAT;
-			attributeDescriptions[1].offset = offsetof(Vertex, texCoord);
-
-			return attributeDescriptions;
-		}
-	};
-
-	const std::vector<Vertex> vertices = {
-		{{-0.5f, -0.5f}, {1.0f, 0.0f}},
-		{{0.5f, -0.5f}, {0.0f, 0.0f}},
-		{{0.5f, 0.5f}, {0.0f, 1.0f}},
-		{{-0.5f, 0.5f}, {1.0f, 1.0f}}
-	};
-
-	const std::vector<uint16_t> indices = {
-		0, 1, 2, 2, 3, 0
 	};
 }
 
@@ -133,7 +88,7 @@ void TilemapPL::CreateGraphicsPipline(std::string vertexSrc, std::string fragmen
 	}
 }
 
-void TilemapPL::createDescriptorSets() {
+void TilemapPL::createDescriptorSets(MappedDoubleBuffer& cameradb) {
 
 	assert(textureAtlas.has_value());
 
@@ -144,9 +99,9 @@ void TilemapPL::createDescriptorSets() {
 		// one time update from UBO descriptor sets
 		for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++) {
 			VkDescriptorBufferInfo bufferInfo{};
-			bufferInfo.buffer = uniformBuffers[i];
+			bufferInfo.buffer = cameradb.buffers[i];
 			bufferInfo.offset = 0;
-			bufferInfo.range = sizeof(UBO_s);
+			bufferInfo.range = sizeof(cameraUBO_s);
 
 			std::array<VkWriteDescriptorSet, 1> descriptorWrites{};
 
@@ -213,11 +168,6 @@ void TilemapPL::createDescriptorSets() {
 	}
 }
 
-void TilemapPL::updateUBO(float aspect) {
-	uboData.aspectRatio = aspect;
-	invalidateAspectUBO();
-}
-
 
 void TilemapPL::createDescriptorSetLayout() {
 
@@ -235,28 +185,9 @@ void TilemapPL::createDescriptorSetLayout() {
 	buildSetLayout(set1Bindings, SSBOSetLayout);
 }
 
-void TilemapPL::createUniformBuffers() {
-
-	VkDeviceSize bufferSize = sizeof(UBO_s);
-
-	uniformBuffers.resize(FRAMES_IN_FLIGHT);
-	uniformBuffersAllocation.resize(FRAMES_IN_FLIGHT);
-	uniformBuffersMapped.resize(FRAMES_IN_FLIGHT);
-
-	for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++) {
-		engine->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT, uniformBuffers[i], uniformBuffersAllocation[i]);
-		vmaMapMemory(engine->allocator, uniformBuffersAllocation[i], &uniformBuffersMapped[i]);
-	}
-}
-
-void TilemapPL::createSSBOBuffer() {
-
-	//engine->createMappedBuffer(sizeof(ssboObjectData) * (TilemapPL_MAX_TILES), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, ssboMappedDB);
-}
-
 void TilemapPL::createVertices() {
 	{
-		VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
+		VkDeviceSize bufferSize = sizeof(quadVertices[0]) * quadVertices.size();
 
 		VkBuffer stagingBuffer;
 		VmaAllocation stagingBufferAllocation;
@@ -264,7 +195,7 @@ void TilemapPL::createVertices() {
 
 		void* data;
 		vmaMapMemory(engine->allocator, stagingBufferAllocation, &data);
-		memcpy(data, vertices.data(), (size_t)bufferSize);
+		memcpy(data, quadVertices.data(), (size_t)bufferSize);
 		vmaUnmapMemory(engine->allocator, stagingBufferAllocation);
 
 		engine->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 0, vertexBuffer, vertexBufferAllocation);
@@ -276,7 +207,7 @@ void TilemapPL::createVertices() {
 	}
 
 	{
-		VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
+		VkDeviceSize bufferSize = sizeof(QuadIndices[0]) * QuadIndices.size();
 
 		VkBuffer stagingBuffer;
 		VmaAllocation stagingBufferAllocation;
@@ -284,7 +215,7 @@ void TilemapPL::createVertices() {
 
 		void* data;
 		vmaMapMemory(engine->allocator, stagingBufferAllocation, &data);
-		memcpy(data, indices.data(), (size_t)bufferSize);
+		memcpy(data, QuadIndices.data(), (size_t)bufferSize);
 		vmaUnmapMemory(engine->allocator, stagingBufferAllocation);
 
 		engine->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, 0, indexBuffer, indexBufferAllocation);
@@ -310,14 +241,6 @@ void TilemapPL::createChunkTransferBuffers() {
 
 void TilemapPL::recordCommandBuffer(VkCommandBuffer commandBuffer) {
 
-
-
-	if (uboDirtyFlags[engine->currentFrame] == true) {
-		memcpy(uniformBuffersMapped[engine->currentFrame], &uboData, sizeof(uboData));
-		uboDirtyFlags[engine->currentFrame] = false;
-	}
-
-
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 
 	VkViewport viewport = fullframeViewport();
@@ -338,21 +261,18 @@ void TilemapPL::recordCommandBuffer(VkCommandBuffer commandBuffer) {
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &ssboDescriptorSets[engine->currentFrame], 0, nullptr);
 
 	pushConstant_s pushData{
-		camera.position,
-		camera.zoom,
 		mapW,
 		mapH
 	};
 
 	vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(pushConstant_s), &pushData);
 
-	vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+	vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(QuadIndices.size()), 1, 0, 0, 0);
 }
 
 void TilemapPL::stageChunkUpdates(VkCommandBuffer commandBuffer) {
 
 	// ignoring chunk update range optimization for first test
-
 
 	for (size_t i = 0; i < chunkCount; i++){
 		if (chunkDirtyFlags[i] == true) {
@@ -361,7 +281,7 @@ void TilemapPL::stageChunkUpdates(VkCommandBuffer commandBuffer) {
 	
 			{
 				VkBufferCopy copyRegion{};
-				copyRegion.size = chunkTileCount * sizeof(uboData);
+				copyRegion.size = chunkTileCount * sizeof(ssboObjectData);
 				copyRegion.dstOffset = i * chunkTileCount * sizeof(ssboObjectData);
 				copyRegion.srcOffset = 0;
 

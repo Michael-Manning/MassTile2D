@@ -1,33 +1,41 @@
 
+- quad vertex shared allocation instead of per-pipeline
+- descriptor set abstraction
+- tool for managing texture bindings. Replace function in instanced pipline
+- move tilemap push constant to UBO (use new ubo uploader class)
+- sort out tilemap interface
+- move tilemap buffers out of tilemap pipline class. They are specific to that pipeline
+
+- switch color and texture instancing piplines to fixed secondar command buffer. Use drawIndirect to update instance count with buffer. Profile first
+(Could just use camera buffer since I'm already updating that every frame!)
+
+- convert worldToScreenPos & screenToWorldPos into simple matrix calculation? Profile first
+
+- convert entity transform into component, store in contiguous memory, or use faster map. Then use compute shader to calculate
+entity transform matrices for color/texture pipeline instead of per vertex calculation
+
+- rename instacedQuadPL to texturePL
+
 - Inter-bahaviour entity accessor
+- general behaviour scene access for camera and common data needs
 
-- expose camera to gameobject (should have some sort of generalized data struct?)
+- color pipeline should use instancing
 
-- tilemap renderer class
-
+- player buffer jump input
 
 delete large chunk transfer buffer after world is loaded in. Create functions to repeate this process easily
 
 could have some sort of optional set on an entity listing what components it's using to make it faster to delete them
 
-reserve scene component maps with max count to prevenent rehashing which would break getComponent pointers. GPT told me this is it even real?
+reserve scene component maps with max count to prevenent rehashing which would break getComponent pointers. GPT told me this, is it even real?
 - same with pipiline texture references which use raw pointers
-
-camera should live in a uniform
 
 
 integrate vk-bootstrap to simplify initializion
 
 
-- more physics features. raycast, collision detection, layers, user entity variable in body
 
-- instancing
 
-- texture animators
-
-- partical system
-
-- text
 
 - shader auto workflow with sprv reflect
 
@@ -38,6 +46,20 @@ things to abstract:
 
 - group together descriptor layout, set, and write creation in a class
 
-- imgui sprite rendering from sprite ID
-
 - default quad vertex management
+
+
+
+
+
+
+
+---- features:
+
+- texture animators
+
+- partical system
+
+- text
+
+- more physics features. raycast, collision detection, layers, user entity variable in body

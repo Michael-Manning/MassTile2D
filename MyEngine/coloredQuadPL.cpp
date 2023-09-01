@@ -16,69 +16,25 @@
 #include <vulkan/vulkan.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-
 #include <vk_mem_alloc.h>
 #include <stb_image.h>
 
 #include "VKengine.h"
-#include "pipelines.h"
 #include "typedefs.h"
-
 #include "vulkan_util.h"
+#include "globalBufferDefinitions.h"
+#include "Vertex.h"
+
+#include "coloredQuadPL.h"
 
 using namespace glm;
 using namespace std;
 
 namespace {
-
 	struct pushConstant_s {
 		glm::mat4 model;
-		glm::mat4 view;
 		glm::vec4 color;
 		int circle;
-	};
-
-
-	struct Vertex {
-		glm::vec2 pos;
-		glm::vec2 texCoord;
-
-		static VkVertexInputBindingDescription getBindingDescription() {
-			VkVertexInputBindingDescription bindingDescription{};
-			bindingDescription.binding = 0;
-			bindingDescription.stride = sizeof(Vertex);
-			bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-			return bindingDescription;
-		}
-
-		static std::array<VkVertexInputAttributeDescription, 2> getAttributeDescriptions() {
-			std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions{};
-
-			attributeDescriptions[0].binding = 0;
-			attributeDescriptions[0].location = 0;
-			attributeDescriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
-			attributeDescriptions[0].offset = offsetof(Vertex, pos);
-
-			attributeDescriptions[1].binding = 0;
-			attributeDescriptions[1].location = 2;
-			attributeDescriptions[1].format = VK_FORMAT_R32G32_SFLOAT;
-			attributeDescriptions[1].offset = offsetof(Vertex, texCoord);
-
-			return attributeDescriptions;
-		}
-	};
-
-
-	const std::vector<Vertex> vertices = {
-		{{-0.5f, -0.5f}, {1.0f, 0.0f}},
-		{{0.5f, -0.5f}, {0.0f, 0.0f}},
-		{{0.5f, 0.5f}, {0.0f, 1.0f}},
-		{{-0.5f, 0.5f}, {1.0f, 1.0f}}
-	};
-
-	const std::vector<uint16_t> indices = {
-		0, 1, 2, 2, 3, 0
 	};
 }
 
@@ -150,7 +106,7 @@ void ColoredQuadPL::CreateGraphicsPipline(std::string vertexSrc, std::string fra
 	}
 }
 
-void ColoredQuadPL::createDescriptorSets() {
+void ColoredQuadPL::createDescriptorSets(MappedDoubleBuffer& cameradb) {
 
 	std::vector<VkDescriptorSetLayout> layouts(FRAMES_IN_FLIGHT, descriptorSetLayout);
 	VkDescriptorSetAllocateInfo allocInfo{};
@@ -159,8 +115,6 @@ void ColoredQuadPL::createDescriptorSets() {
 	allocInfo.descriptorSetCount = static_cast<uint32_t>(FRAMES_IN_FLIGHT);
 	allocInfo.pSetLayouts = layouts.data();
 
-	//generalDescriptorSets.resize(FRAMES_IN_FLIGHT);
-
 	if (vkAllocateDescriptorSets(engine->device, &allocInfo, generalDescriptorSets.data()) != VK_SUCCESS) {
 		throw std::runtime_error("failed to allocate descriptor sets!");
 	}
@@ -168,9 +122,9 @@ void ColoredQuadPL::createDescriptorSets() {
 	// one time update from UBO descriptor sets
 	for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++) {
 		VkDescriptorBufferInfo bufferInfo{};
-		bufferInfo.buffer = uniformBuffers[i];
+		bufferInfo.buffer = cameradb.buffers[i];
 		bufferInfo.offset = 0;
-		bufferInfo.range = sizeof(UBO_s);
+		bufferInfo.range = sizeof(cameraUBO_s);
 
 		std::array<VkWriteDescriptorSet, 1> descriptorWrites{};
 
@@ -185,12 +139,6 @@ void ColoredQuadPL::createDescriptorSets() {
 		vkUpdateDescriptorSets(engine->device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 	}
 }
-
-void ColoredQuadPL::updateUBO(float aspect) {
-	uboData.aspectRatio = aspect;
-	invalidateAspectUBO();
-}
-
 
 void ColoredQuadPL::createDescriptorSetLayout() {
 	VkDescriptorSetLayoutBinding uboLayoutBinding{};
@@ -211,23 +159,9 @@ void ColoredQuadPL::createDescriptorSetLayout() {
 	}
 }
 
-void ColoredQuadPL::createUniformBuffers() {
-
-	VkDeviceSize bufferSize = sizeof(UBO_s);
-
-	uniformBuffers.resize(FRAMES_IN_FLIGHT);
-	uniformBuffersAllocation.resize(FRAMES_IN_FLIGHT);
-	uniformBuffersMapped.resize(FRAMES_IN_FLIGHT);
-
-	for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++) {
-		engine->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT, uniformBuffers[i], uniformBuffersAllocation[i]);
-		vmaMapMemory(engine->allocator, uniformBuffersAllocation[i], &uniformBuffersMapped[i]);
-	}
-}
-
 void ColoredQuadPL::createVertices() {
 	{
-		VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
+		VkDeviceSize bufferSize = sizeof(quadVertices[0]) * quadVertices.size();
 
 		VkBuffer stagingBuffer;
 		VmaAllocation stagingBufferAllocation;
@@ -235,7 +169,7 @@ void ColoredQuadPL::createVertices() {
 
 		void* data;
 		vmaMapMemory(engine->allocator, stagingBufferAllocation, &data);
-		memcpy(data, vertices.data(), (size_t)bufferSize);
+		memcpy(data, quadVertices.data(), (size_t)bufferSize);
 		vmaUnmapMemory(engine->allocator, stagingBufferAllocation);
 
 		engine->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 0, vertexBuffer, vertexBufferAllocation);
@@ -247,7 +181,7 @@ void ColoredQuadPL::createVertices() {
 	}
 
 	{
-		VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
+		VkDeviceSize bufferSize = sizeof(QuadIndices[0]) * QuadIndices.size();
 
 		VkBuffer stagingBuffer;
 		VmaAllocation stagingBufferAllocation;
@@ -255,7 +189,7 @@ void ColoredQuadPL::createVertices() {
 
 		void* data;
 		vmaMapMemory(engine->allocator, stagingBufferAllocation, &data);
-		memcpy(data, indices.data(), (size_t)bufferSize);
+		memcpy(data, QuadIndices.data(), (size_t)bufferSize);
 		vmaUnmapMemory(engine->allocator, stagingBufferAllocation);
 
 		engine->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, 0, indexBuffer, indexBufferAllocation);
@@ -269,14 +203,8 @@ void ColoredQuadPL::createVertices() {
 
 void ColoredQuadPL::recordCommandBuffer(VkCommandBuffer commandBuffer, std::vector<DrawItem>& drawlist) {
 
-	if (drawlist.size() == 0) {
+	if (drawlist.size() == 0) 
 		return;
-	}
-
-	if (uboDirtyFlags[engine->currentFrame] == true) {
-		memcpy(uniformBuffersMapped[engine->currentFrame], &uboData, sizeof(uboData));
-		uboDirtyFlags[engine->currentFrame] = false;
-	}
 
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 
@@ -299,16 +227,10 @@ void ColoredQuadPL::recordCommandBuffer(VkCommandBuffer commandBuffer, std::vect
 	vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 	vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT16);
 
-
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &generalDescriptorSets[engine->currentFrame], 0, nullptr);
 
 	for (auto& draw : drawlist)
 	{
-		mat4 view = mat4(1.0);
-		view = scale(view, vec3(cameraZoom)); 
-		view = translate(view, vec3(-cameraPosition.x, cameraPosition.y, 0.0));
-		view = scale(view, vec3(1.0, -1.0, 1.0)); // make up the positive direction
-
 		mat4 model = translate(mat4(1.0), vec3(draw.position.x, draw.position.y, 0.0));
 		model = rotate(model, draw.rotation, vec3(0.0f, 0.0f, 1.0f));
 		model = scale(model, vec3(draw.scale.x, draw.scale.y, 0.0));
@@ -316,12 +238,11 @@ void ColoredQuadPL::recordCommandBuffer(VkCommandBuffer commandBuffer, std::vect
 		mat4 nextmodel = mat4(1.0);
 		pushConstant_s pushData{
 			model,
-			view,
 			draw.color,
 			draw.circle ? 1 : 0
 		};
 		vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(pushConstant_s), &pushData);
 
-		vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+		vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(QuadIndices.size()), 1, 0, 0, 0);
 	}
 }
