@@ -10,7 +10,7 @@ struct ssboObject{
    int index; // texture index
 };
 
-layout(std140, set = 1, binding = 0) readonly buffer ObjectBuffer{
+layout(std140, set = 1, binding = 0) readonly buffer ObjectInstaceBuffer{
 	ssboObject ssboData[];
 } ssboBuffer;
 

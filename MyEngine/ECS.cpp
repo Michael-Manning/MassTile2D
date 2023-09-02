@@ -167,16 +167,3 @@ Staticbody Staticbody::deserializeJson(const nlohmann::json& j, std::shared_ptr<
 	Staticbody s(world, collider);
 	return s;
 }
-
-
-nlohmann::json TileWorldRenderer::serializeJson(entityID entId) {
-	nlohmann::json j;
-	j["entityID"] = entId;
-	j["spriteID"] = sprite;
-	return j;
-}
-TileWorldRenderer TileWorldRenderer::deserializeJson(nlohmann::json j) {
-	spriteID id = j["spriteID"].get<uint32_t>();
-	TileWorldRenderer s(id);
-	return s;
-}

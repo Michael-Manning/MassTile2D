@@ -18,13 +18,13 @@
 #include "texture.h"
 #include "VKEngine.h"
 #include "coloredQuadPL.h"
-#include "instancedQuadPL.h"
+#include "texturedQuadPL.h"
 #include "tilemapPL.h"
 #include "engine.h"
 #include "SpriteRenderer.h"	
 #include "Physics.h"
 #include "Entity.h"
-
+#include "Vertex.h"
 
 using namespace glm;
 using namespace std;
@@ -142,38 +142,42 @@ void Engine::Start(std::string windowName, int winW, int winH, std::string shade
 
 	// create some buffers
 	{
-		tilemapPipeline.createWorldBuffer(); // move buffer somehwere else
 		cameraUploader.CreateBuffers(rengine);
+		AllocateQuad(rengine, quadMeshBuffer);
+		worldMap = make_shared<TileWorld>(rengine);
+		worldMap->AllocateVulkanResources();
+	}
+
+	// contruct pipelines
+	{
+		instancedPipeline = make_unique<TexturedQuadPL>(rengine, quadMeshBuffer);
+		colorPipeline = make_unique<ColoredQuadPL>(rengine, quadMeshBuffer);
+		tilemapPipeline = make_unique<TilemapPL>(rengine, quadMeshBuffer, worldMap);
 	}
 
 	// section can be done in parrallel
 	
-	// configure texture pipeline
+	// configure color pipeline
 	{
-		colorPipeline.createDescriptorSetLayout();
-		colorPipeline.CreateGraphicsPipline(shaderDir + "color_vert.spv", shaderDir + "color_frag.spv");
-		colorPipeline.createDescriptorSets(cameraUploader.transferBuffers);
-		colorPipeline.createVertices();
+		colorPipeline->createDescriptorSetLayout();
+		colorPipeline->CreateGraphicsPipline(shaderDir + "color_vert.spv", shaderDir + "color_frag.spv");
+		colorPipeline->createSSBOBuffer();
+		colorPipeline->createDescriptorSets(cameraUploader.transferBuffers);
 	}
 
 	// configure instancing pipeline
 	{
-		instancedPipeline.setDefaultTexture(texNotFound);
-		instancedPipeline.createDescriptorSetLayout();
-		instancedPipeline.CreateGraphicsPipline(shaderDir + "instance_vert.spv", shaderDir + "instance_frag.spv");
-		instancedPipeline.createUniformBuffers();
-		instancedPipeline.createSSBOBuffer();
-		instancedPipeline.createDescriptorSets(cameraUploader.transferBuffers);
-		instancedPipeline.createVertices();
+		instancedPipeline->setDefaultTexture(texNotFound);
+		instancedPipeline->createDescriptorSetLayout();
+		instancedPipeline->CreateGraphicsPipline(shaderDir + "texture_vert.spv", shaderDir + "texture_frag.spv");
+		instancedPipeline->createSSBOBuffer();
+		instancedPipeline->createDescriptorSets(cameraUploader.transferBuffers);
 	}
 
 	// tilemap pipeline
 	{
-		tilemapPipeline.createDescriptorSetLayout();
-		tilemapPipeline.CreateGraphicsPipline(shaderDir + "tilemap_vert.spv", shaderDir + "tilemap_frag.spv");
-		tilemapPipeline.createVertices();
-
-		tilemapPipeline.createChunkTransferBuffers();
+		tilemapPipeline->createDescriptorSetLayout();
+		tilemapPipeline->CreateGraphicsPipline(shaderDir + "tilemap_vert.spv", shaderDir + "tilemap_frag.spv");
 	}
 
 	rengine->createSyncObjects();
@@ -243,7 +247,7 @@ bool Engine::QueueNextFrame() {
 	auto cmdBuffer = rengine->getNextCommandBuffer(imageIndex);
 
 	// transfer tiles to read-only memory before starting renderpass
-	tilemapPipeline.stageChunkUpdates(cmdBuffer);
+	worldMap->stageChunkUpdates(cmdBuffer);
 
 	rengine->beginRenderpass(imageIndex);
 
@@ -261,35 +265,49 @@ bool Engine::QueueNextFrame() {
 
 	// colored quad
 	{
-		vector<ColoredQuadPL::DrawItem> drawlist;
+		vector<ColoredQuadPL::ssboObjectInstanceData> drawlist;
+		drawlist.reserve(scene->sceneData.colorRenderers.size());
 
 		for (auto& renderer : scene->sceneData.colorRenderers)
 		{
 			const auto& entity = scene->sceneData.entities[renderer.first];
 
-			drawlist.push_back({
-				renderer.second.color,
-				entity->transform.position,
-				entity->transform.scale,
-				renderer.second.shape == ColorRenderer::Shape::Circle,
-				entity->transform.rotation
-				});
+
+			/*drawlist.push_back({
+	renderer.second.color,
+	entity->transform.position,
+	entity->transform.scale,
+	renderer.second.shape == ColorRenderer::Shape::Circle,
+	entity->transform.rotation
+				});*/
+
+
+			ColoredQuadPL::ssboObjectInstanceData instanceData;
+
+			instanceData.color = renderer.second.color;
+			instanceData.position = entity->transform.position;
+			instanceData.scale = entity->transform.scale;
+			instanceData.circle = renderer.second.shape == ColorRenderer::Shape::Circle;
+			instanceData.rotation = entity->transform.rotation;
+
+			drawlist.push_back(instanceData);
 		}
 
-		colorPipeline.recordCommandBuffer(cmdBuffer, drawlist);
+
+		colorPipeline->recordCommandBuffer(cmdBuffer, drawlist);
 	}
 
 	// tilemap
 	{
-		if (tilemapPipeline.textureAtlas.has_value()) {
-			tilemapPipeline.recordCommandBuffer(cmdBuffer);
+		if (tilemapPipeline->textureAtlas.has_value()) {
+			tilemapPipeline->recordCommandBuffer(cmdBuffer);
 		}
 	}
 
 	// Instanced quad
 	{
 		if (scene->sceneData.spriteRenderers.size() > 0) {
-			vector<InstancedQuadPL::ssboObjectData> drawlist;
+			vector<TexturedQuadPL::ssboObjectInstanceData> drawlist;
 			drawlist.reserve(scene->sceneData.spriteRenderers.size());
 
 			for (auto& renderer : scene->sceneData.spriteRenderers)
@@ -298,10 +316,10 @@ bool Engine::QueueNextFrame() {
 
 				auto s = assetManager->spriteAssets[renderer.second.sprite];
 				if (assetManager->spritesAdded) {
-					instancedPipeline.addTextureBinding(s->texture, &assetManager->textureAssets[s->texture]);
+					instancedPipeline->addTextureBinding(s->texture, &assetManager->textureAssets[s->texture]);
 				}
 
-				InstancedQuadPL::ssboObjectData drawObject;
+				TexturedQuadPL::ssboObjectInstanceData drawObject;
 				drawObject.uvMin = vec2(0.0f);
 				drawObject.uvMax = vec2(1.0f);
 				drawObject.translation = entity->transform.position;
@@ -318,10 +336,10 @@ bool Engine::QueueNextFrame() {
 				drawlist.push_back(drawObject);
 			}
 			if (assetManager->filterModesChanged)
-				instancedPipeline.invalidateTextureDescriptors();
+				instancedPipeline->invalidateTextureDescriptors();
 
-			instancedPipeline.updateDescriptorSets();
-			instancedPipeline.recordCommandBuffer(cmdBuffer, drawlist);
+			instancedPipeline->updateDescriptorSets();
+			instancedPipeline->recordCommandBuffer(cmdBuffer, drawlist);
 
 			runningStats.sprite_render_count = drawlist.size();
 		}

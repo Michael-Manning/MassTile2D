@@ -31,7 +31,7 @@
 #include "BehaviorRegistry.h"
 #include "ball.h"
 #include "player.h"
-
+#include "TileWorld.h"
 #include "benchmark.h"
 #include "profiling.h"
 #include "Utils.h"
@@ -59,9 +59,9 @@ std::unordered_map<uint32_t, std::pair<std::string, std::function<std::shared_pt
 };
 
 
-// temporary until I deside how to make this data accessible through a tilemap renderer
-static TilemapPL* tileWolrdGlobalRef;
+
 static vec2 GcameraPos;
+std::shared_ptr<TileWorld> tileWolrdGlobalRef;
 
 bool showingEditor = false;
 
@@ -85,15 +85,12 @@ int main() {
 	const auto& scene = engine.scene; // quick reference
 	engine.Start("video game", winW, winH, shaderPath);
 
-
-	tileWolrdGlobalRef = &engine.tilemapPipeline;
-
 	const auto input = engine.GetInput();
 
 	engine.assetManager->loadAllSprites();
 	engine.loadPrefabs();
 
-
+	tileWolrdGlobalRef = engine.worldMap;
 
 
 	{
@@ -145,7 +142,7 @@ int main() {
 			int x = i % mapW;
 
 			blockID id = Tiles::Air;
-			if (blockPresence[y * mapW + x]) {
+			/*if (blockPresence[y * mapW + x]) {
 				id = Tiles::Dirt;
 
 				if (y < (mapH - 1) && y >(mapH - 205) && blockPresence[(y + 1) * mapW + x] == false) {
@@ -158,19 +155,19 @@ int main() {
 						id = Tiles::Iron;
 					}
 				}
-			}
+			}*/
 
-			engine.preloadWorldTile(x, mapH - y - 1, id);
+			engine.worldMap->preloadTile(x, mapH - y - 1, id);
 
 			});
 		PROFILE_END(world_post_process);
 
-		engine.uploadWorldPreloadData();
+		engine.worldMap->uploadWorldPreloadData();
 	}
 
 
 
-	engine.setAtlasTexture(engine.assetManager->spriteAssets[5]->texture);
+	engine.setTilemapAtlasTexture(engine.assetManager->spriteAssets[5]->texture);
 
 
 
@@ -193,7 +190,7 @@ int main() {
 				engine.paused = !engine.paused;
 			}
 			if (input->getKeyDown('t')) {
-				engine.setWorldTile(4, 3, 7);
+				engine.worldMap->setTile(4, 3, 7);
 			}
 		}
 
@@ -217,7 +214,7 @@ int main() {
 			int tileY = worldClick.y / tileWorldSize + mapH / 2;
 
 			if (tileX > 0 && tileX < mapW && tileY > 0 && tileY < mapH) {
-				engine.setWorldTile(tileX, mapH - tileY - 1, Tiles::Iron);
+				engine.worldMap->setTile(tileX, mapH - tileY - 1, Tiles::Iron);
 			}
 
 		}

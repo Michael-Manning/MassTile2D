@@ -60,7 +60,7 @@
     <ClCompile Include="Input.cpp">
       <Filter>Source Files\Engine</Filter>
     </ClCompile>
-    <ClCompile Include="instancedQuadPL.cpp">
+    <ClCompile Include="texturedQuadPL.cpp">
       <Filter>Source Files\vulkan\piplines</Filter>
     </ClCompile>
     <ClCompile Include="Scene.cpp">
@@ -83,9 +83,6 @@
     </ClCompile>
     <ClCompile Include="tilemapPL.cpp">
       <Filter>Source Files\vulkan\piplines</Filter>
-    </ClCompile>
-    <ClCompile Include="TileWorldRenderer.h">
-      <Filter>Source Files\Engine\ECS\Components</Filter>
     </ClCompile>
     <ClCompile Include="descriptorSetBuilder.cpp">
       <Filter>Source Files\vulkan\piplines</Filter>
@@ -179,7 +176,7 @@
     <ClInclude Include="coloredQuadPL.h">
       <Filter>Source Files\vulkan\piplines</Filter>
     </ClInclude>
-    <ClInclude Include="instancedQuadPL.h">
+    <ClInclude Include="texturedQuadPL.h">
       <Filter>Source Files\vulkan\piplines</Filter>
     </ClInclude>
     <ClInclude Include="tilemapPL.h">
@@ -187,6 +184,9 @@
     </ClInclude>
     <ClInclude Include="Vertex.h">
       <Filter>Source Files\vulkan\piplines</Filter>
+    </ClInclude>
+    <ClInclude Include="TileWorld.h">
+      <Filter>Source Files\Engine</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

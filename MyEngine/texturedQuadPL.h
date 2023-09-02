@@ -21,13 +21,13 @@
 #include "Constants.h"
 
 constexpr int TexturedQuadPL_MAX_TEXTURES = 10;
-constexpr int InstancedQuadPL_MAX_OBJECTS = 100000;
+constexpr int TexturedQuadPL_MAX_OBJECTS = 100000;
 
 
-class InstancedQuadPL :public  Pipeline {
+class TexturedQuadPL :public  Pipeline {
 public:
 
-	struct ssboObjectData {
+	struct ssboObjectInstanceData {
 
 		alignas(8) glm::vec2 uvMin;
 		alignas(8) glm::vec2 uvMax;
@@ -40,9 +40,9 @@ public:
 
 		int32_t padding[2];
 	};
-	static_assert(sizeof(ssboObjectData) % 16 == 0);
+	static_assert(sizeof(ssboObjectInstanceData) % 16 == 0);
 
-	InstancedQuadPL(std::shared_ptr<VKEngine>& engine) : Pipeline(engine) {
+	TexturedQuadPL(std::shared_ptr<VKEngine>& engine, VertexMeshBuffer quadMesh) : Pipeline(engine), quadMesh(quadMesh) {
 		descriptorDirtyFlags.resize(FRAMES_IN_FLIGHT);
 		bindIndexes.resize(FRAMES_IN_FLIGHT);
 
@@ -64,8 +64,6 @@ public:
 	void CreateGraphicsPipline(std::string vertexSrc, std::string fragmentSrc) override;
 	void createDescriptorSetLayout() override;
 	void createDescriptorSets(MappedDoubleBuffer& cameradb) ;
-	void createVertices() override;
-	void createUniformBuffers();
 	void createSSBOBuffer();
 
 	void updateDescriptorSets();
@@ -80,9 +78,11 @@ public:
 		}
 	};
 
-	void recordCommandBuffer(VkCommandBuffer commandBuffer, std::vector<ssboObjectData>& drawlist);
+	void recordCommandBuffer(VkCommandBuffer commandBuffer, std::vector<ssboObjectInstanceData>& drawlist);
 
 private:
+
+	VertexMeshBuffer quadMesh;
 
 	std::array<VkDescriptorSet, FRAMES_IN_FLIGHT> ssboDescriptorSets;
 

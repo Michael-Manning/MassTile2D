@@ -17,7 +17,7 @@
 #include "texture.h"
 #include "VKEngine.h"
 #include "coloredQuadPL.h"
-#include "instancedQuadPL.h"
+#include "texturedQuadPL.h"
 #include "tilemapPL.h"
 #include "IDGenerator.h"
 #include "typedefs.h"
@@ -32,6 +32,7 @@
 #include "Scene.h"
 #include "vulkan_util.h"
 #include "globalBufferDefinitions.h"
+#include "TileWorld.h"
 
 
 #ifdef NDEBUG
@@ -61,10 +62,7 @@ public:
 
 
 	Engine(std::shared_ptr<VKEngine> rengine, AssetManager::AssetPaths assetPaths) : rengine(rengine),
-		assetManager(std::make_shared<AssetManager>(rengine, assetPaths)),
-		instancedPipeline(rengine),
-		colorPipeline(rengine),
-		tilemapPipeline(rengine)
+		assetManager(std::make_shared<AssetManager>(rengine, assetPaths))
 	{
 
 		DebugLog("Engine created");
@@ -140,10 +138,10 @@ public:
 		return runningStats;
 	}
 
-	void setAtlasTexture(texID texture) {
-		assert(tilemapPipeline.textureAtlas.has_value() == false);
-		tilemapPipeline.textureAtlas = assetManager->textureAssets[texture];
-		tilemapPipeline.createDescriptorSets(cameraUploader.transferBuffers);
+	void setTilemapAtlasTexture(texID texture) {
+		assert(tilemapPipeline->textureAtlas.has_value() == false);
+		tilemapPipeline->textureAtlas = assetManager->textureAssets[texture];
+		tilemapPipeline->createDescriptorSets(cameraUploader.transferBuffers);
 	};
 
 	int winW = 0, winH = 0;
@@ -154,29 +152,14 @@ public:
 
 
 
-	inline void setWorldTile(uint32_t x, uint32_t y, blockID block) {
-		tilemapPipeline.setTile(x, y, block);
-	};
 
-	inline void preloadWorldTile(uint32_t x, uint32_t y, blockID block) {
-		tilemapPipeline.preloadTile(x, y, block);
-	};
 
-	void uploadWorldPreloadData() {
-		tilemapPipeline.createWorldBuffer();
-		tilemapPipeline.createChunkTransferBuffers();
 
-		constexpr int transferCount = TilemapPL_MAX_TILES / largeChunkCount;
-		for (size_t i = 0; i < transferCount; i++) {
-
-			tilemapPipeline.copyToLargeChunkTransferbuffer(tilemapPipeline.mapData.data() + i * largeChunkCount);
-			tilemapPipeline.copyLargeChunkToDevice(i);
-		}
-	};
-
-	TilemapPL tilemapPipeline;
+	std::shared_ptr<TileWorld> worldMap = nullptr;
 
 private:
+
+	VertexMeshBuffer quadMeshBuffer;
 
 	double lastTime = 0.0;
 
@@ -187,8 +170,9 @@ private:
 
 	Texture texNotFound; // displayed when indexing incorrectly 
 
-	ColoredQuadPL colorPipeline;
-	InstancedQuadPL instancedPipeline;
+	std::unique_ptr<TilemapPL> tilemapPipeline = nullptr;
+	std::unique_ptr<ColoredQuadPL> colorPipeline = nullptr;
+	std::unique_ptr<TexturedQuadPL> instancedPipeline = nullptr;
 
 	VKUtil::UBOUploader<cameraUBO_s> cameraUploader;
 

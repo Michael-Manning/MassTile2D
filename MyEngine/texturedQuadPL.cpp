@@ -22,7 +22,7 @@
 #include "VKengine.h"
 #include "typedefs.h"
 #include "vulkan_util.h"
-#include "instancedQuadPL.h"
+#include "texturedQuadPL.h"
 #include "globalBufferDefinitions.h"
 #include "Vertex.h"
 
@@ -30,7 +30,7 @@ using namespace glm;
 using namespace std;
 
 
-void InstancedQuadPL::CreateGraphicsPipline(std::string vertexSrc, std::string fragmentSrc) {
+void TexturedQuadPL::CreateGraphicsPipline(std::string vertexSrc, std::string fragmentSrc) {
 
 	auto shaderStages = createShaderStages(vertexSrc, fragmentSrc);
 
@@ -81,7 +81,7 @@ void InstancedQuadPL::CreateGraphicsPipline(std::string vertexSrc, std::string f
 	}
 }
 
-void InstancedQuadPL::createDescriptorSets(MappedDoubleBuffer& cameradb) {
+void TexturedQuadPL::createDescriptorSets(MappedDoubleBuffer& cameradb) {
 
 	assert(defaultTexture.textureImageAllocation != nullptr);
 
@@ -149,7 +149,7 @@ void InstancedQuadPL::createDescriptorSets(MappedDoubleBuffer& cameradb) {
 			//objectBufferInfo.buffer = ssboBuffers[i];
 			objectBufferInfo.buffer = ssboMappedDB.buffers[i];
 			objectBufferInfo.offset = 0;
-			objectBufferInfo.range = sizeof(ssboObjectData) * InstancedQuadPL_MAX_OBJECTS;
+			objectBufferInfo.range = sizeof(ssboObjectInstanceData) * TexturedQuadPL_MAX_OBJECTS;
 
 			std::array<VkWriteDescriptorSet, 1> descriptorWrites{};
 
@@ -167,7 +167,7 @@ void InstancedQuadPL::createDescriptorSets(MappedDoubleBuffer& cameradb) {
 }
 
 // For now, update every descriptor array element. Could update individual elements as an optimization
-void InstancedQuadPL::updateDescriptorSets() {
+void TexturedQuadPL::updateDescriptorSets() {
 
 	if (descriptorDirtyFlags[engine->currentFrame] == false)
 		return;
@@ -211,7 +211,7 @@ void InstancedQuadPL::updateDescriptorSets() {
 }
 
 
-void InstancedQuadPL::createDescriptorSetLayout() {
+void TexturedQuadPL::createDescriptorSetLayout() {
 
 	// general set layout
 	vector<VkDescriptorSetLayoutBinding> set0Bindings = {
@@ -227,67 +227,24 @@ void InstancedQuadPL::createDescriptorSetLayout() {
 	buildSetLayout(set1Bindings, SSBOSetLayout);
 }
 
-void InstancedQuadPL::createSSBOBuffer() {
+void TexturedQuadPL::createSSBOBuffer() {
 
-	engine->createMappedBuffer(sizeof(ssboObjectData) * InstancedQuadPL_MAX_OBJECTS, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, ssboMappedDB);
+	engine->createMappedBuffer(sizeof(ssboObjectInstanceData) * TexturedQuadPL_MAX_OBJECTS, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, ssboMappedDB);
 }
 
-void InstancedQuadPL::createVertices() {
-	{
-		VkDeviceSize bufferSize = sizeof(quadVertices[0]) * quadVertices.size();
+void TexturedQuadPL::recordCommandBuffer(VkCommandBuffer commandBuffer, std::vector<ssboObjectInstanceData>& drawlist) {
 
-		VkBuffer stagingBuffer;
-		VmaAllocation stagingBufferAllocation;
-		engine->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT, stagingBuffer, stagingBufferAllocation);
-
-		void* data;
-		vmaMapMemory(engine->allocator, stagingBufferAllocation, &data);
-		memcpy(data, quadVertices.data(), (size_t)bufferSize);
-		vmaUnmapMemory(engine->allocator, stagingBufferAllocation);
-
-		engine->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 0, vertexBuffer, vertexBufferAllocation);
-
-		engine->copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
-
-		vkDestroyBuffer(engine->device, stagingBuffer, nullptr);
-		vmaFreeMemory(engine->allocator, stagingBufferAllocation);
-	}
-
-	{
-		VkDeviceSize bufferSize = sizeof(QuadIndices[0]) * QuadIndices.size();
-
-		VkBuffer stagingBuffer;
-		VmaAllocation stagingBufferAllocation;
-		engine->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT, stagingBuffer, stagingBufferAllocation);
-
-		void* data;
-		vmaMapMemory(engine->allocator, stagingBufferAllocation, &data);
-		memcpy(data, QuadIndices.data(), (size_t)bufferSize);
-		vmaUnmapMemory(engine->allocator, stagingBufferAllocation);
-
-		engine->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, 0, indexBuffer, indexBufferAllocation);
-
-		engine->copyBuffer(stagingBuffer, indexBuffer, bufferSize);
-
-		vkDestroyBuffer(engine->device, stagingBuffer, nullptr);
-		vmaFreeMemory(engine->allocator, stagingBufferAllocation);
-	}
-}
-
-void InstancedQuadPL::recordCommandBuffer(VkCommandBuffer commandBuffer, std::vector<ssboObjectData>& drawlist) {
-
-	if (drawlist.size() == 0) {
+	if (drawlist.size() == 0) 
 		return;
-	}
 
-	assert(drawlist.size() <= InstancedQuadPL_MAX_OBJECTS);
+	assert(drawlist.size() <= TexturedQuadPL_MAX_OBJECTS);
 
 	{
 		for (auto& i : drawlist) {
 			i.index = bindIndexes[engine->currentFrame][i.index];
 		}
 
-		memcpy(ssboMappedDB.buffersMapped[engine->currentFrame], drawlist.data(), sizeof(ssboObjectData) * drawlist.size());
+		memcpy(ssboMappedDB.buffersMapped[engine->currentFrame], drawlist.data(), sizeof(ssboObjectInstanceData) * drawlist.size());
 	}
 
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
@@ -300,10 +257,10 @@ void InstancedQuadPL::recordCommandBuffer(VkCommandBuffer commandBuffer, std::ve
 	scissor.extent = engine->swapChainExtent;
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-	VkBuffer vertexBuffers[] = { vertexBuffer };
+	VkBuffer vertexBuffers[] = { quadMesh.vertexBuffer };
 	VkDeviceSize offsets[] = { 0 };
 	vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-	vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT16);
+	vkCmdBindIndexBuffer(commandBuffer, quadMesh.indexBuffer, 0, VK_INDEX_TYPE_UINT16);
 
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &generalDescriptorSets[engine->currentFrame], 0, nullptr);
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &ssboDescriptorSets[engine->currentFrame], 0, nullptr);
@@ -311,7 +268,7 @@ void InstancedQuadPL::recordCommandBuffer(VkCommandBuffer commandBuffer, std::ve
 	vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(QuadIndices.size()), drawlist.size(), 0, 0, 0);
 }
 
-void InstancedQuadPL::addTextureBinding(texID ID, Texture* texture) {
+void TexturedQuadPL::addTextureBinding(texID ID, Texture* texture) {
 	// map a binding in the next availble slot of the vector
 
 	// attempting to bind duplicate ID is acceptable, but redundant
@@ -342,7 +299,7 @@ found:;
 	}
 }
 
-void InstancedQuadPL::removeTextureBinding(texID ID) {
+void TexturedQuadPL::removeTextureBinding(texID ID) {
 
 	assert(boundIDs.contains(ID)); // missuse
 

@@ -1,10 +1,10 @@
 #version 450
 
-layout(push_constant) uniform constants {
-   mat4 model;
-   vec4 color;
-   int circle;
-};
+// layout(push_constant) uniform constants {
+//    mat4 model;
+//    vec4 color;
+//    int circle;
+// };
 
 layout(binding = 0) uniform CamerUBO {
    vec2 position;
@@ -12,10 +12,24 @@ layout(binding = 0) uniform CamerUBO {
 	float aspectRatio;
 } camera;
 
+struct ssboObject{
+   vec4 color;
+   vec2 position;
+   vec2 scale;
+   int circle;
+   float rotation;
+};
+
+layout(std140, set = 1, binding = 0) readonly buffer ObjectInstaceBuffer{
+	ssboObject ssboData[];
+};
+
+
 layout(location = 0) in vec2 inPosition;
 layout(location = 2) in vec2 inFragCoord;
 
 layout(location = 1) out vec2 uv;
+layout(location = 2) out flat int instance_index;
 
 mat4 translate(vec2 v) {
     return mat4(
@@ -51,7 +65,13 @@ void main() {
    view *= translate(vec2(-camera.position.x, camera.position.y));
    view *= scale(vec2(1.0, -1.0));
 
-   gl_Position = view * model * vec4(inPosition, 0.0, 1.0) * vec4(vec2( camera.aspectRatio, 1.0), 1.0, 1.0);
-   
-   uv = inFragCoord;
+   mat4 model = mat4(1.0);
+   model *= translate(ssboData[gl_InstanceIndex].position);
+   model *= rotate(ssboData[gl_InstanceIndex].rotation);
+   model *= scale(ssboData[gl_InstanceIndex].scale);
+
+   gl_Position = view * model  * vec4(inPosition, 0.0, 1.0) * vec4(vec2( camera.aspectRatio, 1.0), 1.0, 1.0);
+
+   instance_index = gl_InstanceIndex;
+   uv = vec2(inFragCoord.x, 1.0 - inFragCoord.y);
 }

@@ -1,15 +1,15 @@
 #pragma once
 
+#include <memory>
+
 #include "tilemapPL.h"
 #include <glm/glm.hpp>
 #include "typedefs.h"
+#include "TileWorld.h"
 
-// temporary until I deside how to make this data accessible through a tilemap renderer
-extern TilemapPL* tileWolrdGlobalRef;
+extern std::shared_ptr<TileWorld> tileWolrdGlobalRef;
 
 extern glm::vec2 GcameraPos;
-
-
 
 
 namespace Tiles {

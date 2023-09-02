@@ -24,7 +24,6 @@ public:
 	virtual void CreateGraphicsPipline(std::string vertexSrc, std::string fragmentSrc) = 0;
 	virtual void createDescriptorSetLayout() = 0;
 //	virtual void createDescriptorSets() = 0;
-	virtual void createVertices() = 0;
 
 protected:
 
@@ -36,18 +35,6 @@ protected:
 
 	VkPipeline graphicsPipeline;
 	VkPipelineLayout pipelineLayout;
-
-
-	//std::vector<VkBuffer> uniformBuffers;
-	//std::vector<VmaAllocation> uniformBuffersAllocation;
-	//std::vector<void*> uniformBuffersMapped;
-
-
-
-	VkBuffer vertexBuffer;
-	VmaAllocation vertexBufferAllocation;
-	VkBuffer indexBuffer;
-	VmaAllocation indexBufferAllocation;
 
 	std::vector<VkPipelineShaderStageCreateInfo> createShaderStages(std::string vertexSrc, std::string fragmentSrc);
 

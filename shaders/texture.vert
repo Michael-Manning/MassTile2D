@@ -19,9 +19,9 @@ struct ssboObject{
    int index; // texture index
 };
 
-layout(std140, set = 1, binding = 0) readonly buffer ObjectBuffer{
+layout(std140, set = 1, binding = 0) readonly buffer ObjectInstaceBuffer{
 	ssboObject ssboData[];
-} ssboBuffer;
+};
 
 layout(location = 1) out vec2 uv;
 layout(location = 2) out flat int instance_index;
@@ -61,9 +61,9 @@ void main() {
    view *= scale(vec2(1.0, -1.0));
 
    mat4 model = mat4(1.0);
-   model *= translate(ssboBuffer.ssboData[gl_InstanceIndex].translation);
-   model *= rotate(ssboBuffer.ssboData[gl_InstanceIndex].rotation);
-   model *= scale(ssboBuffer.ssboData[gl_InstanceIndex].scale);
+   model *= translate(ssboData[gl_InstanceIndex].translation);
+   model *= rotate(ssboData[gl_InstanceIndex].rotation);
+   model *= scale(ssboData[gl_InstanceIndex].scale);
 
    gl_Position = view * model  * vec4(inPosition, 0.0, 1.0) * vec4(vec2( camera.aspectRatio, 1.0), 1.0, 1.0);
 

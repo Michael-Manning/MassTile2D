@@ -1,7 +1,6 @@
 
-- quad vertex shared allocation instead of per-pipeline
+
 - descriptor set abstraction
-- tool for managing texture bindings. Replace function in instanced pipline
 - move tilemap push constant to UBO (use new ubo uploader class)
 - sort out tilemap interface
 - move tilemap buffers out of tilemap pipline class. They are specific to that pipeline
@@ -35,6 +34,7 @@ integrate vk-bootstrap to simplify initializion
 
 
 
+- tool for managing texture bindings. Replace function in instanced pipline
 
 
 - shader auto workflow with sprv reflect

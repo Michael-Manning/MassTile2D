@@ -34,6 +34,13 @@ struct MappedDoubleBuffer {
     std::array<void*, FRAMES_IN_FLIGHT> buffersMapped;
 };
 
+struct VertexMeshBuffer {
+    VkBuffer vertexBuffer;
+    VmaAllocation vertexBufferAllocation;
+    VkBuffer indexBuffer;
+    VmaAllocation indexBufferAllocation;
+};
+
 class VKEngine {
 public:
 

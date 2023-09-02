@@ -17,32 +17,49 @@
 #include "typedefs.h"
 #include "Constants.h"
 
+constexpr int ColoredQuadPL_MAX_OBJECTS = 100000;
 
 class ColoredQuadPL :public  Pipeline {
 public:
 
-	struct DrawItem {
+	struct ssboObjectInstanceData {
+
 		glm::vec4 color;
-		glm::vec2 position;
-		glm::vec2 scale;
+		alignas(8)glm::vec2 position;
+		alignas(8)glm::vec2 scale;
 		int circle;
 		float rotation;
+
+		int32_t padding[2];
 	};
 
-	ColoredQuadPL(std::shared_ptr<VKEngine>& engine) : Pipeline(engine) {
+	static_assert(sizeof(ssboObjectInstanceData) % 16 == 0);
+
+	//struct DrawItem {
+	//	glm::vec4 color;
+	//	glm::vec2 position;
+	//	glm::vec2 scale;
+	//	int circle;
+	//	float rotation;
+	//};
+
+	ColoredQuadPL(std::shared_ptr<VKEngine>& engine, VertexMeshBuffer quadMesh) : Pipeline(engine), quadMesh(quadMesh) {
 	}
 
 	void CreateGraphicsPipline(std::string vertexSrc, std::string fragmentSrc) override;
 	void createDescriptorSetLayout() override;
 	void createDescriptorSets(MappedDoubleBuffer& cameradb);
-	void createVertices() override;
+	void createSSBOBuffer();
 
-	void recordCommandBuffer(VkCommandBuffer commandBuffer, std::vector<DrawItem>& drawlist);
+	void recordCommandBuffer(VkCommandBuffer commandBuffer, std::vector<ssboObjectInstanceData>& drawlist);
 
 private:
-
-	std::array<bool, FRAMES_IN_FLIGHT> uboDirtyFlags = { true, true };
+	std::array<VkDescriptorSet, FRAMES_IN_FLIGHT> ssboDescriptorSets;
 
 	VkDescriptorSetLayout descriptorSetLayout;
+	VkDescriptorSetLayout SSBOSetLayout;
 
+	VertexMeshBuffer quadMesh;
+
+	MappedDoubleBuffer ssboMappedDB;
 };
