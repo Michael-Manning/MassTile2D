@@ -211,8 +211,179 @@ void Pipeline::buidDBDescriptorSet(VkDescriptorSetLayout& layout, std::array<VkD
 	allocInfo.descriptorSetCount = static_cast<uint32_t>(FRAMES_IN_FLIGHT);
 	allocInfo.pSetLayouts = layouts.data();
 
-
-
 	auto res = vkAllocateDescriptorSets(engine->device, &allocInfo, sets.data());
 	assert(res == VK_SUCCESS);
+}
+
+
+void Pipeline::buildDescriptorLayouts() {
+
+	// a layout binding for each set
+	unordered_map<int, vector<VkDescriptorSetLayoutBinding>> builderLayoutBindings;
+
+	for (auto& i : builderDescriptorSetsDetails){
+
+		VkDescriptorSetLayoutBinding binding;
+
+		switch (i.type)
+		{
+		case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+			binding = buildUBOBinding(i.binding, i.stageFlags);
+			break;
+		case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+			binding = buildSSBOBinding(i.binding, i.stageFlags);
+			break;
+		case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+			binding = buildSamplerBinding(i.binding, i.descriptorCount, i.stageFlags);
+			break;
+		default:
+			assert(false);
+			break;
+		}
+
+		builderLayoutBindings[i.set].push_back(binding);
+	}
+
+	// iterate builderLayoBindings and build the actual layouts
+	for (auto& [set, binding] : builderLayoutBindings) {
+		VkDescriptorSetLayout layout;
+		buildSetLayout(binding, layout);
+		builderLayouts[set] = layout;
+	}
+}
+void Pipeline::buildDescriptorSets() {
+
+
+	for (auto& [set, layout] : builderLayouts) {
+		buidDBDescriptorSet(layout, builderDescriptorSets[set]);
+	}
+
+	// one time write to every descriptor set
+	for (auto& info : builderDescriptorSetsDetails)
+	{
+		for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++) {
+
+
+			VkWriteDescriptorSet descriptorWrite {};
+
+			descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descriptorWrite.dstSet = builderDescriptorSets[info.set][i];
+			descriptorWrite.dstBinding = info.binding;
+			descriptorWrite.dstArrayElement = 0;
+			descriptorWrite.descriptorType = info.type;
+			descriptorWrite.descriptorCount = 1;
+
+			if (info.type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER || info.type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
+				assert(info.doubleBuffer != nullptr);
+				assert(info.bufferRange != 0);
+
+				VkDescriptorBufferInfo bufferInfo{};
+				bufferInfo.buffer = (*info.doubleBuffer)[i];
+				bufferInfo.offset = 0;
+				bufferInfo.range = info.bufferRange;
+
+				descriptorWrite.pBufferInfo = &bufferInfo;
+
+				vkUpdateDescriptorSets(engine->device, static_cast<uint32_t>(1), &descriptorWrite, 0, nullptr);
+			}
+			else if (info.type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) {
+				assert(info.texture != nullptr);
+
+				VkDescriptorImageInfo imageInfo{};
+				imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+				imageInfo.imageView = info.texture->imageView;
+				imageInfo.sampler = info.texture->sampler;
+
+				descriptorWrite.pImageInfo = &imageInfo;
+
+				vkUpdateDescriptorSets(engine->device, static_cast<uint32_t>(1), &descriptorWrite, 0, nullptr);
+			}
+			else {
+				assert(false);
+			}
+
+		}
+	}
+
+
+
+	//// general descriptor sets
+	//{
+	//	buidDBDescriptorSet(descriptorSetLayout, generalDescriptorSets);
+
+	//	// one time update from UBO descriptor sets
+	//	for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++) {
+	//		VkDescriptorBufferInfo bufferInfo{};
+	//		bufferInfo.buffer = cameradb.buffers[i];
+	//		bufferInfo.offset = 0;
+	//		bufferInfo.range = sizeof(cameraUBO_s);
+
+	//		std::array<VkWriteDescriptorSet, 1> descriptorWrites{};
+
+	//		descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	//		descriptorWrites[0].dstSet = generalDescriptorSets[i];
+	//		descriptorWrites[0].dstBinding = 0;
+	//		descriptorWrites[0].dstArrayElement = 0;
+	//		descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	//		descriptorWrites[0].descriptorCount = 1;
+	//		descriptorWrites[0].pBufferInfo = &bufferInfo;
+
+	//		vkUpdateDescriptorSets(engine->device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+	//	}
+
+	//	// all descriptor sets must recieve one update before use. Fill image descriptor with default texture
+	//	for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++) {
+	//		std::vector<VkDescriptorImageInfo> imageInfos(TexturedQuadPL_MAX_TEXTURES);
+
+	//		for (size_t j = 0; j < TexturedQuadPL_MAX_TEXTURES; j++)
+	//		{
+	//			VkDescriptorImageInfo imageInfo{};
+	//			imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	//			imageInfo.imageView = defaultTexture.imageView;
+	//			imageInfo.sampler = defaultTexture.sampler;
+
+	//			imageInfos[j] = imageInfo;
+	//		}
+
+
+	//		std::array<VkWriteDescriptorSet, 1> descriptorWrites{};
+
+	//		descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	//		descriptorWrites[0].dstSet = generalDescriptorSets[i];
+	//		descriptorWrites[0].dstBinding = 1;
+	//		descriptorWrites[0].dstArrayElement = 0;
+	//		descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	//		descriptorWrites[0].descriptorCount = TexturedQuadPL_MAX_TEXTURES;
+	//		descriptorWrites[0].pImageInfo = imageInfos.data();
+
+	//		vkUpdateDescriptorSets(engine->device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+	//	}
+
+	//}
+
+	//// SSBO descriptor sets
+	//{
+	//	buidDBDescriptorSet(SSBOSetLayout, ssboDescriptorSets);
+
+	//	for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++) {
+
+	//		VkDescriptorBufferInfo objectBufferInfo;
+	//		//objectBufferInfo.buffer = ssboBuffers[i];
+	//		objectBufferInfo.buffer = ssboMappedDB.buffers[i];
+	//		objectBufferInfo.offset = 0;
+	//		objectBufferInfo.range = sizeof(ssboObjectInstanceData) * TexturedQuadPL_MAX_OBJECTS;
+
+	//		std::array<VkWriteDescriptorSet, 1> descriptorWrites{};
+
+	//		descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	//		descriptorWrites[0].dstSet = ssboDescriptorSets[i];
+	//		descriptorWrites[0].dstBinding = 0;
+	//		descriptorWrites[0].dstArrayElement = 0;
+	//		descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+	//		descriptorWrites[0].descriptorCount = 1;
+	//		descriptorWrites[0].pBufferInfo = &objectBufferInfo;
+
+	//		vkUpdateDescriptorSets(engine->device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+	//	}
+	//}
 }

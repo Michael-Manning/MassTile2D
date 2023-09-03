@@ -149,6 +149,7 @@
     <ClCompile Include="..\MyEngine\ball.h" />
     <ClInclude Include="global.h" />
     <ClInclude Include="Player.h" />
+    <ClInclude Include="worldGen.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

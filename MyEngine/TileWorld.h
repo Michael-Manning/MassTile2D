@@ -35,8 +35,8 @@ public:
 	std::vector<blockID> mapData;
 
 	// for gpu updating
-	int minDirtyIndex = INT32_MAX;
-	int maxDirtyIndex = -1;
+	uint32_t minDirtyIndex = UINT32_MAX;
+	uint32_t maxDirtyIndex = 0;
 	std::vector<bool> chunkDirtyFlags;
 
 	TileWorld(std::shared_ptr<VKEngine> engine) : engine(engine) {
@@ -97,9 +97,14 @@ public:
 
 	void stageChunkUpdates(VkCommandBuffer commandBuffer) {
 
-		// ignoring chunk update range optimization for first test
+		// only able to stage one chunk per frame. Expand to multiple chunks by increasing size of transfer buffer
 
-		for (size_t i = 0; i < chunkCount; i++) {
+		// nothing updated
+		if (minDirtyIndex == UINT32_MAX)
+			return;
+
+		//for (size_t i = 0; i < chunkCount; i++) {
+		for (size_t i = minDirtyIndex; i <= maxDirtyIndex; i++) {
 			if (chunkDirtyFlags[i] == true) {
 				memcpy(chunkTransferBuffers.buffersMapped[engine->currentFrame], mapData.data() + i * chunkTileCount, sizeof(ssboObjectData) * chunkTileCount);
 				chunkDirtyFlags[i] = false;
@@ -113,8 +118,14 @@ public:
 					// expand by increasing size of transfer buffer. Upload multiple chunks by specifying multiple copy regions
 					vkCmdCopyBuffer(commandBuffer, chunkTransferBuffers.buffers[engine->currentFrame], _worldMapDeviceBuffer, 1, &copyRegion);
 				}
+
+				return;
 			}
 		}
+
+		// nothing left to upload, safe to reset dirty indexes
+		minDirtyIndex = INT32_MAX;
+		maxDirtyIndex = 0;
 	}
 
 	VkBuffer _worldMapDeviceBuffer;

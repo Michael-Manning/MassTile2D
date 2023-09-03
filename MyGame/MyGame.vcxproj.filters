@@ -40,5 +40,8 @@
     <ClInclude Include="global.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="worldGen.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

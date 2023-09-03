@@ -1,24 +1,18 @@
 
 
-- descriptor set abstraction
-- move tilemap push constant to UBO (use new ubo uploader class)
-- sort out tilemap interface
-- move tilemap buffers out of tilemap pipline class. They are specific to that pipeline
-
 - switch color and texture instancing piplines to fixed secondar command buffer. Use drawIndirect to update instance count with buffer. Profile first
 (Could just use camera buffer since I'm already updating that every frame!)
+Update: Since draw command is always last, could put everything in the secondary buffer, but then add the draw call to the end every frame
 
 - convert worldToScreenPos & screenToWorldPos into simple matrix calculation? Profile first
 
 - convert entity transform into component, store in contiguous memory, or use faster map. Then use compute shader to calculate
 entity transform matrices for color/texture pipeline instead of per vertex calculation
 
-- rename instacedQuadPL to texturePL
 
 - Inter-bahaviour entity accessor
 - general behaviour scene access for camera and common data needs
 
-- color pipeline should use instancing
 
 - player buffer jump input
 
@@ -31,6 +25,7 @@ reserve scene component maps with max count to prevenent rehashing which would b
 
 
 integrate vk-bootstrap to simplify initializion
+- move tilemap push constant to UBO (use new ubo uploader class)
 
 
 

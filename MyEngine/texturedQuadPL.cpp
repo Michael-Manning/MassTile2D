@@ -72,9 +72,8 @@ void TexturedQuadPL::CreateGraphicsPipline(std::string vertexSrc, std::string fr
 	pipelineInfo.subpass = 0;
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-	if (vkCreateGraphicsPipelines(engine->device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline) != VK_SUCCESS) {
-		throw std::runtime_error("failed to create graphics pipeline!");
-	}
+	auto res = vkCreateGraphicsPipelines(engine->device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline);
+	assert(res == VK_SUCCESS);
 
 	for (auto& stage : shaderStages) {
 		vkDestroyShaderModule(engine->device, stage.module, nullptr);

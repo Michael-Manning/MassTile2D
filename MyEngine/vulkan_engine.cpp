@@ -279,8 +279,8 @@ void VKEngine::createMappedBuffer(VkDeviceSize size, VkBufferUsageFlags usage, M
 	{
 		createBuffer(size, usage, VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT, buffer.buffers[i], buffer.allocations[i]);
 		vmaMapMemory(allocator, buffer.allocations[i], &buffer.buffersMapped[i]);
-
 	}
+	buffer.size = size;
 }
 
 

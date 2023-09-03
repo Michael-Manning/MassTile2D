@@ -1,6 +1,6 @@
 #pragma once
 
-
+#include <unordered_map>
 #include <vector>
 #include <string>
 #include <memory>
@@ -20,11 +20,6 @@ public:
 	Pipeline(std::shared_ptr<VKEngine> engine) : engine(engine) {
 	}
 
-	// abstract
-	virtual void CreateGraphicsPipline(std::string vertexSrc, std::string fragmentSrc) = 0;
-	virtual void createDescriptorSetLayout() = 0;
-//	virtual void createDescriptorSets() = 0;
-
 protected:
 
 	// for each frame in flight
@@ -35,6 +30,41 @@ protected:
 
 	VkPipeline graphicsPipeline;
 	VkPipelineLayout pipelineLayout;
+
+	
+
+	// for builder
+	struct descriptorSetInfo {
+		int set;
+		int binding;
+		VkDescriptorType type;
+		VkShaderStageFlags stageFlags;
+		int descriptorCount;
+		std::array<VkBuffer, FRAMES_IN_FLIGHT> * doubleBuffer = nullptr;
+		VkDeviceSize bufferRange = 0;
+		Texture * texture = nullptr;
+
+		descriptorSetInfo(int set, int binding, VkDescriptorType type, VkShaderStageFlags stageFlags, std::array<VkBuffer, FRAMES_IN_FLIGHT>* db, VkDeviceSize bufferRange)
+			: set(set), binding(binding), type(type), stageFlags(stageFlags), doubleBuffer(db), bufferRange(bufferRange), descriptorCount(1), texture(nullptr) {
+		};
+		descriptorSetInfo(int set, int binding, VkDescriptorType type, VkShaderStageFlags stageFlags, Texture* texture)
+			: set(set), binding(binding), type(type), stageFlags(stageFlags), doubleBuffer(nullptr), bufferRange(0), descriptorCount(1), texture(texture) {
+		};
+	};
+	
+	// set number to layout
+	std::unordered_map<int, VkDescriptorSetLayout> builderLayouts;
+	std::unordered_map<int, std::array<VkDescriptorSet, FRAMES_IN_FLIGHT>> builderDescriptorSets;
+	
+	std::vector<descriptorSetInfo> builderDescriptorSetsDetails;
+
+	void configureDescriptorSets(std::vector< descriptorSetInfo> layoutDetails) {
+		builderDescriptorSetsDetails = layoutDetails;
+	};
+
+	void buildDescriptorLayouts();
+	void buildDescriptorSets();
+
 
 	std::vector<VkPipelineShaderStageCreateInfo> createShaderStages(std::string vertexSrc, std::string fragmentSrc);
 

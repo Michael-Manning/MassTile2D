@@ -140,8 +140,7 @@ public:
 
 	void setTilemapAtlasTexture(texID texture) {
 		assert(tilemapPipeline->textureAtlas.has_value() == false);
-		tilemapPipeline->textureAtlas = assetManager->textureAssets[texture];
-		tilemapPipeline->createDescriptorSets(cameraUploader.transferBuffers);
+		tilemapPipeline->setTextureAtlas(assetManager->textureAssets[texture]);
 	};
 
 	int winW = 0, winH = 0;

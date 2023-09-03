@@ -21,6 +21,8 @@
 #include "Constants.h"
 #include "vertex.h"
 #include "TileWorld.h"
+#include "vulkan_util.h"
+#include "globalBufferDefinitions.h"
 
 class TilemapPL :public  Pipeline {
 public:
@@ -28,15 +30,27 @@ public:
 	TilemapPL(std::shared_ptr<VKEngine>& engine, VertexMeshBuffer quadMesh, std::shared_ptr<TileWorld> world) : Pipeline(engine), quadMesh(quadMesh), world(world) {
 	}
 
-	void CreateGraphicsPipline(std::string vertexSrc, std::string fragmentSrc) override;
-	void createDescriptorSetLayout() override;
-	void createDescriptorSets(MappedDoubleBuffer& cameradb);
-
+	void CreateGraphicsPipline(std::string vertexSrc, std::string fragmentSrc, MappedDoubleBuffer& cameradb);
 	void recordCommandBuffer(VkCommandBuffer commandBuffer);
 
-	std::optional<Texture> textureAtlas;
 
+	void setTextureAtlas(Texture textureAtlas) {
+
+		// fill in missing data of descriptor set builder before submitting
+
+		this->textureAtlas = textureAtlas;
+		builderDescriptorSetsDetails[1].texture = &this->textureAtlas.value();
+
+		std::array<VkBuffer, FRAMES_IN_FLIGHT> worldMapDeviceBuferRef = { world->_worldMapDeviceBuffer, world->_worldMapDeviceBuffer };
+		builderDescriptorSetsDetails[2].doubleBuffer = &worldMapDeviceBuferRef;
+
+		buildDescriptorSets();
+
+	}
+
+	std::optional<Texture> textureAtlas;
 private:
+
 
 	VKUtil::UBOUploader<cameraUBO_s> cameraUploader;
 

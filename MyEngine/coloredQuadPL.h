@@ -35,31 +35,16 @@ public:
 
 	static_assert(sizeof(ssboObjectInstanceData) % 16 == 0);
 
-	//struct DrawItem {
-	//	glm::vec4 color;
-	//	glm::vec2 position;
-	//	glm::vec2 scale;
-	//	int circle;
-	//	float rotation;
-	//};
-
 	ColoredQuadPL(std::shared_ptr<VKEngine>& engine, VertexMeshBuffer quadMesh) : Pipeline(engine), quadMesh(quadMesh) {
 	}
 
-	void CreateGraphicsPipline(std::string vertexSrc, std::string fragmentSrc) override;
-	void createDescriptorSetLayout() override;
-	void createDescriptorSets(MappedDoubleBuffer& cameradb);
-	void createSSBOBuffer();
+	void CreateGraphicsPipline(std::string vertexSrc, std::string fragmentSrc, MappedDoubleBuffer& cameradb);
+	void createInstancingBuffer();
 
 	void recordCommandBuffer(VkCommandBuffer commandBuffer, std::vector<ssboObjectInstanceData>& drawlist);
 
 private:
-	std::array<VkDescriptorSet, FRAMES_IN_FLIGHT> ssboDescriptorSets;
-
-	VkDescriptorSetLayout descriptorSetLayout;
-	VkDescriptorSetLayout SSBOSetLayout;
 
 	VertexMeshBuffer quadMesh;
-
 	MappedDoubleBuffer ssboMappedDB;
 };

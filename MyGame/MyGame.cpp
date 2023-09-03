@@ -35,6 +35,7 @@
 #include "benchmark.h"
 #include "profiling.h"
 #include "Utils.h"
+#include "worldGen.h"
 
 #include <FastNoise/FastNoise.h>
 #include <FastNoise/SmartNode.h>
@@ -92,17 +93,15 @@ int main() {
 
 	tileWolrdGlobalRef = engine.worldMap;
 
-
 	{
-		string baseTerrainGen;
-		string ironDist;
-		{
-			std::ifstream input(AssetDirectories.assetDir + "worldgen.json");
-			nlohmann::json j;
-			input >> j;
-			baseTerrainGen = j["baseTerrain"];
-			ironDist = j["ironDist"];
-		}
+
+		std::ifstream inStream(AssetDirectories.assetDir + "worldgen.json");
+		nlohmann::json j;
+		inStream >> j;
+
+		auto baseParams = NoiseParams::fromJson(j["baseTerrain"]);
+		auto ironParams = NoiseParams::fromJson(j["ironDist"]);
+
 
 		std::random_device rd; // obtain a random number from hardware
 
@@ -114,16 +113,30 @@ int main() {
 		vector<bool> ironPresence(mapW * mapH);
 
 #ifdef  NDEBUG
-		FastNoise::SmartNode<> fnGenerator = FastNoise::NewFromEncodedNodeTree(baseTerrainGen.c_str(), FastSIMD::CPUMaxSIMDLevel());
-		FastNoise::SmartNode<> ironGenerator = FastNoise::NewFromEncodedNodeTree(ironDist.c_str(), FastSIMD::CPUMaxSIMDLevel());
-		fnGenerator->GenUniformGrid2D(noiseOutput.data(), 0, -mapH + 100, mapW, mapH, 0.032f, rd());
-		ironGenerator->GenUniformGrid2D(ironOutput.data(), 0, 0, mapW, mapH, 0.003f, rd());
+		FastNoise::SmartNode<> fnGenerator = FastNoise::NewFromEncodedNodeTree(baseParams.nodeTree.c_str(), FastSIMD::CPUMaxSIMDLevel());
+		FastNoise::SmartNode<> ironGenerator = FastNoise::NewFromEncodedNodeTree(ironParams.nodeTree.c_str(), FastSIMD::CPUMaxSIMDLevel());
+		fnGenerator->GenUniformGrid2D(noiseOutput.data(), -mapW / 2, -mapH / 2, mapW, mapH, baseParams.frequency, 1337); // rd()
+		ironGenerator->GenUniformGrid2D(ironOutput.data(), -mapW / 2, -mapH / 2, mapW, mapH, ironParams.frequency, 1337);
 
+		vector<uint8_t> tData(mapW * mapH * 4);
+		
+		for (size_t i = 0; i < mapW * mapH; i++) {
+			int y = i / mapW;
+			int x = i % mapW;
 
+			int j = x + (( mapH - y - 1) * mapW);
+			float f = glm::clamp(noiseOutput[j], -1.0f, 1.0f);
+			//float f = noiseOutput[j];
+			uint8_t val = (f + 1.0f) / 2.0f  * 255;
+			tData[i * 4 + 0] = val;
+			tData[i * 4 + 1] = val;
+			tData[i * 4 + 2] = val;
+			tData[i * 4 + 3] = 255;
+		}
 
 		for (size_t i = 0; i < mapCount; i++) {
-			blockPresence[i] = noiseOutput[i] > 0.4f;
-			ironPresence[i] = ironOutput[i] > 0.6f;
+			blockPresence[i] = noiseOutput[i] > baseParams.min;
+			ironPresence[i] = ironOutput[i] > ironParams.min;
 		}
 
 #endif //  NDEBUG
@@ -142,7 +155,7 @@ int main() {
 			int x = i % mapW;
 
 			blockID id = Tiles::Air;
-			/*if (blockPresence[y * mapW + x]) {
+			if (blockPresence[y * mapW + x]) {
 				id = Tiles::Dirt;
 
 				if (y < (mapH - 1) && y >(mapH - 205) && blockPresence[(y + 1) * mapW + x] == false) {
@@ -155,7 +168,7 @@ int main() {
 						id = Tiles::Iron;
 					}
 				}
-			}*/
+			}
 
 			engine.worldMap->preloadTile(x, mapH - y - 1, id);
 
@@ -206,7 +219,7 @@ int main() {
 			editor.Run(engine);
 			engine.camera = editor.editorCamera;
 		}
-
+		
 		if (input->getMouseBtn(MouseBtn::Left)) {
 			vec2 worldClick = engine.screenToWorldPos(input->getMousePos());
 

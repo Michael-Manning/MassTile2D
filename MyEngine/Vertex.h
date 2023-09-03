@@ -9,6 +9,8 @@
 #include <glm/glm.hpp>
 
 
+using dbVertexAtribute = std::array<VkVertexInputAttributeDescription, 2>;
+
 /// <summary>
 /// Default vertex with 2D position and UVs
 /// </summary>
@@ -25,8 +27,8 @@ struct Vertex {
 		return bindingDescription;
 	}
 
-	static std::array<VkVertexInputAttributeDescription, 2> getAttributeDescriptions() {
-		std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions{};
+	static dbVertexAtribute getAttributeDescriptions() {
+		dbVertexAtribute attributeDescriptions{};
 
 		attributeDescriptions[0].binding = 0;
 		attributeDescriptions[0].location = 0;
@@ -40,6 +42,21 @@ struct Vertex {
 
 		return attributeDescriptions;
 	}
+
+	static VkPipelineVertexInputStateCreateInfo getVertexInputInfo(VkVertexInputBindingDescription * bindingDescription, dbVertexAtribute * attribute) {
+
+		VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
+		vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+		*bindingDescription = Vertex::getBindingDescription();
+		*attribute = Vertex::getAttributeDescriptions();
+
+		vertexInputInfo.vertexBindingDescriptionCount = 1;
+		vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>((*attribute).size());
+		vertexInputInfo.pVertexBindingDescriptions = bindingDescription;
+		vertexInputInfo.pVertexAttributeDescriptions = (*attribute).data();
+		return vertexInputInfo;
+	}
+
 
 
 };

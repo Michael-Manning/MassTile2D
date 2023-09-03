@@ -30,8 +30,6 @@ using namespace glm;
 using namespace std;
 
 
-
-
 namespace {
 
 	void genCheckerboard(int size, glm::vec4 cola, glm::vec4 colb, int squares, std::vector<uint8_t>& data) {
@@ -159,10 +157,8 @@ void Engine::Start(std::string windowName, int winW, int winH, std::string shade
 	
 	// configure color pipeline
 	{
-		colorPipeline->createDescriptorSetLayout();
-		colorPipeline->CreateGraphicsPipline(shaderDir + "color_vert.spv", shaderDir + "color_frag.spv");
-		colorPipeline->createSSBOBuffer();
-		colorPipeline->createDescriptorSets(cameraUploader.transferBuffers);
+		colorPipeline->createInstancingBuffer();
+		colorPipeline->CreateGraphicsPipline(shaderDir + "color_vert.spv", shaderDir + "color_frag.spv", cameraUploader.transferBuffers);
 	}
 
 	// configure instancing pipeline
@@ -176,8 +172,8 @@ void Engine::Start(std::string windowName, int winW, int winH, std::string shade
 
 	// tilemap pipeline
 	{
-		tilemapPipeline->createDescriptorSetLayout();
-		tilemapPipeline->CreateGraphicsPipline(shaderDir + "tilemap_vert.spv", shaderDir + "tilemap_frag.spv");
+		//tilemapPipeline->createDescriptorSetLayout();
+		tilemapPipeline->CreateGraphicsPipline(shaderDir + "tilemap_vert.spv", shaderDir + "tilemap_frag.spv", cameraUploader.transferBuffers);
 	}
 
 	rengine->createSyncObjects();
@@ -271,16 +267,6 @@ bool Engine::QueueNextFrame() {
 		for (auto& renderer : scene->sceneData.colorRenderers)
 		{
 			const auto& entity = scene->sceneData.entities[renderer.first];
-
-
-			/*drawlist.push_back({
-	renderer.second.color,
-	entity->transform.position,
-	entity->transform.scale,
-	renderer.second.shape == ColorRenderer::Shape::Circle,
-	entity->transform.rotation
-				});*/
-
 
 			ColoredQuadPL::ssboObjectInstanceData instanceData;
 
