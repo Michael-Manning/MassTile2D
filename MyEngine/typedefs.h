@@ -7,7 +7,8 @@ typedef uint32_t entityID;
 typedef uint32_t spriteID;
 typedef uint32_t atlasID;
 typedef uint32_t colliderID;
-typedef uint32_t blockID;
+typedef uint32_t blockID; // type of block
+typedef uint32_t tileID; // specific tile in the texture atlas
 
 #include <glm/glm.hpp>
 

@@ -44,6 +44,17 @@ public:
 		chunkDirtyFlags = std::vector<bool>(chunkCount, false);
 	}
 
+	void saveToDisk(std::string filepath) {
+		FILE* f = fopen(filepath.c_str(), "wb");
+		fwrite(mapData.data(), sizeof(blockID), mapCount, f);
+		fclose(f);
+	};
+	void loadFromDisk(std::string filepath) {
+		FILE* f = fopen(filepath.c_str(), "rb");
+		fread(mapData.data(), sizeof(blockID), mapCount, f);
+		fclose(f);
+	};
+
 	void copyToLargeChunkTransferbuffer(uint32_t* data) {
 		memcpy(largeChunkBufferMapped, data, sizeof(ssboObjectData) * largeChunkCount);
 	};
@@ -94,6 +105,15 @@ public:
 		uint32_t chuckIndexOffset = chunk * chunkTileCount;
 		mapData[chuckIndexOffset + (y % chunkSize) * chunkSize + (x % chunkSize)] = block;
 	};
+
+	uint8_t getAdjacencyHash(uint32_t x, uint32_t y) {
+		uint8_t hash = 0;
+		hash |= (uint8_t)(getTile(x, y - 1) != 1023) << 0;
+		hash |= (uint8_t)(getTile(x - 1, y) != 1023) << 1;
+		hash |= (uint8_t)(getTile(x + 1, y) != 1023) << 2;
+		hash |= (uint8_t)(getTile(x, y + 1) != 1023) << 3;
+		return hash;
+	}
 
 	void stageChunkUpdates(VkCommandBuffer commandBuffer) {
 

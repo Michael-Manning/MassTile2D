@@ -4,8 +4,6 @@
 (Could just use camera buffer since I'm already updating that every frame!)
 Update: Since draw command is always last, could put everything in the secondary buffer, but then add the draw call to the end every frame
 
-- convert worldToScreenPos & screenToWorldPos into simple matrix calculation? Profile first
-
 - convert entity transform into component, store in contiguous memory, or use faster map. Then use compute shader to calculate
 entity transform matrices for color/texture pipeline instead of per vertex calculation
 

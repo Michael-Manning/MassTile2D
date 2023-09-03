@@ -4,6 +4,34 @@
 
 #include <nlohmann/json.hpp>
 
+
+namespace Tiles {
+	constexpr blockID Grass = 0;
+	constexpr blockID Dirt = 1;
+	constexpr blockID Stone = 2;
+	constexpr blockID Iron = 3;
+	constexpr blockID Air = 1023;
+}
+
+constexpr int typesPerTile = 16;
+constexpr int tileVariations = 3;
+constexpr int tilesPerBlock = typesPerTile * tileVariations;
+
+static tileID getTileID(blockID block) {
+	switch (block) {
+	case Tiles::Grass:
+		return 0;
+	case Tiles::Dirt:
+		return 1;
+	case Tiles::Stone:
+		return 2;
+	case Tiles::Iron:
+		return 3;
+	default:
+		return 0;
+	}
+}
+
 struct NoiseParams {
 	std::string nodeTree;
 	float min;

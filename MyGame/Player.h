@@ -10,6 +10,8 @@
 #include "typedefs.h"
 #include "ECS.h"
 #include "global.h"
+#include "worldGen.h"
+#include "TileWorld.h"
 
 using namespace glm;
 using namespace std;
