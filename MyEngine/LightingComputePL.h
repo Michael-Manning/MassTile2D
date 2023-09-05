@@ -13,6 +13,7 @@
 #include <glm/glm.hpp>
 
 #include <vk_mem_alloc.h>
+#include <tracy/Tracy.hpp>
 
 #include "texture.h"
 #include "VKEngine.h"
@@ -39,6 +40,7 @@ public:
 	void recordCommandBuffer(VkCommandBuffer commandBuffer, int chunkUpdateCount);
 
 	void stageLightingUpdate(std::vector<chunkLightingUpdateinfo>& chunkUpdates) {
+		ZoneScoped;
 		if (chunkUpdates.size() == 0)
 			return;
 		memcpy(lightPositionsDB.buffersMapped[engine->currentFrame], chunkUpdates.data(), sizeof(chunkLightingUpdateinfo) * chunkUpdates.size());

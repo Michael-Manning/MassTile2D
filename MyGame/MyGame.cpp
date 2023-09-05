@@ -66,7 +66,6 @@ std::shared_ptr<TileWorld> tileWolrdGlobalRef;
 
 bool showingEditor = false;
 
-#include "tilemapPL.h"
 
 std::random_device rd; // obtain a random number from hardware
 std::mt19937 gen(rd()); // seed the generator

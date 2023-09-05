@@ -93,6 +93,9 @@
     <ClCompile Include="LightingComputePL.cpp">
       <Filter>Source Files\vulkan\piplines</Filter>
     </ClCompile>
+    <ClCompile Include="TracyClient.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pipeline.h">

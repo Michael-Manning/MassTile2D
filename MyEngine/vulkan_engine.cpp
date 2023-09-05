@@ -22,6 +22,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <vk_mem_alloc.h>
+#include <tracy/Tracy.hpp>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
@@ -155,12 +156,14 @@ void VKEngine::createSyncObjects() {
 
 
 void VKEngine::waitForCompute() {
+	ZoneScoped;
 	// Compute submission        
 	vkWaitForFences(device, 1, &computeInFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 	vkResetFences(device, 1, &computeInFlightFences[currentFrame]);
 }
 
 uint32_t VKEngine::waitForSwapchain() {
+	ZoneScoped;
 
 	vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 	vkResetFences(device, 1, &inFlightFences[currentFrame]);
@@ -195,6 +198,7 @@ void VKEngine::beginRenderpass(uint32_t imageIndex) {
 }
 
 VkCommandBuffer VKEngine::getNextComputeCommandBuffer() {
+	ZoneScoped;
 	vkResetCommandBuffer(computeCommandBuffers[currentFrame], /*VkCommandBufferResetFlagBits*/ 0);
 
 	VkCommandBufferBeginInfo beginInfo{};
@@ -209,6 +213,8 @@ VkCommandBuffer VKEngine::getNextComputeCommandBuffer() {
 
 // temporary solution which resets the command buffer every frame
 VkCommandBuffer VKEngine::getNextCommandBuffer(uint32_t imageIndex) {
+	ZoneScoped;
+
 	vkResetCommandBuffer(commandBuffers[currentFrame], /*VkCommandBufferResetFlagBits*/ 0);
 
 	VkCommandBufferBeginInfo beginInfo{};
@@ -222,6 +228,9 @@ VkCommandBuffer VKEngine::getNextCommandBuffer(uint32_t imageIndex) {
 }
 
 void VKEngine::submitCompute() {
+	ZoneScoped;
+
+	TracyVkCollect(tracyComputeContexts[currentFrame], computeCommandBuffers[currentFrame]);
 
 	if (vkEndCommandBuffer(computeCommandBuffers[currentFrame]) != VK_SUCCESS) {
 		throw std::runtime_error("failed to record command buffer!");
@@ -242,6 +251,8 @@ void VKEngine::submitCompute() {
 
 void VKEngine::submitAndPresent(uint32_t imageIndex) {
 	vkCmdEndRenderPass(commandBuffers[currentFrame]);
+
+	TracyVkCollect(tracyGraphicsContexts[currentFrame], commandBuffers[currentFrame]);
 
 	if (vkEndCommandBuffer(commandBuffers[currentFrame]) != VK_SUCCESS) {
 		throw std::runtime_error("failed to record command buffer!");

@@ -46,3 +46,11 @@ struct NoiseParams {
 		return p;
 	}
 };
+
+static void genWorld() {
+
+}
+
+static void loadWorld() {
+
+}

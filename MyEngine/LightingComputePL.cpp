@@ -13,6 +13,7 @@
 
 #include <vulkan/vulkan.h>
 #include <vk_mem_alloc.h>
+#include <tracy/Tracy.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -61,10 +62,12 @@ void LightingComputePL::createStagingBuffers() {
 }
 
 void LightingComputePL::recordCommandBuffer(VkCommandBuffer commandBuffer, int chunkUpdateCount) {
+	ZoneScoped;
 	if (chunkUpdateCount == 0)
 		return;
 
 	constexpr int workGroupSize = 32; // 32x32x1, same as tilemap chunk size
+
 
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, _pipeline);
 
@@ -74,12 +77,8 @@ void LightingComputePL::recordCommandBuffer(VkCommandBuffer commandBuffer, int c
 	for (auto& i : builderDescriptorSetsDetails)
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, i.set, 1, &builderDescriptorSets[i.set][engine->currentFrame], 0, nullptr);
 
-	//int groupSize = (chunkUpdateCount * chunkSize) / workGroupSize;
-	//vkCmdDispatch(commandBuffer, groupSize, groupSize, 1);
-
-	vkCmdDispatch(commandBuffer, chunkUpdateCount > maxChunkUpdatesPerFrame ? maxChunkUpdatesPerFrame : chunkUpdateCount, 1, 1);
-
-	//int groupSize = (chunkUpdateCount * chunkTileCount) / workGroupSize;
-	//vkCmdDispatch(commandBuffer, chunkUpdateCount, 1, 1);
-
+	{
+		TracyVkZone(engine->tracyComputeContexts[engine->currentFrame], commandBuffer, "Lighting compute");
+		vkCmdDispatch(commandBuffer, chunkUpdateCount > maxChunkUpdatesPerFrame ? maxChunkUpdatesPerFrame : chunkUpdateCount, 1, 1);
+	}
 }

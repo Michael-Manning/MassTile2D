@@ -4,8 +4,10 @@
 #include <stdint.h>
 #include <cassert>
 #include <memory>
-#include <glm/glm.hpp>
 #include <algorithm>
+
+#include <glm/glm.hpp>
+#include <tracy/Tracy.hpp>
 
 #include "typedefs.h"
 #include "VKEngine.h"
@@ -241,6 +243,7 @@ public:
 	};
 
 	std::vector<chunkLightingUpdateinfo> getLightingUpdateData() {
+		ZoneScoped;
 		return chunkLightingJobs;
 	}
 

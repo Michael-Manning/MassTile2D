@@ -40,8 +40,8 @@ void TilemapPL::CreateGraphicsPipeline(std::string vertexSrc, std::string fragme
 
 	configureDescriptorSets(vector<Pipeline::descriptorSetInfo> {
 		descriptorSetInfo(0, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, &cameradb.buffers, cameradb.size),
-		descriptorSetInfo(0, 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr),
-		descriptorSetInfo(1, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, nullptr, sizeof(TileWorld::ssboObjectData) * (TileWorld_MAX_TILES))
+			descriptorSetInfo(0, 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr),
+			descriptorSetInfo(1, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, nullptr, sizeof(TileWorld::ssboObjectData)* (TileWorld_MAX_TILES))
 	});
 	buildDescriptorLayouts();
 
@@ -89,6 +89,7 @@ void TilemapPL::CreateGraphicsPipeline(std::string vertexSrc, std::string fragme
 
 void TilemapPL::recordCommandBuffer(VkCommandBuffer commandBuffer) {
 
+
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
 
 	VkViewport viewport = fullframeViewport();
@@ -113,5 +114,8 @@ void TilemapPL::recordCommandBuffer(VkCommandBuffer commandBuffer) {
 	};
 	vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(pushConstant_s), &pushData);
 
-	vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(QuadIndices.size()), 1, 0, 0, 0);
+	{
+		TracyVkZone(engine->tracyComputeContexts[engine->currentFrame], commandBuffer, "Tilemap render");
+		vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(QuadIndices.size()), 1, 0, 0, 0);
+	}
 }

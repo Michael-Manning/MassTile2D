@@ -7,7 +7,9 @@
 
 #include <vulkan/vulkan.h>
 #include <glm/glm.hpp>
-//#include <box2d/box2d.h>
+#include <box2d/box2d.h>
+
+#include <tracy/Tracy.hpp>
 
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
@@ -123,16 +125,19 @@ void Engine::Start(std::string windowName, int winW, int winH, std::string shade
 
 	rengine->initVulkan();
 
-	DebugLog("Initialized Vulkan");
 
 	rengine->createFramebuffers();
 	rengine->createCommandPool();
-
 	rengine->createDescriptorPool();
-
 	rengine->createCommandBuffers();
-
 	rengine->createTextureSamplers();
+
+	DebugLog("Initialized Vulkan");
+
+#ifdef TRACY_ENABLE
+	rengine->initTracyContext();
+	DebugLog("Initialized Tracy");
+#endif
 
 	this->winW = winW;
 	this->winH = winH;
@@ -158,7 +163,7 @@ void Engine::Start(std::string windowName, int winW, int winH, std::string shade
 	}
 
 	// section can be done in parrallel
-	
+
 	// configure color pipeline
 	{
 		colorPipeline->createInstancingBuffer();
@@ -229,18 +234,29 @@ bool Engine::QueueNextFrame() {
 		physicsTimer += deltaTime;
 	}
 
-	while (physicsTimer >= timeStep) {
-		updatePhysics();
-		physicsTimer -= timeStep;
+	{
+		ZoneScopedN("Update physics");
+		while (physicsTimer >= timeStep) {
+			updatePhysics();
+			physicsTimer -= timeStep;
+		}
+		for (auto& body : scene->sceneData.rigidbodies)
+		{
+			scene->sceneData.entities[body.first]->transform.position = body.second._getPosition();
+			scene->sceneData.entities[body.first]->transform.rotation = body.second._getRotation();
+		}
 	}
 
-	rengine->waitForCompute();
-	auto computeCmdBuffer = rengine->getNextComputeCommandBuffer();
-	auto lightingData = worldMap->getLightingUpdateData();
-	lightingPipeline->stageLightingUpdate(lightingData);
-	lightingPipeline->recordCommandBuffer(computeCmdBuffer, lightingData.size());
-	worldMap->chunkLightingJobs.clear();
-	rengine->submitCompute();
+	{
+		ZoneScopedN("compute shader");
+
+		rengine->waitForCompute();
+		auto computeCmdBuffer = rengine->getNextComputeCommandBuffer();
+		auto lightingData = worldMap->getLightingUpdateData();
+		lightingPipeline->stageLightingUpdate(lightingData);
+		lightingPipeline->recordCommandBuffer(computeCmdBuffer, lightingData.size());
+		rengine->submitCompute();
+	}
 
 
 	uint32_t imageIndex = rengine->waitForSwapchain();
@@ -250,22 +266,23 @@ bool Engine::QueueNextFrame() {
 		return false;
 	}
 
-	for (auto& body : scene->sceneData.rigidbodies)
-	{
-		scene->sceneData.entities[body.first]->transform.position = body.second._getPosition();
-		scene->sceneData.entities[body.first]->transform.rotation = body.second._getRotation();
-	}
+
 
 	// command buffer can be split into secondary buffers and recorded in parallel
 	auto cmdBuffer = rengine->getNextCommandBuffer(imageIndex);
 
 	// transfer tiles to read-only memory before starting renderpass
-	worldMap->stageChunkUpdates(cmdBuffer);
+	{
+		ZoneScopedN("chunk updates");
+		worldMap->stageChunkUpdates(cmdBuffer);
+	}
 
 	rengine->beginRenderpass(imageIndex);
 
 	// update global buffers
 	{
+		ZoneScopedN("UBO update");
+
 		cameraUploader.Invalidate();
 
 		cameraUBO_s camData;
@@ -278,6 +295,8 @@ bool Engine::QueueNextFrame() {
 
 	// colored quad
 	{
+		ZoneScopedN("Colored quad PL");
+
 		vector<ColoredQuadPL::ssboObjectInstanceData> drawlist;
 		drawlist.reserve(scene->sceneData.colorRenderers.size());
 
@@ -302,13 +321,17 @@ bool Engine::QueueNextFrame() {
 
 	// tilemap
 	{
+		ZoneScopedN("tilemap PL");
+
 		if (tilemapPipeline->textureAtlas.has_value()) {
 			tilemapPipeline->recordCommandBuffer(cmdBuffer);
 		}
 	}
 
-	// Instanced quad
+	// Textured quad
 	{
+		ZoneScopedN("Textured quad PL");
+
 		if (scene->sceneData.spriteRenderers.size() > 0) {
 			vector<TexturedQuadPL::ssboObjectInstanceData> drawlist;
 			drawlist.reserve(scene->sceneData.spriteRenderers.size());
@@ -368,6 +391,9 @@ bool Engine::QueueNextFrame() {
 	frameCounter++;
 
 	firstFrame = false;
+
+
+	FrameMark;
 	return true;
 }
 
@@ -505,7 +531,7 @@ void Engine::InitImgui() {
 }
 
 void stageChunkUpdates() {
-	
+
 }
 
 

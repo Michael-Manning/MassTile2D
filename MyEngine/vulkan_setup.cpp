@@ -25,6 +25,8 @@
 #define VMA_DYNAMIC_VULKAN_FUNCTIONS 1 
 #define VMA_IMPLEMENTATION
 #include <vk_mem_alloc.h>
+#include <tracy/Tracy.hpp>
+#include <tracy/TracyVulkan.hpp>
 
 #include "VKEngine.h"
 
@@ -80,12 +82,12 @@ std::string insertBeforeMatch(const std::string& mainStr, const std::string& mat
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
 	if (messageSeverity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) {
-			
+
 		cout << endl;
-			string msgStr = string(pCallbackData->pMessage);
-			cout << insertBeforeMatch(msgStr, "The Vulkan spec states");
+		string msgStr = string(pCallbackData->pMessage);
+		cout << insertBeforeMatch(msgStr, "The Vulkan spec states");
 		cout << endl;
-		
+
 	}
 	else {
 		std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
@@ -185,9 +187,9 @@ bool VKEngine::shouldClose() {
 
 void VKEngine::initVulkan() {
 	createInstance();
-	
+
 	// setup debug messager
-	if (enableValidationLayers){
+	if (enableValidationLayers) {
 
 		VkDebugUtilsMessengerCreateInfoEXT createInfo;
 		populateDebugMessengerCreateInfo(createInfo);
@@ -346,7 +348,7 @@ QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surfa
 		VkBool32 presentSupport = false;
 		vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
 
-		if(presentSupport) {
+		if (presentSupport) {
 			indices.presentFamily = i;
 		}
 
@@ -382,19 +384,19 @@ bool checkInstanceExtensionSupport() {
 }
 
 bool checkDeviceExtensionSupport(VkPhysicalDevice device) {
-    uint32_t extensionCount;
-    vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
+	uint32_t extensionCount;
+	vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
 
-    std::vector<VkExtensionProperties> availableExtensions(extensionCount);
-    vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
+	std::vector<VkExtensionProperties> availableExtensions(extensionCount);
+	vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
 
-    std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
+	std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
 
-    for (const auto& extension : availableExtensions) {
-        requiredExtensions.erase(extension.extensionName);
-    }
+	for (const auto& extension : availableExtensions) {
+		requiredExtensions.erase(extension.extensionName);
+	}
 
-    return requiredExtensions.empty();
+	return requiredExtensions.empty();
 }
 
 bool isDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface) {
@@ -713,4 +715,12 @@ void VKEngine::createImageViews() {
 	}
 }
 
-
+#ifdef TRACY_ENABLE
+void VKEngine::initTracyContext() {
+	for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++)
+	{
+		tracyComputeContexts[i] = TracyVkContext(physicalDevice, device, computeQueue, computeCommandBuffers[i])
+		tracyGraphicsContexts[i] = TracyVkContext(physicalDevice, device, graphicsQueue, commandBuffers[i])
+	}
+}
+#endif

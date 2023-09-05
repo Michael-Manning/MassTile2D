@@ -1,5 +1,7 @@
 
 
+-remove benchmark.cpp
+
 - switch color and texture instancing piplines to fixed secondar command buffer. Use drawIndirect to update instance count with buffer. Profile first
 (Could just use camera buffer since I'm already updating that every frame!)
 Update: Since draw command is always last, could put everything in the secondary buffer, but then add the draw call to the end every frame
@@ -10,7 +12,6 @@ entity transform matrices for color/texture pipeline instead of per vertex calcu
 
 - finalize tilemap coordinate system
 - make tile vs block terminalogy consistent
-- make getTile perform bitmask on lighting
 
 - Inter-bahaviour entity accessor
 - general behaviour scene access for camera and common data needs
