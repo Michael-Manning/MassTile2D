@@ -20,11 +20,12 @@
 
 
 struct QueueFamilyIndices {
-    std::optional<uint32_t> graphicsFamily;
+    //std::optional<uint32_t> graphicsFamily;
     std::optional<uint32_t> presentFamily;
+    std::optional<uint32_t> graphicsAndComputeFamily;
 
     bool isComplete() {
-        return graphicsFamily.has_value() && presentFamily.has_value();
+        return graphicsAndComputeFamily.has_value() && presentFamily.has_value();
     }
 };
 
@@ -82,8 +83,11 @@ public:
     void createMappedBuffer(VkDeviceSize size, VkBufferUsageFlags usage, MappedDoubleBuffer& buffer);
 
     // call in sequence
+    void waitForCompute();
     uint32_t waitForSwapchain();
     VkCommandBuffer getNextCommandBuffer(uint32_t imageIndex); // temporary solution which resets the command buffer every frame
+    VkCommandBuffer getNextComputeCommandBuffer(); 
+    void submitCompute();
     void submitAndPresent(uint32_t imageIndex);
     void beginRenderpass(uint32_t imageIndex);
 
@@ -104,6 +108,7 @@ public:
     VkDevice device;
 
     VkQueue graphicsQueue;
+    VkQueue computeQueue;
     VkQueue presentQueue;
 
     VkSurfaceKHR surface;
@@ -124,13 +129,16 @@ public:
     VkCommandPool commandPool;
 
     VkDescriptorPool descriptorPool;
-    std::vector<VkDescriptorSet> descriptorSets;
 
-    std::vector<VkCommandBuffer> commandBuffers;
+   
+    std::array<VkCommandBuffer, FRAMES_IN_FLIGHT> commandBuffers;
+    std::array<VkCommandBuffer, FRAMES_IN_FLIGHT>  computeCommandBuffers;
 
-    std::vector<VkSemaphore> imageAvailableSemaphores;
-    std::vector<VkSemaphore> renderFinishedSemaphores;
-    std::vector<VkFence> inFlightFences;
+    std::array<VkSemaphore, FRAMES_IN_FLIGHT>  imageAvailableSemaphores;
+    std::array<VkSemaphore, FRAMES_IN_FLIGHT>  renderFinishedSemaphores;
+    std::array<VkSemaphore, FRAMES_IN_FLIGHT>  computeFinishedSemaphores;
+    std::array<VkFence, FRAMES_IN_FLIGHT> inFlightFences;
+    std::array<VkFence, FRAMES_IN_FLIGHT> computeInFlightFences;
 
     QueueFamilyIndices queueFamilyIndices;
 

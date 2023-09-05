@@ -50,6 +50,20 @@ std::vector<VkPipelineShaderStageCreateInfo> Pipeline::createShaderStages(std::s
 	return { vertShaderStageInfo, fragShaderStageInfo };
 }
 
+VkPipelineShaderStageCreateInfo Pipeline::createComputeShaderStage(std::string computeSrc) {
+	auto shaderCode = VKUtil::readFile(computeSrc);
+
+	VkShaderModule vertShaderModule = VKUtil::createShaderModule(shaderCode, engine->device);
+
+	VkPipelineShaderStageCreateInfo stageInfo{};
+	stageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	stageInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+	stageInfo.module = vertShaderModule;
+	stageInfo.pName = "main";
+
+	return stageInfo;
+}
+
 VkPipelineInputAssemblyStateCreateInfo Pipeline::defaultInputAssembly() {
 	VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
 	inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;

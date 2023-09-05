@@ -17,9 +17,12 @@
 
 #include "texture.h"
 #include "VKEngine.h"
+
 #include "coloredQuadPL.h"
 #include "texturedQuadPL.h"
 #include "tilemapPL.h"
+#include "LightingComputePL.h"
+
 #include "engine.h"
 #include "SpriteRenderer.h"	
 #include "Physics.h"
@@ -151,6 +154,7 @@ void Engine::Start(std::string windowName, int winW, int winH, std::string shade
 		instancedPipeline = make_unique<TexturedQuadPL>(rengine, quadMeshBuffer);
 		colorPipeline = make_unique<ColoredQuadPL>(rengine, quadMeshBuffer);
 		tilemapPipeline = make_unique<TilemapPL>(rengine, quadMeshBuffer, worldMap);
+		lightingPipeline = make_unique<LightingComputePL>(rengine, worldMap);
 	}
 
 	// section can be done in parrallel
@@ -158,22 +162,27 @@ void Engine::Start(std::string windowName, int winW, int winH, std::string shade
 	// configure color pipeline
 	{
 		colorPipeline->createInstancingBuffer();
-		colorPipeline->CreateGraphicsPipline(shaderDir + "color_vert.spv", shaderDir + "color_frag.spv", cameraUploader.transferBuffers);
+		colorPipeline->CreateGraphicsPipeline(shaderDir + "color_vert.spv", shaderDir + "color_frag.spv", cameraUploader.transferBuffers);
 	}
 
 	// configure instancing pipeline
 	{
 		instancedPipeline->setDefaultTexture(texNotFound);
 		instancedPipeline->createDescriptorSetLayout();
-		instancedPipeline->CreateGraphicsPipline(shaderDir + "texture_vert.spv", shaderDir + "texture_frag.spv");
+		instancedPipeline->CreateGraphicsPipeline(shaderDir + "texture_vert.spv", shaderDir + "texture_frag.spv");
 		instancedPipeline->createSSBOBuffer();
 		instancedPipeline->createDescriptorSets(cameraUploader.transferBuffers);
 	}
 
 	// tilemap pipeline
 	{
-		//tilemapPipeline->createDescriptorSetLayout();
-		tilemapPipeline->CreateGraphicsPipline(shaderDir + "tilemap_vert.spv", shaderDir + "tilemap_frag.spv", cameraUploader.transferBuffers);
+		tilemapPipeline->CreateGraphicsPipeline(shaderDir + "tilemap_vert.spv", shaderDir + "tilemap_frag.spv", cameraUploader.transferBuffers);
+	}
+
+	// lighting compute pipeline
+	{
+		lightingPipeline->createStagingBuffers();
+		lightingPipeline->CreateComputePipeline(shaderDir + "lighting_comp.spv");
 	}
 
 	rengine->createSyncObjects();
@@ -224,6 +233,14 @@ bool Engine::QueueNextFrame() {
 		updatePhysics();
 		physicsTimer -= timeStep;
 	}
+
+	rengine->waitForCompute();
+	auto computeCmdBuffer = rengine->getNextComputeCommandBuffer();
+	auto lightingData = worldMap->getLightingUpdateData();
+	lightingPipeline->stageLightingUpdate(lightingData);
+	lightingPipeline->recordCommandBuffer(computeCmdBuffer, lightingData.size());
+	worldMap->chunkLightingJobs.clear();
+	rengine->submitCompute();
 
 
 	uint32_t imageIndex = rengine->waitForSwapchain();

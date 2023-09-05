@@ -8,7 +8,7 @@ def checkMod(srcDirectory, mod_time_file):
    changedFiles = set()
 
    # Define the file extensions to monitor
-   extensions = ['.frag', '.vert']
+   extensions = ['.frag', '.vert', '.comp']
 
    # Create the mod time file if it doesn't exist
    if not os.path.exists(mod_time_file):
@@ -56,6 +56,7 @@ if(len(filesChanged) == 0):
 
 frag_files = set()
 vert_files = set()
+comp_files = set()
 
 # Scan directory for .frag and .vert files
 for filename in os.listdir(src_folder):
@@ -63,6 +64,8 @@ for filename in os.listdir(src_folder):
       frag_files.add(filename[:-5])
    elif filename.endswith('.vert'):
       vert_files.add(filename[:-5])
+   elif filename.endswith('.comp'):
+      comp_files.add(filename[:-5])
 
 # Group files
 paired_files = frag_files & vert_files
@@ -97,6 +100,16 @@ for base_name in paired_files:
          errors = True
          print(result.stderr)
    
+for base_name in comp_files:
+   comp_file = os.path.join(src_folder, base_name + '.comp')
+   changed = (base_name + '.comp') in filesChanged
+   if(changed):
+      print(f"compiling: {base_name}")
+      cmd = compilerPath + " " + comp_file + " -o " + os.path.join(out_folder, base_name + '_comp.spv')
+      result = subprocess.run(cmd, capture_output=True, text=True, shell=True)
+      if result.returncode != 0:
+         errors = True
+         print(result.stderr)
 
 if(errors):
    print("\ncompleted with some errors")

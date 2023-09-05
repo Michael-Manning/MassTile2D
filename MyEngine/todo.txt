@@ -8,6 +8,10 @@ Update: Since draw command is always last, could put everything in the secondary
 entity transform matrices for color/texture pipeline instead of per vertex calculation
 
 
+- finalize tilemap coordinate system
+- make tile vs block terminalogy consistent
+- make getTile perform bitmask on lighting
+
 - Inter-bahaviour entity accessor
 - general behaviour scene access for camera and common data needs
 
@@ -41,10 +45,11 @@ things to abstract:
 
 - default quad vertex management
 
+- check for deticated compute family queue and use it for compute shaders asynchrounously
 
+- query maxComputeWorkGroupCount, maxComputeWorkGroupInvocations, and maxComputeWorkGroupSize to determine max work group size
 
-
-
+- for mapped double buffers (instancing, lighting), populate data directly into void pointer instead constructing an array and calling memcpy
 
 
 ---- features:

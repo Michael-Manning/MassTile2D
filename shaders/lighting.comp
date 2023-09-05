@@ -1,0 +1,96 @@
+#version 450
+
+#define chunkSize 32
+#define chunkTileCount 1024
+#define chunksX  64 
+#define maxLightsPerChunk 100
+#define ambiantLight 0.02
+
+struct LightingUpdate {
+	int chunkIndex;
+	int lightCount;
+	vec2 lightPositions[maxLightsPerChunk];
+};
+
+layout(std140, set = 0, binding = 0) readonly buffer lightingObjectBuffer{
+	LightingUpdate[] lightingUpdates;
+} ;
+
+layout(std430, set = 1, binding = 0) buffer mapObjectBuffer {
+	int tileMapData[];
+} ;
+
+layout (local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
+
+int getTile(int x, int y) {
+    int cx = (x / chunkSize);
+    int cy = (y / chunkSize);
+    int chunk = cy * chunksX + cx;
+    int chuckIndexOffset = chunk * chunkTileCount;
+    return tileMapData[chuckIndexOffset + (y % chunkSize) * chunkSize + (x % chunkSize)];
+}
+
+void main() 
+{
+
+    uint x = gl_LocalInvocationID.x;  
+    uint y = gl_LocalInvocationID.y;  
+
+    float brightness = 0.0;
+    // float brightness = 1.0;
+    int chunk = lightingUpdates[gl_WorkGroupID.x].chunkIndex;
+    int chuckIndexOffset = chunk * chunkTileCount;
+    uint tilemapIndex = chuckIndexOffset + (y * chunkSize) + x;
+
+
+    uint chunkX = chunk % chunksX;
+    uint chunkY = chunk / chunksX;
+    uint globX = chunkX * chunkSize + x;
+    uint globY = chunkY * chunkSize + y;
+
+    int curtile = getTile(int(globX), int(globY)) & 0xFFFF;
+
+    for(int i = 0; i < lightingUpdates[gl_WorkGroupID.x].lightCount; i++)
+    {
+        vec2 torch = lightingUpdates[gl_WorkGroupID.x].lightPositions[i];
+        float dist = distance(vec2(globX, globY), torch);
+        if(dist < 20){
+            
+            vec2 lightDir = normalize(torch - vec2(globX, globY));
+
+            int hits = 0;
+            for(int j = 0; j < dist; j++)
+            {
+                int tile = getTile(int(globX + lightDir.x * j), int(globY + lightDir.y * j)) & 0xFFFF;
+                if(tile != 1023)
+                {
+                    hits++;
+                   // break;
+                }
+            }    
+
+            if(hits > 0 && curtile == 1023)
+            {
+                continue;
+            }
+            dist = clamp(1 - (dist / 20), 0.0f, 1.0f);
+            brightness += dist / clamp(hits * 2.0, 1, 20); 
+        }
+        
+    }
+    
+
+    // for(int i = 0; i < lightingUpdates[gl_WorkGroupID.x].lightCount; i++)
+    // {
+    //     vec2 torch = lightingUpdates[gl_WorkGroupID.x].lightPositions[i];
+    //     float dist = distance(vec2(globX, globY), torch);
+    //     dist = clamp(1 - (dist / 20), 0.0f, 1.0f);
+    //     brightness += dist;
+    // }
+
+    brightness = clamp(brightness, ambiantLight, 1.0);
+
+
+
+    tileMapData[tilemapIndex] = (tileMapData[tilemapIndex] & 0xFFFF) | int(brightness * 255) << 16;
+}

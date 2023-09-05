@@ -30,7 +30,7 @@ using namespace glm;
 using namespace std;
 
 
-void TexturedQuadPL::CreateGraphicsPipline(std::string vertexSrc, std::string fragmentSrc) {
+void TexturedQuadPL::CreateGraphicsPipeline(std::string vertexSrc, std::string fragmentSrc) {
 
 	auto shaderStages = createShaderStages(vertexSrc, fragmentSrc);
 
@@ -72,7 +72,7 @@ void TexturedQuadPL::CreateGraphicsPipline(std::string vertexSrc, std::string fr
 	pipelineInfo.subpass = 0;
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-	auto res = vkCreateGraphicsPipelines(engine->device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline);
+	auto res = vkCreateGraphicsPipelines(engine->device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &_pipeline);
 	assert(res == VK_SUCCESS);
 
 	for (auto& stage : shaderStages) {
@@ -246,7 +246,7 @@ void TexturedQuadPL::recordCommandBuffer(VkCommandBuffer commandBuffer, std::vec
 		memcpy(ssboMappedDB.buffersMapped[engine->currentFrame], drawlist.data(), sizeof(ssboObjectInstanceData) * drawlist.size());
 	}
 
-	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
 
 	VkViewport viewport = fullframeViewport();
 	vkCmdSetViewport(commandBuffer, 0, 1, &viewport);

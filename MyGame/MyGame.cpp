@@ -78,7 +78,7 @@ int ran(int min, int max) {
 void CalcTileVariation(uint32_t x, uint32_t y) {
 	if (x > 1 && x < mapW - 1 && y > 1 && y < mapH - 1) {
 
-		tileID curTile = tileWolrdGlobalRef->getTile(x, y);
+		tileID curTile = tileWolrdGlobalRef->getTile(x, y) & 0xFFFF;
 
 		if (curTile == Tiles::Air)
 			return;
@@ -245,6 +245,7 @@ int main() {
 
 					engine.worldMap->preloadTile(x, mapH - y - 1, tile);
 				}
+				engine.worldMap->preloadBrightness(x, mapH - y - 1, 255 * ambiantLight);
 			}
 
 		};
@@ -259,7 +260,7 @@ int main() {
 	engine.setTilemapAtlasTexture(engine.assetManager->spriteAssets[5]->texture);
 
 
-
+	vector<vec2> torchPositions;
 
 	while (!engine.ShouldClose())
 	{
@@ -309,7 +310,7 @@ int main() {
 				int x = tileX;
 				int y = mapH - tileY - 1;
 
-				if (x != lastX || y != lastY) {
+				/*if (x != lastX || y != lastY) {
 
 					engine.worldMap->setTile(x, y, Tiles::Grass * tilesPerBlock);
 
@@ -319,7 +320,24 @@ int main() {
 
 					lastX = x;
 					lastY = y;
+				}*/
+
+				if (input->getMouseBtnDown(MouseBtn::Left)) {
+
+			//	static float lastTime = 0;
+			//	float time = engine.time;
+			//	if ( time - lastTime> 1.0f / 60.0f) {
+
+
+
+					torchPositions.push_back(vec2(x, y));
+
+
+					engine.worldMap->setTorch(x, y);
+					engine.worldMap->updateLighing();
+				//lastTime = time;
 				}
+				//}
 			}
 		}
 		if (showingEditor == false && input->getMouseBtn(MouseBtn::Right)) {

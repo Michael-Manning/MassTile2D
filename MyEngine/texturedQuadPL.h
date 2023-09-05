@@ -61,7 +61,7 @@ public:
 		this->defaultTexture = defaultTexture;
 	}
 
-	void CreateGraphicsPipline(std::string vertexSrc, std::string fragmentSrc);
+	void CreateGraphicsPipeline(std::string vertexSrc, std::string fragmentSrc);
 	void createDescriptorSetLayout();
 	void createDescriptorSets(MappedDoubleBuffer& cameradb) ;
 	void createSSBOBuffer();

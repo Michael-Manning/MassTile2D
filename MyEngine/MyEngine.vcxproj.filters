@@ -90,6 +90,9 @@
     <ClCompile Include="globalBufferDefinitions.h">
       <Filter>Source Files\vulkan</Filter>
     </ClCompile>
+    <ClCompile Include="LightingComputePL.cpp">
+      <Filter>Source Files\vulkan\piplines</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pipeline.h">
@@ -187,6 +190,9 @@
     </ClInclude>
     <ClInclude Include="TileWorld.h">
       <Filter>Source Files\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="LightingComputePL.h">
+      <Filter>Source Files\vulkan\piplines</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

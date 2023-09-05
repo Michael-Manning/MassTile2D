@@ -16,9 +16,12 @@
 
 #include "texture.h"
 #include "VKEngine.h"
+
 #include "coloredQuadPL.h"
 #include "texturedQuadPL.h"
 #include "tilemapPL.h"
+#include "LightingComputePL.h"
+
 #include "IDGenerator.h"
 #include "typedefs.h"
 #include "Physics.h"
@@ -172,6 +175,7 @@ private:
 	std::unique_ptr<TilemapPL> tilemapPipeline = nullptr;
 	std::unique_ptr<ColoredQuadPL> colorPipeline = nullptr;
 	std::unique_ptr<TexturedQuadPL> instancedPipeline = nullptr;
+	std::unique_ptr<LightingComputePL> lightingPipeline = nullptr;
 
 	VKUtil::UBOUploader<cameraUBO_s> cameraUploader;
 

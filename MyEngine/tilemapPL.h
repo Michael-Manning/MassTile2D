@@ -30,7 +30,7 @@ public:
 	TilemapPL(std::shared_ptr<VKEngine>& engine, VertexMeshBuffer quadMesh, std::shared_ptr<TileWorld> world) : Pipeline(engine), quadMesh(quadMesh), world(world) {
 	}
 
-	void CreateGraphicsPipline(std::string vertexSrc, std::string fragmentSrc, MappedDoubleBuffer& cameradb);
+	void CreateGraphicsPipeline(std::string vertexSrc, std::string fragmentSrc, MappedDoubleBuffer& cameradb);
 	void recordCommandBuffer(VkCommandBuffer commandBuffer);
 
 

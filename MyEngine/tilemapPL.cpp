@@ -34,7 +34,7 @@ namespace {
 	};
 }
 
-void TilemapPL::CreateGraphicsPipline(std::string vertexSrc, std::string fragmentSrc, MappedDoubleBuffer& cameradb) {
+void TilemapPL::CreateGraphicsPipeline(std::string vertexSrc, std::string fragmentSrc, MappedDoubleBuffer& cameradb) {
 
 	auto shaderStages = createShaderStages(vertexSrc, fragmentSrc);
 
@@ -79,7 +79,7 @@ void TilemapPL::CreateGraphicsPipline(std::string vertexSrc, std::string fragmen
 	pipelineInfo.subpass = 0;
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-	auto res = vkCreateGraphicsPipelines(engine->device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline);
+	auto res = vkCreateGraphicsPipelines(engine->device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &_pipeline);
 	assert(res == VK_SUCCESS);
 
 	for (auto& stage : shaderStages) {
@@ -89,7 +89,7 @@ void TilemapPL::CreateGraphicsPipline(std::string vertexSrc, std::string fragmen
 
 void TilemapPL::recordCommandBuffer(VkCommandBuffer commandBuffer) {
 
-	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
 
 	VkViewport viewport = fullframeViewport();
 	vkCmdSetViewport(commandBuffer, 0, 1, &viewport);

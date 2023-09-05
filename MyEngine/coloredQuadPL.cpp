@@ -25,7 +25,7 @@
 using namespace glm;
 using namespace std;
 
-void ColoredQuadPL::CreateGraphicsPipline(std::string vertexSrc, std::string fragmentSrc, MappedDoubleBuffer& cameradb) {
+void ColoredQuadPL::CreateGraphicsPipeline(std::string vertexSrc, std::string fragmentSrc, MappedDoubleBuffer& cameradb) {
 
 	auto shaderStages = createShaderStages(vertexSrc, fragmentSrc);
 
@@ -69,7 +69,7 @@ void ColoredQuadPL::CreateGraphicsPipline(std::string vertexSrc, std::string fra
 	pipelineInfo.subpass = 0;
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-	auto res = vkCreateGraphicsPipelines(engine->device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline);
+	auto res = vkCreateGraphicsPipelines(engine->device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &_pipeline);
 	assert(res == VK_SUCCESS);
 
 	for (auto& stage : shaderStages) {
@@ -91,7 +91,7 @@ void ColoredQuadPL::recordCommandBuffer(VkCommandBuffer commandBuffer, std::vect
 	assert(drawlist.size() <= ColoredQuadPL_MAX_OBJECTS);
 	memcpy(ssboMappedDB.buffersMapped[engine->currentFrame], drawlist.data(), sizeof(ssboObjectInstanceData) * drawlist.size());
 
-	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
 
 	VkViewport viewport = fullframeViewport();
 	vkCmdSetViewport(commandBuffer, 0, 1, &viewport);

@@ -28,7 +28,7 @@ protected:
 
 	std::shared_ptr<VKEngine> engine = nullptr;
 
-	VkPipeline graphicsPipeline;
+	VkPipeline _pipeline;
 	VkPipelineLayout pipelineLayout;
 
 	
@@ -67,6 +67,7 @@ protected:
 
 
 	std::vector<VkPipelineShaderStageCreateInfo> createShaderStages(std::string vertexSrc, std::string fragmentSrc);
+	VkPipelineShaderStageCreateInfo createComputeShaderStage(std::string computeSrc);
 
 	VkPipelineInputAssemblyStateCreateInfo defaultInputAssembly();
 	VkPipelineViewportStateCreateInfo defaultViewportState();

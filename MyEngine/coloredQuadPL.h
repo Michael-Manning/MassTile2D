@@ -38,7 +38,7 @@ public:
 	ColoredQuadPL(std::shared_ptr<VKEngine>& engine, VertexMeshBuffer quadMesh) : Pipeline(engine), quadMesh(quadMesh) {
 	}
 
-	void CreateGraphicsPipline(std::string vertexSrc, std::string fragmentSrc, MappedDoubleBuffer& cameradb);
+	void CreateGraphicsPipeline(std::string vertexSrc, std::string fragmentSrc, MappedDoubleBuffer& cameradb);
 	void createInstancingBuffer();
 
 	void recordCommandBuffer(VkCommandBuffer commandBuffer, std::vector<ssboObjectInstanceData>& drawlist);
