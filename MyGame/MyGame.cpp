@@ -28,6 +28,7 @@
 #include "Editor.h"
 #include "MyMath.h"
 
+#include "Input.h"
 #include "BehaviorRegistry.h"
 #include "ball.h"
 #include "player.h"
@@ -339,13 +340,13 @@ int main() {
 					engine.worldMap->setMovingTorch(ivec2(x, y), false);
 				}
 
-				if (input->getMouseBtnUp(MouseBtn::Left)) {
+			//	if (input->getMouseBtnUp(MouseBtn::Left)) {
 					//else if (input->getMouseBtnUp(MouseBtn::Left)) {
 
 					//	torchPositions.push_back(vec2(x, y));
 
 					//engine.worldMap->setTorch(x, y);
-				}
+			//	}
 				engine.worldMap->updateLighing();
 			}
 		}
