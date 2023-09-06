@@ -1,0 +1,73 @@
+#version 450
+
+#define chunkSize 32
+#define chunkTileCount 1024
+#define chunksX  64 
+#define maxLightsPerChunk 100
+#define ambiantLight 0.00
+
+struct LightingUpdate {
+	int chunkIndex;
+	int lightCount;
+	vec2 lightPositions[maxLightsPerChunk];
+};
+
+layout(std140, set = 0, binding = 0) readonly buffer lightingObjectBuffer{
+	LightingUpdate[] lightingUpdates;
+} ;
+
+layout(std430, set = 1, binding = 0) buffer mapFGObjectBuffer {
+	int tileMapFGData[];
+} ;
+layout(std430, set = 1, binding = 1) buffer mapBGObjectBuffer {
+	int tileMapBGData[];
+} ;
+
+
+layout (local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
+
+int getBrightness(int x, int y) {
+    int cx = (x / chunkSize);
+    int cy = (y / chunkSize);
+    int chunk = cy * chunksX + cx;
+    int chuckIndexOffset = chunk * chunkTileCount;
+    return tileMapBGData[chuckIndexOffset + (y % chunkSize) * chunkSize + (x % chunkSize)] >> 16;
+}
+
+void main() 
+{
+
+   uint x = gl_LocalInvocationID.x;  
+   uint y = gl_LocalInvocationID.y;  
+
+
+
+   int chunk = lightingUpdates[gl_WorkGroupID.x].chunkIndex;
+   int chuckIndexOffset = chunk * chunkTileCount;
+   uint tilemapIndex = chuckIndexOffset + (y * chunkSize) + x;
+
+
+   uint chunkX = chunk % chunksX;
+   uint chunkY = chunk / chunksX;
+   uint globX = chunkX * chunkSize + x;
+   uint globY = chunkY * chunkSize + y;
+
+   int curBrightness = getBrightness(int(globX), int(globY));
+
+   int totalBrightness = 0;
+   totalBrightness += getBrightness(int(globX), int(globY));
+   totalBrightness += getBrightness(int(globX + 1), int(globY));
+   totalBrightness += getBrightness(int(globX + 1), int(globY  + 1));
+   totalBrightness += getBrightness(int(globX), int(globY  + 1));
+   totalBrightness += getBrightness(int(globX - 1), int(globY));
+   totalBrightness += getBrightness(int(globX - 1), int(globY - 1));
+   totalBrightness += getBrightness(int(globX + 1), int(globY - 1));
+   totalBrightness += getBrightness(int(globX - 1), int(globY + 1));
+   totalBrightness += getBrightness(int(globX), int(globY - 1));
+
+   float brightness = (totalBrightness / 9.0) / 255.0;
+   brightness = clamp(brightness, ambiantLight, 1.0);
+
+ //  tileMapData[tilemapIndex] = (tileMapData[tilemapIndex] & 0xFFFF) | int(curBrightness) << 16;
+   tileMapFGData[tilemapIndex] = (tileMapFGData[tilemapIndex] & 0xFFFF) | int(brightness * 255) << 16;
+}

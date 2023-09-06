@@ -41,7 +41,7 @@ public:
 		this->textureAtlas = textureAtlas;
 		builderDescriptorSetsDetails[1].texture = &this->textureAtlas.value();
 
-		std::array<VkBuffer, FRAMES_IN_FLIGHT> worldMapDeviceBuferRef = { world->_worldMapDeviceBuffer, world->_worldMapDeviceBuffer };
+		std::array<VkBuffer, FRAMES_IN_FLIGHT> worldMapDeviceBuferRef = { world->_worldMapFGDeviceBuffer, world->_worldMapFGDeviceBuffer };
 		builderDescriptorSetsDetails[2].doubleBuffer = &worldMapDeviceBuferRef;
 
 		buildDescriptorSets();

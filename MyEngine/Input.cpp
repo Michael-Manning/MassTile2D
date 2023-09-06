@@ -104,4 +104,7 @@ bool Input::getMouseBtnDown(MouseBtn button) {
 		mouseBtnStates[currentFrameIndex][mouseInputMap[button]] == GLFW_PRESS;
 }
 
-//bool getMouseUp(int button);
+bool Input::getMouseBtnUp(MouseBtn button) {
+	return mouseBtnStates[lastFrameIndex][mouseInputMap[button]] == GLFW_PRESS &&
+		mouseBtnStates[currentFrameIndex][mouseInputMap[button]] == GLFW_RELEASE;
+}

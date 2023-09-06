@@ -293,8 +293,7 @@ int main() {
 			engine.camera = editor.editorCamera;
 		}
 
-
-		if (input->getMouseBtn(MouseBtn::Left)) {
+		{
 
 			static int lastX = -1;
 			static int lastY = -1;
@@ -305,38 +304,49 @@ int main() {
 			int tileY = worldClick.y / tileWorldSize + mapH / 2;
 
 			if (tileX > 1 && tileX < mapW - 1 && tileY > 1 && tileY < mapH - 1) {
-
 				int x = tileX;
 				int y = mapH - tileY - 1;
 
-				/*if (x != lastX || y != lastY) {
 
-					engine.worldMap->setTile(x, y, Tiles::Grass * tilesPerBlock);
 
-					for (int i = -1; i < 2; i++)
-						for (int j = -1; j < 2; j++)
-							CalcTileVariation(x + i, y + j);
-
-					lastX = x;
-					lastY = y;
-				}*/
-
-				if (input->getMouseBtnDown(MouseBtn::Left)) {
-
-			//	static float lastTime = 0;
-			//	float time = engine.time;
-			//	if ( time - lastTime> 1.0f / 60.0f) {
+				if (input->getMouseBtn(MouseBtn::Left)) {
 
 
 
-					torchPositions.push_back(vec2(x, y));
+					/*if (x != lastX || y != lastY) {
+
+						engine.worldMap->setTile(x, y, Tiles::Grass * tilesPerBlock);
+
+						for (int i = -1; i < 2; i++)
+							for (int j = -1; j < 2; j++)
+								CalcTileVariation(x + i, y + j);
+
+						lastX = x;
+						lastY = y;
+					}*/
+
+					//if (input->getMouseBtnDown(MouseBtn::Left)) {
+
+					float tileXf = worldClick.x / tileWorldSize + mapW / 2.0f;
+					float tileYf = mapH - (worldClick.y / tileWorldSize + mapH / 2.0f) - 1;
+
+					engine.worldMap->setMovingTorch(vec2(tileXf, tileYf), true);
 
 
-					engine.worldMap->setTorch(x, y);
-					engine.worldMap->updateLighing();
-				//lastTime = time;
 				}
-				//}
+				else {
+
+					engine.worldMap->setMovingTorch(ivec2(x, y), false);
+				}
+
+				if (input->getMouseBtnUp(MouseBtn::Left)) {
+					//else if (input->getMouseBtnUp(MouseBtn::Left)) {
+
+					//	torchPositions.push_back(vec2(x, y));
+
+					//engine.worldMap->setTorch(x, y);
+				}
+				engine.worldMap->updateLighing();
 			}
 		}
 		if (showingEditor == false && input->getMouseBtn(MouseBtn::Right)) {

@@ -30,6 +30,7 @@
 #include "Physics.h"
 #include "Entity.h"
 #include "Vertex.h"
+#include "profiling.h"
 
 using namespace glm;
 using namespace std;
@@ -110,6 +111,8 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 
 void Engine::Start(std::string windowName, int winW, int winH, std::string shaderDir) {
 
+	PROFILE_START(Engine_Startup);
+
 	rengine->initWindow(winW, winH, windowName, false);
 	glfwSetWindowUserPointer(rengine->window, this);
 	glfwSetFramebufferSizeCallback(rengine->window, framebufferResizeCallback);
@@ -187,7 +190,7 @@ void Engine::Start(std::string windowName, int winW, int winH, std::string shade
 	// lighting compute pipeline
 	{
 		lightingPipeline->createStagingBuffers();
-		lightingPipeline->CreateComputePipeline(shaderDir + "lighting_comp.spv");
+		lightingPipeline->CreateComputePipeline(shaderDir + "lighting_comp.spv", shaderDir + "lightingBlur_comp.spv");
 	}
 
 	rengine->createSyncObjects();
@@ -205,6 +208,8 @@ void Engine::Start(std::string windowName, int winW, int winH, std::string shade
 	glfwShowWindow(rengine->window);
 
 	_onWindowResize();
+
+	PROFILE_END(Engine_Startup);
 }
 
 void Engine::loadPrefabs() {
@@ -256,6 +261,7 @@ bool Engine::QueueNextFrame() {
 		lightingPipeline->stageLightingUpdate(lightingData);
 		lightingPipeline->recordCommandBuffer(computeCmdBuffer, lightingData.size());
 		rengine->submitCompute();
+		worldMap->chunkLightingJobs.clear();
 	}
 
 

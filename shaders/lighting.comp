@@ -4,7 +4,7 @@
 #define chunkTileCount 1024
 #define chunksX  64 
 #define maxLightsPerChunk 100
-#define ambiantLight 0.02
+#define ambiantLight 0.00
 
 struct LightingUpdate {
 	int chunkIndex;
@@ -16,9 +16,13 @@ layout(std140, set = 0, binding = 0) readonly buffer lightingObjectBuffer{
 	LightingUpdate[] lightingUpdates;
 } ;
 
-layout(std430, set = 1, binding = 0) buffer mapObjectBuffer {
-	int tileMapData[];
+layout(std430, set = 1, binding = 0) buffer mapFGObjectBuffer {
+	int tileMapFGData[];
 } ;
+layout(std430, set = 1, binding = 1) buffer mapBGObjectBuffer {
+	int tileMapBGData[];
+} ;
+
 
 layout (local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
 
@@ -27,7 +31,7 @@ int getTile(int x, int y) {
     int cy = (y / chunkSize);
     int chunk = cy * chunksX + cx;
     int chuckIndexOffset = chunk * chunkTileCount;
-    return tileMapData[chuckIndexOffset + (y % chunkSize) * chunkSize + (x % chunkSize)];
+    return tileMapFGData[chuckIndexOffset + (y % chunkSize) * chunkSize + (x % chunkSize)];
 }
 
 void main() 
@@ -54,12 +58,12 @@ void main()
     {
         vec2 torch = lightingUpdates[gl_WorkGroupID.x].lightPositions[i];
         float dist = distance(vec2(globX, globY), torch);
-        if(dist < 20){
+        if(dist < 31){
             
             vec2 lightDir = normalize(torch - vec2(globX, globY));
 
             int hits = 0;
-            for(int j = 0; j < dist; j++)
+            for(float j = 0; j < dist; j+= 0.25)
             {
                 int tile = getTile(int(globX + lightDir.x * j), int(globY + lightDir.y * j)) & 0xFFFF;
                 if(tile != 1023)
@@ -73,8 +77,8 @@ void main()
             {
                 continue;
             }
-            dist = clamp(1 - (dist / 20), 0.0f, 1.0f);
-            brightness += dist / clamp(hits * 2.0, 1, 20); 
+            dist = clamp(1 - (dist / 31), 0.0f, 1.0f);
+            brightness += dist / clamp(hits * 2.0, 1, 31); 
         }
         
     }
@@ -84,7 +88,7 @@ void main()
     // {
     //     vec2 torch = lightingUpdates[gl_WorkGroupID.x].lightPositions[i];
     //     float dist = distance(vec2(globX, globY), torch);
-    //     dist = clamp(1 - (dist / 20), 0.0f, 1.0f);
+    //     dist = clamp(1 - (dist / 31), 0.0f, 1.0f);
     //     brightness += dist;
     // }
 
@@ -92,5 +96,5 @@ void main()
 
 
 
-    tileMapData[tilemapIndex] = (tileMapData[tilemapIndex] & 0xFFFF) | int(brightness * 255) << 16;
+    tileMapBGData[tilemapIndex] = (tileMapBGData[tilemapIndex] & 0xFFFF) | int(brightness * 255) << 16;
 }

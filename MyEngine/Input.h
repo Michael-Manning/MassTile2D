@@ -61,7 +61,7 @@ public:
 	glm::vec2 getMousePos();
 	bool getMouseBtn(MouseBtn button);
 	bool getMouseBtnDown(MouseBtn button);
-	//bool getMouseUp(int button);
+	bool getMouseBtnUp(MouseBtn button);
 		
 private:
 	GLFWwindow* window;

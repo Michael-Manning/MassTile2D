@@ -1,10 +1,4 @@
 
-create descriptor pool should call a static function from every pipline asking it's descriptor requirements for each descriptor type
-or something similar. Should actually be supplied to prevent pipeline awareness
-
-
-
-
 
 How to add a component:
 
@@ -19,3 +13,10 @@ How to add a component:
 - add to prefab
 - add to instantiate
 - add to scene -> duplicate entity
+
+
+Ideas for lighting system:
+
+Could have a maximum "dynamic", or shadow casting lights per chunk. That is, a limit on the number of lights
+other block march towards for their light value. After that, aditional lights project their light onto their sarrounding
+blocks directly as they are placed to limit the complexity of recalculations

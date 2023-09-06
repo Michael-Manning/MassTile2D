@@ -35,7 +35,7 @@ public:
 
 	void createStagingBuffers();
 
-	void CreateComputePipeline(std::string computeSrc);
+	void CreateComputePipeline(std::string computeSrc_firstPass, std::string computeSrc_secondPass);
 
 	void recordCommandBuffer(VkCommandBuffer commandBuffer, int chunkUpdateCount);
 
@@ -48,6 +48,9 @@ public:
 
 private:
 	
+	VkPipeline firstStagePipeline;
+	VkPipeline secondStagePipeline;
+
 	MappedDoubleBuffer lightPositionsDB;
 
 	std::shared_ptr<TileWorld> world = nullptr;

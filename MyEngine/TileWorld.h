@@ -33,7 +33,7 @@ static_assert(mapCount == TileWorld_MAX_TILES);
 static_assert(mapW% chunkSize == 0);
 static_assert(mapH% chunkSize == 0);
 
-constexpr float ambiantLight = 0.02f;
+constexpr float ambiantLight = 0.00f;
 
 const static int maxChunkUpdatesPerFrame = 10;
 const static int maxLightsPerChunk = 100;
@@ -58,6 +58,7 @@ public:
 	//std::vector<glm::vec2> torchPositions;
 
 	std::vector<blockID> mapData;
+	std::vector<blockID> bgMapData;
 
 	// for gpu updating
 	uint32_t minDirtyIndex = UINT32_MAX;
@@ -69,6 +70,7 @@ public:
 
 	TileWorld(std::shared_ptr<VKEngine> engine) : engine(engine) {
 		mapData = std::vector<blockID>(mapCount, 0);
+		bgMapData = std::vector<blockID>(mapCount, 0);
 		chunkDirtyFlags = std::vector<bool>(chunkCount, false);
 		chunkLightingDirtyFlags = std::vector<bool>(chunkCount, false);
 		torchPositions.resize(chunkCount);
@@ -90,7 +92,7 @@ public:
 	};
 
 	void copyLargeChunkToDevice(int chunkIndex) {
-		engine->copyBuffer(largeChunkBuffer, _worldMapDeviceBuffer, sizeof(ssboObjectData) * largeChunkCount, chunkIndex * sizeof(ssboObjectData) * largeChunkCount);
+		engine->copyBuffer(largeChunkBuffer, _worldMapFGDeviceBuffer, sizeof(ssboObjectData) * largeChunkCount, chunkIndex * sizeof(ssboObjectData) * largeChunkCount);
 	};
 
 	void AllocateVulkanResources() {
@@ -171,6 +173,33 @@ public:
 		maxDirtyIndex = chunk > maxDirtyIndex ? chunk : maxDirtyIndex;
 	};
 
+
+	glm::vec2 movingTorch = glm::vec2(0, 0);
+	bool useMovingTorch = false;
+
+	void setMovingTorch(glm::vec2 pos, bool enabled) {
+		movingTorch = pos;
+		useMovingTorch = enabled;
+
+
+		uint32_t _cx = (pos.x / chunkSize);
+		uint32_t _cy = (pos.y / chunkSize);
+		uint32_t chunk = +_cy * chunksX + _cx;
+
+		for (int i = -1; i < 2; i++)
+		{
+			for (int j = -1; j < 2; j++) {
+				uint32_t cx = _cx + i;
+				uint32_t cy = _cy + j;
+				chunk = cy * chunksX + cx;
+				chunkLightingDirtyFlags[chunk] = true;
+				minDirtyLightingIndex = chunk < minDirtyLightingIndex ? chunk : minDirtyLightingIndex;
+				maxDirtyLightingIndex = chunk > maxDirtyLightingIndex ? chunk : maxDirtyLightingIndex;
+			}
+		}
+		
+	};
+
 	// flag surrounding chunks as dirty 
 	void setTorch(uint32_t x, uint32_t y) {
 
@@ -179,12 +208,16 @@ public:
 		uint32_t chunk = +_cy * chunksX + _cx;
 		torchPositions[chunk].push_back({ x, y });
 
-		int _i = x % chunkSize > (chunkSize / 2) ? 0 : -1;
+		/*int _i = x % chunkSize > (chunkSize / 2) ? 0 : -1;
 		int _j = y % chunkSize > (chunkSize / 2) ? 0 : -1;
 
 		for (int i = _i; i < _i + 2; i++)
 		{
-			for (int j = _j; j < _j + 2; j++) {
+			for (int j = _j; j < _j + 2; j++) {*/
+
+		for (int i = -1; i < 2; i++)
+		{
+			for (int j = -1; j < 2; j++) {
 				uint32_t cx = _cx + i;
 				uint32_t cy = _cy + j;
 				chunk = cy * chunksX + cx;
@@ -202,6 +235,8 @@ public:
 	std::vector<chunkLightingUpdateinfo> chunkLightingJobs;
 
 	void updateLighing() {
+		ZoneScoped;
+
 		// nothing updated
 		if (minDirtyLightingIndex == UINT32_MAX)
 			return;
@@ -236,7 +271,10 @@ public:
 						t += torchPositions[chunkSearch].size();*/
 					}
 				}
-				update.lightCount = t;
+				if (useMovingTorch) {
+					update.lightPositions[t++] = glm::vec4(movingTorch.x, movingTorch.y, 0.0f, 0.0f);
+					update.lightCount = t;
+				}
 				chunkLightingJobs.push_back(update);
 			}
 		}
@@ -268,7 +306,7 @@ public:
 					copyRegion.srcOffset = 0;
 
 					// expand by increasing size of transfer buffer. Upload multiple chunks by specifying multiple copy regions
-					vkCmdCopyBuffer(commandBuffer, chunkTransferBuffers.buffers[engine->currentFrame], _worldMapDeviceBuffer, 1, &copyRegion);
+					vkCmdCopyBuffer(commandBuffer, chunkTransferBuffers.buffers[engine->currentFrame], _worldMapFGDeviceBuffer, 1, &copyRegion);
 				}
 
 				return;
@@ -280,7 +318,8 @@ public:
 		maxDirtyIndex = 0;
 	};
 
-	VkBuffer _worldMapDeviceBuffer;
+	VkBuffer _worldMapFGDeviceBuffer;
+	VkBuffer _worldMapBGDeviceBuffer;
 
 	struct ssboObjectData {
 		blockID index;
@@ -291,7 +330,9 @@ private:
 
 
 	void createWorldBuffer() {
-		engine->createBuffer(sizeof(ssboObjectData) * (TileWorld_MAX_TILES), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT, _worldMapDeviceBuffer, worldMapDeviceBufferAllocation, true);
+		// create foreground and background VRAM buffers
+		engine->createBuffer(sizeof(ssboObjectData) * (TileWorld_MAX_TILES), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT, _worldMapFGDeviceBuffer, worldMapFGDeviceBufferAllocation, true);
+		engine->createBuffer(sizeof(ssboObjectData) * (TileWorld_MAX_TILES), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT, _worldMapBGDeviceBuffer, worldMapBGDeviceBufferAllocation, true);
 	};
 	void createChunkTransferBuffers() {
 		// create large buffer for initial upload
@@ -310,6 +351,7 @@ private:
 
 	MappedDoubleBuffer chunkTransferBuffers;
 
-	VmaAllocation worldMapDeviceBufferAllocation;
+	VmaAllocation worldMapFGDeviceBufferAllocation;
+	VmaAllocation worldMapBGDeviceBufferAllocation;
 
 };
