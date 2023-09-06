@@ -4,6 +4,7 @@
 - finalize tilemap coordinate system
 - make tile vs block terminalogy consistent
 - add padding blocks and prevent light update jobs to out of bounds chuink
+- adding removing blocks must update surrounding chunk lighting
 
 
 - switch color and texture instancing piplines to fixed secondar command buffer. Use drawIndirect to update instance count with buffer. Profile first
