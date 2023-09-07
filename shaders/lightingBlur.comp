@@ -26,48 +26,69 @@ layout(std430, set = 1, binding = 1) buffer mapBGObjectBuffer {
 
 layout (local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
 
-int getBrightness(int x, int y) {
+int getChunkIndex(int x, int y){
     int cx = (x / chunkSize);
     int cy = (y / chunkSize);
     int chunk = cy * chunksX + cx;
     int chuckIndexOffset = chunk * chunkTileCount;
-    return tileMapBGData[chuckIndexOffset + (y % chunkSize) * chunkSize + (x % chunkSize)] >> 16;
+    return chuckIndexOffset + (y % chunkSize) * chunkSize + (x % chunkSize);
 }
 
 void main() 
 {
 
-   uint x = gl_LocalInvocationID.x;  
-   uint y = gl_LocalInvocationID.y;  
+    uint x = gl_LocalInvocationID.x;  
+    uint y = gl_LocalInvocationID.y;  
 
 
 
-   int chunk = lightingUpdates[gl_WorkGroupID.x].chunkIndex;
-   int chuckIndexOffset = chunk * chunkTileCount;
-   uint tilemapIndex = chuckIndexOffset + (y * chunkSize) + x;
+    int chunk = lightingUpdates[gl_WorkGroupID.x].chunkIndex;
+    int chuckIndexOffset = chunk * chunkTileCount;
+    uint tilemapIndex = chuckIndexOffset + (y * chunkSize) + x;
 
 
-   uint chunkX = chunk % chunksX;
-   uint chunkY = chunk / chunksX;
-   uint globX = chunkX * chunkSize + x;
-   uint globY = chunkY * chunkSize + y;
+    uint chunkX = chunk % chunksX;
+    uint chunkY = chunk / chunksX;
+    uint globX = chunkX * chunkSize + x;
+    uint globY = chunkY * chunkSize + y;
 
-   int curBrightness = getBrightness(int(globX), int(globY));
+    int index = getChunkIndex(int(globX ), int(globY ));
+    int curtile = tileMapFGData[index] & 0xFFFF;
 
-   int totalBrightness = 0;
-   totalBrightness += getBrightness(int(globX), int(globY));
-   totalBrightness += getBrightness(int(globX + 1), int(globY));
-   totalBrightness += getBrightness(int(globX + 1), int(globY  + 1));
-   totalBrightness += getBrightness(int(globX), int(globY  + 1));
-   totalBrightness += getBrightness(int(globX - 1), int(globY));
-   totalBrightness += getBrightness(int(globX - 1), int(globY - 1));
-   totalBrightness += getBrightness(int(globX + 1), int(globY - 1));
-   totalBrightness += getBrightness(int(globX - 1), int(globY + 1));
-   totalBrightness += getBrightness(int(globX), int(globY - 1));
+  //  int curBrightness =  tileMapBGData[index] >> 16;
 
-   float brightness = (totalBrightness / 9.0) / 255.0;
-   brightness = clamp(brightness, ambiantLight, 1.0);
+    float totalBrightness = 0;
+    int sampleCount = 0;
 
- //  tileMapData[tilemapIndex] = (tileMapData[tilemapIndex] & 0xFFFF) | int(curBrightness) << 16;
-   tileMapFGData[tilemapIndex] = (tileMapFGData[tilemapIndex] & 0xFFFF) | int(brightness * 255) << 16;
+    for(int i = -1; i < 2; i++){
+        for(int j = -1; j < 2; j++){
+
+            index = getChunkIndex(int(globX + i), int(globY + j));
+            int tile = tileMapFGData[index] & 0xFFFF;
+            int brightness = tileMapBGData[index] >> 16;
+
+            if(tile == 1023 || curtile != 1023){
+                sampleCount +=  1;
+                totalBrightness += brightness;
+            }
+        }
+    }
+
+    // float brightness = (totalBrightness / 9.0) / 255.0;
+
+    float brightness = (totalBrightness / float(sampleCount)) / 255.0;
+    brightness = clamp(brightness, ambiantLight, 1.0);
+
+     //tileMapFGData[tilemapIndex] = (tileMapFGData[tilemapIndex] & 0xFFFF) | int(curBrightness) << 16;
+    tileMapFGData[tilemapIndex] = (tileMapFGData[tilemapIndex] & 0xFFFF) | int(brightness * 255) << 16;
 }
+
+// totalBrightness += getBrightness(int(globX), int(globY));
+// totalBrightness += getBrightness(int(globX + 1), int(globY));
+// totalBrightness += getBrightness(int(globX + 1), int(globY  + 1));
+// totalBrightness += getBrightness(int(globX), int(globY  + 1));
+// totalBrightness += getBrightness(int(globX - 1), int(globY));
+// totalBrightness += getBrightness(int(globX - 1), int(globY - 1));
+// totalBrightness += getBrightness(int(globX + 1), int(globY - 1));
+// totalBrightness += getBrightness(int(globX - 1), int(globY + 1));
+// totalBrightness += getBrightness(int(globX), int(globY - 1));

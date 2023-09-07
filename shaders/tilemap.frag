@@ -72,16 +72,27 @@ void main() {
     //switch to sampling with padding to avoid branching
     if(xi > 1 && xi < mapw - 1 && yi > 1 && yi < maph - 1){
 
-        float brightness00 = sampleBrightnessGrid(xi, yi);
+        int tile00 = getTile(xi, yi);
+        float brightness00 = tile00 >> 16;
+        bool air = (tile00 & 0xFFFF) == 1023;
         int sx = int(sign(2.0 * localUV.x - 1.0));
         int sy = int(sign(2.0 * localUV.y - 1.0));
-        float brightness10 = sampleBrightnessGrid(xi + sx, yi);
-        float brightness01 = sampleBrightnessGrid(xi, yi + sy);
-        float brightness11 = sampleBrightnessGrid(xi + sx, yi + sy);
+
+        int tile10 = getTile(xi + sx, yi);
+        int tile01 = getTile(xi, yi + sy);
+        int tile11 = getTile(xi + sx, yi + sy);
+
+        float brightness10 = (air && ((tile10 & 0xFFFF) != 1023)) ? brightness00 : (tile10 >> 16);
+        float brightness01 = (air && ((tile01 & 0xFFFF) != 1023)) ? brightness00 : (tile01 >> 16);
+        float brightness11 = (air && ((tile11 & 0xFFFF) != 1023)) ? brightness00 : (tile11 >> 16);
+
+        // float brightness10 = sampleBrightnessGrid(xi + sx, yi);
+        // float brightness01 = sampleBrightnessGrid(xi, yi + sy);
+        // float brightness11 = sampleBrightnessGrid(xi + sx, yi + sy);
 
         float brightness0 = mix(brightness00, brightness10, abs(localUV.x - 0.5));
         float brightness1 = mix(brightness01, brightness11, abs(localUV.x - 0.5));
-        brightness = mix(brightness0, brightness1, abs(localUV.y - 0.5));
+        brightness = mix(brightness0, brightness1, abs(localUV.y - 0.5)) / 255.0;
     }
     else{
          brightness = sampleBrightnessGrid(xi, yi);

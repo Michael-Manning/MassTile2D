@@ -273,8 +273,8 @@ public:
 				}
 				if (useMovingTorch) {
 					update.lightPositions[t++] = glm::vec4(movingTorch.x, movingTorch.y, 0.0f, 0.0f);
-					update.lightCount = t;
 				}
+					update.lightCount = t;
 				chunkLightingJobs.push_back(update);
 			}
 		}

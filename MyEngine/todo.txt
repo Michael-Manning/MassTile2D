@@ -6,6 +6,7 @@
 - add padding blocks and prevent light update jobs to out of bounds chuink
 - adding removing blocks must update surrounding chunk lighting
 
+- fix getkeyup
 
 - switch color and texture instancing piplines to fixed secondar command buffer. Use drawIndirect to update instance count with buffer. Profile first
 (Could just use camera buffer since I'm already updating that every frame!)

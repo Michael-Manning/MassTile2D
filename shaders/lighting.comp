@@ -63,7 +63,7 @@ void main()
             vec2 lightDir = normalize(torch - vec2(globX, globY));
 
             int hits = 0;
-            for(float j = 0; j < dist; j+= 0.25)
+            for(float j = 0; j < dist; j+= 0.5)
             {
                 int tile = getTile(int(globX + lightDir.x * j), int(globY + lightDir.y * j)) & 0xFFFF;
                 if(tile != 1023)
@@ -77,8 +77,12 @@ void main()
             {
                 continue;
             }
-            dist = clamp(1 - (dist / 31), 0.0f, 1.0f);
-            brightness += dist / clamp(hits * 2.0, 1, 31); 
+            dist = clamp(pow(1 - (dist / 31), 2.0), 0.0f, 1.0f);
+           // brightness += dist ;
+       //      brightness += dist / clamp(hits * 0.5, 1, 3) - hits / 30.0;
+
+            float penatration = min(1.0, 1.0 - float(hits) / 30.0);
+             brightness += dist * pow(penatration, 5.0);
         }
         
     }

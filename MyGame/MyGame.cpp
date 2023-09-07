@@ -336,17 +336,23 @@ int main() {
 
 				}
 				else {
-
+//
 					engine.worldMap->setMovingTorch(ivec2(x, y), false);
 				}
 
-			//	if (input->getMouseBtnUp(MouseBtn::Left)) {
+				static bool lastState = true;
+
+				if (input->getMouseBtn(MouseBtn::Left) == false && lastState == true) {
 					//else if (input->getMouseBtnUp(MouseBtn::Left)) {
 
-					//	torchPositions.push_back(vec2(x, y));
+				//	torchPositions.push_back(vec2(x, y));
 
-					//engine.worldMap->setTorch(x, y);
-			//	}
+					engine.worldMap->setTorch(x, y);
+					cout << "up" << endl;
+				}
+
+				lastState = input->getMouseBtn(MouseBtn::Left);
+
 				engine.worldMap->updateLighing();
 			}
 		}
