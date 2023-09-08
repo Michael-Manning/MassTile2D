@@ -263,6 +263,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\MyEngine\ball.h" />
+    <ClInclude Include="benchmark.h" />
     <ClInclude Include="global.h" />
     <ClInclude Include="Player.h" />
     <ClInclude Include="worldGen.h" />

@@ -353,18 +353,17 @@ constexpr int pipelineCount = 4; // temp
 void VKEngine::createDescriptorPool() {
 
 	vector< VkDescriptorPoolSize> poolSizes {
-		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(FRAMES_IN_FLIGHT)* pipelineCount + 2},
 		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(FRAMES_IN_FLIGHT) * 10 * 2 + 2 },
-		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(FRAMES_IN_FLIGHT) * 10 * 2 + 2 },
+		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 50},
 		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 10 + 2 },
-		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 10 + 2 }
+		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 30}
 	};
 
 	VkDescriptorPoolCreateInfo poolInfo{};
 	poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 	poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
 	poolInfo.pPoolSizes = poolSizes.data();
-	poolInfo.maxSets = static_cast<uint32_t>(FRAMES_IN_FLIGHT) * pipelineCount + 10;
+	poolInfo.maxSets = static_cast<uint32_t>(FRAMES_IN_FLIGHT) * pipelineCount + 50;
 	//  poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT;
 
 	if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {

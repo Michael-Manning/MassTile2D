@@ -115,7 +115,7 @@ void TilemapPL::recordCommandBuffer(VkCommandBuffer commandBuffer) {
 	vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(pushConstant_s), &pushData);
 
 	{
-		TracyVkZone(engine->tracyComputeContexts[engine->currentFrame], commandBuffer, "Tilemap render");
+		TracyVkZone(engine->tracyGraphicsContexts[engine->currentFrame], commandBuffer, "Tilemap render");
 		vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(QuadIndices.size()), 1, 0, 0, 0);
 	}
 }

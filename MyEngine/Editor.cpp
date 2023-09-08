@@ -182,7 +182,7 @@ void Editor::controlWindow(Engine& engine) {
 	Begin("control", nullptr, flags);
 
 	if (engine.time - updateTimer > 0.2f) {
-		frameRateStat = engine.framerate;
+		frameRateStat = engine._getAverageFramerate();
 		updateTimer = engine.time;
 	}
 

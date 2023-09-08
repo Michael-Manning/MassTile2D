@@ -1,5 +1,6 @@
 
 
+
 How to add a component:
 
 - Add new component header and class inheriting component

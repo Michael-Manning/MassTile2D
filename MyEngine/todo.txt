@@ -1,12 +1,23 @@
 
 
-- remove benchmark.cpp
+To profile:
+
+without compute shader:
+- do mat 3 calculations in vertex shader affect performance
+- does uploading mat3 camera matrix affect performance, or does increased memory cancel that out
+
+with compute shader:
+- std140 vs std430
+
+
 - finalize tilemap coordinate system
 - make tile vs block terminalogy consistent
-- add padding blocks and prevent light update jobs to out of bounds chuink
+- add padding blocks and prevent light update jobs to out of bounds chunk
 - adding removing blocks must update surrounding chunk lighting
 
 - fix getkeyup
+
+- figure out if it's necessary to set the viewport, siscor, and vertex bindings individually in each pipeline function.
 
 - switch color and texture instancing piplines to fixed secondar command buffer. Use drawIndirect to update instance count with buffer. Profile first
 (Could just use camera buffer since I'm already updating that every frame!)
@@ -16,11 +27,9 @@ Update: Since draw command is always last, could put everything in the secondary
 entity transform matrices for color/texture pipeline instead of per vertex calculation - profile first
 
 
-
-
 - Inter-bahaviour entity accessor
-- general behaviour scene access for camera and common data needs
 
+- general behaviour scene access for camera and common data needs
 
 - player buffer jump input
 
@@ -47,11 +56,8 @@ things to abstract:
 
 - buffer management (group allocation and buffer, see vkguide)
 
-- group together descriptor layout, set, and write creation in a class
 
-- default quad vertex management
-
-- check for deticated compute family queue and use it for compute shaders asynchrounously
+- check for dedicated compute family queue and use it for compute shaders asynchrounously
 
 - query maxComputeWorkGroupCount, maxComputeWorkGroupInvocations, and maxComputeWorkGroupSize to determine max work group size
 

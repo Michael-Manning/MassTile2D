@@ -78,9 +78,6 @@
     <ClCompile Include="Editor.cpp">
       <Filter>Source Files\Editor</Filter>
     </ClCompile>
-    <ClCompile Include="bechmark.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="tilemapPL.cpp">
       <Filter>Source Files\vulkan\piplines</Filter>
     </ClCompile>
@@ -95,6 +92,9 @@
     </ClCompile>
     <ClCompile Include="TracyClient.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="quadComputePL.cpp">
+      <Filter>Source Files\vulkan\piplines</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -195,6 +195,9 @@
       <Filter>Source Files\Engine</Filter>
     </ClInclude>
     <ClInclude Include="LightingComputePL.h">
+      <Filter>Source Files\vulkan\piplines</Filter>
+    </ClInclude>
+    <ClInclude Include="quadComputePL.h">
       <Filter>Source Files\vulkan\piplines</Filter>
     </ClInclude>
   </ItemGroup>

@@ -29,8 +29,11 @@ void ColoredQuadPL::CreateGraphicsPipeline(std::string vertexSrc, std::string fr
 
 	auto shaderStages = createShaderStages(vertexSrc, fragmentSrc);
 
+	std::array<VkBuffer, FRAMES_IN_FLIGHT> transformBufferRef = { transformBuffer, transformBuffer };
+
 	configureDescriptorSets(vector<Pipeline::descriptorSetInfo> {
 		descriptorSetInfo(0, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, &cameradb.buffers, cameradb.size),
+		descriptorSetInfo(0, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, &transformBufferRef, sizeof(transformSSBO_430) * ColoredQuadPL_MAX_OBJECTS),
 		descriptorSetInfo(1, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, &ssboMappedDB.buffers, ssboMappedDB.size)
 	});
 	buildDescriptorLayouts();
@@ -79,17 +82,19 @@ void ColoredQuadPL::CreateGraphicsPipeline(std::string vertexSrc, std::string fr
 	buildDescriptorSets();
 }
 
-void ColoredQuadPL::createInstancingBuffer() {
-	engine->createMappedBuffer(sizeof(ssboObjectInstanceData) * ColoredQuadPL_MAX_OBJECTS, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, ssboMappedDB);
+void ColoredQuadPL::CreateInstancingBuffer() {
+	engine->createMappedBuffer(sizeof(InstanceBufferData) * ColoredQuadPL_MAX_OBJECTS, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, ssboMappedDB);
 }
 
-void ColoredQuadPL::recordCommandBuffer(VkCommandBuffer commandBuffer, std::vector<ssboObjectInstanceData>& drawlist) {
-
-	if (drawlist.size() == 0)
-		return;
-
+void ColoredQuadPL::UploadInstanceData(std::vector<InstanceBufferData>& drawlist) {
 	assert(drawlist.size() <= ColoredQuadPL_MAX_OBJECTS);
-	memcpy(ssboMappedDB.buffersMapped[engine->currentFrame], drawlist.data(), sizeof(ssboObjectInstanceData) * drawlist.size());
+	memcpy(ssboMappedDB.buffersMapped[engine->currentFrame], drawlist.data(), sizeof(InstanceBufferData) * drawlist.size());
+}
+
+void ColoredQuadPL::recordCommandBuffer(VkCommandBuffer commandBuffer, int instanceCount) {
+
+	if (instanceCount == 0)
+		return;
 
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
 
@@ -109,5 +114,8 @@ void ColoredQuadPL::recordCommandBuffer(VkCommandBuffer commandBuffer, std::vect
 	for (auto& i : builderDescriptorSetsDetails)
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, i.set, 1, &builderDescriptorSets[i.set][engine->currentFrame], 0, nullptr);
 
-	vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(QuadIndices.size()), drawlist.size(), 0, 0, 0);
+	{
+		TracyVkZone(engine->tracyGraphicsContexts[engine->currentFrame], commandBuffer, "Colored quad render");
+		vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(QuadIndices.size()), instanceCount, 0, 0, 0);
+	}
 }

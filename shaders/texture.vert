@@ -7,6 +7,7 @@ layout(binding = 0) uniform CamerUBO {
    vec2 position;
 	float zoom;
 	float aspectRatio;
+   mat3 view;
 } camera;
 
 struct ssboObject{

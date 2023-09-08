@@ -7,6 +7,7 @@
 
 #include <vulkan/vulkan.h>
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include <box2d/box2d.h>
 
 #include <tracy/Tracy.hpp>
@@ -24,7 +25,9 @@
 #include "texturedQuadPL.h"
 #include "tilemapPL.h"
 #include "LightingComputePL.h"
+#include "quadComputePL.h"
 
+#include "MyMath.h"
 #include "engine.h"
 #include "SpriteRenderer.h"	
 #include "Physics.h"
@@ -74,7 +77,10 @@ namespace {
 		std::uniform_int_distribution<> dis(min, max);
 		return dis(gen);
 	}
-
+	double ran(double min, double max) {
+		std::uniform_real_distribution<> dis(min, max);
+		return dis(gen);
+	}
 }
 
 
@@ -163,13 +169,23 @@ void Engine::Start(std::string windowName, int winW, int winH, std::string shade
 		colorPipeline = make_unique<ColoredQuadPL>(rengine, quadMeshBuffer);
 		tilemapPipeline = make_unique<TilemapPL>(rengine, quadMeshBuffer, worldMap);
 		lightingPipeline = make_unique<LightingComputePL>(rengine, worldMap);
+
+		colorQuadComputePipeline = make_unique<QuadComputePL>(rengine, 1000000);
+		colorQuadComputePipeline->allocateTransformBuffer(coloredQuadTransformBuffer, coloredQuadTransformBufferAllocation);
 	}
 
 	// section can be done in parrallel
 
+
+	{
+		colorQuadComputePipeline->CreateStagingBuffers();
+		colorQuadComputePipeline->CreateComputePipeline(shaderDir + "coloredQuadTransform_comp.spv", cameraUploader.transferBuffers, coloredQuadTransformBuffer);
+	}
+
 	// configure color pipeline
 	{
-		colorPipeline->createInstancingBuffer();
+		colorPipeline->CreateInstancingBuffer();
+		colorPipeline->SetTransformBuffer(coloredQuadTransformBuffer);
 		colorPipeline->CreateGraphicsPipeline(shaderDir + "color_vert.spv", shaderDir + "color_frag.spv", cameraUploader.transferBuffers);
 	}
 
@@ -217,6 +233,31 @@ void Engine::loadPrefabs() {
 	DebugLog("prefabs loaded");
 }
 
+
+mat3 translate(vec2 v) {
+	return mat3(
+		1.0, 0.0, 0.0,
+		0.0, 1.0, 0.0,
+		v.x, v.y, 1.0
+	);
+}
+mat3 scale(vec2 v) {
+	return mat3(
+		v.x, 0.0, 0.0,
+		0.0, v.y, 0.0,
+		0.0, 0.0, 1.0
+	);
+}
+mat3 rotate(float angle) {
+	float c = cos(angle);
+	float s = sin(angle);
+	return mat3(
+		c, s, 0.0,
+		-s, c, 0.0,
+		0.0, 0.0, 1.0
+	);
+}
+
 bool Engine::QueueNextFrame() {
 
 	if (firstFrame) {
@@ -227,6 +268,9 @@ bool Engine::QueueNextFrame() {
 	deltaTime = time - lastTime;
 	paused_deltaTime = deltaTime;
 	framerate = 1.0 / deltaTime;
+	frameTimes[frameTimeIndex++] = framerate;
+	frameTimeIndex = frameTimeIndex % frameTimeBufferCount;
+
 	lastTime = time;
 	this->time = time;
 
@@ -253,15 +297,59 @@ bool Engine::QueueNextFrame() {
 	}
 
 	{
-		ZoneScopedN("compute shader");
+		ZoneScopedN("compute shaders");
 
 		rengine->waitForCompute();
+
+
+
+
+
+		{
+			const int tSize = 1000; // 1 million
+
+			static int  uCount = 0;
+			if (uCount <= 2) {
+				uCount++;
+
+				PROFILE_START(Quad_upload);
+				static vector<QuadComputePL::InstanceBufferData> drawlist;
+				drawlist.reserve(tSize * tSize);
+
+				if (uCount == 1) {
+
+					for (size_t i = 0; i < tSize; i++)
+					{
+						for (size_t j = 0; j < tSize; j++)
+						{
+
+							QuadComputePL::InstanceBufferData instanceData;
+							instanceData.color = vec4(ran(0.5, 1.0), ran(0.5, 1.0), ran(0.5, 1.0), 1.0f);
+							instanceData.position = vec2(i * 1.1, j * 1.1);
+							instanceData.scale = vec2(1.0f);
+							instanceData.circle = false;
+							instanceData.rotation = ran(0.0f, PI);
+
+							drawlist.push_back(instanceData);
+						}
+					}
+				}
+				colorQuadComputePipeline->UploadInstanceData(drawlist);
+				colorPipeline->temp(drawlist);
+				PROFILE_END(Quad_upload);
+			}
+		}
+
+
+
+
 		auto computeCmdBuffer = rengine->getNextComputeCommandBuffer();
 		auto lightingData = worldMap->getLightingUpdateData();
 		lightingPipeline->stageLightingUpdate(lightingData);
 		lightingPipeline->recordCommandBuffer(computeCmdBuffer, lightingData.size());
-		rengine->submitCompute();
 		worldMap->chunkLightingJobs.clear();
+		colorQuadComputePipeline->recordCommandBuffer(computeCmdBuffer, 1000000);
+		rengine->submitCompute();
 	}
 
 
@@ -296,43 +384,89 @@ bool Engine::QueueNextFrame() {
 		camData.position = camera.position;
 		camData.zoom = camera.zoom;
 
+		mat3 view = mat3(1.0);
+		view *= scale(vec2(camData.zoom));
+		view *= translate(vec2(-camData.position.x, camData.position.y));
+		view *= scale(vec2(1.0, -1.0));
+
+		camData.mat = std140Mat3(view);
+
 		cameraUploader.SyncBufferData(camData, rengine->currentFrame);
 	}
 
 	// colored quad
+	//{
+	//	ZoneScopedN("Colored quad PL");
+
+	//	vector<ColoredQuadPL::InstanceBufferData> drawlist;
+	//	drawlist.reserve(scene->sceneData.colorRenderers.size());
+
+	//	for (auto& renderer : scene->sceneData.colorRenderers)
+	//	{
+	//		const auto& entity = scene->sceneData.entities[renderer.first];
+
+	//		ColoredQuadPL::InstanceBufferData instanceData;
+
+	//		instanceData.color = renderer.second.color;
+	//		instanceData.position = entity->transform.position;
+	//		instanceData.scale = entity->transform.scale;
+	//		instanceData.circle = renderer.second.shape == ColorRenderer::Shape::Circle;
+	//		instanceData.rotation = entity->transform.rotation;
+
+	//		drawlist.push_back(instanceData);
+	//	}
+
+	//	colorPipeline->UploadInstanceData(drawlist);
+	//	colorPipeline->recordCommandBuffer(cmdBuffer, drawlist.size());
+	//}
+
+	//benchmark{
 	{
 		ZoneScopedN("Colored quad PL");
 
-		vector<ColoredQuadPL::ssboObjectInstanceData> drawlist;
-		drawlist.reserve(scene->sceneData.colorRenderers.size());
+		const int tSize = 1000; // 1 million
 
-		for (auto& renderer : scene->sceneData.colorRenderers)
-		{
-			const auto& entity = scene->sceneData.entities[renderer.first];
+		//static int  uCount = 0;
+		//if (uCount <= 2) {
+		//	uCount++;
 
-			ColoredQuadPL::ssboObjectInstanceData instanceData;
+		//	PROFILE_START(Quad_upload);
+		//	static vector<ColoredQuadPL::InstanceBufferData> drawlist;
+		//	drawlist.reserve(tSize * tSize);
 
-			instanceData.color = renderer.second.color;
-			instanceData.position = entity->transform.position;
-			instanceData.scale = entity->transform.scale;
-			instanceData.circle = renderer.second.shape == ColorRenderer::Shape::Circle;
-			instanceData.rotation = entity->transform.rotation;
+		//	if (uCount == 1) {
 
-			drawlist.push_back(instanceData);
-		}
+		//		for (size_t i = 0; i < tSize; i++)
+		//		{
+		//			for (size_t j = 0; j < tSize; j++)
+		//			{
 
+		//				ColoredQuadPL::InstanceBufferData instanceData;
+		//				instanceData.color = vec4(ran(0.5, 1.0), ran(0.5, 1.0), ran(0.5, 1.0), 1.0f);
+		//				instanceData.position = vec2(i * 1.1, j * 1.1);
+		//				instanceData.scale = vec2(1.0f);
+		//				instanceData.circle = false;
+		//				instanceData.rotation = ran(0.0f, PI);
 
-		colorPipeline->recordCommandBuffer(cmdBuffer, drawlist);
+		//				drawlist.push_back(instanceData);
+		//			}
+		//		}
+		//	}
+		//	colorPipeline->UploadInstanceData(drawlist);
+		//	PROFILE_END(Quad_upload);
+		//}
+
+		colorPipeline->recordCommandBuffer(cmdBuffer, tSize * tSize);
 	}
 
 	// tilemap
-	{
-		ZoneScopedN("tilemap PL");
+	//{
+	//	ZoneScopedN("tilemap PL");
 
-		if (tilemapPipeline->textureAtlas.has_value()) {
-			tilemapPipeline->recordCommandBuffer(cmdBuffer);
-		}
-	}
+	//	if (tilemapPipeline->textureAtlas.has_value()) {
+	//		tilemapPipeline->recordCommandBuffer(cmdBuffer);
+	//	}
+	//}
 
 	// Textured quad
 	{

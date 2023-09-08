@@ -23,6 +23,9 @@
 				"patternStart": "\\[glsl",
 				"patternEnd": "\\|\\]"
 			}
-		}
+      },
+      "glsllint.glslifyOptions": {
+         
+      }
 	}
 }

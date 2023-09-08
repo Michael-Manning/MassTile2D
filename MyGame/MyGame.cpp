@@ -294,6 +294,7 @@ int main() {
 			engine.camera = editor.editorCamera;
 		}
 
+#if 0
 		{
 
 			static int lastX = -1;
@@ -374,6 +375,7 @@ int main() {
 						CalcTileVariation(x + i, y + j);
 			}
 		}
+#endif
 
 		engine.QueueNextFrame();
 	}

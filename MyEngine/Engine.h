@@ -21,6 +21,7 @@
 #include "texturedQuadPL.h"
 #include "tilemapPL.h"
 #include "LightingComputePL.h"
+#include "quadComputePL.h"
 
 #include "IDGenerator.h"
 #include "typedefs.h"
@@ -141,6 +142,13 @@ public:
 		return runningStats;
 	}
 
+	float _getAverageFramerate() {
+		float sum = 0;
+		for (auto& f : frameTimes)
+			sum += f;
+		return sum / (float)frameTimeBufferCount;
+	}
+
 	void setTilemapAtlasTexture(texID texture) {
 		assert(tilemapPipeline->textureAtlas.has_value() == false);
 		tilemapPipeline->setTextureAtlas(assetManager->textureAssets[texture]);
@@ -176,6 +184,10 @@ private:
 	std::unique_ptr<ColoredQuadPL> colorPipeline = nullptr;
 	std::unique_ptr<TexturedQuadPL> instancedPipeline = nullptr;
 	std::unique_ptr<LightingComputePL> lightingPipeline = nullptr;
+	std::unique_ptr<QuadComputePL> colorQuadComputePipeline = nullptr;
+
+	VkBuffer coloredQuadTransformBuffer;
+	VmaAllocation coloredQuadTransformBufferAllocation;
 
 	VKUtil::UBOUploader<cameraUBO_s> cameraUploader;
 
@@ -185,6 +197,10 @@ private:
 	std::shared_ptr<Input> input;
 
 	debugStats runningStats = { 0 };
+
+	int frameTimeIndex = 0;
+	const static int frameTimeBufferCount = 128;
+	float frameTimes[frameTimeBufferCount];
 
 	void initPhysics();
 	void updatePhysics();

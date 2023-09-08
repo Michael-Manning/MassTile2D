@@ -1,0 +1,78 @@
+#version 450
+
+layout(binding = 0) uniform CamerUBO {
+   vec2 position;
+	float zoom;
+	float aspectRatio;
+
+   mat3 view;
+} camera;
+
+struct instanceDataObject{
+   vec4 color;
+   vec2 position;
+   vec2 scale;
+   int circle;
+   float rotation;
+};
+layout(std140, set = 0, binding = 1) readonly buffer ObjectInstaceBuffer{
+	instanceDataObject instanceData[];
+};
+
+
+struct transformObject{
+   mat3 transform;
+};
+layout(std430, set = 1, binding = 0) buffer ObjectTransformBuffer{
+	transformObject transformData[];
+};
+
+
+mat3 translate(vec2 v) {
+    return mat3(
+        1.0, 0.0, 0.0, 
+        0.0, 1.0, 0.0, 
+        v.x, v.y, 1.0
+    );
+}
+mat3 scale(vec2 v) {
+    return mat3(
+        v.x, 0.0, 0.0,
+        0.0, v.y, 0.0,
+        0.0, 0.0, 1.0
+    );
+}
+mat3 rotate(float angle) {
+    float c = cos(angle);
+    float s = sin(angle);
+    return mat3(
+        c,   s,   0.0,
+       -s,   c,   0.0,
+        0.0, 0.0, 1.0
+    );
+}
+
+layout (local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
+
+void main() {
+
+   uint instanceIndex = gl_GlobalInvocationID.x;
+
+   if(instanceIndex > 1000000){
+      return;
+   }
+
+   mat3 view = mat3(1.0);
+   view *= scale(vec2(camera.zoom));
+   view *= translate(vec2(-camera.position.x, camera.position.y));
+   view *= scale(vec2(1.0, -1.0));
+
+   instanceDataObject i = instanceData[instanceIndex];
+
+   mat3 model = mat3(1.0);
+   model *= translate(i.position);
+   model *= rotate(i.rotation);
+   model *= scale(i.scale);
+
+   transformData[instanceIndex].transform = view * model;
+}

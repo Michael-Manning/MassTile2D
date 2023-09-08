@@ -17,13 +17,18 @@
 #include "typedefs.h"
 #include "Constants.h"
 
-constexpr int ColoredQuadPL_MAX_OBJECTS = 100000;
+constexpr int ColoredQuadPL_MAX_OBJECTS = 1000000;
+
+
+
+
+#include "quadComputePL.h"
+
 
 class ColoredQuadPL :public  Pipeline {
 public:
 
-	struct ssboObjectInstanceData {
-
+	struct InstanceBufferData {
 		glm::vec4 color;
 		alignas(8)glm::vec2 position;
 		alignas(8)glm::vec2 scale;
@@ -32,19 +37,28 @@ public:
 
 		int32_t padding[2];
 	};
-
-	static_assert(sizeof(ssboObjectInstanceData) % 16 == 0);
+	static_assert(sizeof(InstanceBufferData) % 16 == 0);
 
 	ColoredQuadPL(std::shared_ptr<VKEngine>& engine, VertexMeshBuffer quadMesh) : Pipeline(engine), quadMesh(quadMesh) {
 	}
 
-	void CreateGraphicsPipeline(std::string vertexSrc, std::string fragmentSrc, MappedDoubleBuffer& cameradb);
-	void createInstancingBuffer();
+	void SetTransformBuffer(VkBuffer transformBuffer) {
+		this->transformBuffer = transformBuffer;
+	};
 
-	void recordCommandBuffer(VkCommandBuffer commandBuffer, std::vector<ssboObjectInstanceData>& drawlist);
+	void temp(std::vector<QuadComputePL::InstanceBufferData>& drawlist) {
+		memcpy(ssboMappedDB.buffersMapped[engine->currentFrame], drawlist.data(), sizeof(InstanceBufferData) * drawlist.size());
+	};
+
+	void CreateGraphicsPipeline(std::string vertexSrc, std::string fragmentSrc, MappedDoubleBuffer& cameradb);
+	void CreateInstancingBuffer();
+	void UploadInstanceData(std::vector<InstanceBufferData>& drawlist);
+	void recordCommandBuffer(VkCommandBuffer commandBuffer, int instanceCount);
 
 private:
 
 	VertexMeshBuffer quadMesh;
 	MappedDoubleBuffer ssboMappedDB;
+
+	VkBuffer transformBuffer;
 };

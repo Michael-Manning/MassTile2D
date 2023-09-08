@@ -258,11 +258,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="AssetManager.cpp" />
-    <ClCompile Include="bechmark.cpp" />
     <ClCompile Include="descriptorSetBuilder.cpp" />
     <ClCompile Include="Entity.cpp" />
     <ClCompile Include="globalBufferDefinitions.h" />
     <ClCompile Include="LightingComputePL.cpp" />
+    <ClCompile Include="quadComputePL.cpp" />
     <ClCompile Include="texturedQuadPL.cpp" />
     <ClCompile Include="coloredQuadPL.cpp" />
     <ClCompile Include="ECS.cpp" />
@@ -295,6 +295,7 @@
     <ClInclude Include="FileDialog.h" />
     <ClInclude Include="Input.h" />
     <ClInclude Include="LightingComputePL.h" />
+    <ClInclude Include="quadComputePL.h" />
     <ClInclude Include="texturedQuadPL.h" />
     <ClInclude Include="MyMath.h" />
     <ClInclude Include="Physics.h" />
