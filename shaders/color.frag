@@ -13,12 +13,6 @@ layout(std140, set = 1, binding = 0) readonly buffer ObjectInstaceBuffer{
 };
 
 
-// layout(push_constant) uniform constants {
-//    mat4 model;
-//    vec4 color;
-//    int circle;
-// };
-
 layout(location = 2) in flat int instance_index;
 layout(location = 1) in vec2 uv;
 

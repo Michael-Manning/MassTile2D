@@ -2,16 +2,11 @@
 precision highp float;
 
 layout(binding = 0) uniform CamerUBO {
-   vec2 position;
-	float zoom;
-	float aspectRatio;
-   mat3 view;
+    vec2 position;
+    float zoom;
+    float aspectRatio;
 } camera;
 
-layout(push_constant) uniform constants {
-   int mapw;
-   int maph;
-};
 
 layout(std430, set = 1, binding = 0) readonly buffer ObjectBuffer{
 	int ssboData[];

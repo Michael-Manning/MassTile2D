@@ -80,6 +80,10 @@ public:
 
 	void recordCommandBuffer(VkCommandBuffer commandBuffer, std::vector<ssboObjectInstanceData>& drawlist);
 
+	void UploadInstanceData(std::vector<ssboObjectInstanceData>& drawlist);
+	void recordCommandBufferIndirect(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, uint32_t stride);
+	void GetDrawCommand(VkDrawIndexedIndirectCommand* cmd, int instanceCount);
+
 private:
 
 	VertexMeshBuffer quadMesh;

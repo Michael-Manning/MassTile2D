@@ -31,8 +31,8 @@ public:
 	}
 
 	void CreateGraphicsPipeline(std::string vertexSrc, std::string fragmentSrc, MappedDoubleBuffer& cameradb);
-	void recordCommandBuffer(VkCommandBuffer commandBuffer);
-
+	void recordCommandBufferIndirect(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, uint32_t stride);
+	void GetDrawCommand(VkDrawIndexedIndirectCommand* cmd);
 
 	void setTextureAtlas(Texture textureAtlas) {
 

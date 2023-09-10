@@ -79,9 +79,6 @@ void LightingComputePL::recordCommandBuffer(VkCommandBuffer commandBuffer, int c
 	{
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, firstStagePipeline);
 
-		VkViewport viewport = fullframeViewport();
-		vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-
 		for (auto& i : builderDescriptorSetsDetails)
 			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, i.set, 1, &builderDescriptorSets[i.set][engine->currentFrame], 0, nullptr);
 
@@ -92,9 +89,6 @@ void LightingComputePL::recordCommandBuffer(VkCommandBuffer commandBuffer, int c
 	}
 	{
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, secondStagePipeline);
-
-		VkViewport viewport = fullframeViewport();
-		vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 
 		for (auto& i : builderDescriptorSetsDetails)
 			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, i.set, 1, &builderDescriptorSets[i.set][engine->currentFrame], 0, nullptr);

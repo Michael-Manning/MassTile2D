@@ -27,13 +27,6 @@
 using namespace glm;
 using namespace std;
 
-namespace {
-	struct pushConstant_s {
-		int mapw;
-		int maph;
-	};
-}
-
 void TilemapPL::CreateGraphicsPipeline(std::string vertexSrc, std::string fragmentSrc, MappedDoubleBuffer& cameradb) {
 
 	auto shaderStages = createShaderStages(vertexSrc, fragmentSrc);
@@ -50,7 +43,7 @@ void TilemapPL::CreateGraphicsPipeline(std::string vertexSrc, std::string fragme
 	setLayouts.reserve(builderLayouts.size());
 	for (auto& [set, layout] : builderLayouts)
 		setLayouts.push_back(layout);
-	buildPipelineLayout(setLayouts, sizeof(pushConstant_s), VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
+	buildPipelineLayout(setLayouts);
 
 	VkVertexInputBindingDescription VbindingDescription;
 	dbVertexAtribute Vattribute;
@@ -87,35 +80,22 @@ void TilemapPL::CreateGraphicsPipeline(std::string vertexSrc, std::string fragme
 	}
 }
 
-void TilemapPL::recordCommandBuffer(VkCommandBuffer commandBuffer) {
-
-
+void TilemapPL::recordCommandBufferIndirect(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, uint32_t stride) {
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
-
-	VkViewport viewport = fullframeViewport();
-	vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-
-	VkRect2D scissor{};
-	scissor.offset = { 0, 0 };
-	scissor.extent = engine->swapChainExtent;
-	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-
-	VkBuffer vertexBuffers[] = { quadMesh.vertexBuffer };
-	VkDeviceSize offsets[] = { 0 };
-	vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-	vkCmdBindIndexBuffer(commandBuffer, quadMesh.indexBuffer, 0, VK_INDEX_TYPE_UINT16);
 
 	for (auto& i : builderDescriptorSetsDetails)
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, i.set, 1, &builderDescriptorSets[i.set][engine->currentFrame], 0, nullptr);
 
-	pushConstant_s pushData{
-		mapW,
-		mapH
-	};
-	vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(pushConstant_s), &pushData);
-
 	{
 		TracyVkZone(engine->tracyGraphicsContexts[engine->currentFrame], commandBuffer, "Tilemap render");
-		vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(QuadIndices.size()), 1, 0, 0, 0);
+		vkCmdDrawIndexedIndirect(commandBuffer, buffer, offset, 1, stride);
 	}
+}
+
+void TilemapPL::GetDrawCommand(VkDrawIndexedIndirectCommand* cmd) {
+	cmd->indexCount = QuadIndices.size();
+	cmd->instanceCount = 1;
+	cmd->firstInstance = 0;
+	cmd->vertexOffset = 0;
+	cmd->firstInstance = 0;
 }

@@ -25,8 +25,6 @@ struct cameraUBO_s {
 	glm::vec2 position;
 	float zoom;
 	float aspectRatio = 1.0f;
-
-	std140Mat3 mat;
 };
 
 struct transformSSBO_430 {

@@ -185,7 +185,7 @@ bool VKEngine::shouldClose() {
 	return glfwWindowShouldClose(window);
 }
 
-void VKEngine::initVulkan() {
+void VKEngine::initVulkan(SwapChainSetting setting, int subPassCount) {
 	createInstance();
 
 	// setup debug messager
@@ -218,9 +218,9 @@ void VKEngine::initVulkan() {
 		vmaCreateAllocator(&allocatorInfo, &allocator);
 	}
 
-	createSwapChain();
+	createSwapChain(setting);
 	createImageViews();
-	createRenderPass();
+	createRenderPass(subPassCount);
 }
 
 void VKEngine::Update() {
@@ -565,9 +565,27 @@ VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>
 }
 
 
-VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes) {
+VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes, SwapChainSetting setting) {
+
+	// this logic translates setting to present mode with the assumption of there only being 2 frames in flight
+	static_assert(FRAMES_IN_FLIGHT == 2, "FRAMES_IN_FLIGHT must be 2 for correct swap chain setting logic");
+
+	VkPresentModeKHR requestedMode;
+	if (setting.capFramerate == false) {
+		if (setting.vsync == true)
+			requestedMode = VK_PRESENT_MODE_MAILBOX_KHR;
+		else
+			requestedMode = VK_PRESENT_MODE_IMMEDIATE_KHR;
+	}
+	else {
+		if(setting.vsync == true)
+			requestedMode = VK_PRESENT_MODE_FIFO_KHR;
+		else
+			requestedMode = VK_PRESENT_MODE_FIFO_RELAXED_KHR;
+	}
+
 	for (const auto& availablePresentMode : availablePresentModes) {
-		if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
+		if (availablePresentMode == requestedMode) {
 			return availablePresentMode;
 		}
 	}
@@ -622,14 +640,21 @@ SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device, VkSurface
 
 
 
-void VKEngine::createSwapChain() {
+void VKEngine::createSwapChain(SwapChainSetting setting) {
 	SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice, surface);
 
 	VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
-	VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
+	VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes, setting);
 	VkExtent2D extent = chooseSwapExtent(swapChainSupport.capabilities, window);
 
-	uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
+	uint32_t imageCount = swapChainSupport.capabilities.minImageCount;
+
+	// mailbox should have at least 1 extra image than the minimum to allow uncapped framerates
+	if (presentMode == VK_PRESENT_MODE_MAILBOX_KHR)
+		imageCount = std::max(imageCount, (uint32_t)(FRAMES_IN_FLIGHT + 1));
+	else
+		imageCount = std::max(imageCount, (uint32_t)(FRAMES_IN_FLIGHT));
+
 	if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount) {
 		imageCount = swapChainSupport.capabilities.maxImageCount;
 	}
@@ -672,11 +697,15 @@ void VKEngine::createSwapChain() {
 	swapChainImages.resize(imageCount);
 	vkGetSwapchainImagesKHR(device, swapChain, &imageCount, swapChainImages.data());
 
+	assert(imageCount <= MAX_SWAPCHAIN_IMAGES);
+
 	swapChainImageFormat = surfaceFormat.format;
 	swapChainExtent = extent;
+
+	lastUsedSwapChainSetting = setting;
 }
 
-void VKEngine::recreateSwapChain() {
+void VKEngine::recreateSwapChain(SwapChainSetting setting) {
 	int width = 0, height = 0;
 	glfwGetFramebufferSize(window, &width, &height);
 
@@ -690,7 +719,7 @@ void VKEngine::recreateSwapChain() {
 
 	cleanupSwapChain();
 
-	createSwapChain();
+	createSwapChain(setting);
 	createImageViews();
 	createFramebuffers();
 }
@@ -712,6 +741,44 @@ void VKEngine::createImageViews() {
 
 	for (uint32_t i = 0; i < swapChainImages.size(); i++) {
 		swapChainImageViews[i] = createImageView(swapChainImages[i], swapChainImageFormat);
+	}
+}
+
+void VKEngine::createCommandBuffers() {
+	// graphics command buffers
+	{
+		commandBuffers.resize(swapChainImages.size());
+
+		VkCommandBufferAllocateInfo allocInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		allocInfo.commandPool = commandPool;
+		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		allocInfo.commandBufferCount = (uint32_t)commandBuffers.size();
+
+		auto res = vkAllocateCommandBuffers(device, &allocInfo, commandBuffers.data());
+		assert(res == VK_SUCCESS);
+	}
+	// compute command buffers
+	{
+		VkCommandBufferAllocateInfo allocInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		allocInfo.commandPool = commandPool;
+		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		allocInfo.commandBufferCount = (uint32_t)computeCommandBuffers.size();
+
+		auto res = vkAllocateCommandBuffers(device, &allocInfo, computeCommandBuffers.data());
+		assert(res == VK_SUCCESS);
+	}
+	// imgui graphics command buffers
+	{
+		VkCommandBufferAllocateInfo allocInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		allocInfo.commandPool = commandPool;
+		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
+		allocInfo.commandBufferCount = (uint32_t)ImguiCommandBuffers.size();
+
+		auto res = vkAllocateCommandBuffers(device, &allocInfo, ImguiCommandBuffers.data());
+		assert(res == VK_SUCCESS);
 	}
 }
 

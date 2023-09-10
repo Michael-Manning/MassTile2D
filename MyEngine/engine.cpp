@@ -25,7 +25,6 @@
 #include "texturedQuadPL.h"
 #include "tilemapPL.h"
 #include "LightingComputePL.h"
-#include "quadComputePL.h"
 
 #include "MyMath.h"
 #include "engine.h"
@@ -34,6 +33,7 @@
 #include "Entity.h"
 #include "Vertex.h"
 #include "profiling.h"
+#include "Settings.h"
 
 using namespace glm;
 using namespace std;
@@ -115,7 +115,7 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 	app->GetInput()->_onScroll(xoffset, yoffset);
 }
 
-void Engine::Start(std::string windowName, int winW, int winH, std::string shaderDir) {
+void Engine::Start(std::string windowName, int winW, int winH, std::string shaderDir, const SwapChainSetting swapchainSetting) {
 
 	PROFILE_START(Engine_Startup);
 
@@ -132,7 +132,7 @@ void Engine::Start(std::string windowName, int winW, int winH, std::string shade
 
 	DebugLog("Initialized Window");
 
-	rengine->initVulkan();
+	rengine->initVulkan(swapchainSetting, 1);
 
 
 	rengine->createFramebuffers();
@@ -161,41 +161,45 @@ void Engine::Start(std::string windowName, int winW, int winH, std::string shade
 		AllocateQuad(rengine, quadMeshBuffer);
 		worldMap = make_shared<TileWorld>(rengine);
 		worldMap->AllocateVulkanResources();
+
+		indrectCommandsBuffers.resize(rengine->swapChainImages.size());
+		for (size_t i = 0; i < rengine->swapChainImages.size(); i++) {
+			rengine->createBuffer(
+				sizeof(VkDrawIndexedIndirectCommand) * 3,
+				VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT,
+				VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+				indrectCommandsBuffers[i].buffer,
+				indrectCommandsBuffers[i].allocation,
+				false);
+			vmaMapMemory(rengine->allocator, indrectCommandsBuffers[i].allocation, &indrectCommandsBuffers[i].bufferMapped);
+		}
 	}
 
 	// contruct pipelines
 	{
-		instancedPipeline = make_unique<TexturedQuadPL>(rengine, quadMeshBuffer);
-		colorPipeline = make_unique<ColoredQuadPL>(rengine, quadMeshBuffer);
+		texturePipeline = make_unique<TexturedQuadPL>(rengine, quadMeshBuffer);
+		colorPipeline = make_unique<ColoredQuadPL>(rengine);
 		tilemapPipeline = make_unique<TilemapPL>(rengine, quadMeshBuffer, worldMap);
 		lightingPipeline = make_unique<LightingComputePL>(rengine, worldMap);
-
-		colorQuadComputePipeline = make_unique<QuadComputePL>(rengine, 1000000);
-		colorQuadComputePipeline->allocateTransformBuffer(coloredQuadTransformBuffer, coloredQuadTransformBufferAllocation);
 	}
 
 	// section can be done in parrallel
 
 
-	{
-		colorQuadComputePipeline->CreateStagingBuffers();
-		colorQuadComputePipeline->CreateComputePipeline(shaderDir + "coloredQuadTransform_comp.spv", cameraUploader.transferBuffers, coloredQuadTransformBuffer);
-	}
 
 	// configure color pipeline
 	{
 		colorPipeline->CreateInstancingBuffer();
-		colorPipeline->SetTransformBuffer(coloredQuadTransformBuffer);
 		colorPipeline->CreateGraphicsPipeline(shaderDir + "color_vert.spv", shaderDir + "color_frag.spv", cameraUploader.transferBuffers);
 	}
 
 	// configure instancing pipeline
 	{
-		instancedPipeline->setDefaultTexture(texNotFound);
-		instancedPipeline->createDescriptorSetLayout();
-		instancedPipeline->CreateGraphicsPipeline(shaderDir + "texture_vert.spv", shaderDir + "texture_frag.spv");
-		instancedPipeline->createSSBOBuffer();
-		instancedPipeline->createDescriptorSets(cameraUploader.transferBuffers);
+		texturePipeline->setDefaultTexture(texNotFound);
+		texturePipeline->createDescriptorSetLayout();
+		texturePipeline->CreateGraphicsPipeline(shaderDir + "texture_vert.spv", shaderDir + "texture_frag.spv");
+		texturePipeline->createSSBOBuffer();
+		texturePipeline->createDescriptorSets(cameraUploader.transferBuffers);
 	}
 
 	// tilemap pipeline
@@ -258,7 +262,8 @@ mat3 rotate(float angle) {
 	);
 }
 
-bool Engine::QueueNextFrame() {
+bool Engine::QueueNextFrame(bool drawImgui) {
+	ZoneScopedN("queue next frame");
 
 	if (firstFrame) {
 		//glfwSetTime(0.0);
@@ -296,82 +301,11 @@ bool Engine::QueueNextFrame() {
 		}
 	}
 
-	{
-		ZoneScopedN("compute shaders");
-
-		rengine->waitForCompute();
-
-
-
-
-
-		{
-			const int tSize = 1000; // 1 million
-
-			static int  uCount = 0;
-			if (uCount <= 2) {
-				uCount++;
-
-				PROFILE_START(Quad_upload);
-				static vector<QuadComputePL::InstanceBufferData> drawlist;
-				drawlist.reserve(tSize * tSize);
-
-				if (uCount == 1) {
-
-					for (size_t i = 0; i < tSize; i++)
-					{
-						for (size_t j = 0; j < tSize; j++)
-						{
-
-							QuadComputePL::InstanceBufferData instanceData;
-							instanceData.color = vec4(ran(0.5, 1.0), ran(0.5, 1.0), ran(0.5, 1.0), 1.0f);
-							instanceData.position = vec2(i * 1.1, j * 1.1);
-							instanceData.scale = vec2(1.0f);
-							instanceData.circle = false;
-							instanceData.rotation = ran(0.0f, PI);
-
-							drawlist.push_back(instanceData);
-						}
-					}
-				}
-				colorQuadComputePipeline->UploadInstanceData(drawlist);
-				colorPipeline->temp(drawlist);
-				PROFILE_END(Quad_upload);
-			}
-		}
-
-
-
-
-		auto computeCmdBuffer = rengine->getNextComputeCommandBuffer();
-		auto lightingData = worldMap->getLightingUpdateData();
-		lightingPipeline->stageLightingUpdate(lightingData);
-		lightingPipeline->recordCommandBuffer(computeCmdBuffer, lightingData.size());
-		worldMap->chunkLightingJobs.clear();
-		colorQuadComputePipeline->recordCommandBuffer(computeCmdBuffer, 1000000);
-		rengine->submitCompute();
+	if (drawImgui || imguiLastFrame) {
+		for (size_t i = 0; i < MAX_SWAPCHAIN_IMAGES; i++)
+			commandBufferDirty[i] = true;
 	}
-
-
-	uint32_t imageIndex = rengine->waitForSwapchain();
-	if (imageIndex == -1) {
-		// swapchain invalid - recreate
-		frameCounter = 0;
-		return false;
-	}
-
-
-
-	// command buffer can be split into secondary buffers and recorded in parallel
-	auto cmdBuffer = rengine->getNextCommandBuffer(imageIndex);
-
-	// transfer tiles to read-only memory before starting renderpass
-	{
-		ZoneScopedN("chunk updates");
-		worldMap->stageChunkUpdates(cmdBuffer);
-	}
-
-	rengine->beginRenderpass(imageIndex);
+	imguiLastFrame = drawImgui;
 
 	// update global buffers
 	{
@@ -384,89 +318,117 @@ bool Engine::QueueNextFrame() {
 		camData.position = camera.position;
 		camData.zoom = camera.zoom;
 
-		mat3 view = mat3(1.0);
-		view *= scale(vec2(camData.zoom));
-		view *= translate(vec2(-camData.position.x, camData.position.y));
-		view *= scale(vec2(1.0, -1.0));
-
-		camData.mat = std140Mat3(view);
-
 		cameraUploader.SyncBufferData(camData, rengine->currentFrame);
+
 	}
 
+
+	{
+		ZoneScopedN("compute shaders");
+
+		rengine->waitForCompute();
+		auto computeCmdBuffer = rengine->getNextComputeCommandBuffer();
+
+		// transfer tiles to read-only memory before starting renderpass
+		{
+			ZoneScopedN("chunk updates");
+			worldMap->stageChunkUpdates(computeCmdBuffer);
+		}
+
+		auto lightingData = worldMap->getLightingUpdateData();
+		lightingPipeline->stageLightingUpdate(lightingData);
+		lightingPipeline->recordCommandBuffer(computeCmdBuffer, lightingData.size());
+		worldMap->chunkLightingJobs.clear();
+		rengine->submitCompute();
+	}
+
+
+	uint32_t imageIndex = rengine->waitForSwapchain();
+	if (imageIndex == -1) {
+		// swapchain invalid - recreate
+		frameCounter = 0;
+		return false;
+	}
+
+	if (commandBufferDirty[imageIndex]) {
+		auto cmdBuffer = rengine->getNextCommandBuffer(imageIndex);
+
+		rengine->beginRenderpass(imageIndex, cmdBuffer, vec4(0, 0, 0.0, 1.0));
+
+		{
+			VkViewport viewport{};
+			viewport.x = 0.0f;
+			viewport.y = 0.0f;
+			viewport.width = (float)rengine->swapChainExtent.width;
+			viewport.height = (float)rengine->swapChainExtent.height;
+			viewport.minDepth = 0.0f;
+			viewport.maxDepth = 1.0f;
+			vkCmdSetViewport(cmdBuffer, 0, 1, &viewport);
+
+			VkRect2D scissor{};
+			scissor.offset = { 0, 0 };
+			scissor.extent = rengine->swapChainExtent;
+			vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
+
+			VkBuffer vertexBuffers[] = { quadMeshBuffer.vertexBuffer };
+			VkDeviceSize offsets[] = { 0 };
+			vkCmdBindVertexBuffers(cmdBuffer, 0, 1, vertexBuffers, offsets);
+			vkCmdBindIndexBuffer(cmdBuffer, quadMeshBuffer.indexBuffer, 0, VK_INDEX_TYPE_UINT16);
+		}
+
+		colorPipeline->recordCommandBufferIndirect(cmdBuffer, indrectCommandsBuffers[imageIndex].buffer, 0 * sizeof(VkDrawIndexedIndirectCommand), sizeof(VkDrawIndexedIndirectCommand));
+		tilemapPipeline->recordCommandBufferIndirect(cmdBuffer, indrectCommandsBuffers[imageIndex].buffer, 1 * sizeof(VkDrawIndexedIndirectCommand), sizeof(VkDrawIndexedIndirectCommand));
+		texturePipeline->recordCommandBufferIndirect(cmdBuffer, indrectCommandsBuffers[imageIndex].buffer, 2 * sizeof(VkDrawIndexedIndirectCommand), sizeof(VkDrawIndexedIndirectCommand));
+
+		if (drawImgui) {
+			ImGui::Render();
+			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdBuffer);
+		}
+
+		vkCmdEndRenderPass(cmdBuffer);
+		rengine->endCommandBuffer(cmdBuffer);
+
+		commandBufferDirty[imageIndex] = false;
+	}
+
+
 	// colored quad
-	//{
-	//	ZoneScopedN("Colored quad PL");
-
-	//	vector<ColoredQuadPL::InstanceBufferData> drawlist;
-	//	drawlist.reserve(scene->sceneData.colorRenderers.size());
-
-	//	for (auto& renderer : scene->sceneData.colorRenderers)
-	//	{
-	//		const auto& entity = scene->sceneData.entities[renderer.first];
-
-	//		ColoredQuadPL::InstanceBufferData instanceData;
-
-	//		instanceData.color = renderer.second.color;
-	//		instanceData.position = entity->transform.position;
-	//		instanceData.scale = entity->transform.scale;
-	//		instanceData.circle = renderer.second.shape == ColorRenderer::Shape::Circle;
-	//		instanceData.rotation = entity->transform.rotation;
-
-	//		drawlist.push_back(instanceData);
-	//	}
-
-	//	colorPipeline->UploadInstanceData(drawlist);
-	//	colorPipeline->recordCommandBuffer(cmdBuffer, drawlist.size());
-	//}
-
-	//benchmark{
 	{
 		ZoneScopedN("Colored quad PL");
 
-		const int tSize = 1000; // 1 million
+		vector<ColoredQuadPL::InstanceBufferData> drawlist;
+		drawlist.reserve(scene->sceneData.colorRenderers.size());
 
-		//static int  uCount = 0;
-		//if (uCount <= 2) {
-		//	uCount++;
+		for (auto& renderer : scene->sceneData.colorRenderers)
+		{
+			const auto& entity = scene->sceneData.entities[renderer.first];
 
-		//	PROFILE_START(Quad_upload);
-		//	static vector<ColoredQuadPL::InstanceBufferData> drawlist;
-		//	drawlist.reserve(tSize * tSize);
+			ColoredQuadPL::InstanceBufferData instanceData;
 
-		//	if (uCount == 1) {
+			instanceData.color = renderer.second.color;
+			instanceData.position = entity->transform.position;
+			instanceData.scale = entity->transform.scale;
+			instanceData.circle = renderer.second.shape == ColorRenderer::Shape::Circle;
+			instanceData.rotation = entity->transform.rotation;
 
-		//		for (size_t i = 0; i < tSize; i++)
-		//		{
-		//			for (size_t j = 0; j < tSize; j++)
-		//			{
+			drawlist.push_back(instanceData);
+		}
 
-		//				ColoredQuadPL::InstanceBufferData instanceData;
-		//				instanceData.color = vec4(ran(0.5, 1.0), ran(0.5, 1.0), ran(0.5, 1.0), 1.0f);
-		//				instanceData.position = vec2(i * 1.1, j * 1.1);
-		//				instanceData.scale = vec2(1.0f);
-		//				instanceData.circle = false;
-		//				instanceData.rotation = ran(0.0f, PI);
-
-		//				drawlist.push_back(instanceData);
-		//			}
-		//		}
-		//	}
-		//	colorPipeline->UploadInstanceData(drawlist);
-		//	PROFILE_END(Quad_upload);
-		//}
-
-		colorPipeline->recordCommandBuffer(cmdBuffer, tSize * tSize);
+		colorPipeline->UploadInstanceData(drawlist);
+		colorPipeline->GetDrawCommand(reinterpret_cast<VkDrawIndexedIndirectCommand*>(indrectCommandsBuffers[imageIndex].bufferMapped), drawlist.size());
+		//colorPipeline->recordCommandBuffer(cmdBuffer, drawlist.size());
+		//colorPipeline->recordCommandBufferIndirect(cmdBuffer, drawlist.size(), indrectCommandsBuffer, 0, sizeof(VkDrawIndexedIndirectCommand));
 	}
 
 	// tilemap
-	//{
-	//	ZoneScopedN("tilemap PL");
 
-	//	if (tilemapPipeline->textureAtlas.has_value()) {
-	//		tilemapPipeline->recordCommandBuffer(cmdBuffer);
-	//	}
-	//}
+	{
+		ZoneScopedN("tilemap PL");
+
+		if (tilemapPipeline->textureAtlas.has_value()) {
+			tilemapPipeline->GetDrawCommand(&((VkDrawIndexedIndirectCommand*)indrectCommandsBuffers[imageIndex].bufferMapped)[1]);
+		}
+	}
 
 	// Textured quad
 	{
@@ -482,7 +444,7 @@ bool Engine::QueueNextFrame() {
 
 				auto s = assetManager->spriteAssets[renderer.second.sprite];
 				if (assetManager->spritesAdded) {
-					instancedPipeline->addTextureBinding(s->texture, &assetManager->textureAssets[s->texture]);
+					texturePipeline->addTextureBinding(s->texture, &assetManager->textureAssets[s->texture]);
 				}
 
 				TexturedQuadPL::ssboObjectInstanceData drawObject;
@@ -502,15 +464,16 @@ bool Engine::QueueNextFrame() {
 				drawlist.push_back(drawObject);
 			}
 			if (assetManager->filterModesChanged)
-				instancedPipeline->invalidateTextureDescriptors();
+				texturePipeline->invalidateTextureDescriptors();
 
-			instancedPipeline->updateDescriptorSets();
-			instancedPipeline->recordCommandBuffer(cmdBuffer, drawlist);
+			texturePipeline->updateDescriptorSets();
+			//texturePipeline->recordCommandBuffer(cmdBuffer, drawlist);
+			texturePipeline->UploadInstanceData(drawlist);
+			texturePipeline->GetDrawCommand(&((VkDrawIndexedIndirectCommand*)indrectCommandsBuffers[imageIndex].bufferMapped)[2], drawlist.size());
 
 			runningStats.sprite_render_count = drawlist.size();
 		}
 	}
-
 
 	runningStats.entity_count = scene->sceneData.entities.size();
 
@@ -518,11 +481,14 @@ bool Engine::QueueNextFrame() {
 	assetManager->spritesAdded = false;
 	assetManager->filterModesChanged = false;
 
+	//vkCmdEndRenderPass(cmdBuffer);
+	//rengine->endCommandBuffer(cmdBuffer);
 
-	ImGui::Render();
-	ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdBuffer);
-
-	rengine->submitAndPresent(imageIndex);
+	if (rengine->submitAndPresent(imageIndex)) {
+		// swapchain recreated. Framebuffers must be re refrenced
+		for (size_t i = 0; i < MAX_SWAPCHAIN_IMAGES; i++)
+			commandBufferDirty[i] = true;
+	}
 
 	rengine->Update();
 
@@ -642,6 +608,7 @@ void Engine::InitImgui() {
 	init_info.DescriptorPool = imguiPool;
 	init_info.MinImageCount = 3;
 	init_info.ImageCount = 3;
+	init_info.Subpass = 0;
 	init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 
 	ImGui_ImplVulkan_Init(&init_info, rengine->renderPass);

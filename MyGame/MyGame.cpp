@@ -37,6 +37,7 @@
 #include "profiling.h"
 #include "Utils.h"
 #include "worldGen.h"
+#include "Settings.h"
 
 #include <FastNoise/FastNoise.h>
 #include <FastNoise/SmartNode.h>
@@ -107,13 +108,16 @@ int main() {
 	AssetDirectories.assetDir = makePathAbsolute(exePath, "../../data/Assets/") + "/";
 	AssetDirectories.textureSrcDir = makePathAbsolute(exePath, "../../data/Assets/") + "/";
 
+	SwapChainSetting swapchainSettings;
+	swapchainSettings.vsync = true;
+	swapchainSettings.capFramerate = false;
 
 
 	auto rengine = std::make_shared<VKEngine>();
 	Engine engine(rengine, AssetDirectories);
 	Editor editor;
 	const auto& scene = engine.scene; // quick reference
-	engine.Start("video game", winW, winH, shaderPath);
+	engine.Start("video game", winW, winH, shaderPath, swapchainSettings);
 
 	const auto input = engine.GetInput();
 
@@ -266,11 +270,9 @@ int main() {
 	{
 		using namespace ImGui;
 
+		GcameraPos = engine.camera.position;
 
-		ImGui_ImplVulkan_NewFrame();
-		ImGui_ImplGlfw_NewFrame();
-
-		ImGui::NewFrame();
+		engine.EntityStartUpdate();
 
 		if (ImGui::GetIO().WantTextInput == false) {
 			if (input->getKeyDown('e')) {
@@ -281,20 +283,21 @@ int main() {
 			}
 		}
 
-		GcameraPos = engine.camera.position;
-
-		engine.EntityStartUpdate();
-
-		if (showingEditor == false)
-			engine.camera.position = GcameraPos;
-
 		if (showingEditor) {
+			ImGui_ImplVulkan_NewFrame();
+			ImGui_ImplGlfw_NewFrame();
+
+			ImGui::NewFrame();
+
 			editor.editorCamera = engine.camera;
 			editor.Run(engine);
 			engine.camera = editor.editorCamera;
 		}
+		else {
+			engine.camera.position = GcameraPos;
+		}
 
-#if 0
+#if 1
 		{
 
 			static int lastX = -1;
@@ -337,7 +340,7 @@ int main() {
 
 				}
 				else {
-//
+					//
 					engine.worldMap->setMovingTorch(ivec2(x, y), false);
 				}
 
@@ -349,7 +352,6 @@ int main() {
 				//	torchPositions.push_back(vec2(x, y));
 
 					engine.worldMap->setTorch(x, y);
-					cout << "up" << endl;
 				}
 
 				lastState = input->getMouseBtn(MouseBtn::Left);
@@ -374,11 +376,11 @@ int main() {
 					for (int j = -1; j < 2; j++)
 						CalcTileVariation(x + i, y + j);
 			}
-		}
+	}
 #endif
 
-		engine.QueueNextFrame();
-	}
+		engine.QueueNextFrame(showingEditor);
+}
 
 	engine.Close();
 

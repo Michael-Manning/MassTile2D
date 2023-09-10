@@ -296,6 +296,7 @@
     <ClInclude Include="Input.h" />
     <ClInclude Include="LightingComputePL.h" />
     <ClInclude Include="quadComputePL.h" />
+    <ClInclude Include="Settings.h" />
     <ClInclude Include="texturedQuadPL.h" />
     <ClInclude Include="MyMath.h" />
     <ClInclude Include="Physics.h" />

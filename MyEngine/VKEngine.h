@@ -18,6 +18,7 @@
 #include "texture.h"
 #include "typedefs.h"
 #include "Constants.h"
+#include "Settings.h"
 
 
 struct QueueFamilyIndices {
@@ -28,6 +29,13 @@ struct QueueFamilyIndices {
 	bool isComplete() {
 		return graphicsAndComputeFamily.has_value() && presentFamily.has_value();
 	}
+};
+
+struct MappedBuffer {
+	VkBuffer buffer;
+	VmaAllocation allocation;
+	void* bufferMapped;
+	VkDeviceSize size;
 };
 
 struct MappedDoubleBuffer {
@@ -48,7 +56,7 @@ class VKEngine {
 public:
 
 	void initWindow(int width, int height, std::string name, bool visible = true);
-	void initVulkan();
+	void initVulkan(SwapChainSetting setting, int subPassCount);
 	void Update();
 	bool shouldClose();
 	void cleanup();
@@ -69,7 +77,7 @@ public:
 	void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VmaAllocation& imageAllocation);
 	VkImageView createImageView(VkImage image, VkFormat format);
 
-	void recreateSwapChain();
+	void recreateSwapChain(SwapChainSetting setting);
 	void cleanupSwapChain();
 
 
@@ -88,9 +96,13 @@ public:
 	uint32_t waitForSwapchain();
 	VkCommandBuffer getNextCommandBuffer(uint32_t imageIndex); // temporary solution which resets the command buffer every frame
 	VkCommandBuffer getNextComputeCommandBuffer();
+	VkCommandBuffer getNextImguiCommandBuffer(uint32_t imageIndex);
+
+	void endCommandBuffer(VkCommandBuffer commandBuffer);
+
 	void submitCompute();
-	void submitAndPresent(uint32_t imageIndex);
-	void beginRenderpass(uint32_t imageIndex);
+	bool submitAndPresent(uint32_t imageIndex); // returns framebuffer recreation
+	void beginRenderpass(uint32_t imageIndex, VkCommandBuffer cmdBuffer, glm::vec4 clearColor);
 
 	bool framebufferResized = false;
 	//private:
@@ -132,8 +144,9 @@ public:
 	VkDescriptorPool descriptorPool;
 
 
-	std::array<VkCommandBuffer, FRAMES_IN_FLIGHT> commandBuffers;
+	std::vector<VkCommandBuffer> commandBuffers;
 	std::array<VkCommandBuffer, FRAMES_IN_FLIGHT>  computeCommandBuffers;
+	std::array<VkCommandBuffer, FRAMES_IN_FLIGHT> ImguiCommandBuffers;
 
 	std::array<VkSemaphore, FRAMES_IN_FLIGHT>  imageAvailableSemaphores;
 	std::array<VkSemaphore, FRAMES_IN_FLIGHT>  renderFinishedSemaphores;
@@ -147,10 +160,12 @@ public:
 	void createSurface();
 	void pickPhysicalDevice();
 	void createLogicalDevice();
-	void createSwapChain();
+	void createSwapChain(SwapChainSetting setting);
 	void createImageViews();
-	void createRenderPass();
+	//void createRenderPass();
+	void createRenderPass(int subpassCount = 1);
 
+	SwapChainSetting lastUsedSwapChainSetting;
 
 #ifdef TRACY_ENABLE
 	std::array<TracyVkCtx, FRAMES_IN_FLIGHT> tracyComputeContexts;

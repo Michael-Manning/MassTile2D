@@ -200,6 +200,9 @@
     <ClInclude Include="quadComputePL.h">
       <Filter>Source Files\vulkan\piplines</Filter>
     </ClInclude>
+    <ClInclude Include="Settings.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="notes.txt" />

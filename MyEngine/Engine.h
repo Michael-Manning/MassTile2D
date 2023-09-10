@@ -21,7 +21,6 @@
 #include "texturedQuadPL.h"
 #include "tilemapPL.h"
 #include "LightingComputePL.h"
-#include "quadComputePL.h"
 
 #include "IDGenerator.h"
 #include "typedefs.h"
@@ -37,7 +36,7 @@
 #include "vulkan_util.h"
 #include "globalBufferDefinitions.h"
 #include "TileWorld.h"
-
+#include "Settings.h"
 
 #ifdef NDEBUG
 
@@ -74,14 +73,14 @@ public:
 		scene = std::make_shared<Scene>(assetManager);
 	}
 
-	void Start(std::string windowName, int winW, int winH, std::string shaderDir);
+	void Start(std::string windowName, int winW, int winH, std::string shaderDir, const SwapChainSetting swapchainSetting);
 
 	void loadPrefabs();
 
 	bool ShouldClose();
 	void Close();
 
-	bool QueueNextFrame();
+	bool QueueNextFrame(bool drawImgui);
 
 	void EntityStartUpdate() {
 		if (paused)
@@ -157,7 +156,8 @@ public:
 	int winW = 0, winH = 0;
 
 	void _onWindowResize() {
-		// used to update piplines. use for something else or delete
+		for (size_t i = 0; i < MAX_SWAPCHAIN_IMAGES; i++)
+			commandBufferDirty[i] = true;
 	};
 
 
@@ -168,6 +168,15 @@ public:
 	std::shared_ptr<TileWorld> worldMap = nullptr;
 
 private:
+
+	//VkBuffer indrectCommandsBuffer;
+	//VmaAllocation indrectCommandsBufferAllocation;
+	//void* indirectCommandsBufferMapped = nullptr;
+
+	std::vector<MappedBuffer> indrectCommandsBuffers;
+
+	std::array<bool, MAX_SWAPCHAIN_IMAGES> commandBufferDirty = { true, true, true };
+	bool imguiLastFrame = false;
 
 	VertexMeshBuffer quadMeshBuffer;
 
@@ -182,12 +191,8 @@ private:
 
 	std::unique_ptr<TilemapPL> tilemapPipeline = nullptr;
 	std::unique_ptr<ColoredQuadPL> colorPipeline = nullptr;
-	std::unique_ptr<TexturedQuadPL> instancedPipeline = nullptr;
+	std::unique_ptr<TexturedQuadPL> texturePipeline = nullptr;
 	std::unique_ptr<LightingComputePL> lightingPipeline = nullptr;
-	std::unique_ptr<QuadComputePL> colorQuadComputePipeline = nullptr;
-
-	VkBuffer coloredQuadTransformBuffer;
-	VmaAllocation coloredQuadTransformBufferAllocation;
 
 	VKUtil::UBOUploader<cameraUBO_s> cameraUploader;
 

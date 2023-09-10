@@ -1,11 +1,9 @@
 #version 450
 
 layout(binding = 0) uniform CamerUBO {
-   vec2 position;
-	float zoom;
-	float aspectRatio;
-
-   mat3 view;
+    vec2 position;
+    float zoom;
+    float aspectRatio;
 } camera;
 
 struct ssboObject{
@@ -18,13 +16,6 @@ struct ssboObject{
 
 layout(std140, set = 1, binding = 0) readonly buffer ObjectInstaceBuffer{
 	ssboObject ssboData[];
-};
-
-struct transformObject{
-   mat3 transform;
-};
-layout(std430, set = 0, binding = 1) readonly buffer ObjectTransformBufferr{
-	transformObject transformData[];
 };
 
 
@@ -63,20 +54,18 @@ mat4 rotate(float angle) {
 
 void main() {
 
-   // mat4 view = mat4(1.0);
-   // view *= scale(vec2(camera.zoom));
-   // view *= translate(vec2(-camera.position.x, camera.position.y));
-   // view *= scale(vec2(1.0, -1.0));
+    mat4 view = mat4(1.0);
+    view *= scale(vec2(camera.zoom));
+    view *= translate(vec2(-camera.position.x, camera.position.y));
+    view *= scale(vec2(1.0, -1.0));
 
-   // mat4 model = mat4(1.0);
-   // model *= translate(ssboData[gl_InstanceIndex].position);
-   // model *= rotate(ssboData[gl_InstanceIndex].rotation);
-   // model *= scale(ssboData[gl_InstanceIndex].scale);
+    mat4 model = mat4(1.0);
+    model *= translate(ssboData[gl_InstanceIndex].position);
+    model *= rotate(ssboData[gl_InstanceIndex].rotation);
+    model *= scale(ssboData[gl_InstanceIndex].scale);
 
-   // gl_Position = view * model  * vec4(inPosition, 0.0, 1.0) * vec4(vec2( camera.aspectRatio, 1.0), 1.0, 1.0);
+    gl_Position = view * model  * vec4(inPosition, 0.0, 1.0) * vec4(camera.aspectRatio, 1.0, 1.0, 1.0);
 
-   gl_Position = vec4(transformData[gl_InstanceIndex].transform * vec3(inPosition, 1.0) * vec3(camera.aspectRatio, 1.0, 1.0), 1.0);
-
-   instance_index = gl_InstanceIndex;
-   uv = vec2(inFragCoord.x, 1.0 - inFragCoord.y);
+    instance_index = gl_InstanceIndex;
+    uv = vec2(inFragCoord.x, 1.0 - inFragCoord.y);
 }

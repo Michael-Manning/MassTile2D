@@ -1,15 +1,5 @@
 
 
-To profile:
-
-without compute shader:
-- do mat 3 calculations in vertex shader affect performance
-- does uploading mat3 camera matrix affect performance, or does increased memory cancel that out
-
-with compute shader:
-- std140 vs std430
-
-
 - finalize tilemap coordinate system
 - make tile vs block terminalogy consistent
 - add padding blocks and prevent light update jobs to out of bounds chunk

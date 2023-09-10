@@ -20,11 +20,6 @@
 constexpr int ColoredQuadPL_MAX_OBJECTS = 1000000;
 
 
-
-
-#include "quadComputePL.h"
-
-
 class ColoredQuadPL :public  Pipeline {
 public:
 
@@ -39,26 +34,15 @@ public:
 	};
 	static_assert(sizeof(InstanceBufferData) % 16 == 0);
 
-	ColoredQuadPL(std::shared_ptr<VKEngine>& engine, VertexMeshBuffer quadMesh) : Pipeline(engine), quadMesh(quadMesh) {
+	ColoredQuadPL(std::shared_ptr<VKEngine>& engine) : Pipeline(engine) {
 	}
-
-	void SetTransformBuffer(VkBuffer transformBuffer) {
-		this->transformBuffer = transformBuffer;
-	};
-
-	void temp(std::vector<QuadComputePL::InstanceBufferData>& drawlist) {
-		memcpy(ssboMappedDB.buffersMapped[engine->currentFrame], drawlist.data(), sizeof(InstanceBufferData) * drawlist.size());
-	};
 
 	void CreateGraphicsPipeline(std::string vertexSrc, std::string fragmentSrc, MappedDoubleBuffer& cameradb);
 	void CreateInstancingBuffer();
 	void UploadInstanceData(std::vector<InstanceBufferData>& drawlist);
-	void recordCommandBuffer(VkCommandBuffer commandBuffer, int instanceCount);
+	void recordCommandBufferIndirect(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, uint32_t stride);
+	void GetDrawCommand(VkDrawIndexedIndirectCommand* cmd, int instanceCount);
 
 private:
-
-	VertexMeshBuffer quadMesh;
 	MappedDoubleBuffer ssboMappedDB;
-
-	VkBuffer transformBuffer;
 };

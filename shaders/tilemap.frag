@@ -8,10 +8,8 @@ layout(std430, set = 1, binding = 0) readonly buffer ObjectBuffer{
 	int ssboData[];
 } ;
 
-layout(push_constant) uniform constants {
-   int mapw;
-   int maph;
-} ;
+#define mapw 2048
+#define maph 1024
 
 layout(location = 2) in flat int instance_index;
 layout(location = 1) in vec2 uv;

@@ -17,6 +17,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <vk_mem_alloc.h>
+#include <tracy/Tracy.hpp>
+#include <tracy/TracyVulkan.hpp>
 #include <stb_image.h>
 
 #include "VKengine.h"
@@ -232,8 +234,8 @@ void TexturedQuadPL::createSSBOBuffer() {
 }
 
 void TexturedQuadPL::recordCommandBuffer(VkCommandBuffer commandBuffer, std::vector<ssboObjectInstanceData>& drawlist) {
-
-	if (drawlist.size() == 0) 
+	ZoneScopedN("texture quad cmd buffer");
+	if (drawlist.size() == 0)
 		return;
 
 	assert(drawlist.size() <= TexturedQuadPL_MAX_OBJECTS);
@@ -265,6 +267,36 @@ void TexturedQuadPL::recordCommandBuffer(VkCommandBuffer commandBuffer, std::vec
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &ssboDescriptorSets[engine->currentFrame], 0, nullptr);
 
 	vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(QuadIndices.size()), drawlist.size(), 0, 0, 0);
+}
+
+void TexturedQuadPL::UploadInstanceData(std::vector<ssboObjectInstanceData>& drawlist) {
+	ZoneScopedN("texture quad data copy");
+	if (drawlist.size() == 0)
+		return;
+
+	assert(drawlist.size() <= TexturedQuadPL_MAX_OBJECTS);
+
+
+	for (auto& i : drawlist) {
+		i.index = bindIndexes[engine->currentFrame][i.index];
+	}
+
+	memcpy(ssboMappedDB.buffersMapped[engine->currentFrame], drawlist.data(), sizeof(ssboObjectInstanceData) * drawlist.size());
+}
+
+void TexturedQuadPL::recordCommandBufferIndirect(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, uint32_t stride) {
+	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
+	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &generalDescriptorSets[engine->currentFrame], 0, nullptr);
+	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &ssboDescriptorSets[engine->currentFrame], 0, nullptr);
+	vkCmdDrawIndexedIndirect(commandBuffer, buffer, offset, 1, stride);
+}
+
+void TexturedQuadPL::GetDrawCommand(VkDrawIndexedIndirectCommand* cmd, int instanceCount) {
+	cmd->indexCount = QuadIndices.size();
+	cmd->instanceCount = instanceCount;
+	cmd->firstInstance = 0;
+	cmd->vertexOffset = 0;
+	cmd->firstInstance = 0;
 }
 
 void TexturedQuadPL::addTextureBinding(texID ID, Texture* texture) {
