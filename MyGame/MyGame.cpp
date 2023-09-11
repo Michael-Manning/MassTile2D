@@ -15,19 +15,17 @@
 #include <algorithm>
 #include <execution>
 #include <omp.h>
+#include<glm/glm.hpp>
+#include <nlohmann/json.hpp>
+#include <imgui.h>
 
 #include "VKEngine.h"
 #include "Engine.h"
-#include "Physics.h"
-
-#include<glm/glm.hpp>
-#include <nlohmann/json.hpp>
-
-#include <imgui.h>
 
 #include "Editor.h"
-#include "MyMath.h"
+#include "FontGenerator.h"
 
+#include "Physics.h"
 #include "Input.h"
 #include "BehaviorRegistry.h"
 #include "player.h"
@@ -36,6 +34,7 @@
 #include "benchmark.h"
 #include "profiling.h"
 #include "Utils.h"
+#include "MyMath.h"
 #include "worldGen.h"
 #include "Settings.h"
 
@@ -123,6 +122,18 @@ int main() {
 
 	engine.assetManager->loadAllSprites();
 	engine.loadPrefabs();
+
+
+	{
+		FontConfig config;
+		config.atlasHeight = 1024;
+		config.atlasWidth = 1024;
+		config.fontHeight = 23;
+		
+
+		GenerateFontAtlas("../data/Fonts/MonoSpatial.ttf", "../data/images/robotoAtlas.png", config);
+
+	}
 
 	tileWolrdGlobalRef = engine.worldMap;
 

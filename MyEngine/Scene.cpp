@@ -111,7 +111,7 @@ void Scene::LoadScene(std::string filename, std::shared_ptr<b2World> world) {
 		sceneData.staticbodies.clear();
 		sceneData.rigidbodies.clear();
 	}
-
+	
 	EntityGenerator.Reset();
 
 	std::ifstream input(filename + ".json");
