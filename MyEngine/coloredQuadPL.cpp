@@ -90,9 +90,7 @@ void ColoredQuadPL::UploadInstanceData(std::vector<InstanceBufferData>& drawlist
 	memcpy(ssboMappedDB.buffersMapped[engine->currentFrame], drawlist.data(), sizeof(InstanceBufferData) * drawlist.size());
 }
 
-
-
-void ColoredQuadPL::recordCommandBufferIndirect(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, uint32_t stride) {
+void ColoredQuadPL::recordCommandBuffer(VkCommandBuffer commandBuffer, int instanceCount) {
 
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
 
@@ -100,16 +98,7 @@ void ColoredQuadPL::recordCommandBufferIndirect(VkCommandBuffer commandBuffer, V
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, i.set, 1, &builderDescriptorSets[i.set][engine->currentFrame], 0, nullptr);
 
 	{
-		//TracyVkZone(engine->tracyGraphicsContexts[engine->currentFrame], commandBuffer, "Colored quad render");
-		vkCmdDrawIndexedIndirect(commandBuffer, buffer, offset, 1, stride);
+		TracyVkZone(engine->tracyGraphicsContexts[engine->currentFrame], commandBuffer, "Colored quad render");
+		vkCmdDrawIndexed(commandBuffer, QuadIndices.size(), instanceCount, 0, 0, 0);
 	}
-
-}
-
-void ColoredQuadPL::GetDrawCommand(VkDrawIndexedIndirectCommand* cmd, int instanceCount) {
-	cmd->indexCount = QuadIndices.size();
-	cmd->instanceCount = instanceCount;
-	cmd->firstInstance = 0;
-	cmd->vertexOffset = 0;
-	cmd->firstInstance = 0;
 }

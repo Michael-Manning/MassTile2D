@@ -4,20 +4,23 @@ precision highp float;
 layout(binding = 1) uniform sampler2D atlasTexture;
 #define atlasCount 32;
 
-layout(std430, set = 1, binding = 0) readonly buffer ObjectBuffer{
-	int ssboData[];
+layout(std430, set = 1, binding = 0) buffer mapFGObjectBuffer {
+	int tileMapFGData[];
 } ;
+layout(std430, set = 1, binding = 1) buffer mapBGObjectBuffer {
+	int tileMapBGData[];
+} ;
+
 
 #define mapw 2048
 #define maph 1024
+#define mapOffset 0
+#define mapCount 2097152
 
 layout(location = 2) in flat int instance_index;
 layout(location = 1) in vec2 uv;
 layout(location = 0) out vec4 outColor;
 
-// #define chunkSize 32
-// #define chunkTileCount 1024
-// #define chunksX  128
 
 #define chunkSize 32
 #define chunkTileCount 1024
@@ -28,20 +31,22 @@ int getTile(int x, int y) {
     int cy = (y / chunkSize);
     int chunk = cy * chunksX + cx;
     int chuckIndexOffset = chunk * chunkTileCount;
-    return ssboData[chuckIndexOffset + (y % chunkSize) * chunkSize + (x % chunkSize)];
+    uint index = uint(mapOffset + chuckIndexOffset + (y % chunkSize) * chunkSize + (x % chunkSize));
+    return tileMapFGData[index % mapCount];
+};
+int getBGTile(int x, int y) {
+    int cx = (x / chunkSize);
+    int cy = (y / chunkSize);
+    int chunk = cy * chunksX + cx;
+    int chuckIndexOffset = chunk * chunkTileCount;
+    uint index = uint(mapOffset + chuckIndexOffset + (y % chunkSize) * chunkSize + (x % chunkSize));
+    return tileMapBGData[index % mapCount];
 };
 
 float sampleBrightnessGrid(int x, int y){
     return float(getTile(x, y) >> 16) / 255.0;
 }
 
-// float x = uv.x * gridW;
-// float y = uv.y * gridH;
-
-// float gridX = int(x);
-// float gridY = int(y);
-
-// float brightness = getTile(gridX, gridY);
 
 void main() {
     int xi = int(uv.x * mapw);
@@ -50,20 +55,41 @@ void main() {
     int yi = int(uv.y * maph);
     yi = min(yi, maph - 1);
 
-    int bufferValue = getTile(xi, yi);
-    int atlasIndex = bufferValue & 0xFFFF;
-
-    int atlasX = atlasIndex % atlasCount;
-    int atlasY = atlasIndex / atlasCount;
-
-    float atlasUvSize = 1.0 / atlasCount;
-
-    vec2 mapUvSize = vec2(1.0 / float(mapw), 1.0 / float(maph));   
+    vec4 fgCol;
+    vec4 bgCol;
 
     vec2 localUV = vec2(fract(uv.x * mapw), mod(uv.y * maph, 1.0));
-    vec2 umin = localUV * atlasUvSize + vec2(float(atlasX), float(atlasY)) * atlasUvSize;
+    {
+        int bufferValue = getTile(xi, yi);
+        int atlasIndex = bufferValue & 0xFFFF;
 
-    vec4 col = texture(atlasTexture, umin);
+        int atlasX = atlasIndex % atlasCount;
+        int atlasY = atlasIndex / atlasCount;
+
+        float atlasUvSize = 1.0 / atlasCount;
+
+        vec2 mapUvSize = vec2(1.0 / float(mapw), 1.0 / float(maph));   
+
+        vec2 umin = localUV * atlasUvSize + vec2(float(atlasX), float(atlasY)) * atlasUvSize;
+
+        fgCol = texture(atlasTexture, umin);
+    }
+    {
+        int bufferValue = getBGTile(xi, yi);
+        int atlasIndex = bufferValue & 0xFFFF;
+
+        int atlasX = atlasIndex % atlasCount;
+        int atlasY = atlasIndex / atlasCount;
+
+        float atlasUvSize = 1.0 / atlasCount;
+
+        vec2 mapUvSize = vec2(1.0 / float(mapw), 1.0 / float(maph));   
+
+        vec2 umin = localUV * atlasUvSize + vec2(float(atlasX), float(atlasY)) * atlasUvSize;
+
+        bgCol = texture(atlasTexture, umin);
+    }
+
 
     float brightness;
 
@@ -95,7 +121,9 @@ void main() {
     else{
          brightness = sampleBrightnessGrid(xi, yi);
     }
+    vec3 col = mix(bgCol.rgb, fgCol.rgb, fgCol.a);
+    outColor = vec4( col.rgb * brightness, mix(bgCol.a, 1.0, fgCol.a));
 
-    outColor = vec4(col.rgb * brightness, col.a);
+    //outColor = vec4( col.rgb * brightness, col.a);
 }
 

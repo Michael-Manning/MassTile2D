@@ -747,8 +747,6 @@ void VKEngine::createImageViews() {
 void VKEngine::createCommandBuffers() {
 	// graphics command buffers
 	{
-		commandBuffers.resize(swapChainImages.size());
-
 		VkCommandBufferAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 		allocInfo.commandPool = commandPool;
@@ -767,17 +765,6 @@ void VKEngine::createCommandBuffers() {
 		allocInfo.commandBufferCount = (uint32_t)computeCommandBuffers.size();
 
 		auto res = vkAllocateCommandBuffers(device, &allocInfo, computeCommandBuffers.data());
-		assert(res == VK_SUCCESS);
-	}
-	// imgui graphics command buffers
-	{
-		VkCommandBufferAllocateInfo allocInfo{};
-		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		allocInfo.commandPool = commandPool;
-		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
-		allocInfo.commandBufferCount = (uint32_t)ImguiCommandBuffers.size();
-
-		auto res = vkAllocateCommandBuffers(device, &allocInfo, ImguiCommandBuffers.data());
 		assert(res == VK_SUCCESS);
 	}
 }

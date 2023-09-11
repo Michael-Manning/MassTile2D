@@ -156,8 +156,6 @@ public:
 	int winW = 0, winH = 0;
 
 	void _onWindowResize() {
-		for (size_t i = 0; i < MAX_SWAPCHAIN_IMAGES; i++)
-			commandBufferDirty[i] = true;
 	};
 
 
@@ -168,15 +166,6 @@ public:
 	std::shared_ptr<TileWorld> worldMap = nullptr;
 
 private:
-
-	//VkBuffer indrectCommandsBuffer;
-	//VmaAllocation indrectCommandsBufferAllocation;
-	//void* indirectCommandsBufferMapped = nullptr;
-
-	std::vector<MappedBuffer> indrectCommandsBuffers;
-
-	std::array<bool, MAX_SWAPCHAIN_IMAGES> commandBufferDirty = { true, true, true };
-	bool imguiLastFrame = false;
 
 	VertexMeshBuffer quadMeshBuffer;
 

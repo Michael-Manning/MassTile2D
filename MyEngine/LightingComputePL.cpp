@@ -36,8 +36,8 @@ void LightingComputePL::CreateComputePipeline(std::string computeSrc_firstPass, 
 	std::array<VkBuffer, FRAMES_IN_FLIGHT> worldMapBGDeviceBuferRef = { world->_worldMapBGDeviceBuffer, world->_worldMapBGDeviceBuffer };
 	configureDescriptorSets(vector<Pipeline::descriptorSetInfo> {
 		descriptorSetInfo(0, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT, &lightPositionsDB.buffers, sizeof(chunkLightingUpdateinfo)* (maxChunkUpdatesPerFrame)),
-		descriptorSetInfo(1, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT, &worldMapFGDeviceBuferRef, sizeof(TileWorld::ssboObjectData)* (TileWorld_MAX_TILES)),
-		descriptorSetInfo(1, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT, &worldMapBGDeviceBuferRef, sizeof(TileWorld::ssboObjectData)* (TileWorld_MAX_TILES))
+		descriptorSetInfo(1, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT, &worldMapFGDeviceBuferRef, sizeof(TileWorld::ssboObjectData)* (mapCount)),
+		descriptorSetInfo(1, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT, &worldMapBGDeviceBuferRef, sizeof(TileWorld::ssboObjectData)* (mapCount))
 	});
 	buildDescriptorLayouts();
 

@@ -1,59 +1,5 @@
 {
-    "colorRenderers": [
-        {
-            "color": [
-                0.0,
-                0.40155932307243347,
-                0.6023391485214233,
-                1.0
-            ],
-            "entityID": 2,
-            "shape": 0
-        },
-        {
-            "color": [
-                0.01754385232925415,
-                0.00964398868381977,
-                0.00964398868381977,
-                1.0
-            ],
-            "entityID": 3,
-            "shape": 0
-        }
-    ],
     "entities": [
-        {
-            "behaviorHash": 0,
-            "id": 2,
-            "name": "entity 2",
-            "transform": {
-                "position": [
-                    5.7220458984375e-06,
-                    129.87637329101563
-                ],
-                "rotation": 0.0,
-                "scale": [
-                    526.0,
-                    100.0
-                ]
-            }
-        },
-        {
-            "behaviorHash": 0,
-            "id": 3,
-            "name": "entity 2_copy",
-            "transform": {
-                "position": [
-                    6.198883056640625e-06,
-                    29.876304626464844
-                ],
-                "rotation": 0.0,
-                "scale": [
-                    526.0,
-                    100.0
-                ]
-            }
-        },
         {
             "behaviorHash": 3757936288,
             "id": 4,

@@ -4,7 +4,9 @@
 #define chunkTileCount 1024
 #define chunksX  64 
 #define maxLightsPerChunk 100
-#define ambiantLight 0.00
+#define mapOffset 0
+#define ambiantLight 0.002
+#define mapCount 2097152
 
 struct LightingUpdate {
 	int chunkIndex;
@@ -31,7 +33,7 @@ int getChunkIndex(int x, int y){
     int cy = (y / chunkSize);
     int chunk = cy * chunksX + cx;
     int chuckIndexOffset = chunk * chunkTileCount;
-    return chuckIndexOffset + (y % chunkSize) * chunkSize + (x % chunkSize);
+    return mapOffset + chuckIndexOffset + (y % chunkSize) * chunkSize + (x % chunkSize);
 }
 
 void main() 
@@ -55,7 +57,7 @@ void main()
     int index = getChunkIndex(int(globX ), int(globY ));
     int curtile = tileMapFGData[index] & 0xFFFF;
 
-  //  int curBrightness =  tileMapBGData[index] >> 16;
+  //  int curBrightness =  tileMapBGData[mapOffset + index] >> 16;
 
     float totalBrightness = 0;
     int sampleCount = 0;
@@ -64,7 +66,7 @@ void main()
         for(int j = -1; j < 2; j++){
 
             index = getChunkIndex(int(globX + i), int(globY + j));
-            int tile = tileMapFGData[index] & 0xFFFF;
+            int tile = tileMapFGData[ index] & 0xFFFF;
             int brightness = tileMapBGData[index] >> 16;
 
             if(tile == 1023 || curtile != 1023){

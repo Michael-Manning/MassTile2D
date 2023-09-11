@@ -233,40 +233,18 @@ void TexturedQuadPL::createSSBOBuffer() {
 	engine->createMappedBuffer(sizeof(ssboObjectInstanceData) * TexturedQuadPL_MAX_OBJECTS, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, ssboMappedDB);
 }
 
-void TexturedQuadPL::recordCommandBuffer(VkCommandBuffer commandBuffer, std::vector<ssboObjectInstanceData>& drawlist) {
-	ZoneScopedN("texture quad cmd buffer");
-	if (drawlist.size() == 0)
+void TexturedQuadPL::recordCommandBuffer(VkCommandBuffer commandBuffer, int instanceCount){
+	if (instanceCount == 0)
 		return;
 
-	assert(drawlist.size() <= TexturedQuadPL_MAX_OBJECTS);
-
-	{
-		for (auto& i : drawlist) {
-			i.index = bindIndexes[engine->currentFrame][i.index];
-		}
-
-		memcpy(ssboMappedDB.buffersMapped[engine->currentFrame], drawlist.data(), sizeof(ssboObjectInstanceData) * drawlist.size());
-	}
-
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
-
-	VkViewport viewport = fullframeViewport();
-	vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-
-	VkRect2D scissor{};
-	scissor.offset = { 0, 0 };
-	scissor.extent = engine->swapChainExtent;
-	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-
-	VkBuffer vertexBuffers[] = { quadMesh.vertexBuffer };
-	VkDeviceSize offsets[] = { 0 };
-	vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-	vkCmdBindIndexBuffer(commandBuffer, quadMesh.indexBuffer, 0, VK_INDEX_TYPE_UINT16);
-
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &generalDescriptorSets[engine->currentFrame], 0, nullptr);
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &ssboDescriptorSets[engine->currentFrame], 0, nullptr);
 
-	vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(QuadIndices.size()), drawlist.size(), 0, 0, 0);
+	{
+		TracyVkZone(engine->tracyGraphicsContexts[engine->currentFrame], commandBuffer, "textured quad render");
+		vkCmdDrawIndexed(commandBuffer, QuadIndices.size(), instanceCount, 0, 0, 0);
+	}
 }
 
 void TexturedQuadPL::UploadInstanceData(std::vector<ssboObjectInstanceData>& drawlist) {
@@ -282,21 +260,6 @@ void TexturedQuadPL::UploadInstanceData(std::vector<ssboObjectInstanceData>& dra
 	}
 
 	memcpy(ssboMappedDB.buffersMapped[engine->currentFrame], drawlist.data(), sizeof(ssboObjectInstanceData) * drawlist.size());
-}
-
-void TexturedQuadPL::recordCommandBufferIndirect(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, uint32_t stride) {
-	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
-	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &generalDescriptorSets[engine->currentFrame], 0, nullptr);
-	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &ssboDescriptorSets[engine->currentFrame], 0, nullptr);
-	vkCmdDrawIndexedIndirect(commandBuffer, buffer, offset, 1, stride);
-}
-
-void TexturedQuadPL::GetDrawCommand(VkDrawIndexedIndirectCommand* cmd, int instanceCount) {
-	cmd->indexCount = QuadIndices.size();
-	cmd->instanceCount = instanceCount;
-	cmd->firstInstance = 0;
-	cmd->vertexOffset = 0;
-	cmd->firstInstance = 0;
 }
 
 void TexturedQuadPL::addTextureBinding(texID ID, Texture* texture) {

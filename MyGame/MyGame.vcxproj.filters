@@ -21,9 +21,6 @@
     <ClCompile Include="MyGame.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\MyEngine\ball.h">
-      <Filter>Entities</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CopyFileToFolders Include="..\lib\FastNoise2\lib\FastNoiseD.dll">
@@ -45,6 +42,9 @@
     </ClInclude>
     <ClInclude Include="benchmark.h">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="demon.h">
+      <Filter>Entities</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

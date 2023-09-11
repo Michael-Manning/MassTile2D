@@ -1,0 +1,12 @@
+{
+    "sprite": {
+        "fileName": "demon.png",
+        "filterMode": 0,
+        "resolution": [
+            120.0,
+            240.0
+        ],
+        "spriteID": 8,
+        "textureID": -812681011
+    }
+}

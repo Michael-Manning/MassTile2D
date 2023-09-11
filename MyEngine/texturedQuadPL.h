@@ -42,7 +42,7 @@ public:
 	};
 	static_assert(sizeof(ssboObjectInstanceData) % 16 == 0);
 
-	TexturedQuadPL(std::shared_ptr<VKEngine>& engine, VertexMeshBuffer quadMesh) : Pipeline(engine), quadMesh(quadMesh) {
+	TexturedQuadPL(std::shared_ptr<VKEngine>& engine) : Pipeline(engine) {
 		descriptorDirtyFlags.resize(FRAMES_IN_FLIGHT);
 		bindIndexes.resize(FRAMES_IN_FLIGHT);
 
@@ -78,15 +78,11 @@ public:
 		}
 	};
 
-	void recordCommandBuffer(VkCommandBuffer commandBuffer, std::vector<ssboObjectInstanceData>& drawlist);
+	void recordCommandBuffer(VkCommandBuffer commandBuffer, int instanceCount);
 
 	void UploadInstanceData(std::vector<ssboObjectInstanceData>& drawlist);
-	void recordCommandBufferIndirect(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, uint32_t stride);
-	void GetDrawCommand(VkDrawIndexedIndirectCommand* cmd, int instanceCount);
 
 private:
-
-	VertexMeshBuffer quadMesh;
 
 	std::array<VkDescriptorSet, FRAMES_IN_FLIGHT> ssboDescriptorSets;
 

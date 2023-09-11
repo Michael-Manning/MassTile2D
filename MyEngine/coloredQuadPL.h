@@ -40,8 +40,7 @@ public:
 	void CreateGraphicsPipeline(std::string vertexSrc, std::string fragmentSrc, MappedDoubleBuffer& cameradb);
 	void CreateInstancingBuffer();
 	void UploadInstanceData(std::vector<InstanceBufferData>& drawlist);
-	void recordCommandBufferIndirect(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, uint32_t stride);
-	void GetDrawCommand(VkDrawIndexedIndirectCommand* cmd, int instanceCount);
+	void recordCommandBuffer(VkCommandBuffer commandBuffer, int instanceCount);
 
 private:
 	MappedDoubleBuffer ssboMappedDB;

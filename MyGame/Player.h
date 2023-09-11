@@ -71,8 +71,7 @@ public:
 	vec2 velocity = vec2(0.0f);
 	float grounded = true;
 
-	ColorRenderer* renderer;
-	Rigidbody* rigidbody;
+
 
 
 	bool queryTile(vec2 pos) {
@@ -103,12 +102,15 @@ public:
 		return ivec2(-1, -1);
 	}
 
+	SpriteRenderer* renderer;
+
 	vector<vec2> tpoints;
 	float sx = 0;
 	float sy = 0;
 	void Start() override {
 
-		//renderer = getComponent<ColorRenderer>();
+		renderer = getComponent<SpriteRenderer>();
+		renderer->atlasIndex = 5;
 
 		tpoints.resize(10);
 		float sx = transform.scale.x / 2.0;
@@ -124,6 +126,9 @@ public:
 		tpoints[8] = vec2(-sx, -sy / 2.0f);
 		tpoints[9] = vec2(sx, -sy / 2.0f);
 	};
+
+	float animationTimer = 0;
+
 	void Update() override {
 
 		bool leftCast = false;
@@ -149,9 +154,13 @@ public:
 		bottomCast |= queryTile(transform.position + tpoints[3] + vec2(0, -skin * 2));
 		bottomCast |= queryTile(transform.position + tpoints[6] + vec2(0, -skin * 2));
 
+		animationTimer += DeltaTime;
+		if (animationTimer > 0.1f)
+			animationTimer = 0.0f;
+
 		//left and right movement
-		bool left = input->getKey(KeyCode::LeftArrow);
-		bool right = input->getKey(KeyCode::RightArrow);
+		bool left = input->getKey(KeyCode::LeftArrow) || input->getKey('a');
+		bool right = input->getKey(KeyCode::RightArrow) || input->getKey('d');
 
 		if (left && !right && !leftCast) {
 			velocity += vec2(grounded ? -groundAccel : -airAccel, 0.0f) * DeltaTime;
@@ -166,13 +175,32 @@ public:
 			}
 		}
 
-		if (input->getKeyDown(KeyCode::UpArrow) && grounded) {
+		if ((input->getKeyDown(KeyCode::UpArrow) || input->getKey('w')) && grounded) {
 			velocity.y = jumpVel;
 			grounded = false;
+
 		}
 		else if (!bottomCast) {
 			velocity.y -= gravityAccel * DeltaTime;
 		}
+
+
+		if (grounded) {
+
+			if (left && !right && !leftCast) {
+				renderer->atlasIndex = animationTimer > 0.05 ? 1 : 2;
+			}
+			else if (!left && right && !rightCast) {
+				renderer->atlasIndex = animationTimer > 0.05 ? 3 : 4;
+			}
+			else {
+				renderer->atlasIndex = 5;
+			}
+		}
+		else {
+			renderer->atlasIndex = 0;
+		}
+
 
 		velocity.x = glm::clamp(velocity.x, -topMoveSpeed, topMoveSpeed);
 		velocity.y = glm::clamp(velocity.y, -terminalVelocity, terminalVelocity);
@@ -226,7 +254,7 @@ public:
 			if (i > 3) {
 				if (i == 4 || i == 8)
 					resolveRight = true;
-				else if (i == 5 || i ==9)
+				else if (i == 5 || i == 9)
 					resolveLeft = true;
 				else if (i == 6)
 					resolveUp = true;
@@ -333,7 +361,7 @@ public:
 				avgSamplesY++;
 				velocity.y = 0;
 			}
-			}
+		}
 
 		if (avgSamplesX > 0)
 			npos.x = resolvedXAvg / (float)avgSamplesX;
@@ -351,8 +379,8 @@ public:
 				GcameraPos = npos;
 			}
 		}
-		};
 	};
+};
 
 
 #if 0

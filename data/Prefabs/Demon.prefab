@@ -1,0 +1,21 @@
+{
+    "prefab": {
+        "behaviorHash": 1644023240,
+        "spriteRenderer": {
+            "atlasIndex": 0,
+            "entityID": 0,
+            "spriteID": 8
+        },
+        "transform": {
+            "position": [
+                0.0,
+                0.0
+            ],
+            "rotation": 0.0,
+            "scale": [
+                0.35,
+                0.7
+            ]
+        }
+    }
+}

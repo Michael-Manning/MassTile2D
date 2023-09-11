@@ -5,7 +5,7 @@ import json
 import math
 
 # Directory containing the images
-image_directory = 'tile_set'
+image_directory = '../data/images/player'
 
 # Output combined image file
 output_image_path = 'combined_image.png'
@@ -16,17 +16,20 @@ output_json_path = 'texture_atlas.json'
 # Get all the image files in the directory
 image_files = [f for f in os.listdir(image_directory) if os.path.isfile(os.path.join(image_directory, f))]
 
+# make image_files only contain .png files
+image_files = [f for f in image_files if f.endswith('.png')]
+
 # Load images
 images = [Image.open(os.path.join(image_directory, file)) for file in image_files]
 
-# Assuming the images are square, get the size of an individual image
-image_size = images[0].size[0]
+# Get the size of an individual image (assuming all images have the same size)
+image_width, image_height = images[0].size
 
 # Calculate grid size
 grid_size = int(math.ceil(math.sqrt(len(images))))
 
 # Create a blank image to paste the individual images onto
-combined_image = Image.new('RGB', (image_size * grid_size, image_size * grid_size))
+combined_image = Image.new('RGBA', (image_width * grid_size, image_height * grid_size))
 
 # List to hold metadata entries
 atlas_entries = []
@@ -35,15 +38,15 @@ atlas_entries = []
 for i, image in enumerate(images):
     row = i // grid_size
     col = i % grid_size
-    x_offset = col * image_size
-    y_offset = row * image_size
+    x_offset = col * image_width
+    y_offset = row * image_height
     combined_image.paste(image, (x_offset, y_offset))
 
     # Calculate normalized UV coordinates
-    u_min = x_offset / (image_size * grid_size)
-    v_min = y_offset / (image_size * grid_size)
-    u_max = (x_offset + image_size) / (image_size * grid_size)
-    v_max = (y_offset + image_size) / (image_size * grid_size)
+    u_min = x_offset / (image_width * grid_size)
+    v_min = y_offset / (image_height * grid_size)
+    u_max = (x_offset + image_width) / (image_width * grid_size)
+    v_max = (y_offset + image_height) / (image_height * grid_size)
 
     atlas_entries.append({
         'name': image_files[i],

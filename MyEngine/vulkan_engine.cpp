@@ -227,30 +227,6 @@ void VKEngine::beginRenderpass(uint32_t imageIndex, VkCommandBuffer cmdBuffer, g
 	vkCmdBeginRenderPass(cmdBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 }
 
-VkCommandBuffer VKEngine::getNextImguiCommandBuffer(uint32_t imageIndex) {
-	ZoneScoped;
-
-	vkResetCommandBuffer(ImguiCommandBuffers[currentFrame], /*VkCommandBufferResetFlagBits*/ 0);
-
-	VkCommandBufferInheritanceInfo inheritanceInfo{};
-	inheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
-	inheritanceInfo.renderPass = renderPass;
-	inheritanceInfo.subpass = 1;
-	//inheritanceInfo.framebuffer = swapChainFramebuffers[imageIndex];
-
-	VkCommandBufferBeginInfo beginInfo{};
-	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
-	beginInfo.pInheritanceInfo = &inheritanceInfo;
-
-
-	if (vkBeginCommandBuffer(ImguiCommandBuffers[currentFrame], &beginInfo) != VK_SUCCESS) {
-		throw std::runtime_error("failed to begin recording command buffer!");
-	}
-
-	return ImguiCommandBuffers[currentFrame];
-}
-
 VkCommandBuffer VKEngine::getNextComputeCommandBuffer() {
 	ZoneScoped;
 	vkResetCommandBuffer(computeCommandBuffers[currentFrame], /*VkCommandBufferResetFlagBits*/ 0);
@@ -265,18 +241,18 @@ VkCommandBuffer VKEngine::getNextComputeCommandBuffer() {
 	return computeCommandBuffers[currentFrame];
 }
 
-VkCommandBuffer VKEngine::getNextCommandBuffer(uint32_t imageIndex) {
+VkCommandBuffer VKEngine::getNextCommandBuffer() {
 	ZoneScoped;
-	vkResetCommandBuffer(commandBuffers[imageIndex], /*VkCommandBufferResetFlagBits*/ 0);
+	vkResetCommandBuffer(commandBuffers[currentFrame], /*VkCommandBufferResetFlagBits*/ 0);
 
 	VkCommandBufferBeginInfo beginInfo{};
 	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-	if (vkBeginCommandBuffer(commandBuffers[imageIndex], &beginInfo) != VK_SUCCESS) {
+	if (vkBeginCommandBuffer(commandBuffers[currentFrame], &beginInfo) != VK_SUCCESS) {
 		throw std::runtime_error("failed to begin recording command buffer!");
 	}
 
-	return commandBuffers[imageIndex];
+	return commandBuffers[currentFrame];
 }
 
 void VKEngine::submitCompute() {
@@ -313,7 +289,7 @@ bool VKEngine::submitAndPresent(uint32_t imageIndex) {
 
 	bool swapChainRecreated = false;
 
-	//TracyVkCollect(tracyGraphicsContexts[currentFrame], commandBuffers[currentFrame]);
+	TracyVkCollect(tracyGraphicsContexts[currentFrame], commandBuffers[currentFrame]);
 
 	VkSubmitInfo submitInfo{};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -325,7 +301,7 @@ bool VKEngine::submitAndPresent(uint32_t imageIndex) {
 	submitInfo.pWaitDstStageMask = waitStages;
 
 	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &commandBuffers[imageIndex];
+	submitInfo.pCommandBuffers = &commandBuffers[currentFrame];
 
 	VkSemaphore signalSemaphores[] = { renderFinishedSemaphores[currentFrame] };
 	submitInfo.signalSemaphoreCount = 1;

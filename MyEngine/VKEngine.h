@@ -94,9 +94,8 @@ public:
 	// call in sequence
 	void waitForCompute();
 	uint32_t waitForSwapchain();
-	VkCommandBuffer getNextCommandBuffer(uint32_t imageIndex); // temporary solution which resets the command buffer every frame
+	VkCommandBuffer getNextCommandBuffer(); // temporary solution which resets the command buffer every frame
 	VkCommandBuffer getNextComputeCommandBuffer();
-	VkCommandBuffer getNextImguiCommandBuffer(uint32_t imageIndex);
 
 	void endCommandBuffer(VkCommandBuffer commandBuffer);
 
@@ -144,9 +143,8 @@ public:
 	VkDescriptorPool descriptorPool;
 
 
-	std::vector<VkCommandBuffer> commandBuffers;
+	std::array<VkCommandBuffer, FRAMES_IN_FLIGHT> commandBuffers;
 	std::array<VkCommandBuffer, FRAMES_IN_FLIGHT>  computeCommandBuffers;
-	std::array<VkCommandBuffer, FRAMES_IN_FLIGHT> ImguiCommandBuffers;
 
 	std::array<VkSemaphore, FRAMES_IN_FLIGHT>  imageAvailableSemaphores;
 	std::array<VkSemaphore, FRAMES_IN_FLIGHT>  renderFinishedSemaphores;

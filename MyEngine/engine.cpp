@@ -161,25 +161,13 @@ void Engine::Start(std::string windowName, int winW, int winH, std::string shade
 		AllocateQuad(rengine, quadMeshBuffer);
 		worldMap = make_shared<TileWorld>(rengine);
 		worldMap->AllocateVulkanResources();
-
-		indrectCommandsBuffers.resize(rengine->swapChainImages.size());
-		for (size_t i = 0; i < rengine->swapChainImages.size(); i++) {
-			rengine->createBuffer(
-				sizeof(VkDrawIndexedIndirectCommand) * 3,
-				VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT,
-				VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
-				indrectCommandsBuffers[i].buffer,
-				indrectCommandsBuffers[i].allocation,
-				false);
-			vmaMapMemory(rengine->allocator, indrectCommandsBuffers[i].allocation, &indrectCommandsBuffers[i].bufferMapped);
-		}
 	}
 
 	// contruct pipelines
 	{
-		texturePipeline = make_unique<TexturedQuadPL>(rengine, quadMeshBuffer);
+		texturePipeline = make_unique<TexturedQuadPL>(rengine);
 		colorPipeline = make_unique<ColoredQuadPL>(rengine);
-		tilemapPipeline = make_unique<TilemapPL>(rengine, quadMeshBuffer, worldMap);
+		tilemapPipeline = make_unique<TilemapPL>(rengine, worldMap);
 		lightingPipeline = make_unique<LightingComputePL>(rengine, worldMap);
 	}
 
@@ -301,12 +289,6 @@ bool Engine::QueueNextFrame(bool drawImgui) {
 		}
 	}
 
-	if (drawImgui || imguiLastFrame) {
-		for (size_t i = 0; i < MAX_SWAPCHAIN_IMAGES; i++)
-			commandBufferDirty[i] = true;
-	}
-	imguiLastFrame = drawImgui;
-
 	// update global buffers
 	{
 		ZoneScopedN("UBO update");
@@ -350,46 +332,32 @@ bool Engine::QueueNextFrame(bool drawImgui) {
 		return false;
 	}
 
-	if (commandBufferDirty[imageIndex]) {
-		auto cmdBuffer = rengine->getNextCommandBuffer(imageIndex);
 
-		rengine->beginRenderpass(imageIndex, cmdBuffer, vec4(0, 0, 0.0, 1.0));
+	auto cmdBuffer = rengine->getNextCommandBuffer();
 
-		{
-			VkViewport viewport{};
-			viewport.x = 0.0f;
-			viewport.y = 0.0f;
-			viewport.width = (float)rengine->swapChainExtent.width;
-			viewport.height = (float)rengine->swapChainExtent.height;
-			viewport.minDepth = 0.0f;
-			viewport.maxDepth = 1.0f;
-			vkCmdSetViewport(cmdBuffer, 0, 1, &viewport);
+	rengine->beginRenderpass(imageIndex, cmdBuffer, vec4(0.0, 0.4, 0.6, 1.0));
 
-			VkRect2D scissor{};
-			scissor.offset = { 0, 0 };
-			scissor.extent = rengine->swapChainExtent;
-			vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
+	{
+		VkViewport viewport{};
+		viewport.x = 0.0f;
+		viewport.y = 0.0f;
+		viewport.width = (float)rengine->swapChainExtent.width;
+		viewport.height = (float)rengine->swapChainExtent.height;
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+		vkCmdSetViewport(cmdBuffer, 0, 1, &viewport);
 
-			VkBuffer vertexBuffers[] = { quadMeshBuffer.vertexBuffer };
-			VkDeviceSize offsets[] = { 0 };
-			vkCmdBindVertexBuffers(cmdBuffer, 0, 1, vertexBuffers, offsets);
-			vkCmdBindIndexBuffer(cmdBuffer, quadMeshBuffer.indexBuffer, 0, VK_INDEX_TYPE_UINT16);
-		}
+		VkRect2D scissor{};
+		scissor.offset = { 0, 0 };
+		scissor.extent = rengine->swapChainExtent;
+		vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
 
-		colorPipeline->recordCommandBufferIndirect(cmdBuffer, indrectCommandsBuffers[imageIndex].buffer, 0 * sizeof(VkDrawIndexedIndirectCommand), sizeof(VkDrawIndexedIndirectCommand));
-		tilemapPipeline->recordCommandBufferIndirect(cmdBuffer, indrectCommandsBuffers[imageIndex].buffer, 1 * sizeof(VkDrawIndexedIndirectCommand), sizeof(VkDrawIndexedIndirectCommand));
-		texturePipeline->recordCommandBufferIndirect(cmdBuffer, indrectCommandsBuffers[imageIndex].buffer, 2 * sizeof(VkDrawIndexedIndirectCommand), sizeof(VkDrawIndexedIndirectCommand));
-
-		if (drawImgui) {
-			ImGui::Render();
-			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdBuffer);
-		}
-
-		vkCmdEndRenderPass(cmdBuffer);
-		rengine->endCommandBuffer(cmdBuffer);
-
-		commandBufferDirty[imageIndex] = false;
+		VkBuffer vertexBuffers[] = { quadMeshBuffer.vertexBuffer };
+		VkDeviceSize offsets[] = { 0 };
+		vkCmdBindVertexBuffers(cmdBuffer, 0, 1, vertexBuffers, offsets);
+		vkCmdBindIndexBuffer(cmdBuffer, quadMeshBuffer.indexBuffer, 0, VK_INDEX_TYPE_UINT16);
 	}
+
 
 
 	// colored quad
@@ -415,18 +383,16 @@ bool Engine::QueueNextFrame(bool drawImgui) {
 		}
 
 		colorPipeline->UploadInstanceData(drawlist);
-		colorPipeline->GetDrawCommand(reinterpret_cast<VkDrawIndexedIndirectCommand*>(indrectCommandsBuffers[imageIndex].bufferMapped), drawlist.size());
-		//colorPipeline->recordCommandBuffer(cmdBuffer, drawlist.size());
-		//colorPipeline->recordCommandBufferIndirect(cmdBuffer, drawlist.size(), indrectCommandsBuffer, 0, sizeof(VkDrawIndexedIndirectCommand));
+		colorPipeline->recordCommandBuffer(cmdBuffer, drawlist.size());
 	}
 
 	// tilemap
 
 	{
-		ZoneScopedN("tilemap PL");
+		//ZoneScopedN("tilemap PL");
 
 		if (tilemapPipeline->textureAtlas.has_value()) {
-			tilemapPipeline->GetDrawCommand(&((VkDrawIndexedIndirectCommand*)indrectCommandsBuffers[imageIndex].bufferMapped)[1]);
+			tilemapPipeline->recordCommandBuffer(cmdBuffer);
 		}
 	}
 
@@ -467,9 +433,8 @@ bool Engine::QueueNextFrame(bool drawImgui) {
 				texturePipeline->invalidateTextureDescriptors();
 
 			texturePipeline->updateDescriptorSets();
-			//texturePipeline->recordCommandBuffer(cmdBuffer, drawlist);
 			texturePipeline->UploadInstanceData(drawlist);
-			texturePipeline->GetDrawCommand(&((VkDrawIndexedIndirectCommand*)indrectCommandsBuffers[imageIndex].bufferMapped)[2], drawlist.size());
+			texturePipeline->recordCommandBuffer(cmdBuffer, drawlist.size());
 
 			runningStats.sprite_render_count = drawlist.size();
 		}
@@ -481,14 +446,18 @@ bool Engine::QueueNextFrame(bool drawImgui) {
 	assetManager->spritesAdded = false;
 	assetManager->filterModesChanged = false;
 
-	//vkCmdEndRenderPass(cmdBuffer);
-	//rengine->endCommandBuffer(cmdBuffer);
-
-	if (rengine->submitAndPresent(imageIndex)) {
-		// swapchain recreated. Framebuffers must be re refrenced
-		for (size_t i = 0; i < MAX_SWAPCHAIN_IMAGES; i++)
-			commandBufferDirty[i] = true;
+	if (drawImgui) {
+		ImGui::Render();
+		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdBuffer);
 	}
+
+	vkCmdEndRenderPass(cmdBuffer);
+	rengine->endCommandBuffer(cmdBuffer);
+
+
+
+	rengine->submitAndPresent(imageIndex);
+	
 
 	rengine->Update();
 

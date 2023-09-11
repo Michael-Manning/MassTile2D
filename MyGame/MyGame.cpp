@@ -30,8 +30,8 @@
 
 #include "Input.h"
 #include "BehaviorRegistry.h"
-#include "ball.h"
 #include "player.h"
+#include "demon.h"
 #include "TileWorld.h"
 #include "benchmark.h"
 #include "profiling.h"
@@ -57,8 +57,8 @@ using namespace nlohmann;
 
 
 std::unordered_map<uint32_t, std::pair<std::string, std::function<std::shared_ptr<Entity>()>>> BehaviorMap = {
-	REG_BEHAVIOR(Ball),
 	REG_BEHAVIOR(Player),
+	REG_BEHAVIOR(Demon)
 };
 
 
@@ -145,7 +145,7 @@ int main() {
 		vector<bool> blockPresence(mapW * mapH);
 		vector<bool> ironPresence(mapW * mapH);
 
-		vector<int> indexes(mapCount);
+		vector<int> indexes(mapCount - mapPadding);
 		std::iota(indexes.begin(), indexes.end(), 0);
 
 #ifdef  NDEBUG
@@ -170,7 +170,7 @@ int main() {
 			tData[i * 4 + 3] = 255;
 		}
 
-		for (size_t i = 0; i < mapCount; i++) {
+		for (size_t i = 0; i < mapCount - mapPadding; i++) {
 			blockPresence[i] = noiseOutput[i] > baseParams.min;
 			ironPresence[i] = ironOutput[i] > ironParams.min;
 		}
@@ -191,7 +191,7 @@ int main() {
 
 			blockID id = Tiles::Air;
 
-			if ((y < mapH - 3 && y > 3 && x > 3 && x < mapW - 3)) {
+			if ((y < mapH - 1 && y > 1 && x > 1 && x < mapW - 1)) {
 				if (blockPresence[y * mapW + x]) {
 
 					id = Tiles::Dirt;
@@ -217,7 +217,10 @@ int main() {
 					}
 				}
 			}
+			
 			engine.worldMap->preloadTile(x, mapH - y - 1, id);
+			engine.worldMap->preloadBGTile(x, mapH - y - 1, y > (mapH - 205) ? 1023 : 1022);
+
 
 			});
 		engine.worldMap->saveToDisk(AssetDirectories.assetDir + "world.dat");
@@ -230,7 +233,7 @@ int main() {
 
 		//std::for_each(std::execution::seq, indexes.begin(), indexes.end(), [&engine, &blockPresence, &ironPresence](const int& i) {
 
-		for (size_t i = 0; i < mapCount; i++)
+		for (size_t i = 0; i < mapCount - mapPadding; i++)
 		{
 
 
@@ -238,7 +241,7 @@ int main() {
 			int y = i / mapW;
 			int x = i % mapW;
 
-			if (y < mapH - 3 && y > 3 && x > 3 && x < mapW - 3)
+			//if (y < mapH - 3 && y > 3 && x > 3 && x < mapW - 3)
 			{
 				blockID tileType = engine.worldMap->getTile(x, mapH - y - 1);
 				if (tileType != Tiles::Air)
@@ -259,12 +262,14 @@ int main() {
 		engine.worldMap->uploadWorldPreloadData();
 	}
 
-
+	auto ctest = engine.worldMap->getTile(0, 0);
 
 	engine.setTilemapAtlasTexture(engine.assetManager->spriteAssets[5]->texture);
 
 
 	vector<vec2> torchPositions;
+
+	shared_ptr<Player> player = dynamic_pointer_cast<Player>(scene->Instantiate(engine.assetManager->prefabs["Player"], "Player", vec2(0, 106), 0));
 
 	while (!engine.ShouldClose())
 	{
@@ -280,6 +285,9 @@ int main() {
 			}
 			if (input->getKeyDown('p')) {
 				engine.paused = !engine.paused;
+			}
+			if (input->getKeyDown('l')) {
+				engine.worldMap->FullLightingUpdate();
 			}
 		}
 
@@ -304,7 +312,7 @@ int main() {
 			static int lastY = -1;
 
 			vec2 worldClick = engine.screenToWorldPos(input->getMousePos());
-
+			//cout << worldClick.x << " " << worldClick.y << endl;
 			int tileX = worldClick.x / tileWorldSize + mapW / 2;
 			int tileY = worldClick.y / tileWorldSize + mapH / 2;
 
@@ -341,7 +349,7 @@ int main() {
 				}
 				else {
 					//
-					engine.worldMap->setMovingTorch(ivec2(x, y), false);
+				//	engine.worldMap->setMovingTorch(ivec2(x, y), false);
 				}
 
 				static bool lastState = true;
@@ -351,6 +359,7 @@ int main() {
 
 				//	torchPositions.push_back(vec2(x, y));
 
+					
 					engine.worldMap->setTorch(x, y);
 				}
 
@@ -376,7 +385,12 @@ int main() {
 					for (int j = -1; j < 2; j++)
 						CalcTileVariation(x + i, y + j);
 			}
-	}
+
+			if (input->getMouseBtnDown(MouseBtn::Right)) {
+				auto demon = scene->Instantiate(engine.assetManager->prefabs["Demon"], "Demon", worldClick, 0);
+				dynamic_pointer_cast<Demon>(demon)->setPlayerRef(player);
+			}
+		}
 #endif
 
 		engine.QueueNextFrame(showingEditor);

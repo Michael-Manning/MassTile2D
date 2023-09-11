@@ -34,7 +34,8 @@ void TilemapPL::CreateGraphicsPipeline(std::string vertexSrc, std::string fragme
 	configureDescriptorSets(vector<Pipeline::descriptorSetInfo> {
 		descriptorSetInfo(0, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, &cameradb.buffers, cameradb.size),
 		descriptorSetInfo(0, 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, nullptr),
-		descriptorSetInfo(1, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, nullptr, sizeof(TileWorld::ssboObjectData)* (TileWorld_MAX_TILES))
+		descriptorSetInfo(1, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, nullptr, sizeof(TileWorld::ssboObjectData)* (mapCount)),
+		descriptorSetInfo(1, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, nullptr, sizeof(TileWorld::ssboObjectData)* (mapCount))
 	});
 	buildDescriptorLayouts();
 
@@ -80,7 +81,8 @@ void TilemapPL::CreateGraphicsPipeline(std::string vertexSrc, std::string fragme
 	}
 }
 
-void TilemapPL::recordCommandBufferIndirect(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, uint32_t stride) {
+void TilemapPL::recordCommandBuffer(VkCommandBuffer commandBuffer) {
+
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
 
 	for (auto& i : builderDescriptorSetsDetails)
@@ -88,14 +90,6 @@ void TilemapPL::recordCommandBufferIndirect(VkCommandBuffer commandBuffer, VkBuf
 
 	{
 		TracyVkZone(engine->tracyGraphicsContexts[engine->currentFrame], commandBuffer, "Tilemap render");
-		vkCmdDrawIndexedIndirect(commandBuffer, buffer, offset, 1, stride);
+		vkCmdDrawIndexed(commandBuffer, QuadIndices.size(), 1, 0, 0, 0);
 	}
-}
-
-void TilemapPL::GetDrawCommand(VkDrawIndexedIndirectCommand* cmd) {
-	cmd->indexCount = QuadIndices.size();
-	cmd->instanceCount = 1;
-	cmd->firstInstance = 0;
-	cmd->vertexOffset = 0;
-	cmd->firstInstance = 0;
 }

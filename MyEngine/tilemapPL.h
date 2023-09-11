@@ -27,12 +27,11 @@
 class TilemapPL :public  Pipeline {
 public:
 
-	TilemapPL(std::shared_ptr<VKEngine>& engine, VertexMeshBuffer quadMesh, std::shared_ptr<TileWorld> world) : Pipeline(engine), quadMesh(quadMesh), world(world) {
+	TilemapPL(std::shared_ptr<VKEngine>& engine, std::shared_ptr<TileWorld> world) : Pipeline(engine), world(world) {
 	}
 
 	void CreateGraphicsPipeline(std::string vertexSrc, std::string fragmentSrc, MappedDoubleBuffer& cameradb);
-	void recordCommandBufferIndirect(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, uint32_t stride);
-	void GetDrawCommand(VkDrawIndexedIndirectCommand* cmd);
+	void recordCommandBuffer(VkCommandBuffer commandBuffer);
 
 	void setTextureAtlas(Texture textureAtlas) {
 
@@ -43,6 +42,9 @@ public:
 
 		std::array<VkBuffer, FRAMES_IN_FLIGHT> worldMapDeviceBuferRef = { world->_worldMapFGDeviceBuffer, world->_worldMapFGDeviceBuffer };
 		builderDescriptorSetsDetails[2].doubleBuffer = &worldMapDeviceBuferRef;
+
+		std::array<VkBuffer, FRAMES_IN_FLIGHT> worldMapBGDeviceBuferRef = { world->_worldMapBGDeviceBuffer, world->_worldMapBGDeviceBuffer };
+		builderDescriptorSetsDetails[3].doubleBuffer = &worldMapBGDeviceBuferRef;
 
 		buildDescriptorSets();
 
@@ -55,8 +57,6 @@ private:
 	VKUtil::UBOUploader<cameraUBO_s> cameraUploader;
 
 	std::shared_ptr<TileWorld> world = nullptr;
-
-	VertexMeshBuffer quadMesh;
 
 	std::array<VkDescriptorSet, FRAMES_IN_FLIGHT> ssboDescriptorSets;
 

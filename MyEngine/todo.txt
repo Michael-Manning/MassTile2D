@@ -1,17 +1,13 @@
 
 
-- finalize tilemap coordinate system
-- make tile vs block terminalogy consistent
 - add padding blocks and prevent light update jobs to out of bounds chunk
 - adding removing blocks must update surrounding chunk lighting
+- add background layer
 
 - fix getkeyup
 
-- figure out if it's necessary to set the viewport, siscor, and vertex bindings individually in each pipeline function.
 
-- switch color and texture instancing piplines to fixed secondar command buffer. Use drawIndirect to update instance count with buffer. Profile first
-(Could just use camera buffer since I'm already updating that every frame!)
-Update: Since draw command is always last, could put everything in the secondary buffer, but then add the draw call to the end every frame
+
 
 - convert entity transform into component, store in contiguous memory, or use faster map. Then use compute shader to calculate
 entity transform matrices for color/texture pipeline instead of per vertex calculation - profile first
