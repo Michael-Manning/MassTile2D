@@ -69,6 +69,11 @@ void Scene::SaveScene(std::string filename) {
 			j["colorRenderers"].push_back(c.second.serializeJson(c.first));
 		}
 	}
+	for (auto& c : sceneData.textRenderers) {
+		if (sceneData.entities[c.first]->persistent) {
+			j["textRenderers"].push_back(c.second.serializeJson(c.first));
+		}
+	}
 	for (auto& r : sceneData.rigidbodies) {
 		if (sceneData.entities[r.first]->persistent) {
 			j["rigidbodies"].push_back(r.second.serializeJson(r.first));
@@ -85,6 +90,10 @@ void Scene::SaveScene(std::string filename) {
 	for (auto& s : usedSprites) {
 		if (s != assetManager->defaultSprite)
 			j["usedSprites"].push_back(s);
+	}
+	auto usedFonts = sceneData.getUsedFonts();
+	for (auto& f : usedFonts) {
+		j["usedFonts"].push_back(f);
 	}
 
 	std::ofstream output(filename + ".json");
@@ -121,9 +130,14 @@ void Scene::LoadScene(std::string filename, std::shared_ptr<b2World> world) {
 
 	set<spriteID> requiredSprites;
 	for (auto& i : j["usedSprites"]) {
-		requiredSprites.insert(static_cast<entityID>(i));
+		requiredSprites.insert(static_cast<spriteID>(i));
 	}
 	assetManager->loadSpriteAssets(requiredSprites);
+
+	set<fontID> requiredFonts;
+	for (auto& i : j["usedFonts"]) {
+		requiredFonts.insert(static_cast<fontID>(i));
+	}
 
 	for (auto& i : j["entities"]) {
 		shared_ptr<Entity> e = Entity::deserializeJson(i);

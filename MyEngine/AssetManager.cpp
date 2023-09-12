@@ -6,6 +6,8 @@
 
 #include "Utils.h"
 #include "Prefab.h"
+#include "sprite.h"
+#include "Font.h"
 
 using namespace std;
 
@@ -68,7 +70,7 @@ void AssetManager::updateTexture(texID id, FilterMode filterMode) {
 
 void AssetManager::loadPrefabs(std::shared_ptr<b2World> world) {
 	auto files = getAllFilesInDirectory(std::filesystem::path(directories.prefabDir));
-	
+
 	prefabs.clear();
 
 	for (auto& i : files)
@@ -144,6 +146,49 @@ void AssetManager::loadSpriteAssets(std::set<spriteID> _ids) {
 		loadTexture(directories.textureSrcDir + i.first, i.second);
 	}
 
+}
+
+void AssetManager::loadFontAssets(std::set<fontID> ids) {
+	auto fontFiles = getAllFilesInDirectory(std::filesystem::path(directories.assetDir));
+
+	// only load unloaded ids
+	std::set<fontID> ids;
+	for (auto& i : ids) {
+		if (fontAssets.contains(i) == false)
+			ids.insert(i);
+	}
+
+	set<spriteID> requiredSpriteIDs;
+	vector <shared_ptr<Font>> loadedFonts;
+
+	for (auto& i : fontFiles)
+	{
+		std::string name = std::filesystem::path(i).filename().string();
+		size_t lastindex = name.find_last_of(".");
+
+		std::string extension = name.substr(lastindex, name.length() - 1);
+
+		if (extension != Font_extension)
+			continue;
+
+		auto font = Font::deserializeJson(i);
+
+		if (ids.contains(font->ID) == false)
+			continue;
+
+		loadedFonts.push_back(font);
+		requiredSpriteIDs.insert(font->atlas);
+	}
+
+	if (loadedFonts.size() != ids.size())
+		throw new std::exception("Could not locate all required fonts");
+
+	for (auto& i : loadedFonts) {
+		fontAssets[i->ID] = i;
+		fontGenerator.Input(i->ID);
+	}
+
+	loadSpriteAssets(requiredSpriteIDs);
 }
 
 void AssetManager::loadAllSprites() {
@@ -232,3 +277,36 @@ void AssetManager::CreateDefaultSprite(int w, int h, std::vector<uint8_t>& data)
 	defaultSprite = sprite->ID;
 	spriteAssets[sprite->ID] = sprite;
 }
+
+
+
+void AssetManager::addFont(Font font) {
+	fontID id = fontGenerator.GenerateID();
+	fontAssets[id] = make_shared<Font>(font);
+}
+
+void AssetManager::addFont(Font font, fontID inputID) {
+	fontGenerator.Input(inputID);
+	fontAssets[inputID] = make_shared<Font>(font);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

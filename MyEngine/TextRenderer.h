@@ -7,26 +7,28 @@
 
 #include "typedefs.h"
 #include "Component.h"
+#include "Font.h"
 
 class TextRenderer : public Component {
 public:
 
 	TextRenderer() {};
 
-	TextRenderer(spriteID spr) {
-		sprite = spr;
+	TextRenderer(Font font) {
+		this->font = font;
 	};
 
 	nlohmann::json serializeJson(entityID entId) override;
 
 	static TextRenderer deserializeJson(nlohmann::json j);
 
-	spriteID sprite;
+	std::string text;
+
+	fontID font;
 
 	TextRenderer duplicate() const {
-		TextRenderer r(sprite);
+		assert(false); // damn
+		TextRenderer r(font);
 		return r;
 	};
-
-	int atlasIndex = 0;
 };

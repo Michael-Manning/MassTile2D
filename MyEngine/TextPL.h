@@ -33,13 +33,7 @@ public:
 	TextPL(std::shared_ptr<VKEngine>& engine) : Pipeline(engine) {
 	}
 
-	struct charQuad {
-		glm::vec2 uvmin;
-		glm::vec2 uvmax;
-		glm::vec2 scale;
-		glm::vec2 position;
-
-	};
+	
 
 
 	void CreateGraphicsPipeline(std::string vertexSrc, std::string fragmentSrc, MappedDoubleBuffer& cameradb);

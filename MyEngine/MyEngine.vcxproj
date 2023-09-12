@@ -265,7 +265,7 @@
     <ClCompile Include="LightingComputePL.cpp" />
     <ClCompile Include="quadComputePL.cpp" />
     <ClCompile Include="TextPL.cpp" />
-    <ClCompile Include="TextRenderer.cpp" />
+    <ClCompile Include="TextRenderer.h" />
     <ClCompile Include="texturedQuadPL.cpp" />
     <ClCompile Include="coloredQuadPL.cpp" />
     <ClCompile Include="ECS.cpp" />

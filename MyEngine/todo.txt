@@ -1,8 +1,9 @@
 
 
-- add padding blocks and prevent light update jobs to out of bounds chunk
-- adding removing blocks must update surrounding chunk lighting
-- add background layer
+
+Just added font asset. Continue adding scene support, then fully hook up text renderer and text pipline
+
+
 
 - fix getkeyup
 
@@ -28,12 +29,8 @@ reserve scene component maps with max count to prevenent rehashing which would b
 
 
 integrate vk-bootstrap to simplify initializion
-- move tilemap push constant to UBO (use new ubo uploader class)
-
-
 
 - tool for managing texture bindings. Replace function in instanced pipline
-
 
 - shader auto workflow with sprv reflect
 
@@ -42,8 +39,6 @@ things to abstract:
 
 - buffer management (group allocation and buffer, see vkguide)
 
-
-- check for dedicated compute family queue and use it for compute shaders asynchrounously
 
 - query maxComputeWorkGroupCount, maxComputeWorkGroupInvocations, and maxComputeWorkGroupSize to determine max work group size
 
@@ -55,7 +50,5 @@ things to abstract:
 - texture animators
 
 - partical system
-
-- text
 
 - more physics features. raycast, collision detection, layers, user entity variable in body

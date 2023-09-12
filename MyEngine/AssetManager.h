@@ -26,6 +26,7 @@ public:
 		std::string assetDir;
 		std::string textureSrcDir;
 	};
+	AssetPaths directories;
 
 	AssetManager(std::shared_ptr<VKEngine> engine, AssetPaths directories) : rengine(engine) {
 		this->directories = directories;
@@ -38,34 +39,32 @@ public:
 
 	void updateTexture(texID id, FilterMode filterMode);
 
+	void addFont(Font font);
+	void addFont(Font font, fontID inputID);
+
 	std::unordered_map<texID, Texture> textureAssets;
 	std::unordered_map<texID, std::string> imageSources;
-
-	std::unordered_map<std::string, Prefab> prefabs;
-	void loadPrefabs(std::shared_ptr<b2World> world);
-
-
-
 	std::unordered_map<spriteID, std::shared_ptr<Sprite>>  spriteAssets;
+	std::unordered_map<std::string, Prefab> prefabs;
+	std::unordered_map<fontID, std::shared_ptr<Font>> fontAssets;
 
+	void loadPrefabs(std::shared_ptr<b2World> world);
 	void loadSpriteAssets(std::set<spriteID> ids);
+	void loadFontAssets(std::set<fontID> ids);
 	void loadAllSprites();
 
 	std::shared_ptr<Sprite> GenerateSprite(std::string imagePath, FilterMode filterMode = FilterMode::Linear, bool genImgui = true);
+	void CreateDefaultSprite(int w, int h, std::vector<uint8_t>& data);
+	spriteID defaultSprite = 0;
+
 
 	bool spritesAdded = false; // dirty flag used by engine to bind new textures to 
 	bool filterModesChanged = false;
-
-	void CreateDefaultSprite(int w, int h, std::vector<uint8_t>& data);
-
-	spriteID defaultSprite = 0;
-
-	AssetPaths directories;
-
 private:
 
 	IDGenerator<texID> TextureIDGenerator;
 	IDGenerator<spriteID> SpriteGenerator;
+	IDGenerator<fontID> fontGenerator;
 
 	std::shared_ptr<VKEngine> rengine;
 

@@ -6,5 +6,6 @@
 #include "Sprite.h"
 #include "SpriteRenderer.h"
 #include "ColorRenderer.h"
+#include "TextRenderer.h"
 #include "Physics.h"
 #include "Prefab.h"

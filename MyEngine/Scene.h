@@ -20,13 +20,20 @@ struct SceneData {
 	std::unordered_map<entityID, ColorRenderer> colorRenderers;
 	std::unordered_map<entityID, Rigidbody> rigidbodies;
 	std::unordered_map<entityID, Staticbody> staticbodies;
+	std::unordered_map<entityID, TextRenderer> textRenderers;
 
 
-	// only sprites used in a sprite renderer
 	std::vector<spriteID> getUsedSprites() {
 		std::vector<spriteID> ids;
 		for (auto& i : spriteRenderers) {
 			ids.push_back(i.second.sprite);
+		}
+		return ids;
+	};
+	std::vector<fontID> getUsedFonts() {
+		std::vector<fontID> ids;
+		for (auto& i : textRenderers) {
+			ids.push_back(i.second.font);
 		}
 		return ids;
 	};

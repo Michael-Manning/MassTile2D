@@ -1,6 +1,7 @@
 #include <string>
 #include <stdint.h>
 #include <vector>
+#include <filesystem>
 
 #ifndef STB_TRUETYPE_IMPLEMENTATION
 #define STB_TRUETYPE_IMPLEMENTATION
@@ -15,11 +16,11 @@
 
 #include "vulkan_util.h"
 #include "FontGenerator.h"
-
+#include "Font.h"
 
 using namespace std;
 
-void GenerateFontAtlas(std::string path, std::string exportPath, FontConfig& config) {
+void GenerateFontAtlas(std::string path, std::string exportPath, FontConfig& config, Engine& engine) {
 
 	
 	auto fontBuffer = VKUtil::readFile(path);
@@ -37,8 +38,8 @@ void GenerateFontAtlas(std::string path, std::string exportPath, FontConfig& con
 	int ascent, descent, lineGap;
 	stbtt_GetFontVMetrics(&font_info, &ascent, &descent, &lineGap);
 
-	ascent = roundf(ascent * scale);
-	descent = roundf(descent * scale);
+	//ascent = roundf(ascent * scale);
+	//descent = roundf(descent * scale);
 
 	{
 		stbtt_pack_context fnt_context;
@@ -59,6 +60,35 @@ void GenerateFontAtlas(std::string path, std::string exportPath, FontConfig& con
 	if (!stbi_write_png(exportPath.c_str(), config.atlasWidth, config.atlasHeight, channels, bitmap.data(), config.atlasWidth * channels)) {
 		throw std::exception("font atlas export error");
 	}
+
+	// create a sprite as well
+	auto sprite = engine.assetManager->GenerateSprite(exportPath, FilterMode::Nearest);
+	sprite->serializeJson(engine.assetManager->directories.assetDir + sprite->fileName + std::string(".sprite"));
+
+	Font font;
+
+	std::string name = std::filesystem::path(exportPath).filename().string();
+	size_t lastindex = name.find_last_of(".");
+	std::string rawname = name.substr(0, lastindex);
+
+	font.name = name;
+	font.firstChar = config.firstChar;
+	font.charCount = config.charCount;
+	font.fontHeight = config.fontHeight;
+	font.atlas = sprite->ID;
+
+	font.quads.clear();
+	font.quads.reserve(config.charCount);
+
+	for (auto& c : packedChars) {
+		charQuad quad;
+		quad.uvmin = glm::vec2(c.x0, c.y0);
+		quad.uvmax = glm::vec2(c.x1, c.y1);
+		quad.scale = glm::vec2(quad.uvmax - quad.uvmin);`
+		quad.position = glm::vec2(c.xoff, c.yoff);
+		font.quads.push_back(quad);
+	}
+
 }
 
 

@@ -102,7 +102,7 @@
     <ClCompile Include="TextPL.cpp">
       <Filter>Source Files\vulkan\piplines</Filter>
     </ClCompile>
-    <ClCompile Include="TextRenderer.cpp">
+    <ClCompile Include="TextRenderer.h">
       <Filter>Source Files\Engine\ECS\Components</Filter>
     </ClCompile>
   </ItemGroup>

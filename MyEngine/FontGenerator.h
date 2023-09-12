@@ -2,6 +2,8 @@
 
 #include <string>
 
+#include "Engine.h"
+
 struct  FontConfig{
 	int firstChar = 32;
 	int charCount = 96;
@@ -13,4 +15,4 @@ struct  FontConfig{
 
 
 
-void GenerateFontAtlas(std::string fontPath, std::string exportPath, FontConfig & config);
+void GenerateFontAtlas(std::string fontPath, std::string exportPath, FontConfig & config, Engine& engine);
