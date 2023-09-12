@@ -20,8 +20,10 @@ public:
 	uint32_t behaviorHash;
 	Transform transform;
 
+	// replace these with list of component base class?
 	std::optional<ColorRenderer> colorRenderer;
 	std::optional<SpriteRenderer> spriteRenderer;
+	std::optional<TextRenderer> textRenderer;
 	std::optional<Rigidbody> rigidbody;
 	std::optional<Staticbody> staticbody;
 
@@ -40,6 +42,8 @@ public:
 			j["colorRenderer"] = colorRenderer.value().serializeJson(0);
 		if (spriteRenderer.has_value())
 			j["spriteRenderer"] = spriteRenderer.value().serializeJson(0);
+		if (textRenderer.has_value())
+			j["textRenderer"] = textRenderer.value().serializeJson(0);
 		if (rigidbody.has_value())
 			j["rigidbody"] = rigidbody.value().serializeJson(0);
 		if (staticbody.has_value())
@@ -68,6 +72,8 @@ public:
 			p.colorRenderer = ColorRenderer::deserializeJson(j["colorRenderer"]);
 		if (j.contains("spriteRenderer"))
 			p.spriteRenderer = SpriteRenderer::deserializeJson(j["spriteRenderer"]);
+		if (j.contains("textRenderer"))
+			p.textRenderer = TextRenderer::deserializeJson(j["textRenderer"]);
 		if (j.contains("rigidbody"))
 			p.rigidbody = Rigidbody::deserializeJson(j["rigidbody"], world);
 		if (j.contains("staticbody"))

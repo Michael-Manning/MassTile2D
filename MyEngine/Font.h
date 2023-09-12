@@ -36,6 +36,8 @@ public:
 	}
 
 	static std::shared_ptr<Font> deserializeJson(std::string filepath) {
+		auto font = std::make_shared<Font>();
+		return font;
 	}
 	
 };

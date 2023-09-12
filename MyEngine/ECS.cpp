@@ -83,21 +83,6 @@ std::shared_ptr<Entity> Entity::deserializeJson(const nlohmann::json& j) {
 }
 
 
-nlohmann::json SpriteRenderer::serializeJson(entityID entId) {
-	nlohmann::json j;
-	j["entityID"] = entId;
-	j["spriteID"] = sprite;
-	j["atlasIndex"] = atlasIndex;
-	return j;
-}
-SpriteRenderer SpriteRenderer::deserializeJson(nlohmann::json j) {
-	spriteID id = j["spriteID"].get<uint32_t>();
-	SpriteRenderer s(id);
-	s.atlasIndex = j["atlasIndex"];
-	return s;
-}
-
-
 nlohmann::json ColorRenderer::serializeJson(entityID entId) {
 	nlohmann::json j;
 	j["entityID"] = entId;
@@ -115,6 +100,33 @@ ColorRenderer ColorRenderer::deserializeJson(nlohmann::json j) {
 	return s;
 }
 
+nlohmann::json SpriteRenderer::serializeJson(entityID entId) {
+	nlohmann::json j;
+	j["entityID"] = entId;
+	j["spriteID"] = sprite;
+	j["atlasIndex"] = atlasIndex;
+	return j;
+}
+SpriteRenderer SpriteRenderer::deserializeJson(nlohmann::json j) {
+	spriteID id = j["spriteID"].get<uint32_t>();
+	SpriteRenderer s(id);
+	s.atlasIndex = j["atlasIndex"];
+	return s;
+}
+
+nlohmann::json TextRenderer::serializeJson(entityID entId) {
+	nlohmann::json j;
+	j["entityID"] = entId;
+	j["fontID"] = font;
+	j["text"] = text;
+	return j;
+}
+TextRenderer TextRenderer::deserializeJson(nlohmann::json j) {
+	fontID id = j["fontID"].get<uint32_t>();
+	TextRenderer t(id);
+	t.text = j["text"];
+	return t;
+}
 
 nlohmann::json Rigidbody::serializeJson(entityID entId) {
 	nlohmann::json j;

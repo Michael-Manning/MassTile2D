@@ -96,16 +96,13 @@ public:
 
 
 	template <>
+	void registerComponent<ColorRenderer>(entityID id, ColorRenderer component);
+	
+	template <>
 	void registerComponent<SpriteRenderer>(entityID id, SpriteRenderer component);
 
 	template <>
-	void registerComponent<ColorRenderer>(entityID id, ColorRenderer component);
-		
-	//template <>
-	//void registerComponent<BoxCollider>(entityID id, BoxCollider component);
-
-	//template <>
-	//void registerComponent<CircleCollider>(entityID id, CircleCollider component);
+	void registerComponent<TextRenderer>(entityID id, TextRenderer component);
 
 	template <>
 	void registerComponent<Rigidbody>(entityID id, Rigidbody component);

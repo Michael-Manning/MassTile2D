@@ -124,6 +124,7 @@ int main() {
 	engine.loadPrefabs();
 
 
+#if 0
 	{
 		FontConfig config;
 		config.atlasHeight = 1024;
@@ -131,9 +132,10 @@ int main() {
 		config.fontHeight = 23;
 		
 
-		GenerateFontAtlas("../data/Fonts/MonoSpatial.ttf", "../data/images/robotoAtlas.png", config);
+		GenerateFontAtlas("../data/Fonts/MonoSpatial.ttf", "../data/images/robotoAtlas.png", config, engine);
 
 	}
+#endif
 
 	tileWolrdGlobalRef = engine.worldMap;
 
@@ -275,7 +277,7 @@ int main() {
 
 	auto ctest = engine.worldMap->getTile(0, 0);
 
-	engine.setTilemapAtlasTexture(engine.assetManager->spriteAssets[5]->texture);
+	//engine.setTilemapAtlasTexture(engine.assetManager->spriteAssets[5]->texture);
 
 
 	vector<vec2> torchPositions;

@@ -138,15 +138,14 @@ void Scene::LoadScene(std::string filename, std::shared_ptr<b2World> world) {
 	for (auto& i : j["usedFonts"]) {
 		requiredFonts.insert(static_cast<fontID>(i));
 	}
+	assetManager->loadFontAssets(requiredFonts);
 
 	for (auto& i : j["entities"]) {
 		shared_ptr<Entity> e = Entity::deserializeJson(i);
 		e->persistent = true;
 		OverwriteEntity(e, e->ID);
-		//entities[e->ID] = e;
 		EntityGenerator.Input(e->ID);
 	}
-
 	for (auto& i : j["colorRenderers"]) {
 		entityID entID = i["entityID"];
 		ColorRenderer r = ColorRenderer::deserializeJson(i);
@@ -155,6 +154,11 @@ void Scene::LoadScene(std::string filename, std::shared_ptr<b2World> world) {
 	for (auto& i : j["spriteRenderers"]) {
 		entityID entID = i["entityID"];
 		SpriteRenderer r = SpriteRenderer::deserializeJson(i);
+		registerComponent(entID, r);
+	}
+	for (auto& i : j["textRenderers"]) {
+		entityID entID = i["entityID"];
+		TextRenderer r = TextRenderer::deserializeJson(i);
 		registerComponent(entID, r);
 	}
 	for (auto& i : j["rigidbodies"]) {
@@ -168,15 +172,6 @@ void Scene::LoadScene(std::string filename, std::shared_ptr<b2World> world) {
 		registerComponent(entID, r);
 	}
 
-
-
-	//for (auto& i : j["imgAssets"])
-	//{
-	//	//texID id = i["texID"];
-	//	std::string src = i["src"];
-	//	assetManager->loadTexture(src, true);
-	//}
-
 	assetManager->spritesAdded = true;
 }
 
@@ -184,6 +179,7 @@ void Scene::UnregisterEntity(entityID id) {
 	sceneData.entities.erase(id);
 	sceneData.colorRenderers.erase(id);
 	sceneData.spriteRenderers.erase(id);
+	sceneData.textRenderers.erase(id);
 
 	if (sceneData.rigidbodies.contains(id))
 		sceneData.rigidbodies[id].Destroy();
@@ -200,7 +196,6 @@ void Scene::RegisterEntity(std::shared_ptr<Entity> entity) {
 	if (entity->name.empty())
 	{
 		entity->name = string("entity ") + to_string(id);
-		/*entity->name = "testName";*/
 	}
 	sceneData.entities[id] = entity;
 	entity->_setComponentAccessor(componentAccessor);
@@ -211,7 +206,6 @@ void Scene::OverwriteEntity(std::shared_ptr<Entity> entity, entityID ID) {
 	if (entity->name.empty())
 	{
 		entity->name = string("entity ") + to_string(ID);
-		/*entity->name = "testName";*/
 	}
 	sceneData.entities[ID] = entity;
 	entity->_setComponentAccessor(componentAccessor);
@@ -241,6 +235,10 @@ entityID Scene::DuplicateEntity(std::shared_ptr<Entity> entity) {
 	}
 	if (sceneData.spriteRenderers.contains(entity->ID)) {
 		auto c = sceneData.spriteRenderers[entity->ID].duplicate();
+		registerComponent(copy, c);
+	}
+	if (sceneData.textRenderers.contains(entity->ID)) {
+		auto c = sceneData.textRenderers[entity->ID].duplicate();
 		registerComponent(copy, c);
 	}
 	if (sceneData.staticbodies.contains(entity->ID)) {
@@ -290,6 +288,9 @@ std::shared_ptr<Entity> Scene::Instantiate(Prefab& prefab, std::string name, glm
 	if (prefab.spriteRenderer.has_value()) {
 		registerComponent(copy, prefab.spriteRenderer.value());
 	}
+	if (prefab.textRenderer.has_value()) {
+		registerComponent(copy, prefab.textRenderer.value());
+	}
 	if (prefab.staticbody.has_value()) {
 		registerComponent(copy, prefab.staticbody.value());
 	}
@@ -301,9 +302,10 @@ std::shared_ptr<Entity> Scene::Instantiate(Prefab& prefab, std::string name, glm
 }
 
 
-
-
-
+template <>
+void Scene::registerComponent(entityID id, ColorRenderer t) {
+	sceneData.colorRenderers[id] = t;
+};
 
 template <>
 void Scene::registerComponent<SpriteRenderer>(entityID id, SpriteRenderer t) {
@@ -311,14 +313,10 @@ void Scene::registerComponent<SpriteRenderer>(entityID id, SpriteRenderer t) {
 	assetManager->spritesAdded = true;
 }
 
-
-// Color Renderer
 template <>
-void Scene::registerComponent(entityID id, ColorRenderer t) {
-	sceneData.colorRenderers[id] = t;
-};
-
-
+void Scene::registerComponent<TextRenderer>(entityID id, TextRenderer t) {
+	sceneData.textRenderers[id] = t;
+}
 
 // Rigidbodoy
 template <>
@@ -332,7 +330,6 @@ void Scene::registerComponent(entityID id, Rigidbody r) {
 	}
 	sceneData.rigidbodies.emplace(id, r);
 };
-
 
 // Staticbody
 template <>

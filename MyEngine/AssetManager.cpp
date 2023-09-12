@@ -148,12 +148,12 @@ void AssetManager::loadSpriteAssets(std::set<spriteID> _ids) {
 
 }
 
-void AssetManager::loadFontAssets(std::set<fontID> ids) {
+void AssetManager::loadFontAssets(std::set<fontID> _ids) {
 	auto fontFiles = getAllFilesInDirectory(std::filesystem::path(directories.assetDir));
 
 	// only load unloaded ids
 	std::set<fontID> ids;
-	for (auto& i : ids) {
+	for (auto& i : _ids) {
 		if (fontAssets.contains(i) == false)
 			ids.insert(i);
 	}

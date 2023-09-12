@@ -19,6 +19,7 @@
 #include "pipeline.h"
 #include "typedefs.h"
 #include "Constants.h"
+#include "BindingManager.h"
 
 constexpr int TexturedQuadPL_MAX_TEXTURES = 10;
 constexpr int TexturedQuadPL_MAX_OBJECTS = 100000;
@@ -36,25 +37,13 @@ public:
 		alignas(8) glm::vec2 scale;
 		float rotation = 0.0f;
 
-		texID index;
+		texID tex;
 
 		int32_t padding[2];
 	};
 	static_assert(sizeof(ssboObjectInstanceData) % 16 == 0);
 
-	TexturedQuadPL(std::shared_ptr<VKEngine>& engine) : Pipeline(engine) {
-		descriptorDirtyFlags.resize(FRAMES_IN_FLIGHT);
-		bindIndexes.resize(FRAMES_IN_FLIGHT);
-
-		for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++) {
-			descriptorDirtyFlags[i] = true;
-		}
-
-		textures.resize(TexturedQuadPL_MAX_TEXTURES);
-		for (size_t i = 0; i < TexturedQuadPL_MAX_TEXTURES; i++)
-		{
-			textures[i] = std::pair<texID, Texture*>(-1, { nullptr });
-		}
+	TexturedQuadPL(std::shared_ptr<VKEngine>& engine) : bindingManager(TexturedQuadPL_MAX_TEXTURES), Pipeline(engine) {
 	}
 
 	void setDefaultTexture(Texture defaultTexture) {
@@ -68,14 +57,14 @@ public:
 
 	void updateDescriptorSets();
 
-	void addTextureBinding(texID ID, Texture* texture);
-	void removeTextureBinding(texID ID);
-
-	// mainly to force descriptor updates when filter mode changes
+	void addTextureBinding(texID ID, Texture* texture) {
+		bindingManager.AddBinding(ID, texture);
+	};
+	void removeTextureBinding(texID ID) {
+		bindingManager.RemoveBinding(ID);
+	};
 	void invalidateTextureDescriptors() {
-		for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++) {
-			descriptorDirtyFlags[i] = true;
-		}
+		bindingManager.InvalidateDescriptors();
 	};
 
 	void recordCommandBuffer(VkCommandBuffer commandBuffer, int instanceCount);
@@ -88,16 +77,9 @@ private:
 
 	VkDescriptorSetLayout descriptorSetLayout;
 	VkDescriptorSetLayout SSBOSetLayout;
-
 	MappedDoubleBuffer ssboMappedDB;
 
-	std::vector<std::pair<texID, Texture*>> textures;
-	std::set<texID> boundIDs;
-	int bindingCount = 0;
-
-	std::vector<std::unordered_map<texID, int>> bindIndexes; // texID to shader array index
-
-	std::vector<bool> descriptorDirtyFlags;
+	BindingManager<texID, Texture*> bindingManager;
 
 	Texture defaultTexture; // display when indexing an unbound descriptor
 };

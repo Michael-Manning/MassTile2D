@@ -419,7 +419,7 @@ bool Engine::QueueNextFrame(bool drawImgui) {
 				drawObject.translation = entity->transform.position;
 				drawObject.scale = entity->transform.scale;
 				drawObject.rotation = entity->transform.rotation;
-				drawObject.index = s->texture;
+				drawObject.tex = s->texture;
 
 				if (s->Atlas.size() > 0) {
 					auto atEntry = s->Atlas[renderer.second.atlasIndex];

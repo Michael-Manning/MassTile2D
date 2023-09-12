@@ -14,7 +14,7 @@ public:
 
 	TextRenderer() {};
 
-	TextRenderer(Font font) {
+	TextRenderer(fontID font) {
 		this->font = font;
 	};
 

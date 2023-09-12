@@ -170,30 +170,28 @@ void TexturedQuadPL::createDescriptorSets(MappedDoubleBuffer& cameradb) {
 // For now, update every descriptor array element. Could update individual elements as an optimization
 void TexturedQuadPL::updateDescriptorSets() {
 
-	if (descriptorDirtyFlags[engine->currentFrame] == false)
+	if(bindingManager.IsDescriptorDirty(engine->currentFrame) == false)
 		return;
 
 	std::vector<VkDescriptorImageInfo> imageInfos(TexturedQuadPL_MAX_TEXTURES);
-
-	bindIndexes[engine->currentFrame].clear();
 
 	for (int i = 0; i < TexturedQuadPL_MAX_TEXTURES; i++)
 	{
 		VkDescriptorImageInfo imageInfo{};
 		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-		if (textures[i].first == -1) {
+		if(bindingManager.IsSlotInUse(i) == false){
 			imageInfo.imageView = defaultTexture.imageView;
 			imageInfo.sampler = defaultTexture.sampler;
 		}
 		else {
-			imageInfo.imageView = textures[i].second->imageView;
-			imageInfo.sampler = textures[i].second->sampler;
+			auto t = bindingManager.getValueFromIndex(i);
+
+			imageInfo.imageView = t->imageView;
+			imageInfo.sampler = t->sampler;
 		}
 
 		imageInfos[i] = imageInfo;
-
-		bindIndexes[engine->currentFrame][textures[i].first] = i;
 	}
 
 	std::array<VkWriteDescriptorSet, 1> descriptorWrites{};
@@ -208,7 +206,7 @@ void TexturedQuadPL::updateDescriptorSets() {
 
 	vkUpdateDescriptorSets(engine->device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 
-	descriptorDirtyFlags[engine->currentFrame] = false;
+	bindingManager.ClearDescriptorDirty(engine->currentFrame);
 }
 
 
@@ -254,55 +252,9 @@ void TexturedQuadPL::UploadInstanceData(std::vector<ssboObjectInstanceData>& dra
 
 	assert(drawlist.size() <= TexturedQuadPL_MAX_OBJECTS);
 
-
 	for (auto& i : drawlist) {
-		i.index = bindIndexes[engine->currentFrame][i.index];
+		// replace texture with index in descriptor set
+		i.tex = bindingManager.getIndexFromBinding(i.tex);
 	}
-
 	memcpy(ssboMappedDB.buffersMapped[engine->currentFrame], drawlist.data(), sizeof(ssboObjectInstanceData) * drawlist.size());
-}
-
-void TexturedQuadPL::addTextureBinding(texID ID, Texture* texture) {
-	// map a binding in the next availble slot of the vector
-
-	// attempting to bind duplicate ID is acceptable, but redundant
-	if (boundIDs.contains(ID)) {
-		return;
-	}
-
-	assert(bindingCount < TexturedQuadPL_MAX_TEXTURES);
-
-	for (size_t i = 0; i < TexturedQuadPL_MAX_TEXTURES; i++)
-	{
-		// available slot
-		if (textures[i].first == -1) {
-			textures[i] = pair(ID, texture);
-			goto found;
-		}
-	}
-
-	assert(false); // somehow did not find available spot
-
-found:;
-	bindingCount++;
-	boundIDs.insert(ID);
-
-	// both descriptor sets are now out of date
-	for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++) {
-		descriptorDirtyFlags[i] = true;
-	}
-}
-
-void TexturedQuadPL::removeTextureBinding(texID ID) {
-
-	assert(boundIDs.contains(ID)); // missuse
-
-	for (size_t i = 0; i < TexturedQuadPL_MAX_TEXTURES; i++)
-	{
-		if (textures[i].first == ID) {
-			// mark as available
-			textures[i] = pair<texID, Texture*>(-1, { nullptr });
-		}
-	}
-	boundIDs.erase(ID);
 }

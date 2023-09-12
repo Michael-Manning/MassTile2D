@@ -84,7 +84,7 @@ void GenerateFontAtlas(std::string path, std::string exportPath, FontConfig& con
 		charQuad quad;
 		quad.uvmin = glm::vec2(c.x0, c.y0);
 		quad.uvmax = glm::vec2(c.x1, c.y1);
-		quad.scale = glm::vec2(quad.uvmax - quad.uvmin);`
+		quad.scale = glm::vec2(quad.uvmax - quad.uvmin);
 		quad.position = glm::vec2(c.xoff, c.yoff);
 		font.quads.push_back(quad);
 	}
