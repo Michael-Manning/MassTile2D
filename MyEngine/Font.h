@@ -10,11 +10,12 @@
 const auto Font_extension = ".font";
 
 struct charQuad {
-	glm::vec2 uvmin;
-	glm::vec2 uvmax;
-	glm::vec2 scale;
-	glm::vec2 position;
+	alignas(8) glm::vec2 uvmin;
+	alignas(8) glm::vec2 uvmax;
+	alignas(8) glm::vec2 scale;
+	alignas(8) glm::vec2 position;
 };
+static_assert(sizeof(charQuad) % 16 == 0);
 
 class Font{
 

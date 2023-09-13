@@ -414,7 +414,7 @@ private:
 	VmaAllocation largeChunkAllocation;
 	void* largeChunkBufferMapped;
 
-	MappedDoubleBuffer chunkTransferBuffers;
+	MappedDoubleBuffer<void> chunkTransferBuffers;
 
 	VmaAllocation worldMapFGDeviceBufferAllocation;
 	VmaAllocation worldMapBGDeviceBufferAllocation;

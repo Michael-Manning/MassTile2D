@@ -183,7 +183,7 @@ private:
 	std::unique_ptr<TexturedQuadPL> texturePipeline = nullptr;
 	std::unique_ptr<LightingComputePL> lightingPipeline = nullptr;
 
-	VKUtil::UBOUploader<cameraUBO_s> cameraUploader;
+	VKUtil::BufferUploader<cameraUBO_s> cameraUploader;
 
 	uint32_t frameCounter = 0;
 	bool firstFrame = true;

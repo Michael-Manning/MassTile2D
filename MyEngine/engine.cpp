@@ -165,7 +165,7 @@ void Engine::Start(std::string windowName, int winW, int winH, std::string shade
 
 	// contruct pipelines
 	{
-		texturePipeline = make_unique<TexturedQuadPL>(rengine);
+		texturePipeline = make_unique<TexturedQuadPL>(rengine, texNotFound);
 		colorPipeline = make_unique<ColoredQuadPL>(rengine);
 		tilemapPipeline = make_unique<TilemapPL>(rengine, worldMap);
 		lightingPipeline = make_unique<LightingComputePL>(rengine, worldMap);
@@ -173,21 +173,16 @@ void Engine::Start(std::string windowName, int winW, int winH, std::string shade
 
 	// section can be done in parrallel
 
-
-
 	// configure color pipeline
 	{
 		colorPipeline->CreateInstancingBuffer();
 		colorPipeline->CreateGraphicsPipeline(shaderDir + "color_vert.spv", shaderDir + "color_frag.spv", cameraUploader.transferBuffers);
 	}
 
-	// configure instancing pipeline
+	// configure texture pipeline
 	{
-		texturePipeline->setDefaultTexture(texNotFound);
-		texturePipeline->createDescriptorSetLayout();
-		texturePipeline->CreateGraphicsPipeline(shaderDir + "texture_vert.spv", shaderDir + "texture_frag.spv");
 		texturePipeline->createSSBOBuffer();
-		texturePipeline->createDescriptorSets(cameraUploader.transferBuffers);
+		texturePipeline->CreateGraphicsPipeline(shaderDir + "texture_vert.spv", shaderDir + "texture_frag.spv", cameraUploader.transferBuffers);
 	}
 
 	// tilemap pipeline

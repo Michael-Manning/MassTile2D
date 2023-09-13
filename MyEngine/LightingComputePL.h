@@ -51,7 +51,7 @@ private:
 	VkPipeline firstStagePipeline;
 	VkPipeline secondStagePipeline;
 
-	MappedDoubleBuffer lightPositionsDB;
+	MappedDoubleBuffer<void> lightPositionsDB;
 
 	std::shared_ptr<TileWorld> world = nullptr;
 };

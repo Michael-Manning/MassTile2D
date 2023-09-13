@@ -32,23 +32,32 @@ using namespace glm;
 using namespace std;
 
 
-void TexturedQuadPL::CreateGraphicsPipeline(std::string vertexSrc, std::string fragmentSrc) {
+void TexturedQuadPL::CreateGraphicsPipeline(std::string vertexSrc, std::string fragmentSrc, MappedDoubleBuffer<void>& cameradb) {
+
+	assert(defaultTexture.textureImageAllocation != nullptr);
 
 	auto shaderStages = createShaderStages(vertexSrc, fragmentSrc);
 
-	// setup vertex
-	VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
-	vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-	auto bindingDescription = Vertex::getBindingDescription();
-	auto attributeDescriptions = Vertex::getAttributeDescriptions();
+	array<Texture, TexturedQuadPL_MAX_TEXTURES> defaultTextureArray;
+	std::fill(defaultTextureArray.begin(), defaultTextureArray.end(), defaultTexture);
 
-	vertexInputInfo.vertexBindingDescriptionCount = 1;
-	vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
-	vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
-	vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
+	configureDescriptorSets(vector<Pipeline::descriptorSetInfo> {
+		descriptorSetInfo(0, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, &cameradb.buffers, cameradb.size),
+		descriptorSetInfo(0, 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, defaultTextureArray.data(), defaultTextureArray.size()),
+		descriptorSetInfo(1, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, &ssboMappedDB.buffers, ssboMappedDB.size)
+	});
+	buildDescriptorLayouts();
 
-	vector< VkDescriptorSetLayout> setLayouts = { descriptorSetLayout, SSBOSetLayout };
+	// create vector containing the builder descriptor set layouts
+	vector< VkDescriptorSetLayout> setLayouts;
+	setLayouts.reserve(builderLayouts.size());
+	for (auto& [set, layout] : builderLayouts)
+		setLayouts.push_back(layout);
 	buildPipelineLayout(setLayouts);
+
+	VkVertexInputBindingDescription VbindingDescription;
+	dbVertexAtribute Vattribute;
+	auto vertexInputInfo = Vertex::getVertexInputInfo(&VbindingDescription, &Vattribute);
 
 	auto inputAssembly = defaultInputAssembly();
 	auto viewportState = defaultViewportState();
@@ -80,91 +89,8 @@ void TexturedQuadPL::CreateGraphicsPipeline(std::string vertexSrc, std::string f
 	for (auto& stage : shaderStages) {
 		vkDestroyShaderModule(engine->device, stage.module, nullptr);
 	}
-}
 
-void TexturedQuadPL::createDescriptorSets(MappedDoubleBuffer& cameradb) {
-
-	assert(defaultTexture.textureImageAllocation != nullptr);
-
-	// general descriptor sets
-	{
-		buidDBDescriptorSet(descriptorSetLayout, generalDescriptorSets);
-
-		// one time update from UBO descriptor sets
-		for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++) {
-			VkDescriptorBufferInfo bufferInfo{};
-			bufferInfo.buffer = cameradb.buffers[i];
-			bufferInfo.offset = 0;
-			bufferInfo.range = sizeof(cameraUBO_s);
-
-			std::array<VkWriteDescriptorSet, 1> descriptorWrites{};
-
-			descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[0].dstSet = generalDescriptorSets[i];
-			descriptorWrites[0].dstBinding = 0;
-			descriptorWrites[0].dstArrayElement = 0;
-			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			descriptorWrites[0].descriptorCount = 1;
-			descriptorWrites[0].pBufferInfo = &bufferInfo;
-
-			vkUpdateDescriptorSets(engine->device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
-		}
-
-		// all descriptor sets must recieve one update before use. Fill image descriptor with default texture
-		for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++) {
-			std::vector<VkDescriptorImageInfo> imageInfos(TexturedQuadPL_MAX_TEXTURES);
-
-			for (size_t j = 0; j < TexturedQuadPL_MAX_TEXTURES; j++)
-			{
-				VkDescriptorImageInfo imageInfo{};
-				imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-				imageInfo.imageView = defaultTexture.imageView;
-				imageInfo.sampler = defaultTexture.sampler;
-
-				imageInfos[j] = imageInfo;
-			}
-
-
-			std::array<VkWriteDescriptorSet, 1> descriptorWrites{};
-
-			descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[0].dstSet = generalDescriptorSets[i];
-			descriptorWrites[0].dstBinding = 1;
-			descriptorWrites[0].dstArrayElement = 0;
-			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			descriptorWrites[0].descriptorCount = TexturedQuadPL_MAX_TEXTURES;
-			descriptorWrites[0].pImageInfo = imageInfos.data();
-
-			vkUpdateDescriptorSets(engine->device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
-		}
-
-	}
-
-	// SSBO descriptor sets
-	{
-		buidDBDescriptorSet(SSBOSetLayout, ssboDescriptorSets);
-
-		for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++) {
-
-			VkDescriptorBufferInfo objectBufferInfo;
-			//objectBufferInfo.buffer = ssboBuffers[i];
-			objectBufferInfo.buffer = ssboMappedDB.buffers[i];
-			objectBufferInfo.offset = 0;
-			objectBufferInfo.range = sizeof(ssboObjectInstanceData) * TexturedQuadPL_MAX_OBJECTS;
-
-			std::array<VkWriteDescriptorSet, 1> descriptorWrites{};
-
-			descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[0].dstSet = ssboDescriptorSets[i];
-			descriptorWrites[0].dstBinding = 0;
-			descriptorWrites[0].dstArrayElement = 0;
-			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptorWrites[0].descriptorCount = 1;
-			descriptorWrites[0].pBufferInfo = &objectBufferInfo;
-
-			vkUpdateDescriptorSets(engine->device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
-		}
-	}
+	buildDescriptorSets();
 }
 
 // For now, update every descriptor array element. Could update individual elements as an optimization
@@ -173,57 +99,19 @@ void TexturedQuadPL::updateDescriptorSets() {
 	if(bindingManager.IsDescriptorDirty(engine->currentFrame) == false)
 		return;
 
-	std::vector<VkDescriptorImageInfo> imageInfos(TexturedQuadPL_MAX_TEXTURES);
+	array<Texture, TexturedQuadPL_MAX_TEXTURES> textureArray;
 
-	for (int i = 0; i < TexturedQuadPL_MAX_TEXTURES; i++)
-	{
-		VkDescriptorImageInfo imageInfo{};
-		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-		if(bindingManager.IsSlotInUse(i) == false){
-			imageInfo.imageView = defaultTexture.imageView;
-			imageInfo.sampler = defaultTexture.sampler;
-		}
-		else {
-			auto t = bindingManager.getValueFromIndex(i);
-
-			imageInfo.imageView = t->imageView;
-			imageInfo.sampler = t->sampler;
-		}
-
-		imageInfos[i] = imageInfo;
+	for (int i = 0; i < textureArray.size(); i++) {
+		if (bindingManager.IsSlotInUse(i) == false)
+			textureArray[i] = defaultTexture;
+		else
+			textureArray[i] = *bindingManager.getValueFromIndex(i);
 	}
 
-	std::array<VkWriteDescriptorSet, 1> descriptorWrites{};
-
-	descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	descriptorWrites[0].dstSet = generalDescriptorSets[engine->currentFrame];
-	descriptorWrites[0].dstBinding = 1;
-	descriptorWrites[0].dstArrayElement = 0;
-	descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	descriptorWrites[0].descriptorCount = TexturedQuadPL_MAX_TEXTURES;
-	descriptorWrites[0].pImageInfo = imageInfos.data();
-
-	vkUpdateDescriptorSets(engine->device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+	auto info = descriptorSetInfo(0, 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, textureArray.data(), textureArray.size());
+	updateDescriptorSet(engine->currentFrame, info);
 
 	bindingManager.ClearDescriptorDirty(engine->currentFrame);
-}
-
-
-void TexturedQuadPL::createDescriptorSetLayout() {
-
-	// general set layout
-	vector<VkDescriptorSetLayoutBinding> set0Bindings = {
-		buildUBOBinding(0, VK_SHADER_STAGE_VERTEX_BIT),
-		buildSamplerBinding(1, TexturedQuadPL_MAX_TEXTURES, VK_SHADER_STAGE_FRAGMENT_BIT)
-	};
-	buildSetLayout(set0Bindings, descriptorSetLayout);
-
-	// ssbo set layout
-	vector<VkDescriptorSetLayoutBinding> set1Bindings = {
-		buildSSBOBinding(0, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT)
-	};
-	buildSetLayout(set1Bindings, SSBOSetLayout);
 }
 
 void TexturedQuadPL::createSSBOBuffer() {
@@ -236,8 +124,9 @@ void TexturedQuadPL::recordCommandBuffer(VkCommandBuffer commandBuffer, int inst
 		return;
 
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
-	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &generalDescriptorSets[engine->currentFrame], 0, nullptr);
-	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &ssboDescriptorSets[engine->currentFrame], 0, nullptr);
+
+	for (auto& i : builderDescriptorSetsDetails)
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, i.set, 1, &builderDescriptorSets[i.set][engine->currentFrame], 0, nullptr);
 
 	{
 		TracyVkZone(engine->tracyGraphicsContexts[engine->currentFrame], commandBuffer, "textured quad render");

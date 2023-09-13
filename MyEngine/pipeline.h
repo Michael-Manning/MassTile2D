@@ -39,16 +39,17 @@ protected:
 		int binding;
 		VkDescriptorType type;
 		VkShaderStageFlags stageFlags;
-		int descriptorCount;
 		std::array<VkBuffer, FRAMES_IN_FLIGHT> * doubleBuffer = nullptr;
 		VkDeviceSize bufferRange = 0;
-		Texture * texture = nullptr;
+		Texture * textures= nullptr;
+		int textureCount = 0;
+
 
 		descriptorSetInfo(int set, int binding, VkDescriptorType type, VkShaderStageFlags stageFlags, std::array<VkBuffer, FRAMES_IN_FLIGHT>* db, VkDeviceSize bufferRange)
-			: set(set), binding(binding), type(type), stageFlags(stageFlags), doubleBuffer(db), bufferRange(bufferRange), descriptorCount(1), texture(nullptr) {
+			: set(set), binding(binding), type(type), stageFlags(stageFlags), doubleBuffer(db), bufferRange(bufferRange),  textures(nullptr) {
 		};
-		descriptorSetInfo(int set, int binding, VkDescriptorType type, VkShaderStageFlags stageFlags, Texture* texture)
-			: set(set), binding(binding), type(type), stageFlags(stageFlags), doubleBuffer(nullptr), bufferRange(0), descriptorCount(1), texture(texture) {
+		descriptorSetInfo(int set, int binding, VkDescriptorType type, VkShaderStageFlags stageFlags, Texture* texture, int textureCount)
+			: set(set), binding(binding), type(type), stageFlags(stageFlags), doubleBuffer(nullptr), bufferRange(0), textures(texture), textureCount(textureCount) {
 		};
 	};
 	
@@ -64,7 +65,7 @@ protected:
 
 	void buildDescriptorLayouts();
 	void buildDescriptorSets();
-
+	void updateDescriptorSet(int frame, descriptorSetInfo& info);
 
 	std::vector<VkPipelineShaderStageCreateInfo> createShaderStages(std::string vertexSrc, std::string fragmentSrc);
 	VkPipelineShaderStageCreateInfo createComputeShaderStage(std::string computeSrc);

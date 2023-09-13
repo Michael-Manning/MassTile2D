@@ -18,12 +18,13 @@ namespace VKUtil{
 
 	VkShaderModule createShaderModule(const std::vector<char>& code, VkDevice device);
 
+	// mapped double buffer wrapped with frame dirty logic
 	template<typename T>
-	class UBOUploader {
+	class BufferUploader {
 	public:
 
-		void CreateBuffers(std::shared_ptr<VKEngine> engine) {
-			engine->createMappedBuffer(sizeof(T), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, transferBuffers);
+		void CreateBuffers(std::shared_ptr<VKEngine> engine, VkBufferUsageFlags usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT) {
+			engine->createMappedBuffer(sizeof(T), usage, transferBuffers);
 		};
 
 		void Invalidate() {
@@ -36,9 +37,9 @@ namespace VKUtil{
 				memcpy(transferBuffers.buffersMapped[currentFrame], &data, sizeof(T));
 				uploadDirtyFlags[currentFrame] = false;
 			}
-		}
+		};
 
-		MappedDoubleBuffer transferBuffers;
+		MappedDoubleBuffer<void> transferBuffers;
 
 		std::array<bool, FRAMES_IN_FLIGHT> uploadDirtyFlags = { true, true };
 	};

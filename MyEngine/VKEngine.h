@@ -31,17 +31,19 @@ struct QueueFamilyIndices {
 	}
 };
 
+template<typename T = void>
 struct MappedBuffer {
 	VkBuffer buffer;
 	VmaAllocation allocation;
-	void* bufferMapped;
+	T* bufferMapped;
 	VkDeviceSize size;
 };
 
+template<typename T = void>
 struct MappedDoubleBuffer {
 	std::array<VkBuffer, FRAMES_IN_FLIGHT> buffers;
 	std::array<VmaAllocation, FRAMES_IN_FLIGHT> allocations;
-	std::array<void*, FRAMES_IN_FLIGHT> buffersMapped;
+	std::array<T*, FRAMES_IN_FLIGHT> buffersMapped;
 	VkDeviceSize size;
 };
 
@@ -89,7 +91,9 @@ public:
 
 	void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size, VkDeviceSize destinationOffset = 0);
 	void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VmaAllocationCreateFlags flags, VkBuffer& buffer, VmaAllocation& allocation, bool preferDevice = false);
-	void createMappedBuffer(VkDeviceSize size, VkBufferUsageFlags usage, MappedDoubleBuffer& buffer);
+
+	template<typename T>
+	void createMappedBuffer(VkDeviceSize size, VkBufferUsageFlags usage, MappedDoubleBuffer<T>& buffer);
 
 	// call in sequence
 	void waitForCompute();

@@ -37,11 +37,11 @@ public:
 	ColoredQuadPL(std::shared_ptr<VKEngine>& engine) : Pipeline(engine) {
 	}
 
-	void CreateGraphicsPipeline(std::string vertexSrc, std::string fragmentSrc, MappedDoubleBuffer& cameradb);
+	void CreateGraphicsPipeline(std::string vertexSrc, std::string fragmentSrc, MappedDoubleBuffer<void>& cameradb);
 	void CreateInstancingBuffer();
 	void UploadInstanceData(std::vector<InstanceBufferData>& drawlist);
 	void recordCommandBuffer(VkCommandBuffer commandBuffer, int instanceCount);
 
 private:
-	MappedDoubleBuffer ssboMappedDB;
+	MappedDoubleBuffer<void> ssboMappedDB;
 };

@@ -376,7 +376,8 @@ void VKEngine::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VmaAllo
 	vmaCreateBuffer(allocator, &bufferInfo, &allocInfo, &buffer, &allocation, nullptr);
 }
 
-void VKEngine::createMappedBuffer(VkDeviceSize size, VkBufferUsageFlags usage, MappedDoubleBuffer& buffer) {
+template<typename T>
+void VKEngine::createMappedBuffer(VkDeviceSize size, VkBufferUsageFlags usage, MappedDoubleBuffer<T>& buffer) {
 
 	for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++)
 	{

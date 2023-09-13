@@ -43,16 +43,12 @@ public:
 	};
 	static_assert(sizeof(ssboObjectInstanceData) % 16 == 0);
 
-	TexturedQuadPL(std::shared_ptr<VKEngine>& engine) : bindingManager(TexturedQuadPL_MAX_TEXTURES), Pipeline(engine) {
-	}
+	TexturedQuadPL(std::shared_ptr<VKEngine>& engine, Texture defaultTexture) : 
+		bindingManager(TexturedQuadPL_MAX_TEXTURES), 
+		defaultTexture(defaultTexture), 
+		Pipeline(engine) { }
 
-	void setDefaultTexture(Texture defaultTexture) {
-		this->defaultTexture = defaultTexture;
-	}
-
-	void CreateGraphicsPipeline(std::string vertexSrc, std::string fragmentSrc);
-	void createDescriptorSetLayout();
-	void createDescriptorSets(MappedDoubleBuffer& cameradb) ;
+	void CreateGraphicsPipeline(std::string vertexSrc, std::string fragmentSrc, MappedDoubleBuffer<void>& cameradb);
 	void createSSBOBuffer();
 
 	void updateDescriptorSets();
@@ -73,13 +69,9 @@ public:
 
 private:
 
-	std::array<VkDescriptorSet, FRAMES_IN_FLIGHT> ssboDescriptorSets;
-
-	VkDescriptorSetLayout descriptorSetLayout;
-	VkDescriptorSetLayout SSBOSetLayout;
-	MappedDoubleBuffer ssboMappedDB;
+	MappedDoubleBuffer<> ssboMappedDB;
 
 	BindingManager<texID, Texture*> bindingManager;
 
-	Texture defaultTexture; // display when indexing an unbound descriptor
+	Texture defaultTexture;
 };

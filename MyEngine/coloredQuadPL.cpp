@@ -27,7 +27,7 @@
 using namespace glm;
 using namespace std;
 
-void ColoredQuadPL::CreateGraphicsPipeline(std::string vertexSrc, std::string fragmentSrc, MappedDoubleBuffer& cameradb) {
+void ColoredQuadPL::CreateGraphicsPipeline(std::string vertexSrc, std::string fragmentSrc, MappedDoubleBuffer<void>& cameradb) {
 
 	auto shaderStages = createShaderStages(vertexSrc, fragmentSrc);
 

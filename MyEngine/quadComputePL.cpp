@@ -43,7 +43,7 @@ void QuadComputePL::UploadInstanceData(std::vector<InstanceBufferData>& drawlist
 	memcpy(ssboMappedDB.buffersMapped[engine->currentFrame], drawlist.data(), sizeof(InstanceBufferData) * drawlist.size());
 }
 
-void QuadComputePL::CreateComputePipeline(std::string computeSrc, MappedDoubleBuffer& cameradb, VkBuffer transformBuffer) {
+void QuadComputePL::CreateComputePipeline(std::string computeSrc, MappedDoubleBuffer<>& cameradb, VkBuffer transformBuffer) {
 	auto computeStage = createComputeShaderStage(computeSrc);
 
 	std::array<VkBuffer, FRAMES_IN_FLIGHT> transformBufferRef = { transformBuffer, transformBuffer };

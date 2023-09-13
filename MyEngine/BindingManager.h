@@ -8,7 +8,6 @@
 
 template <typename...> class BindingManager;
 
-
 // Note, class does not clear map. If different binding IDs are continously added and removed, memory usage will increase
 
 template<typename I, typename T>
@@ -23,11 +22,10 @@ public:
 		for (size_t i = 0; i < maxEntries; i++) {
 			slotAvailable[i] = true;
 		}
-	}
+	};
 
 	// map a binding in the next availble slot of the vector
 	void AddBinding(I ID, T value) {
-
 
 		// attempting to bind duplicate ID is acceptable, but redundant
 		if (boundIDs.contains(ID)) {
@@ -54,11 +52,9 @@ public:
 		boundIDs.insert(ID);
 
 		// both descriptor sets are now out of date
-		for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++) {
-			descriptorDirtyFlags[i] = true;
-		}
+		InvalidateDescriptors();
+	};
 
-	}
 	void RemoveBinding(I ID) {
 
 		assert(boundIDs.contains(ID)); // missuse
@@ -68,34 +64,34 @@ public:
 				slotAvailable[i] = true;
 
 		boundIDs.erase(ID);
-	}
+	};
 
 	void InvalidateDescriptors() {
 		for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++)
 			descriptorDirtyFlags[i] = true;
-	}
+	};
 
 	T getValueFromIndex(int index) {
 		return values[index].second;
-	}
+	};
 	int getIndexFromBinding(I key) {
 		return bindIndexes[key];
-	}
+	};
 	T& getValueFromBinding(I key) {
 		return values[getIndexFromBinding(key)];
-	}
+	};
 
 	bool IsDescriptorDirty(int frame) {
 		return descriptorDirtyFlags[frame];
-	}
+	};
 
-	bool ClearDescriptorDirty(int frame) {
+	void ClearDescriptorDirty(int frame) {
 		descriptorDirtyFlags[frame] = false;
-	}
+	};
 
 	bool IsSlotInUse(int index) {
 		return !slotAvailable[index];
-	}
+	};
 
 	const int maxEntries;
 

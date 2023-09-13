@@ -30,7 +30,7 @@ public:
 	TilemapPL(std::shared_ptr<VKEngine>& engine, std::shared_ptr<TileWorld> world) : Pipeline(engine), world(world) {
 	}
 
-	void CreateGraphicsPipeline(std::string vertexSrc, std::string fragmentSrc, MappedDoubleBuffer& cameradb);
+	void CreateGraphicsPipeline(std::string vertexSrc, std::string fragmentSrc, MappedDoubleBuffer<void>& cameradb);
 	void recordCommandBuffer(VkCommandBuffer commandBuffer);
 
 	void setTextureAtlas(Texture textureAtlas) {
@@ -38,7 +38,7 @@ public:
 		// fill in missing data of descriptor set builder before submitting
 
 		this->textureAtlas = textureAtlas;
-		builderDescriptorSetsDetails[1].texture = &this->textureAtlas.value();
+		builderDescriptorSetsDetails[1].textures = &this->textureAtlas.value();
 
 		std::array<VkBuffer, FRAMES_IN_FLIGHT> worldMapDeviceBuferRef = { world->_worldMapFGDeviceBuffer, world->_worldMapFGDeviceBuffer };
 		builderDescriptorSetsDetails[2].doubleBuffer = &worldMapDeviceBuferRef;
@@ -54,7 +54,7 @@ public:
 private:
 
 
-	VKUtil::UBOUploader<cameraUBO_s> cameraUploader;
+	VKUtil::BufferUploader<cameraUBO_s> cameraUploader;
 
 	std::shared_ptr<TileWorld> world = nullptr;
 
