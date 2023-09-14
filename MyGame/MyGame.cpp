@@ -124,16 +124,23 @@ int main() {
 	engine.loadPrefabs();
 
 
-#if 0
+#if 1
 	{
 		FontConfig config;
 		config.atlasHeight = 1024;
 		config.atlasWidth = 1024;
 		config.fontHeight = 23;
 		
+		fontID fontid = engine.assetManager->addFont(GenerateFontAtlas("../data/Fonts/MonoSpatial.ttf", "../data/images/MonoSpatial.png", config, engine));
+		auto font = engine.assetManager->fontAssets[fontid];
 
-		GenerateFontAtlas("../data/Fonts/MonoSpatial.ttf", "../data/images/robotoAtlas.png", config, engine);
+		auto testText = make_shared<Entity>("TestTxt");
+		scene->RegisterEntity(testText);
 
+
+		auto r = TextRenderer(font->ID);
+		r.text = "ab c d";
+		scene->registerComponent(testText, r);
 	}
 #endif
 

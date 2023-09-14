@@ -3,6 +3,7 @@
 #include <string>
 
 #include "Engine.h"
+#include "Font.h"
 
 struct  FontConfig{
 	int firstChar = 32;
@@ -15,4 +16,4 @@ struct  FontConfig{
 
 
 
-void GenerateFontAtlas(std::string fontPath, std::string exportPath, FontConfig & config, Engine& engine);
+Font GenerateFontAtlas(std::string fontPath, std::string exportPath, FontConfig & config, Engine& engine);

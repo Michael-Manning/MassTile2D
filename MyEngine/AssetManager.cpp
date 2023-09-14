@@ -280,9 +280,11 @@ void AssetManager::CreateDefaultSprite(int w, int h, std::vector<uint8_t>& data)
 
 
 
-void AssetManager::addFont(Font font) {
+fontID AssetManager::addFont(Font font) {
 	fontID id = fontGenerator.GenerateID();
 	fontAssets[id] = make_shared<Font>(font);
+	fontAssets[id]->ID = id;
+	return id;
 }
 
 void AssetManager::addFont(Font font, fontID inputID) {

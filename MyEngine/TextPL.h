@@ -56,6 +56,7 @@ public:
 	}
 
 	void CreateGraphicsPipeline(std::string vertexSrc, std::string fragmentSrc, MappedDoubleBuffer<>& cameradb);
+	void createSSBOBuffer();
 	void recordCommandBuffer(VkCommandBuffer commandBuffer);
 
 	void updateDescriptorSets();
@@ -66,6 +67,11 @@ public:
 	void removeTextureBinding(fontID ID) {
 		bindingManager.RemoveBinding(ID);
 	};
+
+	void ClearTextData(int frame) {
+		for (size_t i = 0; i < TEXTPL_maxTextObjects; i++)
+			textDataDB.buffersMapped[frame]->headers[i].textLength = 0;
+	}
 
 	void UploadTextData(int frame, int memorySlot, textHeader& header, fontID font, textObject& text) {
 
@@ -82,7 +88,6 @@ private:
 		textHeader headers[TEXTPL_maxTextObjects];
 		textObject textData[TEXTPL_maxTextObjects];
 	};
-	//static_assert(sizeof(textIndexes_ubo) < 16384); // 
 
 	MappedDoubleBuffer<textIndexes_ssbo> textDataDB;
 

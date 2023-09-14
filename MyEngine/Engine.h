@@ -1,6 +1,5 @@
 #pragma once
 
-
 #include <vector>
 #include <stdint.h>
 #include <unordered_map>
@@ -21,6 +20,7 @@
 #include "texturedQuadPL.h"
 #include "tilemapPL.h"
 #include "LightingComputePL.h"
+#include "TextPL.h"
 
 #include "IDGenerator.h"
 #include "typedefs.h"
@@ -158,11 +158,6 @@ public:
 	void _onWindowResize() {
 	};
 
-
-
-
-
-
 	std::shared_ptr<TileWorld> worldMap = nullptr;
 
 private:
@@ -181,6 +176,7 @@ private:
 	std::unique_ptr<TilemapPL> tilemapPipeline = nullptr;
 	std::unique_ptr<ColoredQuadPL> colorPipeline = nullptr;
 	std::unique_ptr<TexturedQuadPL> texturePipeline = nullptr;
+	std::unique_ptr<TextPL> textPipeline = nullptr;
 	std::unique_ptr<LightingComputePL> lightingPipeline = nullptr;
 
 	VKUtil::BufferUploader<cameraUBO_s> cameraUploader;

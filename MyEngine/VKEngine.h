@@ -92,8 +92,18 @@ public:
 	void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size, VkDeviceSize destinationOffset = 0);
 	void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VmaAllocationCreateFlags flags, VkBuffer& buffer, VmaAllocation& allocation, bool preferDevice = false);
 
+
+	// should learn why this has to be implimented in the header to work
 	template<typename T>
-	void createMappedBuffer(VkDeviceSize size, VkBufferUsageFlags usage, MappedDoubleBuffer<T>& buffer);
+	void createMappedBuffer(VkDeviceSize size, VkBufferUsageFlags usage, MappedDoubleBuffer<T>& buffer) {
+
+		for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++)
+		{
+			createBuffer(size, usage, VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT, buffer.buffers[i], buffer.allocations[i]);
+			vmaMapMemory(allocator, buffer.allocations[i], reinterpret_cast<void**>(&buffer.buffersMapped[i]));
+		}
+		buffer.size = size;
+	};
 
 	// call in sequence
 	void waitForCompute();

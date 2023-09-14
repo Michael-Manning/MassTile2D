@@ -20,7 +20,7 @@
 
 using namespace std;
 
-void GenerateFontAtlas(std::string path, std::string exportPath, FontConfig& config, Engine& engine) {
+Font GenerateFontAtlas(std::string path, std::string exportPath, FontConfig& config, Engine& engine) {
 
 	
 	auto fontBuffer = VKUtil::readFile(path);
@@ -77,18 +77,20 @@ void GenerateFontAtlas(std::string path, std::string exportPath, FontConfig& con
 	font.fontHeight = config.fontHeight;
 	font.atlas = sprite->ID;
 
-	font.quads.clear();
-	font.quads.reserve(config.charCount);
+	font.packedChars.clear();
+	font.packedChars.reserve(config.charCount);
 
 	for (auto& c : packedChars) {
-		charQuad quad;
-		quad.uvmin = glm::vec2(c.x0, c.y0);
-		quad.uvmax = glm::vec2(c.x1, c.y1);
-		quad.scale = glm::vec2(quad.uvmax - quad.uvmin);
-		quad.position = glm::vec2(c.xoff, c.yoff);
-		font.quads.push_back(quad);
+		packedChar pc;
+		pc.uvmin = glm::vec2(c.x0, c.y0) / glm::vec2(config.atlasWidth, config.atlasHeight);
+		pc.uvmax = glm::vec2(c.x1, c.y1) / glm::vec2(config.atlasWidth, config.atlasHeight);
+		pc.scale = glm::vec2(pc.uvmax - pc.uvmin) / glm::vec2(config.atlasWidth, config.atlasHeight);
+		pc.xOff = c.xoff * scale;
+		pc.yOff = c.yoff * scale;
+		font.packedChars.push_back(pc);
 	}
 
+	return font;
 }
 
 

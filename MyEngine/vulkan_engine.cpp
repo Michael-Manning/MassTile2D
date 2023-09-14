@@ -376,16 +376,6 @@ void VKEngine::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VmaAllo
 	vmaCreateBuffer(allocator, &bufferInfo, &allocInfo, &buffer, &allocation, nullptr);
 }
 
-template<typename T>
-void VKEngine::createMappedBuffer(VkDeviceSize size, VkBufferUsageFlags usage, MappedDoubleBuffer<T>& buffer) {
-
-	for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++)
-	{
-		createBuffer(size, usage, VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT, buffer.buffers[i], buffer.allocations[i]);
-		vmaMapMemory(allocator, buffer.allocations[i], &buffer.buffersMapped[i]);
-	}
-	buffer.size = size;
-}
 
 
 constexpr int pipelineCount = 4; // temp

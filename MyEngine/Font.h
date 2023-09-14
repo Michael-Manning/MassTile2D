@@ -17,6 +17,13 @@ struct charQuad {
 };
 static_assert(sizeof(charQuad) % 16 == 0);
 
+struct packedChar {
+	glm::vec2 uvmin;
+	glm::vec2 uvmax;
+	glm::vec2 scale;
+	float xOff, yOff;
+};
+
 class Font{
 
 public:
@@ -31,7 +38,9 @@ public:
 
 	fontID ID;
 
-	std::vector<charQuad> quads;
+	std::vector<packedChar> packedChars;
+
+	packedChar operator [] (char c) const { return packedChars[c - firstChar]; }
 
 	void serializeJson(std::string filepath) {
 	}

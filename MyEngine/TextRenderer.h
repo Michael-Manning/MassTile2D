@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <stdint.h>
+#include <memory>
 
 #include <nlohmann/json.hpp>
 
@@ -31,4 +32,28 @@ public:
 		TextRenderer r(font);
 		return r;
 	};
+
+	std::vector<charQuad> CalculateQuads(std::shared_ptr<Font> f) {
+
+		std::vector<charQuad> quads;
+		quads.reserve(text.length());
+
+		float xoff = 0;
+		for (char c : text) {
+			auto packed = f->operator[](c);
+			charQuad q;
+			q.uvmax = packed.uvmax;
+			q.uvmin = packed.uvmin;
+			q.scale = packed.scale;
+			q.position = glm::vec2(xoff, packed.yOff);
+			xoff += packed.xOff;
+			quads.push_back(q);
+		}
+
+		return quads;
+	};
+
+private:
+
+	//Font* cachedFont
 };

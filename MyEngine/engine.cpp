@@ -25,6 +25,7 @@
 #include "texturedQuadPL.h"
 #include "tilemapPL.h"
 #include "LightingComputePL.h"
+#include "TextPL.h"
 
 #include "MyMath.h"
 #include "engine.h"
@@ -169,6 +170,7 @@ void Engine::Start(std::string windowName, int winW, int winH, std::string shade
 		colorPipeline = make_unique<ColoredQuadPL>(rengine);
 		tilemapPipeline = make_unique<TilemapPL>(rengine, worldMap);
 		lightingPipeline = make_unique<LightingComputePL>(rengine, worldMap);
+		textPipeline = make_unique<TextPL>(rengine, texNotFound);
 	}
 
 	// section can be done in parrallel
@@ -188,6 +190,12 @@ void Engine::Start(std::string windowName, int winW, int winH, std::string shade
 	// tilemap pipeline
 	{
 		tilemapPipeline->CreateGraphicsPipeline(shaderDir + "tilemap_vert.spv", shaderDir + "tilemap_frag.spv", cameraUploader.transferBuffers);
+	}
+
+	// text pipeline
+	{
+		textPipeline->createSSBOBuffer();
+		textPipeline->CreateGraphicsPipeline(shaderDir + "text_vert.spv", shaderDir + "text_frag.spv", cameraUploader.transferBuffers);
 	}
 
 	// lighting compute pipeline
@@ -435,6 +443,43 @@ bool Engine::QueueNextFrame(bool drawImgui) {
 		}
 	}
 
+	// text
+	{
+		ZoneScopedN("Text PL");
+
+		if (scene->sceneData.textRenderers.size() > 0) {
+			textPipeline->ClearTextData(rengine->currentFrame);
+
+			int i = 0;
+			for (auto& r : scene->sceneData.textRenderers) {
+
+				shared_ptr<Font> f = assetManager->fontAssets[r.second.font];
+				auto quads = r.second.CalculateQuads(f);
+
+				if (assetManager->spritesAdded) {
+					auto sprite = assetManager->spriteAssets[f->atlas];
+					textPipeline->addFontBinding(f->ID, &assetManager->textureAssets[sprite->texture]);
+				}
+
+				TextPL::textHeader header;
+				header.color = vec4(1.0f);
+				header.position = vec2(0.0f);
+				header.rotation = 0.0f;
+				header.scale = 1.0f;
+				header.textLength = glm::min(TEXTPL_maxTextLength, (int)quads.size());
+
+				TextPL::textObject textData;
+				std::copy(quads.begin(), quads.end(), textData.quads);
+
+				textPipeline->UploadTextData(rengine->currentFrame, i, header, r.second.font, textData);
+				i++;
+			}
+
+			textPipeline->updateDescriptorSets();
+			textPipeline->recordCommandBuffer(cmdBuffer);
+		}
+	}
+
 	runningStats.entity_count = scene->sceneData.entities.size();
 
 	// reset binding flags
@@ -452,7 +497,7 @@ bool Engine::QueueNextFrame(bool drawImgui) {
 
 
 	rengine->submitAndPresent(imageIndex);
-	
+
 
 	rengine->Update();
 
@@ -570,20 +615,15 @@ void Engine::InitImgui() {
 	init_info.Device = rengine->device;
 	init_info.Queue = rengine->graphicsQueue;
 	init_info.DescriptorPool = imguiPool;
-	init_info.MinImageCount = 3;
-	init_info.ImageCount = 3;
+	init_info.MinImageCount = rengine->swapChainImages.size();
+	init_info.ImageCount = rengine->swapChainImages.size();
 	init_info.Subpass = 0;
 	init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 
 	ImGui_ImplVulkan_Init(&init_info, rengine->renderPass);
 
 
-
 	//execute a gpu command to upload imgui font textures
-//	immediate_submit([&](VkCommandBuffer cmd) {
-	//	ImGui_ImplVulkan_CreateFontsTexture(cmd);
-		//});
-
 	auto cmdBuffer = rengine->beginSingleTimeCommands();
 	ImGui_ImplVulkan_CreateFontsTexture(cmdBuffer);
 	rengine->endSingleTimeCommands(cmdBuffer);

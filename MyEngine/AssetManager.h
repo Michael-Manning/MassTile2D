@@ -39,7 +39,7 @@ public:
 
 	void updateTexture(texID id, FilterMode filterMode);
 
-	void addFont(Font font);
+	fontID addFont(Font font);
 	void addFont(Font font, fontID inputID);
 
 	std::unordered_map<texID, Texture> textureAssets;
