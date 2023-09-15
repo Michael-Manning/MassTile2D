@@ -21,7 +21,7 @@ struct packedChar {
 	glm::vec2 uvmin;
 	glm::vec2 uvmax;
 	glm::vec2 scale;
-	float xOff, yOff;
+	float xOff, yOff, advance;
 };
 
 class Font{

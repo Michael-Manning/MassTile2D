@@ -462,7 +462,7 @@ bool Engine::QueueNextFrame(bool drawImgui) {
 				}
 
 				TextPL::textHeader header;
-				header.color = vec4(1.0f);
+				header.color = r.second.color;
 				header.position = vec2(0.0f);
 				header.rotation = 0.0f;
 				header.scale = 1.0f;

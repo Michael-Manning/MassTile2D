@@ -5,6 +5,7 @@
 #include <memory>
 
 #include <nlohmann/json.hpp>
+#include <glm/glm.hpp>
 
 #include "typedefs.h"
 #include "Component.h"
@@ -24,6 +25,7 @@ public:
 	static TextRenderer deserializeJson(nlohmann::json j);
 
 	std::string text;
+	glm::vec4 color;
 
 	fontID font;
 
@@ -42,11 +44,12 @@ public:
 		for (char c : text) {
 			auto packed = f->operator[](c);
 			charQuad q;
+			xoff += packed.xOff;
 			q.uvmax = packed.uvmax;
 			q.uvmin = packed.uvmin;
 			q.scale = packed.scale;
-			q.position = glm::vec2(xoff, packed.yOff);
-			xoff += packed.xOff;
+			q.position = glm::vec2(xoff, -packed.yOff);
+			xoff += packed.advance;
 			quads.push_back(q);
 		}
 

@@ -25,6 +25,8 @@ public:
 		std::string prefabDir;
 		std::string assetDir;
 		std::string textureSrcDir;
+		std::string fontsDir;
+		std::string imagesDir;
 	};
 	AssetPaths directories;
 

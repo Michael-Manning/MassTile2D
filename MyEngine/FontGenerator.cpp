@@ -47,7 +47,7 @@ Font GenerateFontAtlas(std::string path, std::string exportPath, FontConfig& con
 		STBTT_assert(stbtt_PackBegin(&fnt_context, bitmap.data(), config.atlasWidth, config.atlasHeight, 0, 0, NULL));
 
 		stbtt_PackSetOversampling(&fnt_context, config.oversample, config.oversample);
-		STBTT_assert(stbtt_PackFontRange(&fnt_context, reinterpret_cast<unsigned char*>(fontBuffer.data()), 0, 32, config.firstChar, config.charCount, packedChars.data()));
+		STBTT_assert(stbtt_PackFontRange(&fnt_context, reinterpret_cast<unsigned char*>(fontBuffer.data()), 0, config.fontHeight, config.firstChar, config.charCount, packedChars.data()));
 
 		
 		stbtt_PackEnd(&fnt_context);
@@ -84,9 +84,10 @@ Font GenerateFontAtlas(std::string path, std::string exportPath, FontConfig& con
 		packedChar pc;
 		pc.uvmin = glm::vec2(c.x0, c.y0) / glm::vec2(config.atlasWidth, config.atlasHeight);
 		pc.uvmax = glm::vec2(c.x1, c.y1) / glm::vec2(config.atlasWidth, config.atlasHeight);
-		pc.scale = glm::vec2(pc.uvmax - pc.uvmin) / glm::vec2(config.atlasWidth, config.atlasHeight);
+		pc.scale = glm::vec2(pc.uvmax - pc.uvmin) * scale * glm::vec2(config.atlasWidth, config.atlasHeight) / 2.0f;
 		pc.xOff = c.xoff * scale;
 		pc.yOff = c.yoff * scale;
+		pc.advance = c.xadvance * scale;
 		font.packedChars.push_back(pc);
 	}
 

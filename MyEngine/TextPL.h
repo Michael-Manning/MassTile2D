@@ -38,12 +38,12 @@ public:
 	static_assert(sizeof(textObject) % 16 == 0);
 
 	struct textHeader {
+		glm::vec4 color;
+		alignas(8) glm::vec2 position;
 		int _textureIndex;
 		int textLength;
-		alignas(8) glm::vec2 position;
 		float scale;
 		float rotation;
-		glm::vec4 color;
 
 		uint32_t padding[1];
 	};

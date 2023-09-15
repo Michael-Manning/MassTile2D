@@ -2,7 +2,7 @@
 
 
 Just added font asset. Continue adding scene support, then fully hook up text renderer and text pipline
-
+- incorporate font baseline
 
 
 - fix getkeyup

@@ -106,6 +106,8 @@ int main() {
 	AssetDirectories.prefabDir = makePathAbsolute(exePath, "../../data/Prefabs/") + "/";
 	AssetDirectories.assetDir = makePathAbsolute(exePath, "../../data/Assets/") + "/";
 	AssetDirectories.textureSrcDir = makePathAbsolute(exePath, "../../data/Assets/") + "/";
+	AssetDirectories.fontsDir = makePathAbsolute(exePath, "../../data/Fonts/") + "/";
+	AssetDirectories.imagesDir = makePathAbsolute(exePath, "../../data/images/") + "/";
 
 	SwapChainSetting swapchainSettings;
 	swapchainSettings.vsync = true;
@@ -129,9 +131,10 @@ int main() {
 		FontConfig config;
 		config.atlasHeight = 1024;
 		config.atlasWidth = 1024;
-		config.fontHeight = 23;
+		config.fontHeight = 32;
+		config.oversample = 4;
 		
-		fontID fontid = engine.assetManager->addFont(GenerateFontAtlas("../data/Fonts/MonoSpatial.ttf", "../data/images/MonoSpatial.png", config, engine));
+		fontID fontid = engine.assetManager->addFont(GenerateFontAtlas(AssetDirectories.fontsDir  + "MonoSpatial.ttf", AssetDirectories.imagesDir + "MonoSpatial.png", config, engine));
 		auto font = engine.assetManager->fontAssets[fontid];
 
 		auto testText = make_shared<Entity>("TestTxt");
@@ -139,7 +142,8 @@ int main() {
 
 
 		auto r = TextRenderer(font->ID);
-		r.text = "ab c d";
+		r.text = "abc";
+		r.color = vec4(0.0, 0.0, 0.0, 1.0);
 		scene->registerComponent(testText, r);
 	}
 #endif

@@ -24,12 +24,12 @@ struct textObject {
    charQuad quads[TEXTPL_maxTextLength];
 };
 struct textHeader {
+   vec4 color;
+   vec2 position;
    int _textureIndex;
    int textLength;
-   vec2 position;
    float scale;
    float rotation;
-   vec4 color;
 };
 struct textIndexes_ssbo {
    textHeader headers[TEXTPL_maxTextObjects];
@@ -92,9 +92,9 @@ void main() {
    view *= scale(vec2(1.0, -1.0));
 
    mat4 model = mat4(1.0);
-   model *= translate(ssboData.textData[i].quads[letter_index].position * 100.0);
-   // model *= scale(ssboData.textData[i].quads[letter_index].scale * 10.0);
-   model *= scale(vec2(10.0, 10.0));
+   model *= translate(ssboData.textData[i].quads[letter_index].position);
+   model *= scale(ssboData.textData[i].quads[letter_index].scale );
+
 
    // mat4 model = mat4(1.0);
    // model *= translate(vec2(0.0, 0.0));

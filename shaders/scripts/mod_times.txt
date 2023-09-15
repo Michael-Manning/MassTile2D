@@ -7,5 +7,5 @@
 ../shaders\lighting.comp:1694448308.2070315
 ../shaders\lightingBlur.comp:1694448308.2080288
 ../shaders\coloredQuadTransform.comp:1694205531.7747586
-../shaders\text.frag:1694727388.2764156
-../shaders\text.vert:1694728291.2597947
+../shaders\text.frag:1694794000.011535
+../shaders\text.vert:1694793962.5112915

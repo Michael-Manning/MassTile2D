@@ -14,12 +14,12 @@ struct textObject {
    charQuad quads[TEXTPL_maxTextLength];
 };
 struct textHeader {
+   vec4 color;
+   vec2 position;
    int _textureIndex;
    int textLength;
-   vec2 position;
    float scale;
    float rotation;
-   vec4 color;
 };
 struct textIndexes_ssbo {
    textHeader headers[TEXTPL_maxTextObjects];
@@ -50,8 +50,12 @@ void main() {
    float yscale = (umax.y - umin.y);
    float sampleY = umin.y + yscale * (uv.y);
 
-   vec4 col = texture(texSampler[ssboData.headers[obj_index]._textureIndex], vec2( sampleX, sampleY));
-   outColor = vec4(col.rgb, 1.0);
+   
+   float alpha = texture(texSampler[ssboData.headers[obj_index]._textureIndex], vec2( sampleX, sampleY)).x;
+   vec4 col = ssboData.headers[obj_index].color;
+
+   outColor = vec4(col.rgb, mix(0.0, col.a, alpha));
+   //outColor = vec4(col.rgb, 1.0);
 
    // outColor = texture(texSampler[ssboData.headers[obj_index]._textureIndex], vec2( sampleX, sampleY));
 }
