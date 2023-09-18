@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <vector>
 #include <filesystem>
+#include <stdint.h>
 
 #ifndef STB_TRUETYPE_IMPLEMENTATION
 #define STB_TRUETYPE_IMPLEMENTATION
@@ -19,10 +20,11 @@
 #include "Font.h"
 
 using namespace std;
+using namespace glm;
 
 Font GenerateFontAtlas(std::string path, std::string exportPath, FontConfig& config, Engine& engine) {
 
-	
+
 	auto fontBuffer = VKUtil::readFile(path);
 	vector<uint8_t> bitmap(config.atlasWidth * config.atlasHeight);
 
@@ -33,13 +35,11 @@ Font GenerateFontAtlas(std::string path, std::string exportPath, FontConfig& con
 		throw std::exception("stb init error");
 	}
 
-	float scale = stbtt_ScaleForPixelHeight(&font_info, config.fontHeight);
+	float SF = stbtt_ScaleForPixelHeight(&font_info, config.fontHeight);
+	float pixelPositionScale = 1.0f / config.fontHeight;
 
 	int ascent, descent, lineGap;
 	stbtt_GetFontVMetrics(&font_info, &ascent, &descent, &lineGap);
-
-	//ascent = roundf(ascent * scale);
-	//descent = roundf(descent * scale);
 
 	{
 		stbtt_pack_context fnt_context;
@@ -49,7 +49,7 @@ Font GenerateFontAtlas(std::string path, std::string exportPath, FontConfig& con
 		stbtt_PackSetOversampling(&fnt_context, config.oversample, config.oversample);
 		STBTT_assert(stbtt_PackFontRange(&fnt_context, reinterpret_cast<unsigned char*>(fontBuffer.data()), 0, config.fontHeight, config.firstChar, config.charCount, packedChars.data()));
 
-		
+
 		stbtt_PackEnd(&fnt_context);
 	}
 
@@ -80,15 +80,59 @@ Font GenerateFontAtlas(std::string path, std::string exportPath, FontConfig& con
 	font.packedChars.clear();
 	font.packedChars.reserve(config.charCount);
 
+	vector<stbtt_kerningentry> kerningTable(config.charCount * config.charCount);
+	stbtt_GetKerningTable(&font_info, kerningTable.data(), config.charCount * config.charCount);
+
+	int ch = config.firstChar;
 	for (auto& c : packedChars) {
+
+		char letter = (char)ch;
+
+		int ax;
+		int lsb;
+		stbtt_GetCodepointHMetrics(&font_info, ch, &ax, &lsb);
+
+		ch++;
+
+		float axf = ax * SF;
+
 		packedChar pc;
-		pc.uvmin = glm::vec2(c.x0, c.y0) / glm::vec2(config.atlasWidth, config.atlasHeight);
-		pc.uvmax = glm::vec2(c.x1, c.y1) / glm::vec2(config.atlasWidth, config.atlasHeight);
-		pc.scale = glm::vec2(pc.uvmax - pc.uvmin) * scale * glm::vec2(config.atlasWidth, config.atlasHeight) / 2.0f;
-		pc.xOff = c.xoff * scale;
-		pc.yOff = c.yoff * scale;
-		pc.advance = c.xadvance * scale;
+		vec2 pixelsMin = glm::vec2(c.x0, c.y0);
+		vec2 pixelsMax = glm::vec2(c.x1, c.y1);
+		pc.uvmin = pixelsMin / vec2(config.atlasWidth, config.atlasHeight);
+		pc.uvmax = pixelsMax / vec2(config.atlasWidth, config.atlasHeight);
+
+		vec2 pixelScale = (pixelsMax - pixelsMin);
+		pc.scale = pixelScale * pixelPositionScale / 2.0f;
+
+
+		//pc.xOff = 0;
+		pc.xOff = c.xoff * pixelPositionScale;
+		pc.yOff = c.yoff * pixelPositionScale;
+
+		pc.advance = c.xadvance * pixelPositionScale * 2.0f;
+
 		font.packedChars.push_back(pc);
+	}
+
+	font.kerningTable.clear();
+
+	for (size_t i = 0; i < font.charCount; i++)
+	{
+		int g1 = stbtt_FindGlyphIndex(&font_info, font.firstChar + i);
+		for (size_t j = 0; j < font.charCount; j++)
+		{
+			int g2 = stbtt_FindGlyphIndex(&font_info, font.firstChar + j);
+			int advance = stbtt_GetGlyphKernAdvance(&font_info, g1, g2);
+			uint32_t hash = font.kernHash(i + font.firstChar, j + font.firstChar);
+			if (i + font.firstChar == 'A' && j + font.firstChar == 'V') {
+				int tset = 3;
+			}
+			font.kerningTable[hash] = 0;
+			//font.kerningTable[hash] = advance * SF * UV_PixelScale * 2.0f;
+			font.kerningTable[hash] = advance * SF * pixelPositionScale * 2.0f;
+
+		}
 	}
 
 	return font;

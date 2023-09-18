@@ -54,8 +54,7 @@ void main() {
    float alpha = texture(texSampler[ssboData.headers[obj_index]._textureIndex], vec2( sampleX, sampleY)).x;
    vec4 col = ssboData.headers[obj_index].color;
 
-   outColor = vec4(col.rgb, mix(0.0, col.a, alpha));
-   //outColor = vec4(col.rgb, 1.0);
-
-   // outColor = texture(texSampler[ssboData.headers[obj_index]._textureIndex], vec2( sampleX, sampleY));
+   col = vec4(col.rgb, mix(0.0, col.a, alpha));
+   col.a = max(col.a, 0.3);
+   outColor = col;
 }

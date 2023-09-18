@@ -1,5 +1,9 @@
 
 
+Need to understand:
+- Why are *2 and /2 necassary for font scale and x advance?.
+- testing a none-monospace font might provide some more information
+
 
 Just added font asset. Continue adding scene support, then fully hook up text renderer and text pipline
 - incorporate font baseline

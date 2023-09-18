@@ -1,18 +1,18 @@
 {
     "entities": [
         {
-            "behaviorHash": 3757936288,
-            "id": 4,
-            "name": "entity 4",
+            "behaviorHash": 0,
+            "id": 3,
+            "name": "entity 3",
             "transform": {
                 "position": [
-                    9.600000381469727,
-                    106.19999694824219
+                    4.5186309814453125,
+                    0.5990442037582397
                 ],
                 "rotation": 0.0,
                 "scale": [
-                    0.35,
-                    0.7
+                    10.002300262451172,
+                    1.5
                 ]
             }
         }
@@ -20,11 +20,15 @@
     "spriteRenderers": [
         {
             "atlasIndex": 0,
-            "entityID": 4,
-            "spriteID": 7
+            "entityID": 3,
+            "spriteID": 90
         }
     ],
+    "usedFonts": [
+        1
+    ],
     "usedSprites": [
-        7
+        7,
+        90
     ]
 }

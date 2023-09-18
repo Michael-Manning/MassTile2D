@@ -3,6 +3,7 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <unordered_map>
 
 
 #include "typedefs.h"
@@ -28,6 +29,7 @@ class Font{
 
 public:
 
+
 	std::string name;
 
 	int firstChar = 32;
@@ -37,6 +39,12 @@ public:
 	spriteID atlas;
 
 	fontID ID;
+
+	// TODO: enforce font count < 128, then just use bit shifting to do this
+	inline uint32_t kernHash(char a, char b) {
+		return (a - firstChar) * charCount + (b - firstChar);
+	};
+	std::unordered_map<uint32_t, float> kerningTable;
 
 	std::vector<packedChar> packedChars;
 

@@ -23,6 +23,9 @@ public:
 	bool drawInspector<SpriteRenderer>(SpriteRenderer& r, Engine& engine);
 
 	template<>
+	bool drawInspector<TextRenderer>(TextRenderer& r, Engine& engine);
+
+	template<>
 	bool drawInspector<Rigidbody>(Rigidbody& r, Engine& engine);
 
 	template<>

@@ -29,19 +29,24 @@ public:
 
 	fontID font;
 
+	bool dirty = true;
+
 	TextRenderer duplicate() const {
 		assert(false); // damn
 		TextRenderer r(font);
 		return r;
 	};
 
+	// user dirty flag and cache
 	std::vector<charQuad> CalculateQuads(std::shared_ptr<Font> f) {
 
 		std::vector<charQuad> quads;
 		quads.reserve(text.length());
 
 		float xoff = 0;
-		for (char c : text) {
+		//for (char c : text) {
+		for (int i = 0; i < text.length(); i++){
+			char c = text[i];
 			auto packed = f->operator[](c);
 			charQuad q;
 			xoff += packed.xOff;
@@ -50,6 +55,7 @@ public:
 			q.scale = packed.scale;
 			q.position = glm::vec2(xoff, -packed.yOff);
 			xoff += packed.advance;
+			xoff += f->kerningTable[f->kernHash(c, text[i + 1])];
 			quads.push_back(q);
 		}
 

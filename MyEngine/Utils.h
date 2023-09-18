@@ -19,12 +19,13 @@
 
 
 namespace ImGui {
-	static void InputString(const char * label, std::string& str) {
+	static bool InputString(const char * label, std::string& str) {
 		char buffer[256];
 		std::fill(buffer, buffer + 255, '\0');
 		std::copy(str.c_str(), str.c_str() + str.length(), buffer);
-		ImGui::InputText(label, buffer, 256);
+		bool change = ImGui::InputText(label, buffer, 256);
 		str = std::string(buffer);
+        return change;
 	}
 }
 

@@ -649,6 +649,10 @@ void Editor::Run(Engine& engine) {
 				drawInspector(engine.scene->sceneData.spriteRenderers[selectedEntity->ID], engine);
 			}
 
+			if (engine.scene->sceneData.textRenderers.contains(selectedEntity->ID)) {
+				drawInspector(engine.scene->sceneData.textRenderers[selectedEntity->ID], engine);
+			}
+			
 			if (engine.scene->sceneData.staticbodies.contains(selectedEntity->ID)) {
 				drawInspector(engine.scene->sceneData.staticbodies[selectedEntity->ID], engine);
 			}
@@ -656,8 +660,6 @@ void Editor::Run(Engine& engine) {
 			if (engine.scene->sceneData.rigidbodies.contains(selectedEntity->ID)) {
 				drawInspector(engine.scene->sceneData.rigidbodies[selectedEntity->ID], engine);
 			}
-
-
 
 
 			// behavior selector
@@ -829,6 +831,16 @@ bool Editor::drawInspector<SpriteRenderer>(SpriteRenderer& r, Engine& engine) {
 	return false;
 }
 
+template<>
+bool Editor::drawInspector<TextRenderer>(TextRenderer& r, Engine& engine) {
+	SeparatorText("Text Renderer");
+	
+	if (ImGui::InputString("Text", r.text)) {
+		r.dirty = true;
+	}
+
+	return false;
+}
 
 bool CircleCollider::drawInspector() {
 	SeparatorText("Circle Collider");

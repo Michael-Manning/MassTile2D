@@ -137,12 +137,12 @@ int main() {
 		fontID fontid = engine.assetManager->addFont(GenerateFontAtlas(AssetDirectories.fontsDir  + "MonoSpatial.ttf", AssetDirectories.imagesDir + "MonoSpatial.png", config, engine));
 		auto font = engine.assetManager->fontAssets[fontid];
 
-		auto testText = make_shared<Entity>("TestTxt");
+		auto testText = make_shared<Entity>("abcVAW*1!test");
 		scene->RegisterEntity(testText);
 
 
 		auto r = TextRenderer(font->ID);
-		r.text = "abc";
+		r.text = "abcVAW*1!test";
 		r.color = vec4(0.0, 0.0, 0.0, 1.0);
 		scene->registerComponent(testText, r);
 	}
@@ -329,7 +329,7 @@ int main() {
 			engine.camera.position = GcameraPos;
 		}
 
-#if 1
+#if 0
 		{
 
 			static int lastX = -1;
