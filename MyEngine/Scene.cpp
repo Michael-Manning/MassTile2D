@@ -110,6 +110,7 @@ void Scene::LoadScene(std::string filename, std::shared_ptr<b2World> world) {
 		sceneData.entities.clear();
 		sceneData.colorRenderers.clear();
 		sceneData.spriteRenderers.clear();
+		sceneData.textRenderers.clear();
 
 		for (auto& i : sceneData.staticbodies) {
 			i.second.Destroy();

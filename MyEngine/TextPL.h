@@ -40,10 +40,10 @@ public:
 	struct textHeader {
 		glm::vec4 color;
 		alignas(8) glm::vec2 position;
+		alignas(8) glm::vec2 scale;
+		float rotation;
 		int _textureIndex;
 		int textLength;
-		float scale;
-		float rotation;
 
 		uint32_t padding[1];
 	};

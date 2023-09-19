@@ -16,10 +16,10 @@ struct textObject {
 struct textHeader {
    vec4 color;
    vec2 position;
+   vec2 scale;
+   float rotation;
    int _textureIndex;
    int textLength;
-   float scale;
-   float rotation;
 };
 struct textIndexes_ssbo {
    textHeader headers[TEXTPL_maxTextObjects];
@@ -55,6 +55,6 @@ void main() {
    vec4 col = ssboData.headers[obj_index].color;
 
    col = vec4(col.rgb, mix(0.0, col.a, alpha));
-   col.a = max(col.a, 0.3);
+   //col.a = max(col.a, 0.3);
    outColor = col;
 }

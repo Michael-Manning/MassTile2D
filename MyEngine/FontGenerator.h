@@ -16,4 +16,4 @@ struct  FontConfig{
 
 
 
-Font GenerateFontAtlas(std::string fontPath, std::string exportPath, FontConfig & config, Engine& engine);
+Font GenerateFontAtlas(std::string fontPath, std::string exportName, FontConfig & config, Engine& engine);

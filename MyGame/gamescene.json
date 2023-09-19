@@ -2,17 +2,33 @@
     "entities": [
         {
             "behaviorHash": 0,
-            "id": 3,
-            "name": "entity 3",
+            "id": 4,
+            "name": "monospatialInksape",
             "transform": {
                 "position": [
-                    4.5186309814453125,
-                    0.5990442037582397
+                    5.571950912475586,
+                    0.23376904428005219
                 ],
                 "rotation": 0.0,
                 "scale": [
-                    10.002300262451172,
-                    1.5
+                    11.225000381469727,
+                    1.100000023841858
+                ]
+            }
+        },
+        {
+            "behaviorHash": 0,
+            "id": 5,
+            "name": "robotoInkscape",
+            "transform": {
+                "position": [
+                    6.1463422775268555,
+                    5.238954067230225
+                ],
+                "rotation": 0.0,
+                "scale": [
+                    13.371399879455566,
+                    1.0399999618530273
                 ]
             }
         }
@@ -20,15 +36,17 @@
     "spriteRenderers": [
         {
             "atlasIndex": 0,
-            "entityID": 3,
-            "spriteID": 90
+            "entityID": 4,
+            "spriteID": 169
+        },
+        {
+            "atlasIndex": 0,
+            "entityID": 5,
+            "spriteID": 168
         }
     ],
-    "usedFonts": [
-        1
-    ],
     "usedSprites": [
-        7,
-        90
+        169,
+        168
     ]
 }

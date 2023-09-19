@@ -125,6 +125,7 @@ int main() {
 	engine.assetManager->loadAllSprites();
 	engine.loadPrefabs();
 
+	engine.scene->LoadScene("gamescene", engine.bworld);
 
 #if 1
 	{
@@ -133,19 +134,43 @@ int main() {
 		config.atlasWidth = 1024;
 		config.fontHeight = 32;
 		config.oversample = 4;
-		
-		fontID fontid = engine.assetManager->addFont(GenerateFontAtlas(AssetDirectories.fontsDir  + "MonoSpatial.ttf", AssetDirectories.imagesDir + "MonoSpatial.png", config, engine));
+
+		fontID fontid = engine.assetManager->addFont(GenerateFontAtlas(AssetDirectories.fontsDir + "MonoSpatial.ttf", "MonoSpatial.png", config, engine));
 		auto font = engine.assetManager->fontAssets[fontid];
 
-		auto testText = make_shared<Entity>("abcVAW*1!test");
+		auto testText = make_shared<Entity>("monospace font");
 		scene->RegisterEntity(testText);
 
 
 		auto r = TextRenderer(font->ID);
-		r.text = "abcVAW*1!test";
+		r.text = "absg eVWA 142 ! *s test qjI{} %";
 		r.color = vec4(0.0, 0.0, 0.0, 1.0);
 		scene->registerComponent(testText, r);
 	}
+#endif
+#if 1
+	{
+		FontConfig config;
+		config.atlasHeight = 1024;
+		config.atlasWidth = 1024;
+		config.fontHeight = 32;
+		config.oversample = 4;
+
+		fontID fontid = engine.assetManager->addFont(GenerateFontAtlas(AssetDirectories.fontsDir + "Roboto-Regular.ttf", "Roboto-Regular.png", config, engine));
+		auto font = engine.assetManager->fontAssets[fontid];
+		//font->serializeJson(AssetDirectories.assetDir + "")
+
+		auto testText = make_shared<Entity>("roboto font");
+		testText->transform.position = vec2(0, 5);
+		scene->RegisterEntity(testText);
+
+
+		auto r = TextRenderer(font->ID);
+		r.text = "absg eVWA 142 ! *s test qjI{} %";
+		r.color = vec4(0.0, 0.0, 0.0, 1.0);
+		scene->registerComponent(testText, r);
+}
+
 #endif
 
 	tileWolrdGlobalRef = engine.worldMap;

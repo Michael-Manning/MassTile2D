@@ -43,19 +43,18 @@ public:
 		std::vector<charQuad> quads;
 		quads.reserve(text.length());
 
-		float xoff = 0;
+		float cursor = 0;
 		//for (char c : text) {
 		for (int i = 0; i < text.length(); i++){
 			char c = text[i];
 			auto packed = f->operator[](c);
 			charQuad q;
-			xoff += packed.xOff;
 			q.uvmax = packed.uvmax;
 			q.uvmin = packed.uvmin;
 			q.scale = packed.scale;
-			q.position = glm::vec2(xoff, -packed.yOff);
-			xoff += packed.advance;
-			xoff += f->kerningTable[f->kernHash(c, text[i + 1])];
+			q.position = glm::vec2(cursor + packed.xOff, packed.yOff);
+			cursor += packed.advance;
+			cursor += f->kerningTable[f->kernHash(c, text[i + 1])];
 			quads.push_back(q);
 		}
 

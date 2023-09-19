@@ -1,17 +1,12 @@
 
 
-Need to understand:
-- Why are *2 and /2 necassary for font scale and x advance?.
-- testing a none-monospace font might provide some more information
-
-
-Just added font asset. Continue adding scene support, then fully hook up text renderer and text pipline
-- incorporate font baseline
-
+- incorporate font baseline, ascenet, and newline
+- complete font asset serialization and text renderer component support
+- complete text CalculateQuads data caching
+- concider partial text ssbo updating, if not leave a note of potential optimization
+- font asset creation from editor
 
 - fix getkeyup
-
-
 
 
 - convert entity transform into component, store in contiguous memory, or use faster map. Then use compute shader to calculate
@@ -43,6 +38,7 @@ things to abstract:
 
 - buffer management (group allocation and buffer, see vkguide)
 
+- descriptor pool sizes
 
 - query maxComputeWorkGroupCount, maxComputeWorkGroupInvocations, and maxComputeWorkGroupSize to determine max work group size
 

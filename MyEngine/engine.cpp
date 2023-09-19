@@ -125,7 +125,6 @@ void Engine::Start(std::string windowName, int winW, int winH, std::string shade
 	glfwSetFramebufferSizeCallback(rengine->window, framebufferResizeCallback);
 	glfwSetKeyCallback(rengine->window, KeyCallback);
 	glfwSetMouseButtonCallback(rengine->window, mouseButtonCallback);
-
 	glfwSetScrollCallback(rengine->window, scroll_callback);
 
 	input = make_shared<Input>(rengine->window);
@@ -134,8 +133,6 @@ void Engine::Start(std::string windowName, int winW, int winH, std::string shade
 	DebugLog("Initialized Window");
 
 	rengine->initVulkan(swapchainSetting, 1);
-
-
 	rengine->createFramebuffers();
 	rengine->createCommandPool();
 	rengine->createDescriptorPool();
@@ -453,6 +450,8 @@ bool Engine::QueueNextFrame(bool drawImgui) {
 			int i = 0;
 			for (auto& r : scene->sceneData.textRenderers) {
 
+				const auto& entity = scene->sceneData.entities[r.first];
+
 				shared_ptr<Font> f = assetManager->fontAssets[r.second.font];
 				auto quads = r.second.CalculateQuads(f);
 
@@ -463,9 +462,9 @@ bool Engine::QueueNextFrame(bool drawImgui) {
 
 				TextPL::textHeader header;
 				header.color = r.second.color;
-				header.position = vec2(0.0f);
-				header.rotation = 0.0f;
-				header.scale = 1.0f;
+				header.position = entity->transform.position;
+				header.rotation = entity->transform.rotation;
+				header.scale = entity->transform.scale;
 				header.textLength = glm::min(TEXTPL_maxTextLength, (int)quads.size());
 
 				TextPL::textObject textData;
@@ -494,10 +493,7 @@ bool Engine::QueueNextFrame(bool drawImgui) {
 	vkCmdEndRenderPass(cmdBuffer);
 	rengine->endCommandBuffer(cmdBuffer);
 
-
-
 	rengine->submitAndPresent(imageIndex);
-
 
 	rengine->Update();
 

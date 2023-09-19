@@ -26,10 +26,10 @@ struct textObject {
 struct textHeader {
    vec4 color;
    vec2 position;
+   vec2 scale;
+   float rotation;
    int _textureIndex;
    int textLength;
-   float scale;
-   float rotation;
 };
 struct textIndexes_ssbo {
    textHeader headers[TEXTPL_maxTextObjects];
@@ -91,21 +91,16 @@ void main() {
    view *= translate(vec2(-camera.position.x, camera.position.y));
    view *= scale(vec2(1.0, -1.0));
 
-   mat4 model = mat4(1.0);
-   model *= translate(ssboData.textData[i].quads[letter_index].position);
-   model *= scale(ssboData.textData[i].quads[letter_index].scale );
+   mat4 letterModel = mat4(1.0);
+   letterModel *= translate(ssboData.textData[i].quads[letter_index].position);
+   letterModel *= scale(ssboData.textData[i].quads[letter_index].scale );
 
+   mat4 objectModel = mat4(1.0);
+   objectModel *= translate(ssboData.headers[i].position);
+   objectModel *= rotate(ssboData.headers[i].rotation);
+   objectModel *= scale(ssboData.headers[i].scale);
 
-   // mat4 model = mat4(1.0);
-   // model *= translate(vec2(0.0, 0.0));
-   // model *= scale(vec2(10.0, 10.0));
-
-   // mat4 model = mat4(1.0);
-   // model *= translate(ssboData.headers[i].position);
-   // model *= rotate(ssboData.headers[i].rotation);
-   // model *= scale(ssboData.headers[i].scale);
-
-   gl_Position = view * model  * vec4(inPosition, 0.0, 1.0) * vec4(vec2( camera.aspectRatio, 1.0), 1.0, 1.0);
+   gl_Position = view * objectModel * letterModel  * vec4(inPosition, 0.0, 1.0) * vec4(vec2( camera.aspectRatio, 1.0), 1.0, 1.0);
 
    uv = vec2(inFragCoord.x, 1.0 - inFragCoord.y);
 }
