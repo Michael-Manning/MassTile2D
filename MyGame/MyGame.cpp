@@ -37,6 +37,7 @@
 #include "MyMath.h"
 #include "worldGen.h"
 #include "Settings.h"
+#include "BinaryWriter.h"
 
 #include <FastNoise/FastNoise.h>
 #include <FastNoise/SmartNode.h>
@@ -123,11 +124,17 @@ int main() {
 	const auto input = engine.GetInput();
 
 	engine.assetManager->loadAllSprites();
+	//engine.assetManager->loadAllFonts();
 	engine.loadPrefabs();
 
-	engine.scene->LoadScene("gamescene", engine.bworld);
+	//engine.scene->LoadScene("gamescene", engine.bworld);
 
 #if 1
+
+	/*PROFILE_START(LoadFonts);
+	engine.assetManager->loadFontAssets({ 1, 2 });
+	PROFILE_END(LoadFonts);*/
+
 	{
 		FontConfig config;
 		config.atlasHeight = 1024;
@@ -137,13 +144,15 @@ int main() {
 
 		fontID fontid = engine.assetManager->addFont(GenerateFontAtlas(AssetDirectories.fontsDir + "MonoSpatial.ttf", "MonoSpatial.png", config, engine));
 		auto font = engine.assetManager->fontAssets[fontid];
+		font->WriteBinary(AssetDirectories.assetDir + "mono.font");
 
-		auto testText = make_shared<Entity>("monospace font");
+		auto testText = make_shared<Entity>(AssetDirectories.assetDir + "monospace font");
 		scene->RegisterEntity(testText);
 
 
-		auto r = TextRenderer(font->ID);
-		r.text = "absg eVWA 142 ! *s test qjI{} %";
+		auto r = TextRenderer(1);
+		//auto r = TextRenderer(font->ID);
+		r.text = "absg eVWA 142 ! \n *s test qjI{} %";
 		r.color = vec4(0.0, 0.0, 0.0, 1.0);
 		scene->registerComponent(testText, r);
 	}
@@ -156,17 +165,20 @@ int main() {
 		config.fontHeight = 32;
 		config.oversample = 4;
 
+
+
 		fontID fontid = engine.assetManager->addFont(GenerateFontAtlas(AssetDirectories.fontsDir + "Roboto-Regular.ttf", "Roboto-Regular.png", config, engine));
 		auto font = engine.assetManager->fontAssets[fontid];
-		//font->serializeJson(AssetDirectories.assetDir + "")
+		font->WriteBinary(AssetDirectories.assetDir + "roboto.font");
 
 		auto testText = make_shared<Entity>("roboto font");
 		testText->transform.position = vec2(0, 5);
 		scene->RegisterEntity(testText);
 
 
-		auto r = TextRenderer(font->ID);
-		r.text = "absg eVWA 142 ! *s test qjI{} %";
+		//auto r = TextRenderer(font->ID);
+		auto r = TextRenderer(2);
+		r.text = "absg eVWA 142 ! *s test \nqjI{} %";
 		r.color = vec4(0.0, 0.0, 0.0, 1.0);
 		scene->registerComponent(testText, r);
 }

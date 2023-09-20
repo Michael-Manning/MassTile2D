@@ -1,17 +1,19 @@
 
 
-- incorporate font baseline, ascenet, and newline
-- complete font asset serialization and text renderer component support
-- complete text CalculateQuads data caching
-- concider partial text ssbo updating, if not leave a note of potential optimization
+- finish text renderer component support
 - font asset creation from editor
 
 - fix getkeyup
 
+- asset move/destroy/copy operators causing problems in asset loading if not preloading all assets when sprite/font destructor called
+
+- load asset via sprite/font id set flawed as it has to load every asset meta just to check it's ID, then discards it if it's the wrong ID.
+Could get around this by building some sort of lookup file which contains the IDs of all assets by filename or by creating a way of "peaking" IDs
 
 - convert entity transform into component, store in contiguous memory, or use faster map. Then use compute shader to calculate
 entity transform matrices for color/texture pipeline instead of per vertex calculation - profile first
 
+- replace file path string concatenation with filesystem api (to elemenate having to check for trailing slahes on directory paths)
 
 - Inter-bahaviour entity accessor
 

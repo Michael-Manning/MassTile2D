@@ -37,31 +37,39 @@ public:
 		return r;
 	};
 
-	// user dirty flag and cache
-	std::vector<charQuad> CalculateQuads(std::shared_ptr<Font> f) {
+	std::vector<charQuad>* CalculateQuads(std::shared_ptr<Font> f) {
 
-		std::vector<charQuad> quads;
-		quads.reserve(text.length());
+		if (dirty) {
+			quads.clear();
+			quads.reserve(text.length());
 
-		float cursor = 0;
-		//for (char c : text) {
-		for (int i = 0; i < text.length(); i++){
-			char c = text[i];
-			auto packed = f->operator[](c);
-			charQuad q;
-			q.uvmax = packed.uvmax;
-			q.uvmin = packed.uvmin;
-			q.scale = packed.scale;
-			q.position = glm::vec2(cursor + packed.xOff, packed.yOff);
-			cursor += packed.advance;
-			cursor += f->kerningTable[f->kernHash(c, text[i + 1])];
-			quads.push_back(q);
+			glm::vec2 cursor = glm::vec2(0.0f);
+			for (int i = 0; i < text.length(); i++) {
+				char c = text[i];
+
+				if (c == '\n') {
+					cursor.x = 0.0f;
+					cursor.y -= f->lineGap;
+					continue;
+				}
+
+				auto packed = f->operator[](c);
+				charQuad q;
+				q.uvmax = packed.uvmax;
+				q.uvmin = packed.uvmin;
+				q.scale = packed.scale;
+				q.position = glm::vec2(cursor.x + packed.xOff, cursor.y + packed.yOff - f->baseline);
+				cursor.x += packed.advance;
+				cursor.x += f->kerningTable[f->kernHash(c, text[i + 1])];
+				quads.push_back(q);
+			}
+			dirty = false;
 		}
 
-		return quads;
+		return &quads;
 	};
 
 private:
 
-	//Font* cachedFont
+	std::vector<charQuad> quads;
 };

@@ -73,6 +73,7 @@ public:
 			textDataDB.buffersMapped[frame]->headers[i].textLength = 0;
 	}
 
+	// TODO replace with function to get pointers to a given memory slot for direct memory access to avoid copy
 	void UploadTextData(int frame, int memorySlot, textHeader& header, fontID font, textObject& text) {
 
 		header._textureIndex = bindingManager.getIndexFromBinding(font);

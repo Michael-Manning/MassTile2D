@@ -465,10 +465,10 @@ bool Engine::QueueNextFrame(bool drawImgui) {
 				header.position = entity->transform.position;
 				header.rotation = entity->transform.rotation;
 				header.scale = entity->transform.scale;
-				header.textLength = glm::min(TEXTPL_maxTextLength, (int)quads.size());
+				header.textLength = glm::min(TEXTPL_maxTextLength, (int)quads->size());
 
 				TextPL::textObject textData;
-				std::copy(quads.begin(), quads.end(), textData.quads);
+				std::copy(quads->begin(), quads->end(), textData.quads);
 
 				textPipeline->UploadTextData(rengine->currentFrame, i, header, r.second.font, textData);
 				i++;

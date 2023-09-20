@@ -52,8 +52,9 @@ public:
 
 	void loadPrefabs(std::shared_ptr<b2World> world);
 	void loadSpriteAssets(std::set<spriteID> ids);
-	void loadFontAssets(std::set<fontID> ids);
 	void loadAllSprites();
+	void loadFontAssets(std::set<fontID> ids);
+	void loadAllFonts();
 
 	std::shared_ptr<Sprite> GenerateSprite(std::string imagePath, FilterMode filterMode = FilterMode::Linear, bool genImgui = true);
 	void CreateDefaultSprite(int w, int h, std::vector<uint8_t>& data);

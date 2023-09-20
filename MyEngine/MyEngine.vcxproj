@@ -286,6 +286,7 @@
     <ClInclude Include="AssetManager.h" />
     <ClInclude Include="BehaviorRegistry.h" />
     <ClInclude Include="benchmark.h" />
+    <ClInclude Include="BinaryWriter.h" />
     <ClInclude Include="BindingManager.h" />
     <ClInclude Include="coloredQuadPL.h" />
     <ClInclude Include="ColorRenderer.h" />

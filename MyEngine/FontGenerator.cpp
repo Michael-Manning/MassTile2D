@@ -24,7 +24,6 @@ using namespace glm;
 
 Font GenerateFontAtlas(std::string path, std::string exportName, FontConfig& config, Engine& engine) {
 
-
 	auto fontBuffer = VKUtil::readFile(path);
 	vector<uint8_t> bitmap(config.atlasWidth * config.atlasHeight);
 
@@ -40,6 +39,13 @@ Font GenerateFontAtlas(std::string path, std::string exportName, FontConfig& con
 
 	int ascent, descent, lineGap;
 	stbtt_GetFontVMetrics(&font_info, &ascent, &descent, &lineGap);
+
+	float baseline;
+	{
+		int x0, x1, y0, y1;
+		stbtt_GetFontBoundingBox(&font_info, &x0, &x1, &y0, &y1);
+		baseline = SF * -y0 * pixelPositionScale;
+	}
 
 	// parse font file and generate bitmap data
 	{
@@ -74,7 +80,11 @@ Font GenerateFontAtlas(std::string path, std::string exportName, FontConfig& con
 	font.firstChar = config.firstChar;
 	font.charCount = config.charCount;
 	font.fontHeight = config.fontHeight;
+	font.lineGap = (float)(ascent - descent + lineGap) * SF * pixelPositionScale;
+	//font.baseline = baseline;
+	font.baseline = ascent * SF * pixelPositionScale;
 	font.atlas = sprite->ID;
+
 
 	font.packedChars.clear();
 	font.packedChars.reserve(config.charCount);

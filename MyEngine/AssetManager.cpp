@@ -90,6 +90,10 @@ void AssetManager::loadPrefabs(std::shared_ptr<b2World> world) {
 
 // loads sprite assets
 void AssetManager::loadSpriteAssets(std::set<spriteID> _ids) {
+
+	if (_ids.size() == 0)
+		return;
+
 	auto spriteFiles = getAllFilesInDirectory(std::filesystem::path(directories.assetDir));
 	auto imageFiles = getAllFilesInDirectory(std::filesystem::path(directories.textureSrcDir));
 
@@ -149,6 +153,10 @@ void AssetManager::loadSpriteAssets(std::set<spriteID> _ids) {
 }
 
 void AssetManager::loadFontAssets(std::set<fontID> _ids) {
+
+	if (_ids.size() == 0)
+		return;
+
 	auto fontFiles = getAllFilesInDirectory(std::filesystem::path(directories.assetDir));
 
 	// only load unloaded ids
@@ -171,7 +179,7 @@ void AssetManager::loadFontAssets(std::set<fontID> _ids) {
 		if (extension != Font_extension)
 			continue;
 
-		auto font = Font::deserializeJson(i);
+		auto font = Font::ReadBinary(i);
 
 		if (ids.contains(font->ID) == false)
 			continue;
@@ -191,6 +199,37 @@ void AssetManager::loadFontAssets(std::set<fontID> _ids) {
 	loadSpriteAssets(requiredSpriteIDs);
 }
 
+void AssetManager::loadAllFonts() {
+	auto fontFiles = getAllFilesInDirectory(std::filesystem::path(directories.assetDir));
+
+	set<spriteID> requiredSpriteIDs;
+	vector <shared_ptr<Font>> loadedFonts;
+
+	for (auto& i : fontFiles)
+	{
+		std::string name = std::filesystem::path(i).filename().string();
+		size_t lastindex = name.find_last_of(".");
+
+		std::string extension = name.substr(lastindex, name.length() - 1);
+
+		if (extension != Font_extension)
+			continue;
+
+		auto font = Font::ReadBinary(i);
+
+		loadedFonts.push_back(font);
+		requiredSpriteIDs.insert(font->atlas);
+	}
+
+
+	for (auto& i : loadedFonts) {
+		fontAssets[i->ID] = i;
+		fontGenerator.Input(i->ID);
+	}
+
+	loadSpriteAssets(requiredSpriteIDs);
+}
+
 void AssetManager::loadAllSprites() {
 
 	assert(allLoaded == false);
@@ -198,7 +237,6 @@ void AssetManager::loadAllSprites() {
 
 	auto spriteFiles = getAllFilesInDirectory(std::filesystem::path(directories.assetDir));
 	auto imageFiles = getAllFilesInDirectory(std::filesystem::path(directories.textureSrcDir));
-
 
 	vector<pair<string, FilterMode>> requiredTextureFiles;
 	vector < shared_ptr<Sprite>> loadedSprites;
