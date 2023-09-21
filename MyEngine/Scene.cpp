@@ -317,6 +317,7 @@ void Scene::registerComponent<SpriteRenderer>(entityID id, SpriteRenderer t) {
 template <>
 void Scene::registerComponent<TextRenderer>(entityID id, TextRenderer t) {
 	sceneData.textRenderers[id] = t;
+	assetManager->spritesAdded = true;
 }
 
 // Rigidbodoy

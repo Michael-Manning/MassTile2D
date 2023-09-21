@@ -27,6 +27,19 @@ namespace ImGui {
 		str = std::string(buffer);
         return change;
 	}
+
+    static bool Combo(const char* label, int* selectedItem, std::vector<std::string> items) {
+        char optionStr[256];
+        std::fill(optionStr, optionStr + 256, '\0');
+
+        int offset = 0;
+        for (auto& s : items) {
+            strcpy(optionStr + offset, s.c_str());
+            offset += s.length() + 1;
+        }
+
+        return Combo(label, selectedItem, optionStr);
+    }
 }
 
 constexpr uint64_t FNV_prime = 1099511628211u;
@@ -70,4 +83,9 @@ static std::string makePathAbsolute(std::filesystem::path originatingPath, std::
     absolutePath = std::filesystem::absolute(absolutePath);
     absolutePath = std::filesystem::canonical(absolutePath);  // Normalize the path
     return absolutePath.string();
+}
+
+template<typename T>
+static int indexOf(const std::vector<T>& v, const T& value) {
+    return std::distance(v.begin(), std::find(v.begin(), v.end(), value));
 }

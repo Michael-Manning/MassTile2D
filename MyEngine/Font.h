@@ -54,7 +54,7 @@ struct packedChar {
 	};
 };
 
-class Font{
+class Font {
 
 public:
 
@@ -111,5 +111,29 @@ public:
 		reader >> font->kerningTable;
 
 		return font;
+	}
+};
+
+static void CalculateQuads(std::shared_ptr<Font> f, std::string& text, charQuad * quads) {
+
+	glm::vec2 cursor = glm::vec2(0.0f);
+	for (int i = 0; i < text.length(); i++) {
+		char c = text[i];
+
+		if (c == '\n') {
+			cursor.x = 0.0f;
+			cursor.y -= f->lineGap;
+			continue;
+		}
+
+		auto packed = f->operator[](c);
+		charQuad q;
+		q.uvmax = packed.uvmax;
+		q.uvmin = packed.uvmin;
+		q.scale = packed.scale;
+		q.position = glm::vec2(cursor.x + packed.xOff, cursor.y + packed.yOff - f->baseline);
+		cursor.x += packed.advance;
+		cursor.x += f->kerningTable[f->kernHash(c, text[i + 1])];
+		quads[i] = q;
 	}
 };

@@ -432,11 +432,27 @@ void Editor::assetWindow(Engine& engine) {
 
 				if (strlen(fontName) > 0 && fontComboSelected != -1) {
 					if (Button("Generate")) {
-						GenerateFontAtlas(availFontPaths[fontComboSelected], string(fontName), fontConfig, engine);
+						fontID fontid = engine.assetManager->addFont(GenerateFontAtlas(availFontPaths[fontComboSelected], string(fontName), fontConfig, engine));
+						auto font = engine.assetManager->fontAssets[fontid];
+
+						string filename = font->name;
+						if (filename.substr(filename.size() - 5) != ".font") {
+							filename += ".font";
+						}
+
+						font->WriteBinary(engine.assetManager->directories.assetDir + filename);
+						fontModel = false;
 					}
 				}
 
 				EndPopup();
+
+				int i = 0;
+				for (auto& f : engine.assetManager->fontAssets)
+				{
+					Selectable(f.second->name.c_str(), false);
+				}
+
 			}
 			EndTabItem();
 		}
@@ -645,42 +661,42 @@ void Editor::Run(Engine& engine) {
 
 
 
-			if (Combo("Create", &comboSelected, "Sprite Renderer\0Color Renderer\0Box Staticbody\0Circle Staticbody\0Box Rigidbody\0Circle Rigidbody")) {
+			if (Combo("Create", &comboSelected, "Sprite Renderer\0Color Renderer\0Text Renderer\0Box Staticbody\0Circle Staticbody\0Box Rigidbody\0Circle Rigidbody")) {
 				switch (comboSelected)
 				{
 				case 0:
-					if (!engine.scene->sceneData.spriteRenderers.contains(selectedEntity->ID)) {
+					if (!engine.scene->sceneData.spriteRenderers.contains(selectedEntity->ID))
 						engine.scene->registerComponent(selectedEntity->ID, SpriteRenderer(engine.assetManager->defaultSprite));
-					}
 					break;
 				case 1:
-					if (!engine.scene->sceneData.colorRenderers.contains(selectedEntity->ID)) {
+					if (!engine.scene->sceneData.colorRenderers.contains(selectedEntity->ID))
 						engine.scene->registerComponent(selectedEntity->ID, ColorRenderer(vec4(0.0f, 0.0f, 0.0f, 1.0f)));
-					}
 					break;
 				case 2:
-					if (!engine.scene->sceneData.staticbodies.contains(selectedEntity->ID)) {
-						engine.scene->registerComponent(selectedEntity->ID, Staticbody(engine.bworld, make_shared<BoxCollider>(vec2(1.0f))));
-					}
+					if (!engine.scene->sceneData.textRenderers.contains(selectedEntity->ID)) 
+						if(engine.assetManager->fontAssets.size() != 0)
+							engine.scene->registerComponent(selectedEntity->ID, TextRenderer(engine.assetManager->fontAssets.begin()->first));
 					break;
 				case 3:
-					if (!engine.scene->sceneData.staticbodies.contains(selectedEntity->ID)) {
-						engine.scene->registerComponent(selectedEntity->ID, Staticbody(engine.bworld, make_shared<CircleCollider>(1.0f)));
-					}
+					if (!engine.scene->sceneData.staticbodies.contains(selectedEntity->ID))
+						engine.scene->registerComponent(selectedEntity->ID, Staticbody(engine.bworld, make_shared<BoxCollider>(vec2(1.0f))));
 					break;
 				case 4:
-					if (!engine.scene->sceneData.rigidbodies.contains(selectedEntity->ID)) {
-						engine.scene->registerComponent(selectedEntity->ID, Rigidbody(make_shared<BoxCollider>(vec2(1.0f))));
-					}
+					if (!engine.scene->sceneData.staticbodies.contains(selectedEntity->ID))
+						engine.scene->registerComponent(selectedEntity->ID, Staticbody(engine.bworld, make_shared<CircleCollider>(1.0f)));
 					break;
 				case 5:
-					if (!engine.scene->sceneData.rigidbodies.contains(selectedEntity->ID)) {
+					if (!engine.scene->sceneData.rigidbodies.contains(selectedEntity->ID))
+						engine.scene->registerComponent(selectedEntity->ID, Rigidbody(make_shared<BoxCollider>(vec2(1.0f))));
+					break;
+				case 6:
+					if (!engine.scene->sceneData.rigidbodies.contains(selectedEntity->ID))
 						engine.scene->registerComponent(selectedEntity->ID, Rigidbody(make_shared<CircleCollider>(1.0f)));
-					}
 					break;
 				default:
 					break;
 				}
+				comboSelected = -1;
 			}
 
 			InputString("Name", selectedEntity->name);
@@ -888,9 +904,25 @@ template<>
 bool Editor::drawInspector<TextRenderer>(TextRenderer& r, Engine& engine) {
 	SeparatorText("Text Renderer");
 
-	if (ImGui::InputString("Text", r.text)) {
-		r.dirty = true;
+	
+	vector<fontID> ids;
+	vector<string> names;
+	
+	for (auto& [id, font] : engine.assetManager->fontAssets) {
+		ids.push_back(id);
+		names.push_back(font->name);
 	}
+
+	int selected = indexOf(ids, r.font);
+	if (Combo("Font", &selected, names)) {
+		r.font = ids[selected];
+		r.dirty = true;
+		engine.assetManager->spritesAdded = true;
+	}
+
+	r.dirty |= ImGui::InputString("Text", r.text);
+	
+	ColorPicker4("Text color", value_ptr(r.color));
 
 	return false;
 }

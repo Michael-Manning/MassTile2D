@@ -124,12 +124,12 @@ int main() {
 	const auto input = engine.GetInput();
 
 	engine.assetManager->loadAllSprites();
-	//engine.assetManager->loadAllFonts();
+	engine.assetManager->loadAllFonts();
 	engine.loadPrefabs();
 
 	//engine.scene->LoadScene("gamescene", engine.bworld);
 
-#if 1
+#if 0
 
 	/*PROFILE_START(LoadFonts);
 	engine.assetManager->loadFontAssets({ 1, 2 });
@@ -146,7 +146,7 @@ int main() {
 		auto font = engine.assetManager->fontAssets[fontid];
 		font->WriteBinary(AssetDirectories.assetDir + "mono.font");
 
-		auto testText = make_shared<Entity>(AssetDirectories.assetDir + "monospace font");
+		auto testText = make_shared<Entity>("monospace font");
 		scene->RegisterEntity(testText);
 
 
@@ -157,7 +157,7 @@ int main() {
 		scene->registerComponent(testText, r);
 	}
 #endif
-#if 1
+#if 0
 	{
 		FontConfig config;
 		config.atlasHeight = 1024;
@@ -332,8 +332,15 @@ int main() {
 
 	shared_ptr<Player> player = dynamic_pointer_cast<Player>(scene->Instantiate(engine.assetManager->prefabs["Player"], "Player", vec2(0, 106), 0));
 
+	fontID coolfont = 1;
+
 	while (!engine.ShouldClose())
 	{
+
+		engine.clearScreenSpaceDrawlist();
+		engine.addScreenSpaceQuad(vec4(1.0), input->getMousePos(), vec2(50));
+		engine.addScreenSpaceText("hello world", coolfont, vec2(100, 100), vec4(1, 0, 0, 1));
+		
 		using namespace ImGui;
 
 		GcameraPos = engine.camera.position;

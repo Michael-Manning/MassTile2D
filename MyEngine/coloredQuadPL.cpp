@@ -27,7 +27,7 @@
 using namespace glm;
 using namespace std;
 
-void ColoredQuadPL::CreateGraphicsPipeline(std::string vertexSrc, std::string fragmentSrc, MappedDoubleBuffer<void>& cameradb) {
+void ColoredQuadPL::CreateGraphicsPipeline(std::string vertexSrc, std::string fragmentSrc, MappedDoubleBuffer<void>& cameradb, bool flipFaces) {
 
 	auto shaderStages = createShaderStages(vertexSrc, fragmentSrc);
 
@@ -54,6 +54,9 @@ void ColoredQuadPL::CreateGraphicsPipeline(std::string vertexSrc, std::string fr
 	auto colorBlendAttachment = defaultColorBlendAttachment(true);
 	auto colorBlending = defaultColorBlending(&colorBlendAttachment);
 	auto dynamicState = defaultDynamicState();
+
+	if(flipFaces)
+		rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
 
 	VkGraphicsPipelineCreateInfo pipelineInfo{};
 	pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;

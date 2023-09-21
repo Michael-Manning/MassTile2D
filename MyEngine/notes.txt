@@ -21,3 +21,36 @@ Ideas for lighting system:
 Could have a maximum "dynamic", or shadow casting lights per chunk. That is, a limit on the number of lights
 other block march towards for their light value. After that, aditional lights project their light onto their sarrounding
 blocks directly as they are placed to limit the complexity of recalculations
+
+
+n OpenGL, the process of offscreen rendering and then using the result as a texture for subsequent render passes is relatively straightforward. You would create a framebuffer, bind it, render to it, and then unbind it. The color attachment of this framebuffer can then be used as a texture.
+
+Vulkan, on the other hand, is a much lower-level API and provides more explicit control over how resources are used. This means that the process involves more steps and more explicit management, but it also provides greater flexibility.
+
+Here's a general outline of how you might accomplish a similar process in Vulkan:
+
+Creation of Resources:
+
+Create a VkImage for offscreen rendering.
+Create a VkImageView for the image.
+Allocate and bind memory for the image.
+Create a VkFramebuffer using the image view.
+Create a VkSampler for sampling the image in subsequent passes.
+Render to the Offscreen Image:
+
+Begin a command buffer.
+Begin a render pass with vkCmdBeginRenderPass using the framebuffer created for offscreen rendering.
+Do your drawing commands.
+End the render pass with vkCmdEndRenderPass.
+End the command buffer.
+Use the Offscreen Image as a Texture:
+
+In a subsequent render pass (or later in the same command buffer), bind the offscreen image using a descriptor set and the previously created sampler.
+Draw your quad or whatever geometry you want, sampling from the offscreen image.
+Synchronization:
+
+You need to ensure that the drawing to the offscreen image completes before you use it as a texture. This can be done using pipeline barriers or subpass dependencies within a render pass.
+With subpass dependencies, you can express that one subpass (writing to the image) must complete before another subpass (reading from the image) begins, without needing to end the render pass or submit multiple command buffers.
+Submission:
+
+You can submit the command buffer to a queue. If you've set up your synchronization correctly, you don't need multiple queue submissions just for this process.

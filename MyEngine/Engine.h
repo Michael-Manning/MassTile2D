@@ -156,11 +156,53 @@ public:
 	int winW = 0, winH = 0;
 
 	void _onWindowResize() {
+		screenSpaceTransformUploader.Invalidate();
 	};
 
 	std::shared_ptr<TileWorld> worldMap = nullptr;
 
+	inline void addScreenSpaceQuad(glm::vec4 color, glm::vec2 pos, glm::vec2 scale) {
+		ColoredQuadPL::InstanceBufferData item;
+		item.color = color;
+		item.position = pos;
+		item.scale = scale;
+		item.rotation = 0.0f;
+		item.circle = 0;
+		screenSpaceColorDrawlist.push_back(item);
+	}
+
+
+	inline void addScreenSpaceText(std::string text, fontID font, glm::vec2 position, glm::vec4 color) {
+		screenSpaceTextDrawItem item;
+		item.font = font;
+		item.text = text;
+		item.header.color = color;
+		item.header.position = position;
+		item.header.rotation = 0.0f;
+		item.header.textLength = text.length();
+		screenSpaceTextDrawlist.push_back(item);
+
+		screenSpaceSeenFonts.insert(font);
+	};
+
+	void clearScreenSpaceDrawlist() {
+		screenSpaceColorDrawlist.clear();
+		screenSpaceTextDrawlist.clear();
+	}
+
 private:
+
+	std::vector<ColoredQuadPL::InstanceBufferData> screenSpaceColorDrawlist;
+
+	struct screenSpaceTextDrawItem {
+		TextPL::textHeader header;
+		std::string text;
+		fontID font;
+	};
+	std::vector<screenSpaceTextDrawItem> screenSpaceTextDrawlist;
+	std::set<fontID> screenSpaceSeenFonts;
+	int lastScreenSpaceFontCount = 0;
+
 
 	VertexMeshBuffer quadMeshBuffer;
 
@@ -179,7 +221,11 @@ private:
 	std::unique_ptr<TextPL> textPipeline = nullptr;
 	std::unique_ptr<LightingComputePL> lightingPipeline = nullptr;
 
+	std::unique_ptr<ColoredQuadPL> screenSpaceColorPipeline = nullptr;
+	std::unique_ptr<TextPL> screenSpaceTextPipeline = nullptr;
+
 	VKUtil::BufferUploader<cameraUBO_s> cameraUploader;
+	VKUtil::BufferUploader<cameraUBO_s> screenSpaceTransformUploader;
 
 	uint32_t frameCounter = 0;
 	bool firstFrame = true;

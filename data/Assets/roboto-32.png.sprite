@@ -1,12 +1,12 @@
 {
     "sprite": {
-        "fileName": "MonoSpatial.png",
+        "fileName": "roboto-32.png",
         "filterMode": 0,
         "resolution": [
             1024.0,
             1024.0
         ],
-        "spriteID": 255,
-        "textureID": 751935555
+        "spriteID": 170,
+        "textureID": 331369579
     }
 }

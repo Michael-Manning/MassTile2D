@@ -156,6 +156,7 @@ void Engine::Start(std::string windowName, int winW, int winH, std::string shade
 	// create some buffers
 	{
 		cameraUploader.CreateBuffers(rengine);
+		screenSpaceTransformUploader.CreateBuffers(rengine);
 		AllocateQuad(rengine, quadMeshBuffer);
 		worldMap = make_shared<TileWorld>(rengine);
 		worldMap->AllocateVulkanResources();
@@ -165,40 +166,35 @@ void Engine::Start(std::string windowName, int winW, int winH, std::string shade
 	{
 		texturePipeline = make_unique<TexturedQuadPL>(rengine, texNotFound);
 		colorPipeline = make_unique<ColoredQuadPL>(rengine);
+		screenSpaceColorPipeline = make_unique<ColoredQuadPL>(rengine);
 		tilemapPipeline = make_unique<TilemapPL>(rengine, worldMap);
 		lightingPipeline = make_unique<LightingComputePL>(rengine, worldMap);
 		textPipeline = make_unique<TextPL>(rengine, texNotFound);
+		screenSpaceTextPipeline = make_unique<TextPL>(rengine, texNotFound);
 	}
 
 	// section can be done in parrallel
 
-	// configure color pipeline
 	{
 		colorPipeline->CreateInstancingBuffer();
 		colorPipeline->CreateGraphicsPipeline(shaderDir + "color_vert.spv", shaderDir + "color_frag.spv", cameraUploader.transferBuffers);
-	}
 
-	// configure texture pipeline
-	{
 		texturePipeline->createSSBOBuffer();
 		texturePipeline->CreateGraphicsPipeline(shaderDir + "texture_vert.spv", shaderDir + "texture_frag.spv", cameraUploader.transferBuffers);
-	}
 
-	// tilemap pipeline
-	{
 		tilemapPipeline->CreateGraphicsPipeline(shaderDir + "tilemap_vert.spv", shaderDir + "tilemap_frag.spv", cameraUploader.transferBuffers);
-	}
 
-	// text pipeline
-	{
 		textPipeline->createSSBOBuffer();
 		textPipeline->CreateGraphicsPipeline(shaderDir + "text_vert.spv", shaderDir + "text_frag.spv", cameraUploader.transferBuffers);
-	}
 
-	// lighting compute pipeline
-	{
 		lightingPipeline->createStagingBuffers();
 		lightingPipeline->CreateComputePipeline(shaderDir + "lighting_comp.spv", shaderDir + "lightingBlur_comp.spv");
+
+		screenSpaceColorPipeline->CreateInstancingBuffer();
+		screenSpaceColorPipeline->CreateGraphicsPipeline(shaderDir + "screenSpaceShape_vert.spv", shaderDir + "screenSpaceShape_frag.spv", screenSpaceTransformUploader.transferBuffers, true);
+
+		screenSpaceTextPipeline->createSSBOBuffer();
+		screenSpaceTextPipeline->CreateGraphicsPipeline(shaderDir + "screenSpaceText_vert.spv", shaderDir + "screenSpaceText_frag.spv", screenSpaceTransformUploader.transferBuffers, true);
 	}
 
 	rengine->createSyncObjects();
@@ -291,17 +287,21 @@ bool Engine::QueueNextFrame(bool drawImgui) {
 
 	// update global buffers
 	{
-		ZoneScopedN("UBO update");
+		ZoneScopedN("UBO updates");
 
 		cameraUploader.Invalidate();
-
 		cameraUBO_s camData;
 		camData.aspectRatio = (float)winH / (float)winW;
 		camData.position = camera.position;
 		camData.zoom = camera.zoom;
-
 		cameraUploader.SyncBufferData(camData, rengine->currentFrame);
 
+		cameraUBO_s screenSpaceData;
+		screenSpaceData.aspectRatio = (float)winH / (float)winW;
+		//screenSpaceData.position = vec2((float)winW / 2.0f, -(float)winH / 2.0f);
+		screenSpaceData.position = vec2((float)winW / 2.0f, -(float)winH / 2.0f);
+		screenSpaceData.zoom = 2.0f / (float)winH;
+		screenSpaceTransformUploader.SyncBufferData(screenSpaceData, rengine->currentFrame);
 	}
 
 
@@ -387,7 +387,6 @@ bool Engine::QueueNextFrame(bool drawImgui) {
 	}
 
 	// tilemap
-
 	{
 		//ZoneScopedN("tilemap PL");
 
@@ -448,12 +447,17 @@ bool Engine::QueueNextFrame(bool drawImgui) {
 			textPipeline->ClearTextData(rengine->currentFrame);
 
 			int i = 0;
-			for (auto& r : scene->sceneData.textRenderers) {
+			for (auto& [entID, r] : scene->sceneData.textRenderers) {
 
-				const auto& entity = scene->sceneData.entities[r.first];
+				const auto& entity = scene->sceneData.entities[entID];
 
-				shared_ptr<Font> f = assetManager->fontAssets[r.second.font];
-				auto quads = r.second.CalculateQuads(f);
+				shared_ptr<Font> f = assetManager->fontAssets[r.font];
+
+				if (r.dirty) {
+					r.quads.clear();
+					r.quads.reserve(r.text.length());
+					CalculateQuads(f, r.text, r.quads.data());
+				}
 
 				if (assetManager->spritesAdded) {
 					auto sprite = assetManager->spriteAssets[f->atlas];
@@ -461,22 +465,55 @@ bool Engine::QueueNextFrame(bool drawImgui) {
 				}
 
 				TextPL::textHeader header;
-				header.color = r.second.color;
+				header.color = r.color;
 				header.position = entity->transform.position;
 				header.rotation = entity->transform.rotation;
 				header.scale = entity->transform.scale;
-				header.textLength = glm::min(TEXTPL_maxTextLength, (int)quads->size());
-
+				header.textLength = glm::min(TEXTPL_maxTextLength, (int)r.quads.size());
+					
+				//TODO: could potentially assume this data is already here if the renderer is not dirty ?
 				TextPL::textObject textData;
-				std::copy(quads->begin(), quads->end(), textData.quads);
+				std::copy(r.quads.begin(), r.quads.end(), textData.quads);
 
-				textPipeline->UploadTextData(rengine->currentFrame, i, header, r.second.font, textData);
+				textPipeline->UploadTextData(rengine->currentFrame, i, header, r.font, textData);
 				i++;
 			}
 
 			textPipeline->updateDescriptorSets();
 			textPipeline->recordCommandBuffer(cmdBuffer);
 		}
+	}
+
+	// screenspace quad
+	{
+		screenSpaceColorPipeline->UploadInstanceData(screenSpaceColorDrawlist);
+		screenSpaceColorPipeline->recordCommandBuffer(cmdBuffer, screenSpaceColorDrawlist.size());
+		
+	}
+
+	// screenspace text
+	{
+		bool updateBindings = lastScreenSpaceFontCount != screenSpaceSeenFonts.size();
+		int memSlot = 0;
+		for (auto& i : screenSpaceTextDrawlist)
+		{
+			shared_ptr<Font> f = assetManager->fontAssets[i.font];
+
+			TextPL::textObject textData;
+
+			CalculateQuads(f, i.text, textData.quads);			
+
+			if (updateBindings) {
+				auto sprite = assetManager->spriteAssets[f->atlas];
+				screenSpaceTextPipeline->addFontBinding(f->ID, &assetManager->textureAssets[sprite->texture]);
+			}
+
+			i.header.scale = vec2(f->fontHeight * 2);
+
+			screenSpaceTextPipeline->UploadTextData(rengine->currentFrame, memSlot++, i.header, i.font, textData);
+		}
+		screenSpaceTextPipeline->updateDescriptorSets();
+		screenSpaceTextPipeline->recordCommandBuffer(cmdBuffer);
 	}
 
 	runningStats.entity_count = scene->sceneData.entities.size();
@@ -493,7 +530,9 @@ bool Engine::QueueNextFrame(bool drawImgui) {
 	vkCmdEndRenderPass(cmdBuffer);
 	rengine->endCommandBuffer(cmdBuffer);
 
-	rengine->submitAndPresent(imageIndex);
+	if (rengine->submitAndPresent(imageIndex)) {
+		_onWindowResize();
+	}
 
 	rengine->Update();
 

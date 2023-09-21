@@ -1,7 +1,6 @@
 
-
-- finish text renderer component support
-- font asset creation from editor
+ - screen space fonts
+ - screen space textures (or all in one pipeline)
 
 - fix getkeyup
 
@@ -28,6 +27,7 @@ could have some sort of optional set on an entity listing what components it's u
 reserve scene component maps with max count to prevenent rehashing which would break getComponent pointers. GPT told me this, is it even real?
 - same with pipiline texture references which use raw pointers
 
+- replace upload text data function with zero copy method for uploading data
 
 integrate vk-bootstrap to simplify initializion
 
@@ -35,6 +35,10 @@ integrate vk-bootstrap to simplify initializion
 
 - shader auto workflow with sprv reflect
 
+- replace "spritesAdded" flag with something more descriptive. Doesn't work as well when a font sprite is added before the font metadata which actually signals
+the font pipeline that a new ID binding should be created
+
+- create default 
 
 things to abstract:
 

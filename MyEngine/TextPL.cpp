@@ -33,7 +33,7 @@ using namespace glm;
 using namespace std;
 
 
-void TextPL::CreateGraphicsPipeline(std::string vertexSrc, std::string fragmentSrc, MappedDoubleBuffer<void>& cameradb) {
+void TextPL::CreateGraphicsPipeline(std::string vertexSrc, std::string fragmentSrc, MappedDoubleBuffer<void>& cameradb, bool flipFaces) {
 
 	assert(defaultTexture.textureImageAllocation != nullptr);
 
@@ -67,6 +67,9 @@ void TextPL::CreateGraphicsPipeline(std::string vertexSrc, std::string fragmentS
 	auto colorBlendAttachment = defaultColorBlendAttachment(true);
 	auto colorBlending = defaultColorBlending(&colorBlendAttachment);
 	auto dynamicState = defaultDynamicState();
+
+	if (flipFaces)
+		rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
 
 	VkGraphicsPipelineCreateInfo pipelineInfo{};
 	pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
