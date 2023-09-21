@@ -53,9 +53,11 @@ private:
 	bool behaviorModel = true;
 
 	bool assetModel = true;
+	bool fontModel = false;
 	spriteID rendererSelectedSprite = 0;
 
 	int comboSelected = -1;
+	int fontComboSelected = -1;
 
 	int selectedEntityIndex = 0;
 	std::shared_ptr<Entity> selectedEntity = nullptr;

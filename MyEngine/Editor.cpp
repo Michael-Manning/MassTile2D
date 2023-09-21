@@ -22,6 +22,7 @@
 #include "MyMath.h"
 #include "BehaviorRegistry.h"
 #include "FileDialog.h"
+#include "FontGenerator.h"
 
 using namespace ImGui;
 using namespace std;
@@ -70,6 +71,11 @@ namespace {
 		float gridSize = GetWorldGridSize(zoomLevel);
 		return roundf(value / gridSize) * gridSize;
 	}
+
+	//bool Combo(const char* label, int* current_item, const std::vector<std::string>& items, , int items_count, int height_in_items = -1)
+	//{
+	//	return Combo(label, current_item, [](void* data, int idx, const char** out_text) { *out_text = ((const std::vector<std::string>*)data)[idx].c_str(); return true; }, (void*)&items, items_count, height_in_items);
+	//}
 
 	const float entityWindowWidth = 200;
 	const float inspectorWindowWidth = 300;
@@ -382,13 +388,60 @@ void Editor::assetWindow(Engine& engine) {
 			}
 			EndTabItem();
 		}
+		if (BeginTabItem("Fonts")) {
 
+			static vector<string> availFontPaths;
+			static char availFontsString[256];
+
+			if (Button("Create")) {
+				fontModel = true;
+				OpenPopup("Generate Font");
+
+				std::fill(availFontsString, availFontsString + 256, '\0');
+
+				vector<string> paths = getAllFilesInDirectory(engine.assetManager->directories.fontsDir);
+				int offset = 0;
+				for (auto& s : paths) {
+					availFontPaths.push_back(s);
+					string fontFileName = std::filesystem::path(s).filename().string();
+					strcpy(availFontsString + offset, fontFileName.c_str());
+					offset += fontFileName.size() + 1;
+				}
+			}
+
+			auto modelFlags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+			float modelWidth = 360;
+			if (fontModel) {
+				SetNextWindowPos(vec2(glm::clamp(engine.winW / 2 - (int)modelWidth / 2, 0, engine.winW), 50));
+				SetNextWindowSize(vec2(modelWidth, 300));
+			}
+			if (BeginPopupModal("Generate Font", &fontModel, modelFlags)) {
+
+				Combo("Font file", &fontComboSelected, availFontsString);
+
+				static FontConfig fontConfig;
+				InputInt("First char", &fontConfig.firstChar);
+				InputInt("Char count", &fontConfig.charCount);
+				InputFloat("Letter height", &fontConfig.fontHeight);
+				InputInt2("Atlas size", &fontConfig.atlasWidth);
+				InputInt("Oversample", &fontConfig.oversample);
+				fontConfig.oversample = glm::clamp(fontConfig.oversample, 1, 8);
+
+				static char fontName[256];
+				InputText("Font name", fontName, 256);
+
+				if (strlen(fontName) > 0 && fontComboSelected != -1) {
+					if (Button("Generate")) {
+						GenerateFontAtlas(availFontPaths[fontComboSelected], string(fontName), fontConfig, engine);
+					}
+				}
+
+				EndPopup();
+			}
+			EndTabItem();
+		}
 		EndTabBar();
 	}
-
-
-
-
 	End();
 }
 
@@ -652,7 +705,7 @@ void Editor::Run(Engine& engine) {
 			if (engine.scene->sceneData.textRenderers.contains(selectedEntity->ID)) {
 				drawInspector(engine.scene->sceneData.textRenderers[selectedEntity->ID], engine);
 			}
-			
+
 			if (engine.scene->sceneData.staticbodies.contains(selectedEntity->ID)) {
 				drawInspector(engine.scene->sceneData.staticbodies[selectedEntity->ID], engine);
 			}
@@ -784,7 +837,7 @@ bool Editor::drawInspector<SpriteRenderer>(SpriteRenderer& r, Engine& engine) {
 	float modelWidth = 360;
 	if (assetModel) {
 		SetNextWindowPos(vec2(glm::clamp(engine.winW / 2 - (int)modelWidth / 2, 0, engine.winW), 50));
-		SetNextWindowSize(vec2(modelWidth, glm::max(400, engine.winH -100)));
+		SetNextWindowSize(vec2(modelWidth, glm::max(400, engine.winH - 100)));
 	}
 	if (BeginPopupModal("Available Assets", &assetModel, modelFlags)) {
 
@@ -834,7 +887,7 @@ bool Editor::drawInspector<SpriteRenderer>(SpriteRenderer& r, Engine& engine) {
 template<>
 bool Editor::drawInspector<TextRenderer>(TextRenderer& r, Engine& engine) {
 	SeparatorText("Text Renderer");
-	
+
 	if (ImGui::InputString("Text", r.text)) {
 		r.dirty = true;
 	}

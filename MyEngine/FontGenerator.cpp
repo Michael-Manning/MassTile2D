@@ -59,6 +59,12 @@ Font GenerateFontAtlas(std::string path, std::string exportName, FontConfig& con
 	// save font atlas to disk
 	stbi_flip_vertically_on_write(false);
 	string imagePath = engine.assetManager->directories.assetDir + exportName;
+
+	// add png extension if not present
+	if (imagePath.substr(imagePath.size() - 4) != ".png") {
+		imagePath += ".png";
+	}
+
 	constexpr int channels = 1;
 	if (!stbi_write_png(imagePath.c_str(), config.atlasWidth, config.atlasHeight, channels, bitmap.data(), config.atlasWidth * channels)) {
 		throw std::exception("font atlas export error");
