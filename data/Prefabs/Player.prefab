@@ -1,21 +1,20 @@
 {
-    "prefab": {
-        "behaviorHash": 3757936288,
-        "spriteRenderer": {
-            "atlasIndex": 0,
-            "entityID": 0,
-            "spriteID": 7
-        },
-        "transform": {
-            "position": [
-                0.0,
-                0.0
-            ],
-            "rotation": 0.0,
-            "scale": [
-                0.35,
-                0.7
-            ]
-        }
-    }
+	"name": "Player",
+	"behaviorHash": 3757936288,
+	"spriteRenderer": {
+		"atlasIndex": 0,
+		"entityID": 0,
+		"spriteID": 393035407
+	},
+	"transform": {
+		"position": [
+			0.0,
+			0.0
+		],
+		"rotation": 0.0,
+		"scale": [
+			0.35,
+			0.7
+		]
+	}
 }

@@ -17,6 +17,8 @@ const auto Prefab_extension = ".prefab";
 class Prefab {
 public:
 
+	std::string name;
+
 	uint32_t behaviorHash;
 	Transform transform;
 
@@ -35,6 +37,8 @@ public:
 
 		j["behaviorHash"] = behaviorHash;
 
+		j["name"] = name;
+
 		transform.position = glm::vec2(0.0f);
 		j["transform"] = transform.serializeJson();
 
@@ -49,25 +53,30 @@ public:
 		if (staticbody.has_value())
 			j["staticbody"] = staticbody.value().serializeJson(0);
 
-		ja["prefab"] = j;
-
 		std::ofstream output(filepath);
-		output << ja.dump(4) << std::endl;
+		output << j.dump(4) << std::endl;
 		output.close();
 	};
 
-	static Prefab deserializeJson(std::string filepath, std::shared_ptr<b2World> world ) {
+	static std::string peakJsonName(std::string filepath) {
 		std::ifstream input(filepath);
-		nlohmann::json ja;
-		input >> ja;
-		
-		nlohmann::json j = ja["prefab"];
+		nlohmann::json j;
+		input >> j;
+
+		return static_cast<std::string>(j["name"]);
+	}
+
+	static Prefab deserializeJson(std::string filepath, std::shared_ptr<b2World> world ) {
+		std::ifstream input(filepath);	
+		nlohmann::json j;
+		input >> j;
 
 		Prefab p;
 
 		p.behaviorHash = j["behaviorHash"];
 		p.transform = Transform::deserializeJson(j["transform"]);
-		
+		p.name = j["name"];
+
 		if (j.contains("colorRenderer"))
 			p.colorRenderer = ColorRenderer::deserializeJson(j["colorRenderer"]);
 		if (j.contains("spriteRenderer"))

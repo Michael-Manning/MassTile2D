@@ -14,9 +14,7 @@
 
 namespace VKUtil{
 
-	std::vector<char> readFile(const std::string& filename);
-
-	VkShaderModule createShaderModule(const std::vector<char>& code, VkDevice device);
+	VkShaderModule createShaderModule(const std::vector<uint8_t>& code, VkDevice device);
 
 	// mapped double buffer wrapped with frame dirty logic
 	template<typename T>

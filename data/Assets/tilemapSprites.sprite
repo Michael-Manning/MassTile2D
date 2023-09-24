@@ -1,0 +1,16 @@
+{
+    "ID": 2280238557,
+    "filterMode": 0,
+    "imageFileName": "tilemapSprites.png",
+    "name": "tilemapSprites",
+    "resolution": [
+        512.0,
+        512.0
+    ],
+    "textureID": -1295839912,
+	
+	"atlasLayout":{
+		"xCount": 32,
+		"yCount": 32
+	}
+}

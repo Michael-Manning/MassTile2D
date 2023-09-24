@@ -13,6 +13,8 @@
 // supports types of fixed size and vectors/unordered maps of types of fixed size.
 // can write string and const char*, but can only read back as string
 
+constexpr int BinaryWriter_MAX_STRING_SIZE = 256;
+
 class BinaryWriter {
 public:
 	BinaryWriter(const std::string& filename) {
@@ -38,6 +40,13 @@ public:
 		return *this;
 	};
 	
+	BinaryWriter& operator<<(std::string& value) {
+		assert(value.length() < BinaryWriter_MAX_STRING_SIZE);
+		write((uint32_t)value.length());
+		outStream->write(reinterpret_cast<const char*>(value.c_str()), value.length());
+		return *this;
+	};
+
 	template <typename T>
 	BinaryWriter& operator<<(const std::vector<T>& vec) {
 		size_t size = vec.size();
@@ -91,6 +100,16 @@ public:
 		return *this;
 	}
 
+	BinaryReader& operator>>(std::string& value) {
+		int size;
+		read(size);
+		//value = std::string("Example");
+		inStream->read(textBuf, size);
+		textBuf[size + 1] = '\0';
+		value = std::string(&textBuf[0]);
+		return *this;
+	}
+
 	template <typename T>
 	BinaryReader& operator>>(std::vector<T>& vec) {
 		size_t size;
@@ -119,6 +138,8 @@ public:
 
 private:
 	std::unique_ptr<std::ifstream> inStream;
+
+	char textBuf[BinaryWriter_MAX_STRING_SIZE + 1];
 
 	template <typename T>
 	void read(T& value) {

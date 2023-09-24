@@ -43,6 +43,11 @@ public:
 		}
 	}
 
+	void Erase(T ID) {
+		assert(generatedIDs.contains(ID) == true);
+		generatedIDs.erase(ID);
+	}
+
 	T ContainsHash(std::string str) {
 		std::size_t res = std::hash<std::string>{}(str);
 		T tres = static_cast<T>(res);
@@ -54,8 +59,8 @@ public:
 		}
 	}
 
-	bool Contains(T) {
-		return generatedIDs.contains(T);
+	bool Contains(T ID) {
+		return generatedIDs.contains(ID);
 	}
 
 	void Reset() {

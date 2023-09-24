@@ -6,6 +6,7 @@
 
 #include <string>
 #include <iostream>
+#include <fstream>
 #include <cstdint>
 #include <concepts>
 #include <stdint.h>
@@ -88,4 +89,48 @@ static std::string makePathAbsolute(std::filesystem::path originatingPath, std::
 template<typename T>
 static int indexOf(const std::vector<T>& v, const T& value) {
     return std::distance(v.begin(), std::find(v.begin(), v.end(), value));
+}
+
+static void checkAppend(std::string& str, std::string end) {
+    if (str.substr(str.size() - end.length()) != end) {
+        str += end;
+    }
+}
+
+// return file name at end of path
+static std::string getFileName(std::string fullPath) {
+    std::string name = std::filesystem::path(fullPath).filename().string();
+    return name;
+}
+
+// return file name at end of path without extension
+static std::string getFileRawName(std::string fullPath) {
+    std::string name = std::filesystem::path(fullPath).filename().string();
+    size_t lastindex = name.find_last_of(".");
+    std::string rawname = name.substr(0, lastindex);
+    return rawname;
+}
+
+static std::vector<uint8_t> readFile(const std::string& filename) {
+
+    if (std::filesystem::exists(std::filesystem::path(filename)) == false) {
+        std::cout << "file not found: " << filename << std::endl;
+        throw std::runtime_error("failed to open file!");
+    }
+
+    std::ifstream file(filename, std::ios::ate | std::ios::binary);
+
+    if (!file.is_open()) {
+        throw std::runtime_error("failed to open file!");
+    }
+
+    size_t fileSize = (size_t)file.tellg();
+    std::vector<uint8_t> buffer(fileSize);
+
+    file.seekg(0);
+    file.read(reinterpret_cast<char*>(buffer.data()), fileSize);
+
+    file.close();
+
+    return buffer;
 }

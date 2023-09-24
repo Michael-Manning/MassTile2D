@@ -57,13 +57,21 @@ public:
 
 	void RemoveBinding(I ID) {
 
-		assert(boundIDs.contains(ID)); // missuse
+		assert(boundIDs.contains(ID));
 
 		for (size_t i = 0; i < maxEntries; i++)
 			if (values[i].first == ID)
 				slotAvailable[i] = true;
 
 		boundIDs.erase(ID);
+	};
+
+	void ClearBindings(){
+		for (size_t i = 0; i < maxEntries; i++)
+			slotAvailable[i] = true;
+
+		boundIDs.clear();
+		InvalidateDescriptors();
 	};
 
 	void InvalidateDescriptors() {

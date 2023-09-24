@@ -37,6 +37,8 @@
 #include "globalBufferDefinitions.h"
 #include "TileWorld.h"
 #include "Settings.h"
+#include "AssetManager.h"
+#include "ResourceManager.h"
 
 #ifdef NDEBUG
 
@@ -64,18 +66,22 @@ public:
 	};
 
 
-	Engine(std::shared_ptr<VKEngine> rengine, AssetManager::AssetPaths assetPaths) : rengine(rengine),
-		assetManager(std::make_shared<AssetManager>(rengine, assetPaths))
+	Engine(
+		std::shared_ptr<VKEngine> rengine, 
+		AssetManager::AssetPaths assetPaths)
+		: 
+		rengine(rengine),
+		resourceManager(std::make_shared<ResourceManager>(rengine)),
+		assetChangeFlags(std::make_shared<AssetManager::ChangeFlags>())
 	{
+		assetManager = std::make_shared<AssetManager>(rengine, assetPaths, resourceManager, assetChangeFlags);
+		bworld = std::make_shared<b2World>(gravity);
+		currentScene = std::make_shared<Scene>(bworld);
 
 		DebugLog("Engine created");
-
-		scene = std::make_shared<Scene>(assetManager);
 	}
 
 	void Start(std::string windowName, int winW, int winH, std::string shaderDir, const SwapChainSetting swapchainSetting);
-
-	void loadPrefabs();
 
 	bool ShouldClose();
 	void Close();
@@ -87,7 +93,7 @@ public:
 			return;
 
 		Entity::DeltaTime = deltaTime;
-		for (auto& i : scene->sceneData.entities) {
+		for (auto& i : currentScene->sceneData.entities) {
 			i.second->_runStartUpdate();
 		}
 	};
@@ -104,7 +110,7 @@ public:
 		return glm::vec2(winW, winH);
 	};
 
-	std::shared_ptr<Scene> scene;
+
 
 	std::shared_ptr<b2World> bworld = nullptr;
 
@@ -150,7 +156,7 @@ public:
 
 	void setTilemapAtlasTexture(texID texture) {
 		assert(tilemapPipeline->textureAtlas.has_value() == false);
-		tilemapPipeline->setTextureAtlas(assetManager->textureAssets[texture]);
+		tilemapPipeline->setTextureAtlas(resourceManager->GetTexture(texture));
 	};
 
 	int winW = 0, winH = 0;
@@ -181,8 +187,6 @@ public:
 		item.header.rotation = 0.0f;
 		item.header.textLength = text.length();
 		screenSpaceTextDrawlist.push_back(item);
-
-		screenSpaceSeenFonts.insert(font);
 	};
 
 	void clearScreenSpaceDrawlist() {
@@ -190,8 +194,18 @@ public:
 		screenSpaceTextDrawlist.clear();
 	}
 
+	void SetScene(std::shared_ptr<Scene> scene) {
+		currentScene = scene;
+	}
+	std::shared_ptr<Scene> GetCurrentScene() {
+		return currentScene;
+	}
+
 private:
 
+	std::shared_ptr<Scene> currentScene = nullptr;
+	std::shared_ptr<AssetManager::ChangeFlags> assetChangeFlags;
+	std::shared_ptr<ResourceManager> resourceManager = nullptr;
 	std::vector<ColoredQuadPL::InstanceBufferData> screenSpaceColorDrawlist;
 
 	struct screenSpaceTextDrawItem {
@@ -200,8 +214,6 @@ private:
 		fontID font;
 	};
 	std::vector<screenSpaceTextDrawItem> screenSpaceTextDrawlist;
-	std::set<fontID> screenSpaceSeenFonts;
-	int lastScreenSpaceFontCount = 0;
 
 
 	VertexMeshBuffer quadMeshBuffer;
@@ -241,4 +253,10 @@ private:
 	void initPhysics();
 	void updatePhysics();
 	void InitImgui();
+
+	// physics settings
+	const b2Vec2 gravity = b2Vec2(0.0f, -10.0f);
+	const double timeStep = 1.0f / 60.0f;
+	const int32 velocityIterations = 6;
+	const int32 positionIterations = 2;
 };

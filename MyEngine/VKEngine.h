@@ -72,6 +72,7 @@ public:
 
 	Texture genTexture(int w, int h, std::vector<uint8_t>& pixels, FilterMode filterMode = FilterMode::Linear);
 	Texture genTexture(std::string imagePath, FilterMode filterMode = FilterMode::Linear);
+	void freeTexture(Texture& texture);
 
 	void createTextureSamplers();
 	void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);

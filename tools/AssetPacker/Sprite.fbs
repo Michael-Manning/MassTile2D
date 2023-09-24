@@ -1,0 +1,27 @@
+include "common.fbs";
+
+namespace AssetPack;
+
+table AtlasEntry{
+    name:string;
+    uv_min:vec2;
+    uv_max:vec2;
+}
+
+struct AtlasLayout{
+    xCount:int = 0;
+    yCount:int = 0;
+}
+
+table Sprite{
+    name:string;
+    ID:uint;
+    resolution:vec2;
+    imageFileName:string;
+    textureID:int;
+    filterMode:FilterMode;
+    atlas:[AtlasEntry];
+    atlasLayout:AtlasLayout;
+}
+
+root_type Sprite;

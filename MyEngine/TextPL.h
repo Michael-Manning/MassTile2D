@@ -67,6 +67,9 @@ public:
 	void removeTextureBinding(fontID ID) {
 		bindingManager.RemoveBinding(ID);
 	};
+	void InvalidateTextureDescriptors() {
+		bindingManager.InvalidateDescriptors();
+	};
 
 	void ClearTextData(int frame) {
 		for (size_t i = 0; i < TEXTPL_maxTextObjects; i++)

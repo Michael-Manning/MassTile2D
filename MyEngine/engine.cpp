@@ -85,12 +85,6 @@ namespace {
 }
 
 
-// physics settings
-b2Vec2 gravity(0.0f, -10.0f);
-constexpr double timeStep = 1.0f / 60.0f;
-int32 velocityIterations = 6;
-int32 positionIterations = 2;
-
 static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
 	auto app = reinterpret_cast<Engine*>(glfwGetWindowUserPointer(window));
 	app->hintWindowResize();
@@ -198,7 +192,6 @@ void Engine::Start(std::string windowName, int winW, int winH, std::string shade
 	}
 
 	rengine->createSyncObjects();
-	initPhysics();
 
 
 	InitImgui(); // imgui needs to be initialized to register a sprite with it
@@ -214,11 +207,6 @@ void Engine::Start(std::string windowName, int winW, int winH, std::string shade
 	_onWindowResize();
 
 	PROFILE_END(Engine_Startup);
-}
-
-void Engine::loadPrefabs() {
-	assetManager->loadPrefabs(bworld);
-	DebugLog("prefabs loaded");
 }
 
 
@@ -278,10 +266,11 @@ bool Engine::QueueNextFrame(bool drawImgui) {
 			updatePhysics();
 			physicsTimer -= timeStep;
 		}
-		for (auto& body : scene->sceneData.rigidbodies)
+
+		for (auto& body : currentScene->sceneData.rigidbodies)
 		{
-			scene->sceneData.entities[body.first]->transform.position = body.second._getPosition();
-			scene->sceneData.entities[body.first]->transform.rotation = body.second._getRotation();
+			currentScene->sceneData.entities[body.first]->transform.position = body.second._getPosition();
+			currentScene->sceneData.entities[body.first]->transform.rotation = body.second._getRotation();
 		}
 	}
 
@@ -359,17 +348,16 @@ bool Engine::QueueNextFrame(bool drawImgui) {
 	}
 
 
-
 	// colored quad
 	{
 		ZoneScopedN("Colored quad PL");
 
 		vector<ColoredQuadPL::InstanceBufferData> drawlist;
-		drawlist.reserve(scene->sceneData.colorRenderers.size());
+		drawlist.reserve(currentScene->sceneData.colorRenderers.size());
 
-		for (auto& renderer : scene->sceneData.colorRenderers)
+		for (auto& renderer : currentScene->sceneData.colorRenderers)
 		{
-			const auto& entity = scene->sceneData.entities[renderer.first];
+			const auto& entity = currentScene->sceneData.entities[renderer.first];
 
 			ColoredQuadPL::InstanceBufferData instanceData;
 
@@ -399,18 +387,23 @@ bool Engine::QueueNextFrame(bool drawImgui) {
 	{
 		ZoneScopedN("Textured quad PL");
 
-		if (scene->sceneData.spriteRenderers.size() > 0) {
+		if (assetChangeFlags->SpritesAdded()) {
+			for (auto& [sprID, sprite] : assetManager->_getSpriteIterator())
+				texturePipeline->addTextureBinding(sprite->textureID, resourceManager->GetTexture(sprite->textureID));
+		}
+
+		if (assetChangeFlags->TextureFiltersChanged())
+			texturePipeline->invalidateTextureDescriptors();
+
+		if (currentScene->sceneData.spriteRenderers.size() > 0) {
 			vector<TexturedQuadPL::ssboObjectInstanceData> drawlist;
-			drawlist.reserve(scene->sceneData.spriteRenderers.size());
+			drawlist.reserve(currentScene->sceneData.spriteRenderers.size());
 
-			for (auto& renderer : scene->sceneData.spriteRenderers)
+			for (auto& [entID, renderer] : currentScene->sceneData.spriteRenderers)
 			{
-				const auto& entity = scene->sceneData.entities[renderer.first];
+				const auto& entity = currentScene->sceneData.entities[entID];
 
-				auto s = assetManager->spriteAssets[renderer.second.sprite];
-				if (assetManager->spritesAdded) {
-					texturePipeline->addTextureBinding(s->texture, &assetManager->textureAssets[s->texture]);
-				}
+				auto s = assetManager->GetSprite(renderer.sprite);
 
 				TexturedQuadPL::ssboObjectInstanceData drawObject;
 				drawObject.uvMin = vec2(0.0f);
@@ -418,18 +411,16 @@ bool Engine::QueueNextFrame(bool drawImgui) {
 				drawObject.translation = entity->transform.position;
 				drawObject.scale = entity->transform.scale;
 				drawObject.rotation = entity->transform.rotation;
-				drawObject.tex = s->texture;
+				drawObject.tex = s->textureID;
 
-				if (s->Atlas.size() > 0) {
-					auto atEntry = s->Atlas[renderer.second.atlasIndex];
+				if (s->atlas.size() > 0) {
+					auto atEntry = s->atlas[renderer.atlasIndex];
 					drawObject.uvMin = atEntry.uv_min;
 					drawObject.uvMax = atEntry.uv_max;
 				}
 
 				drawlist.push_back(drawObject);
 			}
-			if (assetManager->filterModesChanged)
-				texturePipeline->invalidateTextureDescriptors();
 
 			texturePipeline->updateDescriptorSets();
 			texturePipeline->UploadInstanceData(drawlist);
@@ -443,25 +434,31 @@ bool Engine::QueueNextFrame(bool drawImgui) {
 	{
 		ZoneScopedN("Text PL");
 
-		if (scene->sceneData.textRenderers.size() > 0) {
+		if (assetChangeFlags->FontsAdded()) {
+			for (auto& [fntID, font] : assetManager->_getFontIterator()) {
+				auto sprite = assetManager->GetSprite(font->atlas);
+				textPipeline->addFontBinding(font->ID, resourceManager->GetTexture(sprite->textureID));
+			}
+		}
+
+		if (assetChangeFlags->TextureFiltersChanged())
+			textPipeline->InvalidateTextureDescriptors();
+
+		if (currentScene->sceneData.textRenderers.size() > 0) {
 			textPipeline->ClearTextData(rengine->currentFrame);
 
 			int i = 0;
-			for (auto& [entID, r] : scene->sceneData.textRenderers) {
+			for (auto& [entID, r] : currentScene->sceneData.textRenderers) {
 
-				const auto& entity = scene->sceneData.entities[entID];
+				const auto& entity = currentScene->sceneData.entities[entID];
 
-				shared_ptr<Font> f = assetManager->fontAssets[r.font];
+				shared_ptr<Font> f = assetManager->GetFont(r.font);
 
 				if (r.dirty) {
 					r.quads.clear();
-					r.quads.reserve(r.text.length());
+					r.quads.resize(r.text.length());
 					CalculateQuads(f, r.text, r.quads.data());
-				}
-
-				if (assetManager->spritesAdded) {
-					auto sprite = assetManager->spriteAssets[f->atlas];
-					textPipeline->addFontBinding(f->ID, &assetManager->textureAssets[sprite->texture]);
+					r.dirty = false;
 				}
 
 				TextPL::textHeader header;
@@ -470,7 +467,7 @@ bool Engine::QueueNextFrame(bool drawImgui) {
 				header.rotation = entity->transform.rotation;
 				header.scale = entity->transform.scale;
 				header.textLength = glm::min(TEXTPL_maxTextLength, (int)r.quads.size());
-					
+
 				//TODO: could potentially assume this data is already here if the renderer is not dirty ?
 				TextPL::textObject textData;
 				std::copy(r.quads.begin(), r.quads.end(), textData.quads);
@@ -484,29 +481,34 @@ bool Engine::QueueNextFrame(bool drawImgui) {
 		}
 	}
 
+	runningStats.entity_count = currentScene->sceneData.entities.size();
+
 	// screenspace quad
 	{
 		screenSpaceColorPipeline->UploadInstanceData(screenSpaceColorDrawlist);
 		screenSpaceColorPipeline->recordCommandBuffer(cmdBuffer, screenSpaceColorDrawlist.size());
-		
+
 	}
 
 	// screenspace text
 	{
-		bool updateBindings = lastScreenSpaceFontCount != screenSpaceSeenFonts.size();
+		if (assetChangeFlags->FontsAdded()) {
+			for (auto& [fntID, font] : assetManager->_getFontIterator()) {
+				auto sprite = assetManager->GetSprite(font->atlas);
+				screenSpaceTextPipeline->addFontBinding(font->ID, resourceManager->GetTexture(sprite->textureID));
+			}
+		}
+
+		if (assetChangeFlags->TextureFiltersChanged())
+			screenSpaceTextPipeline->InvalidateTextureDescriptors();
+
 		int memSlot = 0;
 		for (auto& i : screenSpaceTextDrawlist)
 		{
-			shared_ptr<Font> f = assetManager->fontAssets[i.font];
-
+			shared_ptr<Font> f = assetManager->GetFont(i.font);
 			TextPL::textObject textData;
 
-			CalculateQuads(f, i.text, textData.quads);			
-
-			if (updateBindings) {
-				auto sprite = assetManager->spriteAssets[f->atlas];
-				screenSpaceTextPipeline->addFontBinding(f->ID, &assetManager->textureAssets[sprite->texture]);
-			}
+			CalculateQuads(f, i.text, textData.quads);
 
 			i.header.scale = vec2(f->fontHeight * 2);
 
@@ -516,11 +518,12 @@ bool Engine::QueueNextFrame(bool drawImgui) {
 		screenSpaceTextPipeline->recordCommandBuffer(cmdBuffer);
 	}
 
-	runningStats.entity_count = scene->sceneData.entities.size();
+
 
 	// reset binding flags
-	assetManager->spritesAdded = false;
-	assetManager->filterModesChanged = false;
+	assetChangeFlags->ClearSpritesAdded();
+	assetChangeFlags->ClearFontsAdded();
+	assetChangeFlags->ClearTextureFilterschanged();
 
 	if (drawImgui) {
 		ImGui::Render();
@@ -555,13 +558,6 @@ void Engine::Close() {
 	rengine->cleanup();
 }
 
-
-
-void Engine::initPhysics() {
-
-	bworld = make_shared<b2World>(gravity);
-	scene->setB2World(bworld);
-}
 
 void Engine::updatePhysics() {
 	bworld->Step(timeStep, velocityIterations, positionIterations);

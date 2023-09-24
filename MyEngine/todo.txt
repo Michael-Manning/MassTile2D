@@ -12,6 +12,8 @@ Could get around this by building some sort of lookup file which contains the ID
 - convert entity transform into component, store in contiguous memory, or use faster map. Then use compute shader to calculate
 entity transform matrices for color/texture pipeline instead of per vertex calculation - profile first
 
+- make shared ptr asset usage like sprites use weak pointers everywhere to enforce memory freeing
+
 - replace file path string concatenation with filesystem api (to elemenate having to check for trailing slahes on directory paths)
 
 - Inter-bahaviour entity accessor
@@ -39,6 +41,8 @@ integrate vk-bootstrap to simplify initializion
 the font pipeline that a new ID binding should be created
 
 - create default 
+
+- create bulk generate texture function to avoid having to recreate staging buffers and synchronize the graphics queue for every single texture creation
 
 things to abstract:
 

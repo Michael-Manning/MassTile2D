@@ -25,12 +25,13 @@
 #include "pipeline.h"
 
 #include "vulkan_util.h"
+#include "Utils.h"
 
 using namespace std;
 
 std::vector<VkPipelineShaderStageCreateInfo> Pipeline::createShaderStages(std::string vertexSrc, std::string fragmentSrc) {
-	auto vertShaderCode = VKUtil::readFile(vertexSrc);
-	auto fragShaderCode = VKUtil::readFile(fragmentSrc);
+	auto vertShaderCode = readFile(vertexSrc);
+	auto fragShaderCode = readFile(fragmentSrc);
 
 	VkShaderModule vertShaderModule = VKUtil::createShaderModule(vertShaderCode, engine->device);
 	VkShaderModule fragShaderModule = VKUtil::createShaderModule(fragShaderCode, engine->device);
@@ -51,7 +52,7 @@ std::vector<VkPipelineShaderStageCreateInfo> Pipeline::createShaderStages(std::s
 }
 
 VkPipelineShaderStageCreateInfo Pipeline::createComputeShaderStage(std::string computeSrc) {
-	auto shaderCode = VKUtil::readFile(computeSrc);
+	auto shaderCode = readFile(computeSrc);
 
 	VkShaderModule vertShaderModule = VKUtil::createShaderModule(shaderCode, engine->device);
 

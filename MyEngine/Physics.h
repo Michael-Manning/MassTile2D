@@ -29,7 +29,7 @@ public:
 
 	virtual b2Shape* _getB2Shape() = 0;
 
-	virtual bool drawInspector() = 0;
+	virtual int _getType() = 0;
 
 	virtual std::shared_ptr<Collider> duplicate() = 0;
 };
@@ -54,7 +54,9 @@ public:
 		return j;
 	};
 
-	bool drawInspector() override;
+	int _getType() override {
+		return 0;
+	}
 
 	std::shared_ptr<Collider> duplicate() override {
 		return std::make_shared<BoxCollider>(scale);
@@ -86,13 +88,15 @@ public:
 		return j;
 	};
 
-	bool drawInspector() override;
-
 	std::shared_ptr<Collider> duplicate() override {
 		return std::make_shared<CircleCollider>(radius);
 	}
 
 	float radius;
+
+	int _getType() override {
+		return 1;
+	}
 
 private:
 	b2CircleShape dynamicCircle;

@@ -1,0 +1,48 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
+  "description": "My_Engine",
+  "dependencies": [
+    {
+      "name": "glm",
+      "platform": "x64"
+    },
+	{
+      "name": "stb",
+      "platform": "x64"
+    },
+	{
+      "name": "glfw3",
+      "platform": "x64"
+    },
+	{
+      "name": "imgui",
+      "platform": "x64",
+	  "features": [ "glfw-binding", "vulkan-binding", "win32-binding" ]
+    },
+	{
+      "name": "box2d",
+      "platform": "x64"
+    },
+	{
+      "name": "vulkan",
+      "platform": "x64"
+    },
+	{
+      "name": "vulkan-memory-allocator",
+      "platform": "x64"
+    },
+	{
+	  "name": "flatbuffers",
+      "platform": "x64"
+	},
+	{
+	  "name": "nlohmann-json",
+      "platform": "x64"
+	},
+	{
+	  "name": "tracy",
+	  "platform": "x64",
+	  "features": ["gui-tools"]
+	}
+  ]
+}

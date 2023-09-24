@@ -695,3 +695,9 @@ Texture VKEngine::genTexture(string imagePath, FilterMode filterMode) {
 
 	return tex;
 }
+
+void VKEngine::freeTexture(Texture& texture) {
+	vmaFreeMemory(allocator, texture.textureImageAllocation);
+	vkDestroyImage(device, texture.textureImage, nullptr);
+	vkDestroyImageView(device, texture.imageView, nullptr);
+}

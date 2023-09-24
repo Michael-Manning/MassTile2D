@@ -6,14 +6,11 @@
 #include "ECS.h"
 #include "Physics.h"
 #include "IDGenerator.h"
-#include "AssetManager.h"
 
+const auto Scene_extension = ".scene";
 
 struct SceneData {
 	std::unordered_map<entityID, std::shared_ptr<Entity>> entities;
-
-	//// assets
-	//std::unordered_map<spriteID, std::shared_ptr<Sprite>> sprites;
 
 	// components
 	std::unordered_map<entityID, SpriteRenderer> spriteRenderers;
@@ -42,22 +39,25 @@ struct SceneData {
 class Scene {
 public:
 
-	Scene(std::shared_ptr<AssetManager> _assetManager) : assetManager(_assetManager) {
+	std::string name;
+
+	Scene(std::shared_ptr<b2World> bworld) : bworld(bworld) {
 		CreateComponentAccessor();
 	};
 
-
 	SceneData sceneData;	
-	
 
-	void CreateDefaultSprite(int w, int h, std::vector<uint8_t>& data);
-
-	IDGenerator<entityID> EntityGenerator;
-
-
-	//type appended
-	void SaveScene(std::string filename);
-	void LoadScene(std::string filename, std::shared_ptr<b2World> world);
+	//void SaveScene(std::string filename);
+	void serializeJson(std::string filename);
+	static std::shared_ptr<Scene> deserializeJson (std::string filename, std::shared_ptr<b2World> world);
+	//void LoadScene(std::string filename, std::shared_ptr<b2World> world);	
+	static std::string peakJsonName(std::string filename) {
+		checkAppend(filename, ".scene");
+		std::ifstream input(filename);
+		nlohmann::json j;
+		input >> j;
+		return static_cast<std::string>(j["name"]);
+	}
 
 	void UnregisterEntity(entityID id);
 
@@ -69,11 +69,11 @@ public:
 
 	Prefab CreatePrefab(std::shared_ptr<Entity> entity);
 
-	std::shared_ptr<Entity> Instantiate(Prefab& prefab, std::string name = "prefab", glm::vec2 position = glm::vec2(0.0f), float rotation = 0.0f);
+	std::shared_ptr<Entity> Instantiate(Prefab prefab, std::string name = "prefab", glm::vec2 position = glm::vec2(0.0f), float rotation = 0.0f);
 
-	void setB2World(std::shared_ptr<b2World> bworld) {
-		this->bworld = bworld;
-	}
+	//void setB2World(std::shared_ptr<b2World> bworld) {
+	//	this->bworld = bworld;
+	//}
 
 	template <typename T>
 	void registerComponent(entityID id, T component);
@@ -112,7 +112,8 @@ public:
 
 private:
 
-	std::shared_ptr<AssetManager> assetManager;
+	IDGenerator<entityID> EntityGenerator;
+
 	std::shared_ptr<b2World> bworld;
 	std::shared_ptr<ComponentAccessor>	componentAccessor;
 

@@ -51,9 +51,64 @@ void Scene::CreateComponentAccessor() {
 	);
 }
 
-void Scene::SaveScene(std::string filename) {
+//void Scene::SaveScene(std::string filename) {
+//
+//	json j;
+//
+//	j["name"] = name;
+//
+//	for (auto& e : sceneData.entities) {
+//		if (e.second->persistent) {
+//			j["entities"].push_back(e.second->serializeJson());
+//		}
+//	}
+//	for (auto& s : sceneData.spriteRenderers) {
+//		if (sceneData.entities[s.first]->persistent) {
+//			j["spriteRenderers"].push_back(s.second.serializeJson(s.first));
+//		}
+//	}
+//	for (auto& c : sceneData.colorRenderers) {
+//		if (sceneData.entities[c.first]->persistent) {
+//			j["colorRenderers"].push_back(c.second.serializeJson(c.first));
+//		}
+//	}
+//	for (auto& c : sceneData.textRenderers) {
+//		if (sceneData.entities[c.first]->persistent) {
+//			j["textRenderers"].push_back(c.second.serializeJson(c.first));
+//		}
+//	}
+//	for (auto& r : sceneData.rigidbodies) {
+//		if (sceneData.entities[r.first]->persistent) {
+//			j["rigidbodies"].push_back(r.second.serializeJson(r.first));
+//		}
+//	}
+//	for (auto& s : sceneData.staticbodies) {
+//		if (sceneData.entities[s.first]->persistent) {
+//			j["staticbodies"].push_back(s.second.serializeJson(s.first));
+//		}
+//	}
+//
+//	// assets
+//	auto usedSprites = sceneData.getUsedSprites();
+//	for (auto& s : usedSprites) {
+//		if (s != assetManager->defaultSprite)
+//			j["usedSprites"].push_back(s);
+//	}
+//	auto usedFonts = sceneData.getUsedFonts();
+//	for (auto& f : usedFonts) {
+//		j["usedFonts"].push_back(f);
+//	}
+//	checkAppend(filename, ".scene");
+//	std::ofstream output(filename);
+//	output << j.dump(4) << std::endl;
+//	output.close();
+//}
 
+void Scene::serializeJson(std::string filename) {
 	json j;
+
+	j["name"] = name;
+
 	for (auto& e : sceneData.entities) {
 		if (e.second->persistent) {
 			j["entities"].push_back(e.second->serializeJson());
@@ -88,93 +143,142 @@ void Scene::SaveScene(std::string filename) {
 	// assets
 	auto usedSprites = sceneData.getUsedSprites();
 	for (auto& s : usedSprites) {
-		if (s != assetManager->defaultSprite)
-			j["usedSprites"].push_back(s);
+		j["usedSprites"].push_back(s);
 	}
 	auto usedFonts = sceneData.getUsedFonts();
 	for (auto& f : usedFonts) {
 		j["usedFonts"].push_back(f);
 	}
-
-	std::ofstream output(filename + ".json");
+	checkAppend(filename, ".scene");
+	std::ofstream output(filename);
 	output << j.dump(4) << std::endl;
 	output.close();
 }
 
-
-void Scene::LoadScene(std::string filename, std::shared_ptr<b2World> world) {
-
+std::shared_ptr<Scene> Scene::deserializeJson(std::string filename, std::shared_ptr<b2World> world) {
 	assert(world != nullptr);
 
-	{
-		sceneData.entities.clear();
-		sceneData.colorRenderers.clear();
-		sceneData.spriteRenderers.clear();
-		sceneData.textRenderers.clear();
 
-		for (auto& i : sceneData.staticbodies) {
-			i.second.Destroy();
-		}
-		for (auto& i : sceneData.rigidbodies) {
-			i.second.Destroy();
-		}
-		sceneData.staticbodies.clear();
-		sceneData.rigidbodies.clear();
-	}
-	
-	EntityGenerator.Reset();
-
-	std::ifstream input(filename + ".json");
-
+	checkAppend(filename, ".scene");
+	std::ifstream input(filename);
 	json j;
 	input >> j;
 
-	set<spriteID> requiredSprites;
-	for (auto& i : j["usedSprites"]) {
-		requiredSprites.insert(static_cast<spriteID>(i));
-	}
-	assetManager->loadSpriteAssets(requiredSprites);
+	auto scene = std::make_shared<Scene>(world);
 
-	set<fontID> requiredFonts;
-	for (auto& i : j["usedFonts"]) {
-		requiredFonts.insert(static_cast<fontID>(i));
-	}
-	assetManager->loadFontAssets(requiredFonts);
+	scene->name = j["name"];
 
 	for (auto& i : j["entities"]) {
 		shared_ptr<Entity> e = Entity::deserializeJson(i);
 		e->persistent = true;
-		OverwriteEntity(e, e->ID);
-		EntityGenerator.Input(e->ID);
+		scene->OverwriteEntity(e, e->ID);
+		scene->EntityGenerator.Input(e->ID);
 	}
 	for (auto& i : j["colorRenderers"]) {
 		entityID entID = i["entityID"];
 		ColorRenderer r = ColorRenderer::deserializeJson(i);
-		registerComponent(entID, r);
+		scene->registerComponent(entID, r);
 	}
 	for (auto& i : j["spriteRenderers"]) {
 		entityID entID = i["entityID"];
 		SpriteRenderer r = SpriteRenderer::deserializeJson(i);
-		registerComponent(entID, r);
+		scene->registerComponent(entID, r);
 	}
 	for (auto& i : j["textRenderers"]) {
 		entityID entID = i["entityID"];
 		TextRenderer r = TextRenderer::deserializeJson(i);
-		registerComponent(entID, r);
+		scene->registerComponent(entID, r);
 	}
 	for (auto& i : j["rigidbodies"]) {
 		entityID entID = i["entityID"];
 		Rigidbody r = Rigidbody::deserializeJson(i, world);
-		registerComponent(entID, r);
+		scene->registerComponent(entID, r);
 	}
 	for (auto& i : j["staticbodies"]) {
 		entityID entID = i["entityID"];
 		Staticbody r = Staticbody::deserializeJson(i, world);
-		registerComponent(entID, r);
+		scene->registerComponent(entID, r);
 	}
 
-	assetManager->spritesAdded = true;
+	return scene;
 }
+
+//void Scene::LoadScene(std::string filename, std::shared_ptr<b2World> world) {
+//
+//	assert(world != nullptr);
+//
+//	{
+//		sceneData.entities.clear();
+//		sceneData.colorRenderers.clear();
+//		sceneData.spriteRenderers.clear();
+//		sceneData.textRenderers.clear();
+//
+//		for (auto& i : sceneData.staticbodies) {
+//			i.second.Destroy();
+//		}
+//		for (auto& i : sceneData.rigidbodies) {
+//			i.second.Destroy();
+//		}
+//		sceneData.staticbodies.clear();
+//		sceneData.rigidbodies.clear();
+//	}
+//	
+//	EntityGenerator.Reset();
+//
+//	checkAppend(filename, ".scene");
+//	std::ifstream input(filename);
+//
+//	json j;
+//	input >> j;
+//
+//	name = j["name"];
+//
+//	set<spriteID> requiredSprites;
+//	for (auto& i : j["usedSprites"]) {
+//		requiredSprites.insert(static_cast<spriteID>(i));
+//	}
+//	assetManager->loadSpriteAssets(requiredSprites);
+//
+//	set<fontID> requiredFonts;
+//	for (auto& i : j["usedFonts"]) {
+//		requiredFonts.insert(static_cast<fontID>(i));
+//	}
+//	assetManager->loadFontAssets(requiredFonts);
+//
+//	for (auto& i : j["entities"]) {
+//		shared_ptr<Entity> e = Entity::deserializeJson(i);
+//		e->persistent = true;
+//		OverwriteEntity(e, e->ID);
+//		EntityGenerator.Input(e->ID);
+//	}
+//	for (auto& i : j["colorRenderers"]) {
+//		entityID entID = i["entityID"];
+//		ColorRenderer r = ColorRenderer::deserializeJson(i);
+//		registerComponent(entID, r);
+//	}
+//	for (auto& i : j["spriteRenderers"]) {
+//		entityID entID = i["entityID"];
+//		SpriteRenderer r = SpriteRenderer::deserializeJson(i);
+//		registerComponent(entID, r);
+//	}
+//	for (auto& i : j["textRenderers"]) {
+//		entityID entID = i["entityID"];
+//		TextRenderer r = TextRenderer::deserializeJson(i);
+//		registerComponent(entID, r);
+//	}
+//	for (auto& i : j["rigidbodies"]) {
+//		entityID entID = i["entityID"];
+//		Rigidbody r = Rigidbody::deserializeJson(i, world);
+//		registerComponent(entID, r);
+//	}
+//	for (auto& i : j["staticbodies"]) {
+//		entityID entID = i["entityID"];
+//		Staticbody r = Staticbody::deserializeJson(i, world);
+//		registerComponent(entID, r);
+//	}
+//
+//	assetManager->spritesAdded = true;
+//}
 
 void Scene::UnregisterEntity(entityID id) {
 	sceneData.entities.erase(id);
@@ -194,18 +298,16 @@ void Scene::UnregisterEntity(entityID id) {
 void Scene::RegisterEntity(std::shared_ptr<Entity> entity) {
 	entityID id = EntityGenerator.GenerateID();
 	entity->ID = id;
-	if (entity->name.empty())
-	{
+	if (entity->name.empty()) {
 		entity->name = string("entity ") + to_string(id);
 	}
 	sceneData.entities[id] = entity;
 	entity->_setComponentAccessor(componentAccessor);
 }
-void Scene::OverwriteEntity(std::shared_ptr<Entity> entity, entityID ID) {
 
+void Scene::OverwriteEntity(std::shared_ptr<Entity> entity, entityID ID) {
 	entity->ID = ID;
-	if (entity->name.empty())
-	{
+	if (entity->name.empty()) {
 		entity->name = string("entity ") + to_string(ID);
 	}
 	sceneData.entities[ID] = entity;
@@ -270,7 +372,7 @@ Prefab Scene::CreatePrefab(std::shared_ptr<Entity> entity) {
 	return p;
 }
 
-std::shared_ptr<Entity> Scene::Instantiate(Prefab& prefab, std::string name, glm::vec2 position, float rotation) {
+std::shared_ptr<Entity> Scene::Instantiate(Prefab prefab, std::string name, glm::vec2 position, float rotation) {
 	std::shared_ptr<Entity> copy;
 	if (prefab.behaviorHash == 0)
 		copy = std::make_shared<Entity>();
@@ -311,13 +413,11 @@ void Scene::registerComponent(entityID id, ColorRenderer t) {
 template <>
 void Scene::registerComponent<SpriteRenderer>(entityID id, SpriteRenderer t) {
 	sceneData.spriteRenderers[id] = t;
-	assetManager->spritesAdded = true;
 }
 
 template <>
 void Scene::registerComponent<TextRenderer>(entityID id, TextRenderer t) {
 	sceneData.textRenderers[id] = t;
-	assetManager->spritesAdded = true;
 }
 
 // Rigidbodoy

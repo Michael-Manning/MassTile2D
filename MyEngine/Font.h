@@ -81,7 +81,7 @@ public:
 
 	packedChar operator [] (char c) const { return packedChars[c - firstChar]; }
 
-	void WriteBinary(std::string filepath) {
+	void serializeBinary(std::string filepath) {
 		BinaryWriter writer(filepath);
 
 		writer << name;
@@ -95,9 +95,14 @@ public:
 		writer << packedChars;
 		writer << kerningTable;
 	}
-	static std::shared_ptr<Font> ReadBinary(std::string filepath) {
+	static std::shared_ptr<Font> deserializeBinary(std::string filepath) {
 		auto font = std::make_shared<Font>();
-
+		//{
+		//	BinaryReader reader(filepath);
+		//	std::string test;
+		//	reader >> test;
+		//	font->name = test;
+		//}
 		BinaryReader reader(filepath);
 		reader >> font->name;
 		reader >> font->firstChar;

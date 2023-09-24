@@ -25,3 +25,11 @@ template <>
 static glm::vec2 fromJson(nlohmann::json j) {
 	return glm::vec2(j[0], j[1]);
 }
+
+
+#include <flatbuffers/flatbuffers.h>
+#include <assetPack/common_generated.h>
+
+inline glm::vec2 fromAP(const AssetPack::vec2* v) {
+	return glm::vec2(v->x(), v->y());
+};

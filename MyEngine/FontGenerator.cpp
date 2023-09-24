@@ -15,16 +15,16 @@
 #include <stb_truetype.h>
 #include <stb_image_write.h>
 
-#include "vulkan_util.h"
+#include "Utils.h"
 #include "FontGenerator.h"
 #include "Font.h"
 
 using namespace std;
 using namespace glm;
 
-Font GenerateFontAtlas(std::string path, std::string exportName, FontConfig& config, Engine& engine) {
+Font GenerateFont_unidentified(const std::string& truetypeFilePath, std::string imageAtlasExportFileName, FontConfig& config) {
 
-	auto fontBuffer = VKUtil::readFile(path);
+	auto fontBuffer = readFile(truetypeFilePath);
 	vector<uint8_t> bitmap(config.atlasWidth * config.atlasHeight);
 
 	vector<stbtt_packedchar> packedChars(config.charCount);
@@ -58,7 +58,7 @@ Font GenerateFontAtlas(std::string path, std::string exportName, FontConfig& con
 
 	// save font atlas to disk
 	stbi_flip_vertically_on_write(false);
-	string imagePath = engine.assetManager->directories.assetDir + exportName;
+	string imagePath = imageAtlasExportFileName;
 
 	// add png extension if not present
 	if (imagePath.substr(imagePath.size() - 4) != ".png") {
@@ -69,10 +69,6 @@ Font GenerateFontAtlas(std::string path, std::string exportName, FontConfig& con
 	if (!stbi_write_png(imagePath.c_str(), config.atlasWidth, config.atlasHeight, channels, bitmap.data(), config.atlasWidth * channels)) {
 		throw std::exception("font atlas export error");
 	}
-
-	// create a sprite for the atlas which font will reference
-	auto sprite = engine.assetManager->GenerateSprite(imagePath, FilterMode::Nearest);
-	sprite->serializeJson(engine.assetManager->directories.assetDir + sprite->fileName + std::string(".sprite"));
 
 	// convert all required stb_truetype metadata in the the font structure used by the engine
 
@@ -89,7 +85,7 @@ Font GenerateFontAtlas(std::string path, std::string exportName, FontConfig& con
 	font.lineGap = (float)(ascent - descent + lineGap) * SF * pixelPositionScale;
 	//font.baseline = baseline;
 	font.baseline = ascent * SF * pixelPositionScale;
-	font.atlas = sprite->ID;
+	//font.atlas = sprite->ID;
 
 
 	font.packedChars.clear();

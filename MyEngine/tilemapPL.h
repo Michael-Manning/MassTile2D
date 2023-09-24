@@ -33,12 +33,12 @@ public:
 	void CreateGraphicsPipeline(std::string vertexSrc, std::string fragmentSrc, MappedDoubleBuffer<void>& cameradb);
 	void recordCommandBuffer(VkCommandBuffer commandBuffer);
 
-	void setTextureAtlas(Texture textureAtlas) {
+	void setTextureAtlas(Texture* textureAtlas) {
 
 		// fill in missing data of descriptor set builder before submitting
 
 		this->textureAtlas = textureAtlas;
-		builderDescriptorSetsDetails[1].textures = &this->textureAtlas.value();
+		builderDescriptorSetsDetails[1].textures = this->textureAtlas.value();
 
 		std::array<VkBuffer, FRAMES_IN_FLIGHT> worldMapDeviceBuferRef = { world->_worldMapFGDeviceBuffer, world->_worldMapFGDeviceBuffer };
 		builderDescriptorSetsDetails[2].doubleBuffer = &worldMapDeviceBuferRef;
@@ -50,7 +50,7 @@ public:
 
 	}
 
-	std::optional<Texture> textureAtlas;
+	std::optional<Texture*> textureAtlas;
 private:
 
 

@@ -1,0 +1,11 @@
+namespace AssetPack;
+
+struct vec2 {
+  x:float;
+  y:float;
+}
+
+enum FilterMode : int {
+    Nearest = 0,
+    Linear
+}

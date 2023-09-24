@@ -11,342 +11,268 @@
 
 using namespace std;
 
-texID AssetManager::loadTexture(int w, int h, std::vector<uint8_t>& data, FilterMode filterMode, bool imGuiTexure, texID inputID) {
+#ifdef USING_EDITOR
+constexpr bool usingEditor = true;
+#else
+constexpr bool usingEditor = false;
+#endif
 
-	Texture tex = rengine->genTexture(w, h, data, filterMode);
+void AssetManager::LoadAllSprites(bool loadResources) {
 
-	texID id;
+	assert(allLoadedSprites == false);
+	allLoadedSprites = true;
 
-	if (inputID != -1) {
-		id = TextureIDGenerator.GenerateID();
-	}
-	else {
-		id = inputID;
-		TextureIDGenerator.Input(inputID);
-	}
+	for (auto& [ID, path] : spritePathsByID) {
 
-	if (imGuiTexure) {
-		tex.imTexture = ImGui_ImplVulkan_AddTexture(tex.sampler, tex.imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-	}
+		auto sprite = Sprite::deserializeJson(path);
 
-	textureAssets[id] = tex;
-	imageSources[id] = "N/A";
+		spriteAssets[sprite->ID] = sprite;
+		loadedSpritesByName[sprite->name] = sprite->ID;
+		SpriteIDGenerator.Input(sprite->ID);
 
-	return id;
-}
-
-texID AssetManager::loadTexture(std::string imagePath, FilterMode filterMode, bool imGuiTexure) {
-
-	std::string filename = std::filesystem::path(imagePath).filename().string();
-
-	// could make debug only check
-	texID res = TextureIDGenerator.ContainsHash(filename);
-	if (res) {
-		return res;
+		if (loadResources && resourceManager->HasTexture(sprite->textureID) == false)
+			resourceManager->LoadTexture(directories.textureSrcDir + sprite->imageFileName, sprite->filterMode, usingEditor);
 	}
 
-	Texture tex = rengine->genTexture(imagePath, filterMode);
-
-	//texID id = TextureIDGenerator.GenerateID();
-
-	texID id = TextureIDGenerator.GenerateID(filename);
-
-	if (imGuiTexure) {
-		tex.imTexture = ImGui_ImplVulkan_AddTexture(tex.sampler, tex.imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-	}
-
-	textureAssets[id] = tex;
-	imageSources[id] = imagePath;
-
-	return id;
-}
-
-void AssetManager::updateTexture(texID id, FilterMode filterMode) {
-	auto& tex = textureAssets[id];
-	tex.sampler = (filterMode == FilterMode::Nearest) ? rengine->textureSampler_nearest : rengine->textureSampler_linear;
-	/*spritesAdded = true;*/
-	filterModesChanged = true;
-}
-
-void AssetManager::loadPrefabs(std::shared_ptr<b2World> world) {
-	auto files = getAllFilesInDirectory(std::filesystem::path(directories.prefabDir));
-
-	prefabs.clear();
-
-	for (auto& i : files)
-	{
-		std::string name = std::filesystem::path(i).filename().string();
-		size_t lastindex = name.find_last_of(".");
-		std::string rawname = name.substr(0, lastindex);
-
-		std::string extension = name.substr(lastindex, name.length() - 1);
-		if (extension != Prefab_extension)
-			continue;
-
-		prefabs[rawname] = Prefab::deserializeJson(i, world);
-	}
+	changeFlags->_spritesAdded = true;
 }
 
 
-// loads sprite assets
-void AssetManager::loadSpriteAssets(std::set<spriteID> _ids) {
+void AssetManager::LoadSprite(spriteID spriteID, bool loadResources) {
 
-	if (_ids.size() == 0)
-		return;
+	assert(spriteAssets.contains(spriteID) == false);
 
-	auto spriteFiles = getAllFilesInDirectory(std::filesystem::path(directories.assetDir));
-	auto imageFiles = getAllFilesInDirectory(std::filesystem::path(directories.textureSrcDir));
-
-	// only load unloaded ids
-	std::set<spriteID> ids;
-	for (auto& i : _ids) {
-		if (spriteAssets.contains(i) == false)
-			ids.insert(i);
-	}
-
-	vector<pair<string, FilterMode>> requiredTextureFiles;
-	vector <shared_ptr<Sprite>> loadedSprites;
-
-	for (auto& i : spriteFiles)
-	{
-		std::string name = std::filesystem::path(i).filename().string();
-		size_t lastindex = name.find_last_of(".");
-
-		std::string extension = name.substr(lastindex, name.length() - 1);
-
-		if (extension != Sprite_extension)
-			continue;
-
-		auto sprite = Sprite::deserializeJson(i);
-
-		if (ids.contains(sprite->ID) == false)
-			continue;
-
-		loadedSprites.push_back(sprite);
-
-		if (textureAssets.contains(sprite->texture) == false)
-			requiredTextureFiles.push_back({ sprite->fileName, sprite->filterMode });
-	}
-
-	if (loadedSprites.size() != ids.size())
-		throw new std::exception("Could not locate all required sprites");
-
-	for (auto& i : loadedSprites) {
-		spriteAssets[i->ID] = i;
-		SpriteGenerator.Input(i->ID);
-	}
-
-	set<string> imageFileNames;
-	for (auto& i : imageFiles) {
-		std::string name = std::filesystem::path(i).filename().string();
-		imageFileNames.insert(name);
-	}
-
-	for (auto& i : requiredTextureFiles)
-	{
-		if (imageFileNames.contains(i.first) == false)
-			throw new std::exception("could not find required texture file");
-
-		loadTexture(directories.textureSrcDir + i.first, i.second);
-	}
-
-}
-
-void AssetManager::loadFontAssets(std::set<fontID> _ids) {
-
-	if (_ids.size() == 0)
-		return;
-
-	auto fontFiles = getAllFilesInDirectory(std::filesystem::path(directories.assetDir));
-
-	// only load unloaded ids
-	std::set<fontID> ids;
-	for (auto& i : _ids) {
-		if (fontAssets.contains(i) == false)
-			ids.insert(i);
-	}
-
-	set<spriteID> requiredSpriteIDs;
-	vector <shared_ptr<Font>> loadedFonts;
-
-	for (auto& i : fontFiles)
-	{
-		std::string name = std::filesystem::path(i).filename().string();
-		size_t lastindex = name.find_last_of(".");
-
-		std::string extension = name.substr(lastindex, name.length() - 1);
-
-		if (extension != Font_extension)
-			continue;
-
-		auto font = Font::ReadBinary(i);
-
-		if (ids.contains(font->ID) == false)
-			continue;
-
-		loadedFonts.push_back(font);
-		requiredSpriteIDs.insert(font->atlas);
-	}
-
-	if (loadedFonts.size() != ids.size())
-		throw new std::exception("Could not locate all required fonts");
-
-	for (auto& i : loadedFonts) {
-		fontAssets[i->ID] = i;
-		fontGenerator.Input(i->ID);
-	}
-
-	loadSpriteAssets(requiredSpriteIDs);
-}
-
-void AssetManager::loadAllFonts() {
-	auto fontFiles = getAllFilesInDirectory(std::filesystem::path(directories.assetDir));
-
-	set<spriteID> requiredSpriteIDs;
-	vector <shared_ptr<Font>> loadedFonts;
-
-	for (auto& i : fontFiles)
-	{
-		std::string name = std::filesystem::path(i).filename().string();
-		size_t lastindex = name.find_last_of(".");
-
-		std::string extension = name.substr(lastindex, name.length() - 1);
-
-		if (extension != Font_extension)
-			continue;
-
-		auto font = Font::ReadBinary(i);
-
-		loadedFonts.push_back(font);
-		requiredSpriteIDs.insert(font->atlas);
-	}
-
-
-	for (auto& i : loadedFonts) {
-		fontAssets[i->ID] = i;
-		fontGenerator.Input(i->ID);
-	}
-
-	loadSpriteAssets(requiredSpriteIDs);
-}
-
-void AssetManager::loadAllSprites() {
-
-	assert(allLoaded == false);
-	allLoaded = true;
-
-	auto spriteFiles = getAllFilesInDirectory(std::filesystem::path(directories.assetDir));
-	auto imageFiles = getAllFilesInDirectory(std::filesystem::path(directories.textureSrcDir));
-
-	vector<pair<string, FilterMode>> requiredTextureFiles;
-	vector < shared_ptr<Sprite>> loadedSprites;
-
-	for (auto& i : spriteFiles)
-	{
-		std::string name = std::filesystem::path(i).filename().string();
-		size_t lastindex = name.find_last_of(".");
-
-		std::string extension = name.substr(lastindex, name.length() - 1);
-
-		if (extension != Sprite_extension)
-			continue;
-
-		auto sprite = Sprite::deserializeJson(i);
-
-		loadedSprites.push_back(sprite);
-
-		if (textureAssets.contains(sprite->texture) == false)
-			requiredTextureFiles.push_back({ sprite->fileName, sprite->filterMode });
-	}
-
-	for (auto& i : loadedSprites) {
-		spriteAssets[i->ID] = i;
-		SpriteGenerator.Input(i->ID);
-	}
-
-	set<string> imageFileNames;
-	for (auto& i : imageFiles) {
-		std::string name = std::filesystem::path(i).filename().string();
-		imageFileNames.insert(name);
-	}
-
-	for (auto& i : requiredTextureFiles)
-	{
-		if (imageFileNames.contains(i.first) == false)
-			throw new std::exception("could not find required texture file");
-
-		loadTexture(directories.textureSrcDir + i.first, i.second);
-	}
-}
-
-shared_ptr<Sprite> AssetManager::GenerateSprite(std::string imagePath, FilterMode filterMode, bool genImgui) {
-
-	texID id = loadTexture(imagePath, filterMode, genImgui);
-	const auto& tex = textureAssets[id];
-
-	std::string filename = std::filesystem::path(imagePath).filename().string();
-
-	auto sprite = make_shared<Sprite>();
-	sprite->texture = id;
-	sprite->fileName = filename;
-	sprite->ID = SpriteGenerator.GenerateID();
-	sprite->resolution = glm::vec2(tex.resolutionX, tex.resolutionY);
-
-	spritesAdded = true;
-
+	auto sprite = Sprite::deserializeJson(spritePathsByID[spriteID]);
 	spriteAssets[sprite->ID] = sprite;
+	loadedSpritesByName[sprite->name] = sprite->ID;
 
+	if (loadResources && resourceManager->HasTexture(sprite->textureID) == false)
+		resourceManager->LoadTexture(directories.textureSrcDir + sprite->imageFileName, sprite->filterMode, usingEditor);
 
-	return sprite;
+	changeFlags->_spritesAdded = true;
 }
+
+void AssetManager::LoadSprite(std::string name, bool loadResources) {
+
+	assert(spritePathsByName.contains(name) == true);
+	auto sprite = Sprite::deserializeJson(spritePathsByName[name]);
+	spriteAssets[sprite->ID] = sprite;
+	loadedSpritesByName[sprite->name] = sprite->ID;
+
+	assert(spriteAssets.contains(sprite->ID) == false);
+
+	if (loadResources && resourceManager->HasTexture(sprite->textureID) == false)
+		resourceManager->LoadTexture(directories.textureSrcDir + sprite->imageFileName, sprite->filterMode, usingEditor);
+
+	changeFlags->_spritesAdded = true;
+}
+
+void AssetManager::UnloadSprite(spriteID spriteID, bool freeResources) {
+	auto& sprite = spriteAssets[spriteID];
+	if (freeResources) 
+		resourceManager->FreeTexture(sprite->textureID);
+	
+	loadedSpritesByName.erase(sprite->name);
+	spriteAssets.erase(spriteID);
+}
+
+/// <summary>
+/// Load all font asset files
+/// </summary>
+/// <param name="loadResources">Load underlying font atlas sprite and textures</param>
+void AssetManager::LoadAllFonts(bool loadResources) {
+
+	assert(allLoadedFonts == false);
+	allLoadedFonts = true;
+
+	auto fontFiles = getAllFilesInDirectory(std::filesystem::path(directories.assetDir));
+
+	for (auto& [fontID, path] : fontPathsByID) {
+		auto font = Font::deserializeBinary(path);
+
+		fontAssets[font->ID] = font;
+		loadedFontsByName[font->name] = font->ID;
+		fontIDGenerator.Input(font->ID);
+
+		if (loadResources && spriteAssets.contains(font->atlas) == false)
+			LoadSprite(font->atlas, true);
+	}
+
+	changeFlags->_fontsAdded = true;
+}
+
+void AssetManager::LoadFont(fontID fontID, bool loadResources) {
+	assert(fontAssets.contains(fontID) == false);
+
+	auto font = Font::deserializeBinary(fontPathsByID[fontID]);
+	fontAssets[font->ID] = font;
+	loadedFontsByName[font->name] = font->ID;
+
+	if (loadResources && spriteAssets.contains(font->atlas) == false)
+		LoadSprite(font->atlas, true);
+
+	changeFlags->_fontsAdded = true;
+}
+
+void AssetManager::LoadFont(std::string name, bool loadResources) {
+
+	assert(fontPathsByName.contains(name) == true);
+
+	auto font = Font::deserializeBinary(fontPathsByName[name]);
+	fontAssets[font->ID] = font;
+	loadedFontsByName[font->name] = font->ID;
+
+	assert(fontAssets.contains(font->ID) == false);
+
+	if (loadResources && spriteAssets.contains(font->atlas) == false)
+		LoadSprite(font->atlas, true);
+
+	changeFlags->_fontsAdded = true;
+}
+void AssetManager::UnloadFont(fontID fontID, bool freeResources) {
+	auto& font = fontAssets[fontID];
+	if (freeResources) {
+		UnloadSprite(font->atlas, true);
+	};
+	fontAssets.erase(fontID);
+	loadedFontsByName.erase(font->name);
+}
+
+// load and assemble all prefabs
+void AssetManager::LoadAllPrefabs(std::shared_ptr<b2World> world, bool loadResources) {
+
+	assert(allLoadedPrefabs == false);
+	allLoadedPrefabs = true;
+
+	for (auto& [name, path] : prefabPathsByName) {
+		prefabAssets[name] = Prefab::deserializeJson(path, world);
+	}
+}
+
+
+void AssetManager::LoadPrefab(std::string name, std::shared_ptr<b2World> world, bool loadResources) {
+	assert(prefabPathsByName.contains(name));
+	prefabAssets[name] = Prefab::deserializeJson(prefabPathsByName[name], world);
+	if (loadResources)
+		loadPrefabResources(prefabAssets[name]);
+}
+
+
+void AssetManager::LoadScene(std::string sceneName, std::shared_ptr<b2World> world, bool loadResources) {
+	assert(scenePathsByName.contains(sceneName));
+	auto scene = Scene::deserializeJson(scenePathsByName[sceneName], world);
+	sceneAssets.emplace(sceneName, scene);
+	if (loadResources)
+		loadSceneResources(scene->sceneData);
+}
+void AssetManager::UnloadScene(std::string sceneName, bool unloadResources) {
+	assert(sceneAssets.contains(sceneName));
+	if (unloadResources) {
+		auto& scene = sceneAssets.find(sceneName)->second;
+		for (auto& i : scene->sceneData.getUsedSprites())
+			UnloadSprite(i, true);
+		for (auto& i : scene->sceneData.getUsedFonts())
+			UnloadFont(i, true);
+	}
+	sceneAssets.erase(sceneName);
+}
+
+
+
+void AssetManager::loadPrefabResources(Prefab& prefab) {
+
+	// assuming already loaded resources containing assets have already loaded in their respective resources
+
+	if (prefab.spriteRenderer.has_value() && spriteAssets.contains(prefab.spriteRenderer.value().sprite == false))
+		LoadSprite(prefab.spriteRenderer.value().sprite, true);
+
+	if (prefab.textRenderer.has_value() && fontAssets.contains(prefab.textRenderer.value().font) == false)
+		LoadFont(prefab.textRenderer.value().font, true);
+}
+
+void AssetManager::loadSceneResources(SceneData& sceneData) {
+
+	// assuming already loaded resources containing assets have already loaded in their respective resources
+
+	auto usedspriteIDs = sceneData.getUsedSprites();
+	for (auto& id : usedspriteIDs) {
+		if (spriteAssets.contains(id) == false)
+			LoadSprite(id, true);
+	}
+
+	auto usedfontIDs = sceneData.getUsedFonts();
+	for (auto& id : usedfontIDs) {
+		if (fontAssets.contains(id) == false)
+			LoadFont(id, true);
+	}
+}
+
+
+#ifndef PUBLISH
+
+
+spriteID AssetManager::ExportSprite(std::string spriteAssetExportPath, std::string imageSourcePath, Sprite unidentified_sprite) {
+
+	// could replace with a function that only grabs metadata from image but who cares since this is an editor only utility
+	texID id = resourceManager->LoadTexture(imageSourcePath, FilterMode::Nearest, 0);
+	auto texture = resourceManager->GetTexture(id);
+
+	checkAppend(spriteAssetExportPath, Sprite_extension);
+
+	unidentified_sprite.imageFileName = getFileName(imageSourcePath);
+	unidentified_sprite.textureID = id;
+	unidentified_sprite.resolution = glm::vec2(texture->resolutionX, texture->resolutionY);
+	unidentified_sprite.ID = SpriteIDGenerator.GenerateID(unidentified_sprite.name);
+	unidentified_sprite.serializeJson(spriteAssetExportPath);
+
+	resourceManager->FreeTexture(id);
+
+	createAssetLookups();
+
+	return unidentified_sprite.ID;
+}
+fontID AssetManager::ExportFont(std::string fontAssetExportPath, std::string spriteAssetExportPath, std::string atlasImageSourcePath, Font unidentified_font, Sprite unidentified_sprite) {
+
+	checkAppend(fontAssetExportPath, Font_extension);
+
+	spriteID sprID = ExportSprite(spriteAssetExportPath, atlasImageSourcePath, unidentified_sprite);
+	unidentified_font.ID = fontIDGenerator.GenerateID(unidentified_font.name);
+	unidentified_font.atlas = sprID;
+	unidentified_font.serializeBinary(fontAssetExportPath);
+
+	createAssetLookups();
+
+	return unidentified_font.ID;
+}
+void AssetManager::ExportPrefab(Prefab& prefab, std::string prefabAssetExportPath) {
+
+	prefab.serializeJson(prefabAssetExportPath);
+
+	createAssetLookups();
+}
+
+#endif
+
 
 void AssetManager::CreateDefaultSprite(int w, int h, std::vector<uint8_t>& data) {
 
-	texID id = loadTexture(w, h, data, FilterMode::Nearest, true, 0);
-	const auto& tex = textureAssets[id];
+	assert(defaultSpriteCreated == false);
+	defaultSpriteCreated = true;
+
+	texID texid = resourceManager->GenerateTexture(w, h, data, FilterMode::Nearest, true);
+	const auto& tex = resourceManager->GetTexture(texid);
 
 	auto sprite = make_shared<Sprite>();
-	sprite->texture = id;
-	sprite->ID = SpriteGenerator.GenerateID();
-	sprite->resolution = glm::vec2(tex.resolutionX, tex.resolutionY);
+	sprite->name = "default";
+	sprite->imageFileName = "N/A";
+	sprite->textureID = texid;
+	sprite->ID = defaultSpriteID;
+	sprite->resolution = glm::vec2(tex->resolutionX, tex->resolutionY);
 
-	spritesAdded = true;
+	SpriteIDGenerator.Input(defaultSpriteID);
 
-	defaultSprite = sprite->ID;
-	spriteAssets[sprite->ID] = sprite;
+	changeFlags->_spritesAdded = true;
+
+	spriteAssets[defaultSpriteID] = sprite;
 }
-
-
-
-fontID AssetManager::addFont(Font font) {
-	fontID id = fontGenerator.GenerateID();
-	fontAssets[id] = make_shared<Font>(font);
-	fontAssets[id]->ID = id;
-	return id;
-}
-
-void AssetManager::addFont(Font font, fontID inputID) {
-	fontGenerator.Input(inputID);
-	fontAssets[inputID] = make_shared<Font>(font);
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

@@ -14,32 +14,7 @@
 
 namespace VKUtil {
 
-
-	std::vector<char> readFile(const std::string& filename) {
-
-		if (std::filesystem::exists(std::filesystem::path(filename)) == false) {
-			std::cout << "file not found: " << filename << std::endl;
-			throw std::runtime_error("failed to open file!");
-		}
-
-		std::ifstream file(filename, std::ios::ate | std::ios::binary);
-
-		if (!file.is_open()) {
-			throw std::runtime_error("failed to open file!");
-		}
-
-		size_t fileSize = (size_t)file.tellg();
-		std::vector<char> buffer(fileSize);
-
-		file.seekg(0);
-		file.read(buffer.data(), fileSize);
-
-		file.close();
-
-		return buffer;
-	}
-
-	VkShaderModule createShaderModule(const std::vector<char>& code, VkDevice device) {
+	VkShaderModule createShaderModule(const std::vector<uint8_t>& code, VkDevice device) {
 		VkShaderModuleCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 		createInfo.codeSize = code.size();

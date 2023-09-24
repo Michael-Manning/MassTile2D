@@ -18,12 +18,15 @@
 #include<glm/glm.hpp>
 #include <nlohmann/json.hpp>
 #include <imgui.h>
+#include <Windows.h>
+
 
 #include "VKEngine.h"
 #include "Engine.h"
 
+#ifdef USING_EDITOR
 #include "Editor.h"
-#include "FontGenerator.h"
+#endif 
 
 #include "Physics.h"
 #include "Input.h"
@@ -43,6 +46,8 @@
 #include <FastNoise/SmartNode.h>
 #include <FastSIMD/FastSIMD.h>
 
+#include <flatbuffers/flatbuffers.h>
+#include <assetPack/Sprite_generated.h>
 
 const uint32_t winW = 1400;
 const uint32_t winH = 800;
@@ -66,7 +71,11 @@ std::unordered_map<uint32_t, std::pair<std::string, std::function<std::shared_pt
 static vec2 GcameraPos;
 std::shared_ptr<TileWorld> tileWolrdGlobalRef;
 
+#ifdef USING_EDITOR
 bool showingEditor = false;
+#else
+const bool showingEditor = false;
+#endif 
 
 
 std::random_device rd; // obtain a random number from hardware
@@ -98,7 +107,18 @@ void CalcTileVariation(uint32_t x, uint32_t y) {
 	}
 }
 
+
+#ifdef USING_EDITOR
+Editor editor;
+#endif 
+
+#ifdef  PUBLISH
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
+#else
 int main() {
+#endif
+
+
 
 	auto exePath = get_executable_directory();
 
@@ -108,82 +128,32 @@ int main() {
 	AssetDirectories.assetDir = makePathAbsolute(exePath, "../../data/Assets/") + "/";
 	AssetDirectories.textureSrcDir = makePathAbsolute(exePath, "../../data/Assets/") + "/";
 	AssetDirectories.fontsDir = makePathAbsolute(exePath, "../../data/Fonts/") + "/";
-	AssetDirectories.imagesDir = makePathAbsolute(exePath, "../../data/images/") + "/";
 
 	SwapChainSetting swapchainSettings;
 	swapchainSettings.vsync = true;
 	swapchainSettings.capFramerate = false;
 
 
+	{
+		auto bytes = readFile(AssetDirectories.assetDir + "man.bin");
+		auto buf = AssetPack::GetSprite(bytes.data());
+		auto sprite = Sprite::deserializeFlatbuffer(buf);
+
+		int bbreak = 2;
+	}
+
+
+
 	auto rengine = std::make_shared<VKEngine>();
 	Engine engine(rengine, AssetDirectories);
-	Editor editor;
-	const auto& scene = engine.scene; // quick reference
+	const auto& scene = engine.GetCurrentScene(); // quick reference
 	engine.Start("video game", winW, winH, shaderPath, swapchainSettings);
 
 	const auto input = engine.GetInput();
 
-	engine.assetManager->loadAllSprites();
-	engine.assetManager->loadAllFonts();
-	engine.loadPrefabs();
-
-	//engine.scene->LoadScene("gamescene", engine.bworld);
-
-#if 0
-
-	/*PROFILE_START(LoadFonts);
-	engine.assetManager->loadFontAssets({ 1, 2 });
-	PROFILE_END(LoadFonts);*/
-
-	{
-		FontConfig config;
-		config.atlasHeight = 1024;
-		config.atlasWidth = 1024;
-		config.fontHeight = 32;
-		config.oversample = 4;
-
-		fontID fontid = engine.assetManager->addFont(GenerateFontAtlas(AssetDirectories.fontsDir + "MonoSpatial.ttf", "MonoSpatial.png", config, engine));
-		auto font = engine.assetManager->fontAssets[fontid];
-		font->WriteBinary(AssetDirectories.assetDir + "mono.font");
-
-		auto testText = make_shared<Entity>("monospace font");
-		scene->RegisterEntity(testText);
-
-
-		auto r = TextRenderer(1);
-		//auto r = TextRenderer(font->ID);
-		r.text = "absg eVWA 142 ! \n *s test qjI{} %";
-		r.color = vec4(0.0, 0.0, 0.0, 1.0);
-		scene->registerComponent(testText, r);
-	}
-#endif
-#if 0
-	{
-		FontConfig config;
-		config.atlasHeight = 1024;
-		config.atlasWidth = 1024;
-		config.fontHeight = 32;
-		config.oversample = 4;
-
-
-
-		fontID fontid = engine.assetManager->addFont(GenerateFontAtlas(AssetDirectories.fontsDir + "Roboto-Regular.ttf", "Roboto-Regular.png", config, engine));
-		auto font = engine.assetManager->fontAssets[fontid];
-		font->WriteBinary(AssetDirectories.assetDir + "roboto.font");
-
-		auto testText = make_shared<Entity>("roboto font");
-		testText->transform.position = vec2(0, 5);
-		scene->RegisterEntity(testText);
-
-
-		//auto r = TextRenderer(font->ID);
-		auto r = TextRenderer(2);
-		r.text = "absg eVWA 142 ! *s test \nqjI{} %";
-		r.color = vec4(0.0, 0.0, 0.0, 1.0);
-		scene->registerComponent(testText, r);
-}
-
-#endif
+	engine.assetManager->LoadAllSprites();
+	engine.assetManager->LoadAllFonts();
+	engine.assetManager->LoadAllPrefabs(engine.bworld, false);
 
 	tileWolrdGlobalRef = engine.worldMap;
 
@@ -278,7 +248,7 @@ int main() {
 					}
 				}
 			}
-			
+
 			engine.worldMap->preloadTile(x, mapH - y - 1, id);
 			engine.worldMap->preloadBGTile(x, mapH - y - 1, y > (mapH - 205) ? 1023 : 1022);
 
@@ -325,22 +295,22 @@ int main() {
 
 	auto ctest = engine.worldMap->getTile(0, 0);
 
-	//engine.setTilemapAtlasTexture(engine.assetManager->spriteAssets[5]->texture);
+	engine.setTilemapAtlasTexture(engine.assetManager->GetSprite("tilemapSprites")->textureID);
 
 
 	vector<vec2> torchPositions;
 
-	shared_ptr<Player> player = dynamic_pointer_cast<Player>(scene->Instantiate(engine.assetManager->prefabs["Player"], "Player", vec2(0, 106), 0));
+	shared_ptr<Player> player = dynamic_pointer_cast<Player>(scene->Instantiate(engine.assetManager->GetPrefab("Player"), "Player", vec2(0, 106), 0));
 
-	fontID coolfont = 1;
-
+	//	fontID coolfont = engine.assetManager->GetFontID("roboto-32");
+	//
 	while (!engine.ShouldClose())
 	{
 
 		engine.clearScreenSpaceDrawlist();
 		engine.addScreenSpaceQuad(vec4(1.0), input->getMousePos(), vec2(50));
-		engine.addScreenSpaceText("hello world", coolfont, vec2(100, 100), vec4(1, 0, 0, 1));
-		
+		//engine.addScreenSpaceText("hello world", coolfont, vec2(100, 100), vec4(1, 0, 0, 1));
+
 		using namespace ImGui;
 
 		GcameraPos = engine.camera.position;
@@ -348,9 +318,11 @@ int main() {
 		engine.EntityStartUpdate();
 
 		if (ImGui::GetIO().WantTextInput == false) {
+#ifdef USING_EDITOR
 			if (input->getKeyDown('e')) {
 				showingEditor = !showingEditor;
 			}
+#endif
 			if (input->getKeyDown('p')) {
 				engine.paused = !engine.paused;
 			}
@@ -359,6 +331,7 @@ int main() {
 			}
 		}
 
+#ifdef USING_EDITOR
 		if (showingEditor) {
 			ImGui_ImplVulkan_NewFrame();
 			ImGui_ImplGlfw_NewFrame();
@@ -372,8 +345,10 @@ int main() {
 		else {
 			engine.camera.position = GcameraPos;
 		}
-
-#if 0
+#else
+		engine.camera.position = GcameraPos;
+#endif
+#if 1
 		{
 
 			static int lastX = -1;
@@ -427,7 +402,7 @@ int main() {
 
 				//	torchPositions.push_back(vec2(x, y));
 
-					
+
 					engine.worldMap->setTorch(x, y);
 				}
 
@@ -454,15 +429,15 @@ int main() {
 						CalcTileVariation(x + i, y + j);
 			}
 
-			if (input->getMouseBtnDown(MouseBtn::Right)) {
-				auto demon = scene->Instantiate(engine.assetManager->prefabs["Demon"], "Demon", worldClick, 0);
+			/*if (input->getMouseBtnDown(MouseBtn::Right)) {
+				auto demon = scene->Instantiate(engine.assetManager.get[["Demon"], "Demon", worldClick, 0);
 				dynamic_pointer_cast<Demon>(demon)->setPlayerRef(player);
-			}
+			}*/
 		}
 #endif
 
 		engine.QueueNextFrame(showingEditor);
-}
+	}
 
 	engine.Close();
 
