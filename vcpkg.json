@@ -43,6 +43,11 @@
 	  "name": "tracy",
 	  "platform": "x64",
 	  "features": ["gui-tools"]
+	},
+	{
+	   "name": "openal-soft",
+	   "platform": "x64"
+	   
 	}
   ]
 }

@@ -7,6 +7,8 @@
 #include "typedefs.h"
 #include "Component.h"
 
+#include <assetPack/common_generated.h>
+
 class ColorRenderer : public Component {
 public:
 
@@ -30,5 +32,11 @@ public:
 	ColorRenderer duplicate() const{
 		ColorRenderer r(color, shape);
 		return r;
+	};
+
+	static ColorRenderer deserializeFlatbuffers(const AssetPack::ColorRenderer* c) {
+		ColorRenderer r;
+		r.color = fromAP(c->color());
+		r.shape = static_cast<Shape>(c->shape());
 	};
 };

@@ -8,6 +8,8 @@
 #include "typedefs.h"
 #include "Component.h"
 
+#include <assetPack/common_generated.h>
+
 class SpriteRenderer : public Component {
 public:
 
@@ -29,4 +31,10 @@ public:
 	};
 
 	int atlasIndex = 0;
+
+	static SpriteRenderer deserializeFlatbuffers(const AssetPack::SpriteRenderer* s) {
+		SpriteRenderer r;
+		r.sprite = s->spriteID();
+		r.atlasIndex = s->atlasIndex();
+	};
 };

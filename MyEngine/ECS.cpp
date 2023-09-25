@@ -82,6 +82,21 @@ std::shared_ptr<Entity> Entity::deserializeJson(const nlohmann::json& j) {
 	return e;
 }
 
+std::shared_ptr<Entity> Entity::deserializeFlatbuffers(const AssetPack::Entity* e) {
+	std::shared_ptr<Entity> entity;
+
+	uint32_t hash = e->behaviorHash();
+	if (hash != 0)
+		entity = BehaviorMap[hash].second();
+	else
+		entity = make_shared<Entity>();
+
+	entity->ID = e->id();
+	entity->name = e->name()->str();
+	entity->transform = Transform::deserializeFlatbuffers(e->transform());
+
+}
+
 
 nlohmann::json ColorRenderer::serializeJson(entityID entId) {
 	nlohmann::json j;
@@ -96,7 +111,7 @@ ColorRenderer ColorRenderer::deserializeJson(nlohmann::json j) {
 	ColorRenderer s;
 	s.color = fromJson<vec4>(j["color"]);
 	s.shape = j["shape"];
-	
+
 	return s;
 }
 

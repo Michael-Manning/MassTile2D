@@ -22,9 +22,13 @@ void AssetManager::LoadAllSprites(bool loadResources) {
 	assert(allLoadedSprites == false);
 	allLoadedSprites = true;
 
+#ifdef USE_PACKED_ASSETS
+	for(int i = 0; i < package->sprites()->size(); i++) {
+		auto sprite = Sprite::deserializeFlatbuffer(package->sprites()->Get(i));
+#else
 	for (auto& [ID, path] : spritePathsByID) {
-
 		auto sprite = Sprite::deserializeJson(path);
+#endif
 
 		spriteAssets[sprite->ID] = sprite;
 		loadedSpritesByName[sprite->name] = sprite->ID;
@@ -42,7 +46,12 @@ void AssetManager::LoadSprite(spriteID spriteID, bool loadResources) {
 
 	assert(spriteAssets.contains(spriteID) == false);
 
+#ifdef USE_PACKED_ASSETS
+	auto sprite = Sprite::deserializeFlatbuffer(package->sprites()->Get(spriteIndexesByID[spriteID]));
+#else
 	auto sprite = Sprite::deserializeJson(spritePathsByID[spriteID]);
+#endif
+
 	spriteAssets[sprite->ID] = sprite;
 	loadedSpritesByName[sprite->name] = sprite->ID;
 
@@ -55,7 +64,13 @@ void AssetManager::LoadSprite(spriteID spriteID, bool loadResources) {
 void AssetManager::LoadSprite(std::string name, bool loadResources) {
 
 	assert(spritePathsByName.contains(name) == true);
+
+#ifdef USE_PACKED_ASSETS
+	auto sprite = Sprite::deserializeFlatbuffer(package->sprites()->Get(spriteIndexesByName[name]));
+#else
 	auto sprite = Sprite::deserializeJson(spritePathsByName[name]);
+#endif
+
 	spriteAssets[sprite->ID] = sprite;
 	loadedSpritesByName[sprite->name] = sprite->ID;
 
@@ -69,9 +84,9 @@ void AssetManager::LoadSprite(std::string name, bool loadResources) {
 
 void AssetManager::UnloadSprite(spriteID spriteID, bool freeResources) {
 	auto& sprite = spriteAssets[spriteID];
-	if (freeResources) 
+	if (freeResources)
 		resourceManager->FreeTexture(sprite->textureID);
-	
+
 	loadedSpritesByName.erase(sprite->name);
 	spriteAssets.erase(spriteID);
 }
@@ -87,8 +102,13 @@ void AssetManager::LoadAllFonts(bool loadResources) {
 
 	auto fontFiles = getAllFilesInDirectory(std::filesystem::path(directories.assetDir));
 
+#ifdef USE_PACKED_ASSETS
+	for (int i = 0; i < package->fonts()->size(); i++) {
+		auto font = Font::deserializeFlatbuffer(package->fonts()->Get(i));
+#else
 	for (auto& [fontID, path] : fontPathsByID) {
 		auto font = Font::deserializeBinary(path);
+#endif
 
 		fontAssets[font->ID] = font;
 		loadedFontsByName[font->name] = font->ID;
@@ -104,7 +124,11 @@ void AssetManager::LoadAllFonts(bool loadResources) {
 void AssetManager::LoadFont(fontID fontID, bool loadResources) {
 	assert(fontAssets.contains(fontID) == false);
 
+#ifdef USE_PACKED_ASSETS
+	auto font = Font::deserializeFlatbuffer(package->fonts()->Get(fontIndexesByID[fontID]));
+#else
 	auto font = Font::deserializeBinary(fontPathsByID[fontID]);
+#endif
 	fontAssets[font->ID] = font;
 	loadedFontsByName[font->name] = font->ID;
 
@@ -118,7 +142,12 @@ void AssetManager::LoadFont(std::string name, bool loadResources) {
 
 	assert(fontPathsByName.contains(name) == true);
 
+#ifdef USE_PACKED_ASSETS
+	auto font = Font::deserializeFlatbuffer(package->fonts()->Get(fontIndexesByName[name]));
+#else
 	auto font = Font::deserializeBinary(fontPathsByName[name]);
+#endif
+
 	fontAssets[font->ID] = font;
 	loadedFontsByName[font->name] = font->ID;
 
@@ -144,15 +173,25 @@ void AssetManager::LoadAllPrefabs(std::shared_ptr<b2World> world, bool loadResou
 	assert(allLoadedPrefabs == false);
 	allLoadedPrefabs = true;
 
+#ifdef USE_PACKED_ASSETS
+	for (int i = 0; i < package->sprites()->size(); i++) {
+		auto prefab = Prefab::deserializeFlatbuffer(package->prefabs()->Get(i), world);
+		prefabAssets[prefab.name] = prefab;
+#else
 	for (auto& [name, path] : prefabPathsByName) {
 		prefabAssets[name] = Prefab::deserializeJson(path, world);
+#endif
 	}
 }
 
 
 void AssetManager::LoadPrefab(std::string name, std::shared_ptr<b2World> world, bool loadResources) {
 	assert(prefabPathsByName.contains(name));
+#ifdef USE_PACKED_ASSETS
+	prefabAssets[name] = Prefab::deserializeFlatbuffer(package->prefabs()->Get(prefabIndexesByName[name]), world);
+#else
 	prefabAssets[name] = Prefab::deserializeJson(prefabPathsByName[name], world);
+#endif
 	if (loadResources)
 		loadPrefabResources(prefabAssets[name]);
 }
@@ -160,7 +199,11 @@ void AssetManager::LoadPrefab(std::string name, std::shared_ptr<b2World> world, 
 
 void AssetManager::LoadScene(std::string sceneName, std::shared_ptr<b2World> world, bool loadResources) {
 	assert(scenePathsByName.contains(sceneName));
+#ifdef USE_PACKED_ASSETS
+	auto scene = Scene::deserializeFlatbuffers(package->prefabs()->Get(sceneIndexesByName[sceneName]), world);
+#else
 	auto scene = Scene::deserializeJson(scenePathsByName[sceneName], world);
+#endif
 	sceneAssets.emplace(sceneName, scene);
 	if (loadResources)
 		loadSceneResources(scene->sceneData);
@@ -179,7 +222,7 @@ void AssetManager::UnloadScene(std::string sceneName, bool unloadResources) {
 
 
 
-void AssetManager::loadPrefabResources(Prefab& prefab) {
+void AssetManager::loadPrefabResources(Prefab & prefab) {
 
 	// assuming already loaded resources containing assets have already loaded in their respective resources
 
@@ -190,7 +233,7 @@ void AssetManager::loadPrefabResources(Prefab& prefab) {
 		LoadFont(prefab.textRenderer.value().font, true);
 }
 
-void AssetManager::loadSceneResources(SceneData& sceneData) {
+void AssetManager::loadSceneResources(SceneData & sceneData) {
 
 	// assuming already loaded resources containing assets have already loaded in their respective resources
 
@@ -244,7 +287,7 @@ fontID AssetManager::ExportFont(std::string fontAssetExportPath, std::string spr
 
 	return unidentified_font.ID;
 }
-void AssetManager::ExportPrefab(Prefab& prefab, std::string prefabAssetExportPath) {
+void AssetManager::ExportPrefab(Prefab & prefab, std::string prefabAssetExportPath) {
 
 	prefab.serializeJson(prefabAssetExportPath);
 
@@ -254,7 +297,7 @@ void AssetManager::ExportPrefab(Prefab& prefab, std::string prefabAssetExportPat
 #endif
 
 
-void AssetManager::CreateDefaultSprite(int w, int h, std::vector<uint8_t>& data) {
+void AssetManager::CreateDefaultSprite(int w, int h, std::vector<uint8_t>&data) {
 
 	assert(defaultSpriteCreated == false);
 	defaultSpriteCreated = true;

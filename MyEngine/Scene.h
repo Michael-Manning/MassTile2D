@@ -7,6 +7,8 @@
 #include "Physics.h"
 #include "IDGenerator.h"
 
+#include <assetPack/Scene_generated.h>
+
 const auto Scene_extension = ".scene";
 
 struct SceneData {
@@ -47,10 +49,9 @@ public:
 
 	SceneData sceneData;	
 
-	//void SaveScene(std::string filename);
 	void serializeJson(std::string filename);
 	static std::shared_ptr<Scene> deserializeJson (std::string filename, std::shared_ptr<b2World> world);
-	//void LoadScene(std::string filename, std::shared_ptr<b2World> world);	
+	static std::shared_ptr<Scene> deserializeFlatbuffers(const AssetPack::Scene * scene, std::shared_ptr<b2World> world);
 	static std::string peakJsonName(std::string filename) {
 		checkAppend(filename, ".scene");
 		std::ifstream input(filename);

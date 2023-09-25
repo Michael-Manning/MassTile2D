@@ -15,6 +15,8 @@
 #include "Utils.h"
 #include "Input.h"
 
+#include <assetPack/common_generated.h>
+
 struct Transform {
 	glm::vec2 position = glm::vec2(0.0f);
 	glm::vec2 scale = glm::vec2(1.0f);
@@ -28,6 +30,13 @@ struct Transform {
 
 	nlohmann::json serializeJson();
 	static Transform deserializeJson(const nlohmann::json& j);
+
+	static Transform deserializeFlatbuffers(const AssetPack::Transform* t) {
+		return Transform(
+			fromAP(t->position()),
+			fromAP(t->scale()),
+			t->rotation());
+	}
 };
 
 #include "ColorRenderer.h"
@@ -37,10 +46,10 @@ struct Transform {
 class ComponentAccessor {
 public:
 
-	std::function<ColorRenderer*(entityID)> _getColorRenderer;
-	std::function<SpriteRenderer*(entityID)> _getSpriteRenderer;
-	std::function<Staticbody*(entityID)> _getStaticbody;
-	std::function<Rigidbody*(entityID)> _getRigidbody;
+	std::function<ColorRenderer* (entityID)> _getColorRenderer;
+	std::function<SpriteRenderer* (entityID)> _getSpriteRenderer;
+	std::function<Staticbody* (entityID)> _getStaticbody;
+	std::function<Rigidbody* (entityID)> _getRigidbody;
 
 	//std::shared_ptr<Input> _input;
 
@@ -49,13 +58,13 @@ public:
 		std::function<SpriteRenderer* (entityID)> spriteRendererFunc,
 		std::function<Staticbody* (entityID)> staticbodyFunc,
 		std::function<Rigidbody* (entityID)> rigidbodyFunc
-	//	std::shared_ptr<Input> input
-		) :
+		//	std::shared_ptr<Input> input
+	) :
 		_getColorRenderer(colorRendererFunc),
 		_getSpriteRenderer(spriteRendererFunc),
 		_getStaticbody(staticbodyFunc),
 		_getRigidbody(rigidbodyFunc)
-	//	_input(input)
+		//	_input(input)
 	{};
 };
 
@@ -78,7 +87,7 @@ public:
 	};
 
 	virtual std::string GetEditorName() { return ""; }
-	virtual uint32_t getBehaviorHash() { 
+	virtual uint32_t getBehaviorHash() {
 		return 0;
 	}
 
@@ -107,14 +116,7 @@ public:
 	nlohmann::json serializeJson();
 	static std::shared_ptr<Entity> deserializeJson(const nlohmann::json& j);
 
-	//std::shared_ptr<Entity> Duplicate() {
-	//	std::shared_ptr<Entity> e = std::make_shared<Entity>();
-	//	e->name = name + std::string("_copy");
-	//	e->persistent = false;
-	//	e->_setComponentAccessor(accessor);
-	//	e->transform = transform;
-	//	e->startRan = false;
-	//};
+	static std::shared_ptr<Entity> deserializeFlatbuffers(const AssetPack::Entity* e);
 
 	static std::shared_ptr<Input> input;
 	static float DeltaTime;
@@ -124,10 +126,6 @@ protected:
 
 	template <typename T>
 	T* getComponent();
-
-	//template <>
-	//ColorRenderer* getComponent<ColorRenderer*>(entityID id);
-	//ColorRenderer* getComponent();
 
 private:
 	bool startRan = false;

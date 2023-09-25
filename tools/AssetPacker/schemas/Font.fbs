@@ -1,0 +1,27 @@
+include "common.fbs";
+
+namespace AssetPack;
+
+struct packedChar{
+    uvmin:vec2;
+    uvmax:vec2;
+    scale:vec2;
+    xOff:float;
+    yOff:float;
+    xAdvance:float;
+}
+
+table Font{
+    name:string;
+    firstChar:int;
+    charCount:int;
+    fontHeight:float;
+    baseline:float;
+    lineGap:float;
+    atlas:uint;
+    ID:uint;
+    packedChars:[packedChar];
+    kerningTable:[float];
+}
+
+root_type Font;

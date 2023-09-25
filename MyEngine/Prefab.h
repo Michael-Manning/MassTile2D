@@ -12,6 +12,8 @@
 #include "serialization.h"
 #include <box2d/box2d.h>
 
+#include <assetPack/Prefab_generated.h>
+
 const auto Prefab_extension = ".prefab";
 
 class Prefab {
@@ -89,5 +91,31 @@ public:
 			p.staticbody = Staticbody::deserializeJson(j["staticbody"], world);
 
 		return p;
+	}
+
+	static Prefab deserializeFlatbuffer(const AssetPack::Prefab * p, std::shared_ptr<b2World> world) {
+		Prefab prefab;
+		prefab.name = p->name()->str();
+		prefab.behaviorHash = p->behaviorHash();
+		prefab.transform = Transform::deserializeFlatbuffers(p->transform());
+		
+		auto colorRenderer = p->colorRenderer();
+		auto spriteRenderer = p->spriteRenderer();
+		auto textRenderer = p->textRenderer();
+		auto rigidbody = p->rigidbody();
+		auto staticbody = p->staticbody();
+
+		if (colorRenderer != nullptr)
+			prefab.colorRenderer = ColorRenderer::deserializeFlatbuffers(colorRenderer);
+		if (spriteRenderer != nullptr)
+			prefab.spriteRenderer = SpriteRenderer::deserializeFlatbuffers(spriteRenderer);
+		if (textRenderer != nullptr)
+			prefab.textRenderer = TextRenderer::deserializeFlatbuffers(textRenderer);
+		if (rigidbody != nullptr)
+			prefab.rigidbody = Rigidbody::deserializeFlatbuffers(rigidbody, world);
+		if (staticbody != nullptr)
+			prefab.staticbody = Staticbody::deserializeFlatbuffers(staticbody, world);
+
+		return prefab;
 	}
 };

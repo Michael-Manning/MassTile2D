@@ -12,6 +12,8 @@
 #include "BinaryWriter.h"
 #include "typedefs.h"
 
+#include <assetPack/Font_generated.h>
+
 const auto Font_extension = ".font";
 
 struct charQuad {
@@ -52,6 +54,19 @@ struct packedChar {
 
 		return pc;
 	};
+
+	static packedChar deserializeFlatbuffer(const AssetPack::packedChar* p) {
+		packedChar pc;
+		
+		pc.uvmin = fromAP(p->uvmin());
+		pc.uvmax = fromAP(p->uvmax());
+		pc.scale = fromAP(p->scale());
+		pc.xOff = p->xOff();
+		pc.yOff = p->yOff();
+		pc.advance = p->xAdvance();
+
+		return pc;
+	};
 };
 
 class Font {
@@ -75,7 +90,7 @@ public:
 	inline uint32_t kernHash(char a, char b) {
 		return (a - firstChar) * charCount + (b - firstChar);
 	};
-	std::unordered_map<uint32_t, float> kerningTable;
+	std::vector<float> kerningTable;
 
 	std::vector<packedChar> packedChars;
 
@@ -97,12 +112,7 @@ public:
 	}
 	static std::shared_ptr<Font> deserializeBinary(std::string filepath) {
 		auto font = std::make_shared<Font>();
-		//{
-		//	BinaryReader reader(filepath);
-		//	std::string test;
-		//	reader >> test;
-		//	font->name = test;
-		//}
+
 		BinaryReader reader(filepath);
 		reader >> font->name;
 		reader >> font->firstChar;
@@ -117,9 +127,31 @@ public:
 
 		return font;
 	}
+	static std::shared_ptr<Font> deserializeFlatbuffer(const AssetPack::Font* f) {
+		auto font = std::make_shared<Font>();
+
+		font->name = f->name()->str();
+		font->firstChar = f->firstChar();
+		font->charCount = f->charCount();
+		font->fontHeight = f->fontHeight();
+		font->baseline = f->baseline();
+		font->lineGap = f->lineGap();
+		font->atlas = f->atlas();
+		font->ID = f->ID();
+		
+		font->packedChars.resize(f->packedChars()->size());
+		for (size_t i = 0; i < font->packedChars.size(); i++)
+			font->packedChars[i] = packedChar::deserializeFlatbuffer(f->packedChars()->Get(i));
+
+		font->kerningTable.resize(f->kerningTable()->size());
+		for (size_t i = 0; i < font->kerningTable.size(); i++)
+			font->kerningTable[i] = f->kerningTable()->Get(i);
+
+		return font;
+	}
 };
 
-static void CalculateQuads(std::shared_ptr<Font> f, std::string& text, charQuad * quads) {
+static void CalculateQuads(std::shared_ptr<Font> f, std::string& text, charQuad* quads) {
 
 	glm::vec2 cursor = glm::vec2(0.0f);
 	for (int i = 0; i < text.length(); i++) {

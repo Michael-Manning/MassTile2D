@@ -20,6 +20,8 @@
 #include "Scene.h"
 #include "ResourceManager.h"
 
+#include <assetPack/Package_generated.h>
+
 template<typename I, typename T>
 struct MapProxy {
 	using Iterator = std::unordered_map<I, T>::iterator;
@@ -61,6 +63,8 @@ public:
 	};
 	AssetPaths directories;
 
+	const AssetPack::Package * package;
+
 	AssetManager(
 		std::shared_ptr<VKEngine> engine,
 		AssetPaths directories,
@@ -72,14 +76,10 @@ public:
 		directories(directories),
 		changeFlags(changeFlags)
 	{
-
-#ifndef USE_PACKED_ASSETS
 		createAssetLookups();
-#endif
 	}
 
 	const static spriteID defaultSpriteID = 0;
-
 
 	/// <summary>
 	/// Load sprite asset files
@@ -121,30 +121,29 @@ public:
 
 	void CreateDefaultSprite(int w, int h, std::vector<uint8_t>& data);
 	void UpdateSpritefilter(spriteID id) {
+
+#ifndef  USE_PACKED_ASSETS
 		const auto& sprite = spriteAssets[id];
 		resourceManager->UpdateTexture(sprite->textureID, sprite->filterMode);
 		changeFlags->_textureFiltersChanged = true;
 
 		// update file on disk (used by editor only)
 		sprite->serializeJson(spritePathsByID[id]);
+#endif
 	};
 
 #ifndef PUBLISH
-
 	// Generated assets can be exported with these functions which assign an ID and save the asset to disk
 	spriteID ExportSprite(std::string spriteAssetExportPath, std::string imageSourcePath, Sprite unidentified_sprite);
 	fontID ExportFont(std::string fontAssetExportPath, std::string spriteAssetExportPath, std::string atlasImageSourcePath, Font unidentified_font, Sprite unidentified_sprite);
 	void ExportPrefab(Prefab& prefab, std::string prefabAssetExportPath);
-
 #endif
-
 
 	auto _getSpriteIterator() { return MapProxy<spriteID, std::shared_ptr<Sprite>>(spriteAssets.begin(), spriteAssets.end()); };
 	auto _getFontIterator() { return MapProxy<fontID, std::shared_ptr<Font>>(fontAssets.begin(), fontAssets.end()); };
 	auto _getPrefabIterator() { return MapProxy<std::string, Prefab>(prefabAssets.begin(), prefabAssets.end()); };
 	size_t _spriteAssetCount() { return spriteAssets.size(); }
 	size_t _fontAssetCount() { return fontAssets.size(); }
-
 
 private:
 
@@ -163,7 +162,6 @@ private:
 	IDGenerator<spriteID> SpriteIDGenerator;
 	IDGenerator<fontID> fontIDGenerator;
 
-
 	// all loaded ran
 	bool allLoadedSprites = false;
 	bool allLoadedFonts = false;
@@ -171,7 +169,35 @@ private:
 
 	bool defaultSpriteCreated = false;
 
-#ifndef USE_PACKED_ASSETS
+#ifdef USE_PACKED_ASSETS
+	std::unordered_map<std::string, uint32_t> spriteIndexesByName;
+	std::unordered_map<spriteID, uint32_t> spriteIndexesByID;
+
+	std::unordered_map<std::string, uint32_t> fontIndexesByName;
+	std::unordered_map<fontID, uint32_t> fontIndexesByID;
+
+	std::unordered_map<std::string, uint32_t> prefabIndexesByName;
+
+	std::unordered_map<std::string, uint32_t> sceneIndexesByName;
+
+	void createAssetLookups() {
+
+		for (size_t i = 0; i < package->sprites()->size(); i++) {
+			spriteIndexesByID[package->spriteIDs()->Get(i)] = i;
+			spriteIndexesByName[package->spriteNames()->Get(i)->str()] = i;
+		}
+		for (size_t i = 0; i < package->fonts()->size(); i++){
+			fontIndexesByID[package->fontIDs()->Get(i)] = i;
+			fontIndexesByName[package->fontNames()->Get(i)->str()] = i;
+		}
+		for (size_t i = 0; i < package->prefabs()->size(); i++) {
+			prefabIndexesByName[package->fontNames()->Get(i)->str()] = i;
+		}
+		for (size_t i = 0; i < package->scenes()->size(); i++) {
+			sceneIndexesByName[package->sceneNames()->Get(i)->str()] = i;
+		}
+	}
+#else
 	std::unordered_map<std::string, std::string> spritePathsByName;
 	std::unordered_map<spriteID, std::string> spritePathsByID;
 
@@ -182,7 +208,7 @@ private:
 
 	std::unordered_map<std::string, std::string> scenePathsByName;
 
-	std::unordered_map<std::string, std::string> ImagePathsByFileName;
+	//std::unordered_map<std::string, std::string> ImagePathsByFileName;
 
 	void createAssetLookups() {
 
@@ -192,7 +218,7 @@ private:
 		fontPathsByID.clear();
 		prefabPathsByName.clear();
 		scenePathsByName.clear();
-		ImagePathsByFileName.clear();
+		//ImagePathsByFileName.clear();
 
 		std::vector<std::string> assetFiles = getAllFilesInDirectory(directories.assetDir);
 		std::vector<std::string> prefabFiles = getAllFilesInDirectory(directories.prefabDir);
@@ -232,14 +258,14 @@ private:
 				auto name = Scene::peakJsonName(f);
 				scenePathsByName[name] = f;
 			}
-			else {
-				for (auto& s : ResourceManager_supportedExtensions) {
-					if (extension == s) {
-						std::string name = getFileName(f);
-						ImagePathsByFileName[name] = f;
-					}
-				}
-			}
+			//else {
+			//	for (auto& s : ResourceManager_supportedExtensions) {
+			//		if (extension == s) {
+			//			std::string name = getFileName(f);
+			//			ImagePathsByFileName[name] = f;
+			//		}
+			//	}
+			//}
 		}
 	};
 #endif

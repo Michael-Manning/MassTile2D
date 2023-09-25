@@ -1,0 +1,26 @@
+include "common.fbs";
+
+include "prefab.fbs";
+include "Scene.fbs";
+include "Sprite.fbs";
+include "Font.fbs";
+
+namespace AssetPack;
+
+table Package {
+
+    // in order for map assembly
+    spriteNames:[string];
+    spriteIDs:[uint];
+    fontNames:[string];
+    fontIDs:[uint];
+    prefabNames:[string];
+    sceneNames:[string];
+
+    sprites:[Sprite];
+    fonts:[Font];
+    prefabs:[Prefab];
+    scenes:[Scene];
+}
+
+root_type Package;

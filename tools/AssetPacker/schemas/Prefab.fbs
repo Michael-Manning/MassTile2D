@@ -1,0 +1,16 @@
+include "common.fbs";
+
+namespace AssetPack;
+
+table Prefab{
+    name:string;
+    behaviorHash:uint;
+    transform:Transform;
+    colorRenderer:ColorRenderer;
+    spriteRenderer:SpriteRenderer;
+    textRenderer:TextRenderer;
+    rigidbody:Rigidbody;
+    staticbody:Staticbody;
+}
+
+root_type Prefab;

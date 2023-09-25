@@ -114,7 +114,7 @@ Font GenerateFont_unidentified(const std::string& truetypeFilePath, std::string 
 	}
 
 	// create hash map kerning table 
-	font.kerningTable.clear();
+	font.kerningTable.resize(font.charCount * font.charCount);
 	for (size_t i = 0; i < font.charCount; i++)
 	{
 		int g1 = stbtt_FindGlyphIndex(&font_info, font.firstChar + i);

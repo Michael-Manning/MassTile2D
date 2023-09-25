@@ -1,0 +1,79 @@
+namespace AssetPack;
+
+struct vec2 {
+    x:float;
+    y:float;
+}
+
+struct vec4 {
+    r:float;
+    g:float;
+    b:float;
+    a:float;
+}
+
+enum FilterMode : int {
+    Nearest = 0,
+    Linear
+}
+
+enum Shape : int {
+    Rectangle = 0,
+    Circle
+}
+
+struct Transform{
+    position:vec2;
+    rotation:float;
+    scale:vec2;
+}
+
+struct SpriteRenderer{
+    atlasIndex:int;
+    entityID:uint;
+    spriteID:uint;
+}
+
+struct ColorRenderer{
+    color:vec4;
+    shape:Shape;
+    entityID:uint;
+}
+
+table TextRenderer{
+    text:string;
+    fontID:uint;
+    entityID:uint;
+    color:vec4;
+}
+
+struct Collider{
+    type:int;
+    radius:float;
+    scale:vec2;
+}
+
+struct Rigidbody{
+    entityID:uint;
+    collider:Collider;
+    linearDamping:float;
+    angularDamping:float;
+    fixedRotation:float;
+    bullet:bool;
+    gravityScale:float;
+    friction:float;
+    density:float;
+    restitution:float;
+}
+
+struct Staticbody{
+    entityID:uint;
+    collider:Collider;
+}
+
+table Entity{
+    behaviorHash:uint = 0;
+    id:uint;
+    name:string;
+    transform:Transform;
+}

@@ -12,6 +12,8 @@
 #include "serialization.h"
 #include "Component.h"
 
+#include <assetPack/common_generated.h>
+
 // Convert glm::vec2 to b2Vec2
 inline b2Vec2 gtb(const glm::vec2& vec) {
 	return b2Vec2(vec.x, vec.y);
@@ -49,13 +51,13 @@ public:
 
 	nlohmann::json serializeJson() override {
 		nlohmann::json j;
-		j["type"] = 1;
+		j["type"] = _getType();
 		j["scale"] = toJson(scale);
 		return j;
 	};
 
 	int _getType() override {
-		return 0;
+		return 1;
 	}
 
 	std::shared_ptr<Collider> duplicate() override {
@@ -83,7 +85,7 @@ public:
 
 	nlohmann::json serializeJson() override {
 		nlohmann::json j;
-		j["type"] = 2;
+		j["type"] = _getType();
 		j["radius"] = radius;
 		return j;
 	};
@@ -95,7 +97,7 @@ public:
 	float radius;
 
 	int _getType() override {
-		return 1;
+		return 2;
 	}
 
 private:
@@ -176,6 +178,21 @@ public:
 
 	nlohmann::json serializeJson(entityID entId) override;
 	static Staticbody deserializeJson(const nlohmann::json& j, std::shared_ptr<b2World> world);
+
+	static Staticbody deserializeFlatbuffers(const AssetPack::Staticbody* b, std::shared_ptr<b2World> world) {
+
+		std::shared_ptr<Collider> collider;
+		auto fbCollider = b->collider();
+		if(fbCollider.type() == 1){
+			collider = std::make_shared<BoxCollider>(fromAP(fbCollider.scale()));
+		}
+		else {
+			collider = std::make_shared<CircleCollider>(fbCollider.radius());
+		}
+
+		Staticbody body(world, collider);
+		return body;
+	}
 
 	std::shared_ptr<Collider> collider;
 
@@ -357,6 +374,35 @@ public:
 
 	nlohmann::json serializeJson(entityID entId) override;
 	static Rigidbody deserializeJson(const nlohmann::json& j, std::shared_ptr<b2World> world);
+
+	static Rigidbody deserializeFlatbuffers(const AssetPack::Rigidbody* b, std::shared_ptr<b2World> world) {
+		Rigidbody r;
+
+		auto fbCollider = b->collider();
+		if (fbCollider.type() == 1) {
+			r.collider = std::make_shared<BoxCollider>(fromAP(fbCollider.scale()));
+		}
+		else {
+			r.collider = std::make_shared<CircleCollider>(fbCollider.radius());
+		}
+
+		b2BodyDef bdef;
+		bdef.linearDamping = b->linearDamping();
+		bdef.angularDamping = b->angularDamping();
+		bdef.fixedRotation = b->fixedRotation();
+		bdef.bullet = b->bullet();
+		bdef.gravityScale = b->gravityScale();
+
+		b2FixtureDef fdef;
+		fdef.friction = b->friction();
+		fdef.density = b->density();
+		fdef.restitution = b->restitution();
+
+		r._generateBody(world, &fdef, &bdef);
+
+		return r;
+
+	}
 
 	std::shared_ptr<Collider> collider;
 

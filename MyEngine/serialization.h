@@ -33,3 +33,15 @@ static glm::vec2 fromJson(nlohmann::json j) {
 inline glm::vec2 fromAP(const AssetPack::vec2* v) {
 	return glm::vec2(v->x(), v->y());
 };
+
+inline glm::vec2 fromAP(const AssetPack::vec2 v) {
+	return glm::vec2(v.x(), v.y());
+};
+
+inline glm::vec4 fromAP(const AssetPack::vec4* v) {
+	return glm::vec4(v->r(), v->g(), v->b(), v->a());
+};
+
+inline glm::vec4 fromAP(const AssetPack::vec4 v) {
+	return glm::vec4(v.r(), v.g(), v.b(), v.a());
+};

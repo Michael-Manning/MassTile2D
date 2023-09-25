@@ -128,10 +128,26 @@ public:
 		for (size_t i = 0; i < s->atlas()->size(); i++)
 			sprite->atlas[i] = AtlasEntry::deserializeFlatbuffer(s->atlas()->Get(i));
 
-		auto val = s->atlasLayout();
-		auto xx = val->xCount();
-		auto yy = val->yCount();
+		if (sprite->atlas.size() > 0)
+			return sprite;
 
+		auto gridLayout = s->atlasLayout();
+		if (gridLayout != nullptr) {
+			int xcount = gridLayout->xCount();
+			int ycount = gridLayout->yCount();
+
+			float uvw = 1.0f / xcount;
+			float uvh = 1.0f / ycount;
+			for (size_t i = 0; i < ycount; i++) {
+				for (size_t j = 0; j < xcount; j++) {
+					AtlasEntry entry;
+					entry.name = std::to_string((int)(i + j * xcount));
+					entry.uv_min = glm::vec2(j * uvw, i * uvh);
+					entry.uv_max = entry.uv_min + glm::vec2(uvw, uvh);
+					sprite->atlas.push_back(entry);
+				}
+			}
+		}
 		return sprite;
 	}
 };
