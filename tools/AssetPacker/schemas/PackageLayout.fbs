@@ -1,0 +1,17 @@
+namespace AssetPack;
+
+table PackageLayout {
+
+   // in order for map assembly
+   spriteNames:[string];
+   spriteIDs:[uint];
+   fontNames:[string];
+   fontIDs:[uint];
+   prefabNames:[string];
+   sceneNames:[string];
+
+   resourceFileNames:[string];
+   resourceFileSizes:[uint];
+}
+
+root_type PackageLayout;

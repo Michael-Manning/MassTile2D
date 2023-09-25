@@ -73,7 +73,7 @@ public:
 
 	static std::shared_ptr<Sprite> deserializeJson(std::string filepath) {
 		std::ifstream input(filepath);
-	
+
 		nlohmann::json j;
 		input >> j;
 
@@ -92,7 +92,7 @@ public:
 				sprite->atlas.push_back(AtlasEntry::deserializeJson(i));
 			}
 		}
-			
+
 		// gen atlas via grid definition
 		else if (j.contains("atlasLayout")) {
 			nlohmann::json jb = j["atlasLayout"];
@@ -124,9 +124,11 @@ public:
 		sprite->imageFileName = s->imageFileName()->str();
 		sprite->filterMode = static_cast<FilterMode>(s->filterMode());
 
-		sprite->atlas.resize(s->atlas()->size());
-		for (size_t i = 0; i < s->atlas()->size(); i++)
-			sprite->atlas[i] = AtlasEntry::deserializeFlatbuffer(s->atlas()->Get(i));
+		if (s->atlas() != nullptr) {
+			sprite->atlas.resize(s->atlas()->size());
+			for (size_t i = 0; i < s->atlas()->size(); i++)
+				sprite->atlas[i] = AtlasEntry::deserializeFlatbuffer(s->atlas()->Get(i));
+		}
 
 		if (sprite->atlas.size() > 0)
 			return sprite;

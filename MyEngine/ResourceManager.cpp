@@ -40,6 +40,20 @@ texID ResourceManager::LoadTexture(std::string imagePath, FilterMode filterMode,
 	return id;
 }
 
+texID ResourceManager::LoadTexture(uint8_t * imageFileData, int dataLength, std::string fileName, FilterMode filterMode, bool imGuiTexure) {
+
+	assert(TextureIDGenerator.ContainsHash(fileName) == false);
+
+	Texture tex = rengine->genTexture(imageFileData, dataLength, filterMode);
+	texID id = TextureIDGenerator.GenerateID(fileName);
+
+	if (imGuiTexure)
+		tex.imTexture = ImGui_ImplVulkan_AddTexture(tex.sampler, tex.imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+	textureResources[id] = tex;
+	return id;
+}
+
 void ResourceManager::UpdateTexture(texID id, FilterMode filterMode) {
 	auto& tex = textureResources[id];
 	tex.sampler = (filterMode == FilterMode::Nearest) ? rengine->textureSampler_nearest : rengine->textureSampler_linear;

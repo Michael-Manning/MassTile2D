@@ -8,6 +8,7 @@
 #include <string>
 #include <imgui.h>
 #include <optional>
+#include <fstream>
 
 #include <box2d/box2d.h>
 
@@ -20,7 +21,9 @@
 #include "Scene.h"
 #include "ResourceManager.h"
 
-#include <assetPack/Package_generated.h>
+#include <assetPack/PackageHeader_generated.h>
+#include <assetPack/PackageLayout_generated.h>
+#include <assetPack/PackageAssets_generated.h>
 
 template<typename I, typename T>
 struct MapProxy {
@@ -34,6 +37,11 @@ struct MapProxy {
 	Iterator begin() const { return b; }
 	Iterator end() const { return e; }
 };
+
+#define USE_PACKED_ASSETS
+
+const auto AssetPackFileName = "../../tools/AssetPacker/Assets.bin";
+
 
 class AssetManager {
 
@@ -63,7 +71,21 @@ public:
 	};
 	AssetPaths directories;
 
-	const AssetPack::Package * package;
+	std::vector<uint8_t> packLayoutData;
+	const AssetPack::PackageLayout* packageLayout;
+
+	std::vector<uint8_t> temp_packAssetData;
+	const AssetPack::PackageAssets* packageAssets;
+	
+	std::string assetPackPath;
+
+	uint32_t headerSize;
+	uint32_t layoutSize;
+	uint32_t layoutOffset;
+	uint32_t assetsSize;
+	uint32_t assetsOffset;
+	uint32_t resourcesSize;
+	uint32_t resourcesOffset;
 
 	AssetManager(
 		std::shared_ptr<VKEngine> engine,
@@ -76,6 +98,39 @@ public:
 		directories(directories),
 		changeFlags(changeFlags)
 	{
+
+#ifdef  USE_PACKED_ASSETS
+		auto exePath = get_executable_directory();
+
+		assetPackPath = makePathAbsolute(exePath, AssetPackFileName);
+
+		// load header data
+		{
+			// header is usually 32 bytes, but we just need to make sure it at least fits in a buffer for our first file read
+			const int ProbablyHeaderSize = 128; 
+
+			std::vector<uint8_t> headerData(ProbablyHeaderSize);
+			std::ifstream file(assetPackPath.c_str(), std::ios::ate | std::ios::binary);
+			file.seekg(0);
+			file.read(reinterpret_cast<char*>(headerData.data()), headerData.size());
+			file.close();
+			auto header = AssetPack::GetPackageHeader(headerData.data());
+			layoutSize = header->LayoutSize();
+			layoutOffset = header->HeaderSize();
+			assetsSize = header->AssetsSize();
+			assetsOffset = layoutOffset + layoutSize;
+			resourcesSize = header->ResourcesSize();
+			resourcesOffset = assetsOffset + assetsSize;
+			
+		}
+
+		packLayoutData = readFile(assetPackPath, layoutOffset, layoutSize);
+		packageLayout = AssetPack::GetPackageLayout(packLayoutData.data());
+
+		// TEMP: just load all assets flatbuffer data emediatly. Replace with mapped pointer, at least optionally
+		temp_packAssetData = readFile(assetPackPath, assetsOffset, assetsSize);
+		packageAssets = AssetPack::GetPackageAssets(temp_packAssetData.data());
+#endif
 		createAssetLookups();
 	}
 
@@ -180,23 +235,47 @@ private:
 
 	std::unordered_map<std::string, uint32_t> sceneIndexesByName;
 
+	std::unordered_map<std::string, uint32_t> resourceFileSizes;
+	std::unordered_map<std::string, uint32_t> resourceFileOffsets;
+
 	void createAssetLookups() {
 
-		for (size_t i = 0; i < package->sprites()->size(); i++) {
-			spriteIndexesByID[package->spriteIDs()->Get(i)] = i;
-			spriteIndexesByName[package->spriteNames()->Get(i)->str()] = i;
+		for (size_t i = 0; i < packageLayout->spriteIDs()->size(); i++) {
+			spriteIndexesByID[packageLayout->spriteIDs()->Get(i)] = i;
+			spriteIndexesByName[packageLayout->spriteNames()->Get(i)->str()] = i;
 		}
-		for (size_t i = 0; i < package->fonts()->size(); i++){
-			fontIndexesByID[package->fontIDs()->Get(i)] = i;
-			fontIndexesByName[package->fontNames()->Get(i)->str()] = i;
+		for (size_t i = 0; i < packageLayout->fontIDs()->size(); i++){
+			fontIndexesByID[packageLayout->fontIDs()->Get(i)] = i;
+			fontIndexesByName[packageLayout->fontNames()->Get(i)->str()] = i;
 		}
-		for (size_t i = 0; i < package->prefabs()->size(); i++) {
-			prefabIndexesByName[package->fontNames()->Get(i)->str()] = i;
+		for (size_t i = 0; i < packageLayout->fontNames()->size(); i++) {
+			prefabIndexesByName[packageLayout->fontNames()->Get(i)->str()] = i;
 		}
-		for (size_t i = 0; i < package->scenes()->size(); i++) {
-			sceneIndexesByName[package->sceneNames()->Get(i)->str()] = i;
+		for (size_t i = 0; i < packageLayout->sceneNames()->size(); i++) {
+			sceneIndexesByName[packageLayout->sceneNames()->Get(i)->str()] = i;
 		}
+
+		uint32_t totalOffset = 0;
+		for (size_t i = 0; i < packageLayout->resourceFileNames()->size(); i++) {
+			std::string name = packageLayout->resourceFileNames()->Get(i)->str();
+			resourceFileOffsets[name] = totalOffset;
+			auto size = packageLayout->resourceFileSizes()->Get(i);
+			resourceFileSizes[name] = size;
+			totalOffset += size;
+		}
+		
+		// release memory
+		packLayoutData.clear();
+		packLayoutData.shrink_to_fit();
 	}
+
+	void GetPackedResourceData(uint8_t * data, uint32_t offset, uint32_t count) {
+		std::ifstream file(assetPackPath.c_str(), std::ios::ate | std::ios::binary);
+		file.seekg(offset + resourcesOffset);
+		file.read(reinterpret_cast<char*>(data), count);
+		file.close();
+	}
+
 #else
 	std::unordered_map<std::string, std::string> spritePathsByName;
 	std::unordered_map<spriteID, std::string> spritePathsByID;

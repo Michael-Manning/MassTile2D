@@ -180,12 +180,12 @@ std::shared_ptr<Scene> Scene::deserializeFlatbuffers(const AssetPack::Scene * s,
 		scene->registerComponent(entID, r);
 	}
 	for (size_t i = 0; i < s->rigidbodies()->size(); i++) {
-		Rigidbody r = Rigidbody::deserializeFlatbuffers(s->rigidbodies()->Get(i));
+		Rigidbody r = Rigidbody::deserializeFlatbuffers(s->rigidbodies()->Get(i), world);
 		entityID entID = s->rigidbodies()->Get(i)->entityID();
 		scene->registerComponent(entID, r);
 	}
 	for (size_t i = 0; i < s->staticbodies()->size(); i++) {
-		Staticbody r = Staticbody::deserializeFlatbuffers(s->staticbodies()->Get(i));
+		Staticbody r = Staticbody::deserializeFlatbuffers(s->staticbodies()->Get(i), world);
 		entityID entID = s->staticbodies()->Get(i)->entityID();
 		scene->registerComponent(entID, r);
 	}

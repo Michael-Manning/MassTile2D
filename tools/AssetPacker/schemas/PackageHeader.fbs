@@ -1,0 +1,10 @@
+namespace AssetPack;
+
+table PackageHeader{
+   HeaderSize:uint;
+   LayoutSize:uint;
+   AssetsSize:uint;
+   ResourcesSize:uint;
+}
+
+root_type PackageHeader;

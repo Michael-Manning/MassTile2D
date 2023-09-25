@@ -6,6 +6,7 @@
 
 #include "typedefs.h"
 #include "Component.h"
+#include "serialization.h"
 
 #include <assetPack/common_generated.h>
 
@@ -38,5 +39,6 @@ public:
 		ColorRenderer r;
 		r.color = fromAP(c->color());
 		r.shape = static_cast<Shape>(c->shape());
+		return r;
 	};
 };

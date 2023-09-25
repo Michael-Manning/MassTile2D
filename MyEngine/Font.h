@@ -16,6 +16,10 @@
 
 const auto Font_extension = ".font";
 
+// Serialize using binary during debug for speed. (takes 600ms per font using json)
+// Serialize using json on creation for asset packager to automatically convert to flatbuffer
+// serialize serialize flatbuffer during published build with packed assets
+
 struct charQuad {
 	alignas(8) glm::vec2 uvmin;
 	alignas(8) glm::vec2 uvmax;
@@ -37,7 +41,7 @@ struct packedChar {
 		j["scale"] = toJson(scale);
 		j["xOff"] = xOff;
 		j["yOff"] = yOff;
-		j["advance"] = advance;
+		j["xAdvance"] = advance;
 
 		return j;
 	};
@@ -96,6 +100,28 @@ public:
 
 	packedChar operator [] (char c) const { return packedChars[c - firstChar]; }
 
+	void serializeJson(std::string filepath) {
+
+		nlohmann::json j;
+
+		j["name"] = name;
+		j["firstChar"] = firstChar;
+		j["charCount"] = charCount;
+		j["fontHeight"] = fontHeight;
+		j["atlas"] = atlas;
+		j["ID"] = ID;
+
+		for (auto& c : packedChars)
+			j["packedChars"].push_back(c.serializeJson());
+
+		for (auto& c : kerningTable)
+			j["kerningTable"].push_back(c);
+
+
+		std::ofstream output(filepath);
+		output << j.dump(3) << std::endl;
+		output.close();
+	};
 	void serializeBinary(std::string filepath) {
 		BinaryWriter writer(filepath);
 

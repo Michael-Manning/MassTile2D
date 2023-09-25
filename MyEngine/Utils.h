@@ -134,3 +134,29 @@ static std::vector<uint8_t> readFile(const std::string& filename) {
 
     return buffer;
 }
+
+static std::vector<uint8_t> readFile(const std::string& filename, int offset, int maxLength) {
+
+    if (std::filesystem::exists(std::filesystem::path(filename)) == false) {
+        std::cout << "file not found: " << filename << std::endl;
+        throw std::runtime_error("failed to open file!");
+    }
+
+    std::ifstream file(filename, std::ios::ate | std::ios::binary);
+
+    if (!file.is_open()) {
+        throw std::runtime_error("failed to open file!");
+    }
+
+    size_t fileSize = (size_t)file.tellg();
+    fileSize -= offset;
+    fileSize = fileSize > maxLength ? maxLength : fileSize;
+    std::vector<uint8_t> buffer(fileSize);
+
+    file.seekg(offset);
+    file.read(reinterpret_cast<char*>(buffer.data()), fileSize);
+
+    file.close();
+
+    return buffer;
+}

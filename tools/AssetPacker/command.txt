@@ -1,1 +1,1 @@
-./flatc --cpp "schemas/Package.fbs" "schemas/Font.fbs" "schemas/common.fbs" "schemas/Prefab.fbs" "schemas/Scene.fbs" "schemas/Sprite.fbs"
+./flatc --cpp "schemas/PackageHeader.fbs" "schemas/PackageLayout.fbs" "schemas/PackageAssets.fbs" "schemas/Font.fbs" "schemas/common.fbs" "schemas/Prefab.fbs" "schemas/Scene.fbs" "schemas/Sprite.fbs"

@@ -23,8 +23,11 @@ void AssetManager::LoadAllSprites(bool loadResources) {
 	allLoadedSprites = true;
 
 #ifdef USE_PACKED_ASSETS
-	for(int i = 0; i < package->sprites()->size(); i++) {
-		auto sprite = Sprite::deserializeFlatbuffer(package->sprites()->Get(i));
+	if (packageAssets->sprites() == nullptr)
+		return;
+
+	for (int i = 0; i < packageAssets->sprites()->size(); i++) {
+		auto sprite = Sprite::deserializeFlatbuffer(packageAssets->sprites()->Get(i));
 #else
 	for (auto& [ID, path] : spritePathsByID) {
 		auto sprite = Sprite::deserializeJson(path);
@@ -34,8 +37,17 @@ void AssetManager::LoadAllSprites(bool loadResources) {
 		loadedSpritesByName[sprite->name] = sprite->ID;
 		SpriteIDGenerator.Input(sprite->ID);
 
-		if (loadResources && resourceManager->HasTexture(sprite->textureID) == false)
+		if (loadResources && resourceManager->HasTexture(sprite->textureID) == false) {
+#ifdef USE_PACKED_ASSETS
+			uint32_t fileSize = resourceFileSizes[sprite->imageFileName];
+			vector<uint8_t> fileData;
+			fileData.resize(fileSize);
+			GetPackedResourceData(fileData.data(), resourceFileOffsets[sprite->imageFileName], fileSize);
+			resourceManager->LoadTexture(fileData.data(), fileSize, sprite->imageFileName, sprite->filterMode, usingEditor);
+#else
 			resourceManager->LoadTexture(directories.textureSrcDir + sprite->imageFileName, sprite->filterMode, usingEditor);
+#endif
+		}
 	}
 
 	changeFlags->_spritesAdded = true;
@@ -44,11 +56,10 @@ void AssetManager::LoadAllSprites(bool loadResources) {
 
 void AssetManager::LoadSprite(spriteID spriteID, bool loadResources) {
 
-	assert(spriteAssets.contains(spriteID) == false);
-
 #ifdef USE_PACKED_ASSETS
-	auto sprite = Sprite::deserializeFlatbuffer(package->sprites()->Get(spriteIndexesByID[spriteID]));
+	auto sprite = Sprite::deserializeFlatbuffer(packageAssets->sprites()->Get(spriteIndexesByID[spriteID]));
 #else
+	assert(spriteAssets.contains(spriteID) == false);
 	auto sprite = Sprite::deserializeJson(spritePathsByID[spriteID]);
 #endif
 
@@ -63,11 +74,10 @@ void AssetManager::LoadSprite(spriteID spriteID, bool loadResources) {
 
 void AssetManager::LoadSprite(std::string name, bool loadResources) {
 
-	assert(spritePathsByName.contains(name) == true);
-
 #ifdef USE_PACKED_ASSETS
-	auto sprite = Sprite::deserializeFlatbuffer(package->sprites()->Get(spriteIndexesByName[name]));
+	auto sprite = Sprite::deserializeFlatbuffer(packageAssets->sprites()->Get(spriteIndexesByName[name]));
 #else
+	assert(spritePathsByName.contains(name) == true);
 	auto sprite = Sprite::deserializeJson(spritePathsByName[name]);
 #endif
 
@@ -100,11 +110,12 @@ void AssetManager::LoadAllFonts(bool loadResources) {
 	assert(allLoadedFonts == false);
 	allLoadedFonts = true;
 
-	auto fontFiles = getAllFilesInDirectory(std::filesystem::path(directories.assetDir));
-
 #ifdef USE_PACKED_ASSETS
-	for (int i = 0; i < package->fonts()->size(); i++) {
-		auto font = Font::deserializeFlatbuffer(package->fonts()->Get(i));
+	if (packageAssets->fonts() == nullptr)
+		return;
+
+	for (int i = 0; i < packageAssets->fonts()->size(); i++) {
+		auto font = Font::deserializeFlatbuffer(packageAssets->fonts()->Get(i));
 #else
 	for (auto& [fontID, path] : fontPathsByID) {
 		auto font = Font::deserializeBinary(path);
@@ -125,7 +136,7 @@ void AssetManager::LoadFont(fontID fontID, bool loadResources) {
 	assert(fontAssets.contains(fontID) == false);
 
 #ifdef USE_PACKED_ASSETS
-	auto font = Font::deserializeFlatbuffer(package->fonts()->Get(fontIndexesByID[fontID]));
+	auto font = Font::deserializeFlatbuffer(packageAssets->fonts()->Get(fontIndexesByID[fontID]));
 #else
 	auto font = Font::deserializeBinary(fontPathsByID[fontID]);
 #endif
@@ -140,11 +151,10 @@ void AssetManager::LoadFont(fontID fontID, bool loadResources) {
 
 void AssetManager::LoadFont(std::string name, bool loadResources) {
 
-	assert(fontPathsByName.contains(name) == true);
-
 #ifdef USE_PACKED_ASSETS
-	auto font = Font::deserializeFlatbuffer(package->fonts()->Get(fontIndexesByName[name]));
+	auto font = Font::deserializeFlatbuffer(packageAssets->fonts()->Get(fontIndexesByName[name]));
 #else
+	assert(fontPathsByName.contains(name) == true);
 	auto font = Font::deserializeBinary(fontPathsByName[name]);
 #endif
 
@@ -174,8 +184,11 @@ void AssetManager::LoadAllPrefabs(std::shared_ptr<b2World> world, bool loadResou
 	allLoadedPrefabs = true;
 
 #ifdef USE_PACKED_ASSETS
-	for (int i = 0; i < package->sprites()->size(); i++) {
-		auto prefab = Prefab::deserializeFlatbuffer(package->prefabs()->Get(i), world);
+	if (packageAssets->prefabs() == nullptr)
+		return;
+
+	for (int i = 0; i < packageAssets->prefabs()->size(); i++) {
+		auto prefab = Prefab::deserializeFlatbuffer(packageAssets->prefabs()->Get(i), world);
 		prefabAssets[prefab.name] = prefab;
 #else
 	for (auto& [name, path] : prefabPathsByName) {
@@ -186,10 +199,10 @@ void AssetManager::LoadAllPrefabs(std::shared_ptr<b2World> world, bool loadResou
 
 
 void AssetManager::LoadPrefab(std::string name, std::shared_ptr<b2World> world, bool loadResources) {
-	assert(prefabPathsByName.contains(name));
 #ifdef USE_PACKED_ASSETS
-	prefabAssets[name] = Prefab::deserializeFlatbuffer(package->prefabs()->Get(prefabIndexesByName[name]), world);
+	prefabAssets[name] = Prefab::deserializeFlatbuffer(packageAssets->prefabs()->Get(prefabIndexesByName[name]), world);
 #else
+	assert(prefabPathsByName.contains(name));
 	prefabAssets[name] = Prefab::deserializeJson(prefabPathsByName[name], world);
 #endif
 	if (loadResources)
@@ -198,11 +211,11 @@ void AssetManager::LoadPrefab(std::string name, std::shared_ptr<b2World> world, 
 
 
 void AssetManager::LoadScene(std::string sceneName, std::shared_ptr<b2World> world, bool loadResources) {
-	assert(scenePathsByName.contains(sceneName));
 #ifdef USE_PACKED_ASSETS
-	auto scene = Scene::deserializeFlatbuffers(package->prefabs()->Get(sceneIndexesByName[sceneName]), world);
+	auto scene = Scene::deserializeFlatbuffers(packageAssets->scenes()->Get(sceneIndexesByName[sceneName]), world);
 #else
 	auto scene = Scene::deserializeJson(scenePathsByName[sceneName], world);
+	assert(scenePathsByName.contains(sceneName));
 #endif
 	sceneAssets.emplace(sceneName, scene);
 	if (loadResources)
@@ -282,6 +295,7 @@ fontID AssetManager::ExportFont(std::string fontAssetExportPath, std::string spr
 	unidentified_font.ID = fontIDGenerator.GenerateID(unidentified_font.name);
 	unidentified_font.atlas = sprID;
 	unidentified_font.serializeBinary(fontAssetExportPath);
+	unidentified_font.serializeJson(fontAssetExportPath + ".fjson"); // for automatic packer only
 
 	createAssetLookups();
 

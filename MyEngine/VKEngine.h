@@ -71,6 +71,7 @@ public:
 	void createSyncObjects();
 
 	Texture genTexture(int w, int h, std::vector<uint8_t>& pixels, FilterMode filterMode = FilterMode::Linear);
+	Texture genTexture(const uint8_t * imageFileData, int dataLength, FilterMode filterMode = FilterMode::Linear);
 	Texture genTexture(std::string imagePath, FilterMode filterMode = FilterMode::Linear);
 	void freeTexture(Texture& texture);
 
@@ -119,7 +120,7 @@ public:
 	void beginRenderpass(uint32_t imageIndex, VkCommandBuffer cmdBuffer, glm::vec4 clearColor);
 
 	bool framebufferResized = false;
-	//private:
+
 	GLFWwindow* window;
 
 	uint32_t currentFrame = 0;
@@ -186,5 +187,9 @@ public:
 
 	void initTracyContext();
 #endif
+
+private:
+	void genTexture(unsigned char* pixels, VkDeviceSize imageSize, FilterMode filterMode, Texture& tex);
+
 };
 

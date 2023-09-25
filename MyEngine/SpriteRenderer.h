@@ -36,5 +36,6 @@ public:
 		SpriteRenderer r;
 		r.sprite = s->spriteID();
 		r.atlasIndex = s->atlasIndex();
+		return r;
 	};
 };

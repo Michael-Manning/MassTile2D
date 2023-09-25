@@ -54,3 +54,67 @@ With subpass dependencies, you can express that one subpass (writing to the imag
 Submission:
 
 You can submit the command buffer to a queue. If you've set up your synchronization correctly, you don't need multiple queue submissions just for this process.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#include <fstream>
+#include <cstdint>
+#include <bit> // for std::endian
+
+uint32_t toLittleEndian(uint32_t value) {
+    if constexpr (std::endian::native == std::endian::big) {
+        // Swap bytes if the native endianness is big-endian
+        return __builtin_bswap32(value);
+    } else {
+        return value;
+    }
+}
+
+uint32_t fromLittleEndian(uint32_t value) {
+    if constexpr (std::endian::native == std::endian::big) {
+        // Swap bytes if the native endianness is big-endian
+        return __builtin_bswap32(value);
+    } else {
+        return value;
+    }
+}
+
+int main() {
+    const char* filename = "number.bin";
+
+    // Writing to file
+    {
+        std::ofstream outStream(filename, std::ios::binary | std::ios::out);
+        uint32_t number = 123;
+        number = toLittleEndian(number);
+        outStream.write(reinterpret_cast<char*>(&number), sizeof(number));
+    }
+
+    // Reading from file
+    {
+        std::ifstream inStream(filename, std::ios::binary | std::ios::in);
+        uint32_t number;
+        inStream.read(reinterpret_cast<char*>(&number), sizeof(number));
+        number = fromLittleEndian(number);
+        // Now 'number' contains the correct value regardless of system endianness
+    }
+
+    return 0;
+}

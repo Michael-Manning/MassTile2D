@@ -309,7 +309,7 @@ bool VKEngine::submitAndPresent(uint32_t imageIndex) {
 
 	{
 		ZoneScopedN("submit gfx queue");
- 		if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS) {
+		if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS) {
 			throw std::runtime_error("failed to submit draw command buffer!");
 		}
 	}
@@ -645,20 +645,8 @@ Texture VKEngine::genTexture(int w, int h, std::vector<uint8_t>& pixels, FilterM
 
 }
 
-Texture VKEngine::genTexture(string imagePath, FilterMode filterMode) {
-
-	Texture tex = { 0 };
-
-
+void VKEngine::genTexture(unsigned char* pixels, VkDeviceSize imageSize, FilterMode filterMode, Texture& tex) {
 	{
-		int texChannels;
-		stbi_uc* pixels = stbi_load(imagePath.c_str(), &tex.resolutionX, &tex.resolutionY, &texChannels, STBI_rgb_alpha);
-		VkDeviceSize imageSize = tex.resolutionX * tex.resolutionY * 4;
-
-		if (!pixels) {
-			throw std::runtime_error("failed to load texture image!");
-		}
-
 		VkBuffer stagingBuffer;
 		VmaAllocation stagingBufferAllocation;
 		auto mytemp = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
@@ -692,6 +680,71 @@ Texture VKEngine::genTexture(string imagePath, FilterMode filterMode) {
 		else
 			tex.sampler = textureSampler_nearest;
 	}
+}
+
+Texture VKEngine::genTexture(const uint8_t* imageFileData, int dataLength, FilterMode filterMode) {
+	Texture tex = { 0 };
+	{
+		int texChannels;
+		stbi_uc* pixels = stbi_load_from_memory(imageFileData, dataLength, &tex.resolutionX, &tex.resolutionY, &texChannels, STBI_rgb_alpha);
+		VkDeviceSize imageSize = tex.resolutionX * tex.resolutionY * 4;
+
+		genTexture(pixels, imageSize, filterMode, tex);
+	}
+	return tex;
+}
+
+Texture VKEngine::genTexture(string imagePath, FilterMode filterMode) {
+
+	Texture tex = { 0 };
+
+
+	{
+		int texChannels;
+		stbi_uc* pixels = stbi_load(imagePath.c_str(), &tex.resolutionX, &tex.resolutionY, &texChannels, STBI_rgb_alpha);
+		VkDeviceSize imageSize = tex.resolutionX * tex.resolutionY * 4;
+
+		if (!pixels) {
+			throw std::runtime_error("failed to load texture image!");
+		}
+
+		genTexture(pixels, imageSize, filterMode, tex);
+	}
+
+
+	//	VkBuffer stagingBuffer;
+	//	VmaAllocation stagingBufferAllocation;
+	//	auto mytemp = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+	//	createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT, stagingBuffer, stagingBufferAllocation);
+
+	//	void* data;
+	//	vmaMapMemory(allocator, stagingBufferAllocation, &data);
+	//	memcpy(data, pixels, static_cast<size_t>(imageSize));
+	//	int tetset = 0;
+	//	vmaUnmapMemory(allocator, stagingBufferAllocation);
+
+	//	stbi_image_free(pixels);
+
+	//	createImage(tex.resolutionX, tex.resolutionY, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, tex.textureImage, tex.textureImageAllocation);
+
+	//	transitionImageLayout(tex.textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+	//	copyBufferToImage(stagingBuffer, tex.textureImage, static_cast<uint32_t>(tex.resolutionX), static_cast<uint32_t>(tex.resolutionY));
+	//	transitionImageLayout(tex.textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+	//	vkDestroyBuffer(device, stagingBuffer, nullptr);
+	//	vmaFreeMemory(allocator, stagingBufferAllocation);
+	//}
+
+	//{
+	//	tex.imageView = createImageView(tex.textureImage, VK_FORMAT_R8G8B8A8_SRGB);
+	//}
+
+	//{
+	//	if (filterMode == FilterMode::Linear)
+	//		tex.sampler = textureSampler_linear;
+	//	else
+	//		tex.sampler = textureSampler_nearest;
+	//}
 
 	return tex;
 }

@@ -24,6 +24,7 @@ public:
 
 	texID GenerateTexture(int w, int h, std::vector<uint8_t>& data, FilterMode filterMode, bool imGuiTexure = true);
 	texID LoadTexture(std::string imagePath, FilterMode filterMode, bool imGuiTexure = true);
+	texID LoadTexture(uint8_t* imageFileData, int dataLength, std::string fileName, FilterMode filterMode, bool imGuiTexure);
 
 	void UpdateTexture(texID id, FilterMode filterMode);
 

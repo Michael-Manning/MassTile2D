@@ -14,6 +14,7 @@
 #include "Component.h"
 #include "Utils.h"
 #include "Input.h"
+#include "serialization.h"
 
 #include <assetPack/common_generated.h>
 

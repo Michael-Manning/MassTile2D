@@ -95,6 +95,7 @@ std::shared_ptr<Entity> Entity::deserializeFlatbuffers(const AssetPack::Entity* 
 	entity->name = e->name()->str();
 	entity->transform = Transform::deserializeFlatbuffers(e->transform());
 
+	return entity;
 }
 
 

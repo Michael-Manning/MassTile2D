@@ -33,10 +33,12 @@ struct Package FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
     VT_FONTIDS = 10,
     VT_PREFABNAMES = 12,
     VT_SCENENAMES = 14,
-    VT_SPRITES = 16,
-    VT_FONTS = 18,
-    VT_PREFABS = 20,
-    VT_SCENES = 22
+    VT_RESOURCEFILENAMES = 16,
+    VT_RESOURCEFILESIZES = 18,
+    VT_SPRITES = 20,
+    VT_FONTS = 22,
+    VT_PREFABS = 24,
+    VT_SCENES = 26
   };
   const ::flatbuffers::Vector<::flatbuffers::Offset<::flatbuffers::String>> *spriteNames() const {
     return GetPointer<const ::flatbuffers::Vector<::flatbuffers::Offset<::flatbuffers::String>> *>(VT_SPRITENAMES);
@@ -55,6 +57,12 @@ struct Package FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   }
   const ::flatbuffers::Vector<::flatbuffers::Offset<::flatbuffers::String>> *sceneNames() const {
     return GetPointer<const ::flatbuffers::Vector<::flatbuffers::Offset<::flatbuffers::String>> *>(VT_SCENENAMES);
+  }
+  const ::flatbuffers::Vector<::flatbuffers::Offset<::flatbuffers::String>> *resourceFileNames() const {
+    return GetPointer<const ::flatbuffers::Vector<::flatbuffers::Offset<::flatbuffers::String>> *>(VT_RESOURCEFILENAMES);
+  }
+  const ::flatbuffers::Vector<uint32_t> *resourceFileSizes() const {
+    return GetPointer<const ::flatbuffers::Vector<uint32_t> *>(VT_RESOURCEFILESIZES);
   }
   const ::flatbuffers::Vector<::flatbuffers::Offset<AssetPack::Sprite>> *sprites() const {
     return GetPointer<const ::flatbuffers::Vector<::flatbuffers::Offset<AssetPack::Sprite>> *>(VT_SPRITES);
@@ -86,6 +94,11 @@ struct Package FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
            VerifyOffset(verifier, VT_SCENENAMES) &&
            verifier.VerifyVector(sceneNames()) &&
            verifier.VerifyVectorOfStrings(sceneNames()) &&
+           VerifyOffset(verifier, VT_RESOURCEFILENAMES) &&
+           verifier.VerifyVector(resourceFileNames()) &&
+           verifier.VerifyVectorOfStrings(resourceFileNames()) &&
+           VerifyOffset(verifier, VT_RESOURCEFILESIZES) &&
+           verifier.VerifyVector(resourceFileSizes()) &&
            VerifyOffset(verifier, VT_SPRITES) &&
            verifier.VerifyVector(sprites()) &&
            verifier.VerifyVectorOfTables(sprites()) &&
@@ -124,6 +137,12 @@ struct PackageBuilder {
   void add_sceneNames(::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<::flatbuffers::String>>> sceneNames) {
     fbb_.AddOffset(Package::VT_SCENENAMES, sceneNames);
   }
+  void add_resourceFileNames(::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<::flatbuffers::String>>> resourceFileNames) {
+    fbb_.AddOffset(Package::VT_RESOURCEFILENAMES, resourceFileNames);
+  }
+  void add_resourceFileSizes(::flatbuffers::Offset<::flatbuffers::Vector<uint32_t>> resourceFileSizes) {
+    fbb_.AddOffset(Package::VT_RESOURCEFILESIZES, resourceFileSizes);
+  }
   void add_sprites(::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<AssetPack::Sprite>>> sprites) {
     fbb_.AddOffset(Package::VT_SPRITES, sprites);
   }
@@ -155,6 +174,8 @@ inline ::flatbuffers::Offset<Package> CreatePackage(
     ::flatbuffers::Offset<::flatbuffers::Vector<uint32_t>> fontIDs = 0,
     ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<::flatbuffers::String>>> prefabNames = 0,
     ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<::flatbuffers::String>>> sceneNames = 0,
+    ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<::flatbuffers::String>>> resourceFileNames = 0,
+    ::flatbuffers::Offset<::flatbuffers::Vector<uint32_t>> resourceFileSizes = 0,
     ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<AssetPack::Sprite>>> sprites = 0,
     ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<AssetPack::Font>>> fonts = 0,
     ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<AssetPack::Prefab>>> prefabs = 0,
@@ -164,6 +185,8 @@ inline ::flatbuffers::Offset<Package> CreatePackage(
   builder_.add_prefabs(prefabs);
   builder_.add_fonts(fonts);
   builder_.add_sprites(sprites);
+  builder_.add_resourceFileSizes(resourceFileSizes);
+  builder_.add_resourceFileNames(resourceFileNames);
   builder_.add_sceneNames(sceneNames);
   builder_.add_prefabNames(prefabNames);
   builder_.add_fontIDs(fontIDs);
@@ -181,6 +204,8 @@ inline ::flatbuffers::Offset<Package> CreatePackageDirect(
     const std::vector<uint32_t> *fontIDs = nullptr,
     const std::vector<::flatbuffers::Offset<::flatbuffers::String>> *prefabNames = nullptr,
     const std::vector<::flatbuffers::Offset<::flatbuffers::String>> *sceneNames = nullptr,
+    const std::vector<::flatbuffers::Offset<::flatbuffers::String>> *resourceFileNames = nullptr,
+    const std::vector<uint32_t> *resourceFileSizes = nullptr,
     const std::vector<::flatbuffers::Offset<AssetPack::Sprite>> *sprites = nullptr,
     const std::vector<::flatbuffers::Offset<AssetPack::Font>> *fonts = nullptr,
     const std::vector<::flatbuffers::Offset<AssetPack::Prefab>> *prefabs = nullptr,
@@ -191,6 +216,8 @@ inline ::flatbuffers::Offset<Package> CreatePackageDirect(
   auto fontIDs__ = fontIDs ? _fbb.CreateVector<uint32_t>(*fontIDs) : 0;
   auto prefabNames__ = prefabNames ? _fbb.CreateVector<::flatbuffers::Offset<::flatbuffers::String>>(*prefabNames) : 0;
   auto sceneNames__ = sceneNames ? _fbb.CreateVector<::flatbuffers::Offset<::flatbuffers::String>>(*sceneNames) : 0;
+  auto resourceFileNames__ = resourceFileNames ? _fbb.CreateVector<::flatbuffers::Offset<::flatbuffers::String>>(*resourceFileNames) : 0;
+  auto resourceFileSizes__ = resourceFileSizes ? _fbb.CreateVector<uint32_t>(*resourceFileSizes) : 0;
   auto sprites__ = sprites ? _fbb.CreateVector<::flatbuffers::Offset<AssetPack::Sprite>>(*sprites) : 0;
   auto fonts__ = fonts ? _fbb.CreateVector<::flatbuffers::Offset<AssetPack::Font>>(*fonts) : 0;
   auto prefabs__ = prefabs ? _fbb.CreateVector<::flatbuffers::Offset<AssetPack::Prefab>>(*prefabs) : 0;
@@ -203,6 +230,8 @@ inline ::flatbuffers::Offset<Package> CreatePackageDirect(
       fontIDs__,
       prefabNames__,
       sceneNames__,
+      resourceFileNames__,
+      resourceFileSizes__,
       sprites__,
       fonts__,
       prefabs__,

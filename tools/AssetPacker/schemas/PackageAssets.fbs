@@ -1,0 +1,17 @@
+include "common.fbs";
+
+include "prefab.fbs";
+include "Scene.fbs";
+include "Sprite.fbs";
+include "Font.fbs";
+
+namespace AssetPack;
+
+table PackageAssets {
+   sprites:[Sprite];
+   fonts:[Font];
+   prefabs:[Prefab];
+   scenes:[Scene];
+}
+
+root_type PackageAssets;
