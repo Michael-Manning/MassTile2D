@@ -1,5 +1,6 @@
 #pragma once
 
+
 #include <vector>
 #include <stdint.h>
 #include <unordered_map>
@@ -9,6 +10,15 @@
 #include <imgui.h>
 #include <optional>
 #include <fstream>
+
+#ifdef USE_PACKED_ASSETS
+#define USE_EMBEDDED_ASSETS
+#endif
+
+#ifdef USE_EMBEDDED_ASSETS
+#include <Windows.h>
+#endif
+
 
 #include <box2d/box2d.h>
 
@@ -38,9 +48,7 @@ struct MapProxy {
 	Iterator end() const { return e; }
 };
 
-#define USE_PACKED_ASSETS
 
-//const auto AssetPackFileName = "../../tools/AssetPacker/Assets.bin";
 const auto AssetPackFileName = "Assets.bin";
 
 
@@ -67,8 +75,9 @@ public:
 	struct AssetPaths {
 		std::string prefabDir;
 		std::string assetDir;
-		std::string textureSrcDir;
 		std::string fontsDir;
+		std::string shaderDir;
+		void* resourcePtr = nullptr;
 	};
 	AssetPaths directories;
 
@@ -101,14 +110,18 @@ public:
 	{
 
 #ifdef  USE_PACKED_ASSETS
-		auto exePath = get_executable_directory();
-
-		assetPackPath = makePathAbsolute(exePath, AssetPackFileName);
 
 		// load header data
 		{
 			// header is usually 32 bytes, but we just need to make sure it at least fits in a buffer for our first file read
 			const int ProbablyHeaderSize = 128;
+
+#ifdef USE_EMBEDDED_ASSETS
+			assert(directories.resourcePtr != nullptr);
+			auto header = AssetPack::GetPackageHeader(directories.resourcePtr);
+#else
+			auto exePath = get_executable_directory();
+			assetPackPath = makePathAbsolute(exePath, AssetPackFileName);
 
 			std::vector<uint8_t> headerData(ProbablyHeaderSize);
 			std::ifstream file(assetPackPath.c_str(), std::ios::ate | std::ios::binary);
@@ -116,6 +129,7 @@ public:
 			file.read(reinterpret_cast<char*>(headerData.data()), headerData.size());
 			file.close();
 			auto header = AssetPack::GetPackageHeader(headerData.data());
+#endif
 			layoutSize = header->LayoutSize();
 			layoutOffset = header->HeaderSize();
 			assetsSize = header->AssetsSize();
@@ -125,12 +139,19 @@ public:
 
 		}
 
+
+#ifdef USE_EMBEDDED_ASSETS
+		packageLayout = AssetPack::GetPackageLayout(reinterpret_cast<uint8_t*>(directories.resourcePtr) + layoutOffset);
+		packageAssets = AssetPack::GetPackageAssets(reinterpret_cast<uint8_t*>(directories.resourcePtr) + assetsOffset);
+#else 
 		packLayoutData = readFile(assetPackPath, layoutOffset, layoutSize);
 		packageLayout = AssetPack::GetPackageLayout(packLayoutData.data());
 
 		// TEMP: just load all assets flatbuffer data emediatly. Replace with mapped pointer, at least optionally
 		temp_packAssetData = readFile(assetPackPath, assetsOffset, assetsSize);
 		packageAssets = AssetPack::GetPackageAssets(temp_packAssetData.data());
+#endif
+
 #endif
 		createAssetLookups();
 	}
@@ -186,13 +207,35 @@ public:
 		// update file on disk (used by editor only)
 		sprite->serializeJson(spritePathsByID[id]);
 #endif
-	};
+};
 
 #ifdef USE_PACKED_ASSETS
-	void LoadPackedResourceFile(std::string name, std::vector<uint8_t>& data) {
+#ifdef USE_EMBEDDED_ASSETS
+	void LoadResourceFile(std::string name, std::vector<uint8_t>& data) {
+		auto offset = resourceFileOffsets[name];
+		auto size = resourceFileSizes[name];
+		data.resize(size);
+		std::copy(reinterpret_cast<uint8_t*>(directories.resourcePtr) + resourcesOffset + offset, reinterpret_cast<uint8_t*>(directories.resourcePtr) + resourcesOffset + offset + size, data.data());
+	};
+	inline void LoadShaderFile(std::string name, std::vector<uint8_t>& data) {
+		return LoadResourceFile(name, data);
+	};
+#else
+	void LoadResourceFile(std::string name, std::vector<uint8_t>& data) {
 		auto offset = resourceFileOffsets[name];
 		auto size = resourceFileSizes[name];
 		data = readFile(assetPackPath, offset + resourcesOffset, size);
+	};
+	inline void LoadShaderFile(std::string name, std::vector<uint8_t>& data) {
+		return LoadResourceFile(name, data);
+	};
+#endif
+#else
+	void LoadShaderFile(std::string name, std::vector<uint8_t>& data) {
+		data = readFile(directories.shaderDir + name);
+	};
+	void LoadResourceFile(std::string name, std::vector<uint8_t>& data) {
+		data = readFile(directories.assetDir + name);
 	};
 #endif
 
@@ -258,8 +301,8 @@ private:
 			fontIndexesByID[packageLayout->fontIDs()->Get(i)] = i;
 			fontIndexesByName[packageLayout->fontNames()->Get(i)->str()] = i;
 		}
-		for (size_t i = 0; i < packageLayout->fontNames()->size(); i++) {
-			prefabIndexesByName[packageLayout->fontNames()->Get(i)->str()] = i;
+		for (size_t i = 0; i < packageLayout->prefabNames()->size(); i++) {
+			prefabIndexesByName[packageLayout->prefabNames()->Get(i)->str()] = i;
 		}
 		for (size_t i = 0; i < packageLayout->sceneNames()->size(); i++) {
 			sceneIndexesByName[packageLayout->sceneNames()->Get(i)->str()] = i;
@@ -280,10 +323,14 @@ private:
 	}
 
 	void GetPackedResourceData(uint8_t* data, uint32_t offset, uint32_t count) {
+#ifdef USE_EMBEDDED_ASSETS
+		std::copy(reinterpret_cast<uint8_t*>(directories.resourcePtr) + resourcesOffset + offset, reinterpret_cast<uint8_t*>(directories.resourcePtr) + resourcesOffset + offset + count, data);
+#else
 		std::ifstream file(assetPackPath.c_str(), std::ios::ate | std::ios::binary);
 		file.seekg(offset + resourcesOffset);
 		file.read(reinterpret_cast<char*>(data), count);
 		file.close();
+#endif
 	}
 
 #else
@@ -311,11 +358,11 @@ private:
 
 		std::vector<std::string> assetFiles = getAllFilesInDirectory(directories.assetDir);
 		std::vector<std::string> prefabFiles = getAllFilesInDirectory(directories.prefabDir);
-		std::vector<std::string> imageFiles = getAllFilesInDirectory(directories.textureSrcDir);
+	//	std::vector<std::string> imageFiles = getAllFilesInDirectory(directories.textureSrcDir);
 
 		// combine all three vectors into one
 		assetFiles.insert(assetFiles.end(), prefabFiles.begin(), prefabFiles.end());
-		assetFiles.insert(assetFiles.end(), imageFiles.begin(), imageFiles.end());
+//		assetFiles.insert(assetFiles.end(), imageFiles.begin(), imageFiles.end());
 
 		for (auto& f : assetFiles) {
 

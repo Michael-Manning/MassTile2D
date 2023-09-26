@@ -45,7 +45,7 @@ void AssetManager::LoadAllSprites(bool loadResources) {
 			GetPackedResourceData(fileData.data(), resourceFileOffsets[sprite->imageFileName], fileSize);
 			resourceManager->LoadTexture(fileData.data(), fileSize, sprite->imageFileName, sprite->filterMode, usingEditor);
 #else
-			resourceManager->LoadTexture(directories.textureSrcDir + sprite->imageFileName, sprite->filterMode, usingEditor);
+			resourceManager->LoadTexture(directories.assetDir + sprite->imageFileName, sprite->filterMode, usingEditor);
 #endif
 		}
 	}
@@ -66,9 +66,17 @@ void AssetManager::LoadSprite(spriteID spriteID, bool loadResources) {
 	spriteAssets[sprite->ID] = sprite;
 	loadedSpritesByName[sprite->name] = sprite->ID;
 
-	if (loadResources && resourceManager->HasTexture(sprite->textureID) == false)
-		resourceManager->LoadTexture(directories.textureSrcDir + sprite->imageFileName, sprite->filterMode, usingEditor);
-
+	if (loadResources && resourceManager->HasTexture(sprite->textureID) == false) {
+#ifdef USE_PACKED_ASSETS
+		uint32_t fileSize = resourceFileSizes[sprite->imageFileName];
+		vector<uint8_t> fileData;
+		fileData.resize(fileSize);
+		GetPackedResourceData(fileData.data(), resourceFileOffsets[sprite->imageFileName], fileSize);
+		resourceManager->LoadTexture(fileData.data(), fileSize, sprite->imageFileName, sprite->filterMode, usingEditor);
+#else
+		resourceManager->LoadTexture(directories.assetDir + sprite->imageFileName, sprite->filterMode, usingEditor);
+#endif
+	}
 	changeFlags->_spritesAdded = true;
 }
 
@@ -86,9 +94,18 @@ void AssetManager::LoadSprite(std::string name, bool loadResources) {
 
 	assert(spriteAssets.contains(sprite->ID) == false);
 
-	if (loadResources && resourceManager->HasTexture(sprite->textureID) == false)
-		resourceManager->LoadTexture(directories.textureSrcDir + sprite->imageFileName, sprite->filterMode, usingEditor);
+	if (loadResources && resourceManager->HasTexture(sprite->textureID) == false) {
 
+#ifdef USE_PACKED_ASSETS
+		uint32_t fileSize = resourceFileSizes[sprite->imageFileName];
+		vector<uint8_t> fileData;
+		fileData.resize(fileSize);
+		GetPackedResourceData(fileData.data(), resourceFileOffsets[sprite->imageFileName], fileSize);
+		resourceManager->LoadTexture(fileData.data(), fileSize, sprite->imageFileName, sprite->filterMode, usingEditor);
+#else
+		resourceManager->LoadTexture(directories.assetDir + sprite->imageFileName, sprite->filterMode, usingEditor);
+#endif
+	}
 	changeFlags->_spritesAdded = true;
 }
 

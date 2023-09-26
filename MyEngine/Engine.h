@@ -81,7 +81,7 @@ public:
 		DebugLog("Engine created");
 	}
 
-	void Start(std::string windowName, int winW, int winH, std::string shaderDir, const SwapChainSetting swapchainSetting);
+	void Start(std::string windowName, int winW, int winH, const SwapChainSetting swapchainSetting);
 
 	bool ShouldClose();
 	void Close();
@@ -178,7 +178,7 @@ public:
 	}
 
 
-	inline void addScreenSpaceText(std::string text, fontID font, glm::vec2 position, glm::vec4 color) {
+	inline void addScreenSpaceText(fontID font, glm::vec2 position, glm::vec4 color, std::string text) {
 		screenSpaceTextDrawItem item;
 		item.font = font;
 		item.text = text;
@@ -186,6 +186,27 @@ public:
 		item.header.position = position;
 		item.header.rotation = 0.0f;
 		item.header.textLength = text.length();
+		screenSpaceTextDrawlist.push_back(item);
+	};
+
+	void addScreenSpaceText(fontID font, glm::vec2 position, glm::vec4 color, const char* fmt, ...) {
+
+		char buffer[TEXTPL_maxTextLength];
+
+		va_list args;
+		va_start(args, fmt);
+		vsnprintf(buffer, sizeof(buffer), fmt, args);
+		va_end(args);
+
+		std::string result = buffer;
+
+		screenSpaceTextDrawItem item;
+		item.font = font;
+		item.text = result;
+		item.header.color = color;
+		item.header.position = position;
+		item.header.rotation = 0.0f;
+		item.header.textLength = result.length();
 		screenSpaceTextDrawlist.push_back(item);
 	};
 

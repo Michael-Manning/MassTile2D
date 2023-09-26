@@ -110,7 +110,7 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 	app->GetInput()->_onScroll(xoffset, yoffset);
 }
 
-void Engine::Start(std::string windowName, int winW, int winH, std::string shaderDir, const SwapChainSetting swapchainSetting) {
+void Engine::Start(std::string windowName, int winW, int winH, const SwapChainSetting swapchainSetting) {
 
 	PROFILE_START(Engine_Startup);
 
@@ -178,58 +178,48 @@ void Engine::Start(std::string windowName, int winW, int winH, std::string shade
 		screenSpaceColorPipeline->CreateInstancingBuffer();
 		screenSpaceTextPipeline->createSSBOBuffer();
 
-#ifdef  USE_PACKED_ASSETS
 		{
 			vector<uint8_t> vert, frag;
-			assetManager->LoadPackedResourceFile("color_vert.spv", vert);
-			assetManager->LoadPackedResourceFile("color_frag.spv", frag);
+			assetManager->LoadShaderFile("color_vert.spv", vert);
+			assetManager->LoadShaderFile("color_frag.spv", frag);
 			colorPipeline->CreateGraphicsPipeline(vert, frag, cameraUploader.transferBuffers);
 		}
 		{
 			vector<uint8_t> vert, frag;
-			assetManager->LoadPackedResourceFile("texture_vert.spv", vert);
-			assetManager->LoadPackedResourceFile("texture_frag.spv", frag);
+			assetManager->LoadShaderFile("texture_vert.spv", vert);
+			assetManager->LoadShaderFile("texture_frag.spv", frag);
 			texturePipeline->CreateGraphicsPipeline(vert, frag, cameraUploader.transferBuffers);
 		}
 		{
 			vector<uint8_t> vert, frag;
-			assetManager->LoadPackedResourceFile("tilemap_vert.spv", vert);
-			assetManager->LoadPackedResourceFile("tilemap_frag.spv", frag);
+			assetManager->LoadShaderFile("tilemap_vert.spv", vert);
+			assetManager->LoadShaderFile("tilemap_frag.spv", frag);
 			tilemapPipeline->CreateGraphicsPipeline(vert, frag, cameraUploader.transferBuffers);
 		}
 		{
 			vector<uint8_t> vert, frag;
-			assetManager->LoadPackedResourceFile("text_vert.spv", vert);
-			assetManager->LoadPackedResourceFile("text_frag.spv", frag);
+			assetManager->LoadShaderFile("text_vert.spv", vert);
+			assetManager->LoadShaderFile("text_frag.spv", frag);
 			textPipeline->CreateGraphicsPipeline(vert, frag, cameraUploader.transferBuffers);
 		}
 		{
 			vector<uint8_t> comp, blur;
-			assetManager->LoadPackedResourceFile("lighting_comp.spv", comp);
-			assetManager->LoadPackedResourceFile("lightingBlur_comp.spv", blur);
+			assetManager->LoadShaderFile("lighting_comp.spv", comp);
+			assetManager->LoadShaderFile("lightingBlur_comp.spv", blur);
 			lightingPipeline->CreateComputePipeline(comp, blur);
 		}
 		{
 			vector<uint8_t> vert, frag;
-			assetManager->LoadPackedResourceFile("screenSpaceShape_vert.spv", vert);
-			assetManager->LoadPackedResourceFile("screenSpaceShape_frag.spv", frag);
+			assetManager->LoadShaderFile("screenSpaceShape_vert.spv", vert);
+			assetManager->LoadShaderFile("screenSpaceShape_frag.spv", frag);
 			screenSpaceColorPipeline->CreateGraphicsPipeline(vert, frag, screenSpaceTransformUploader.transferBuffers, true);
 		}
 		{
 			vector<uint8_t> vert, frag;
-			assetManager->LoadPackedResourceFile("screenSpaceText_vert.spv", vert);
-			assetManager->LoadPackedResourceFile("screenSpaceText_frag.spv", frag);
+			assetManager->LoadShaderFile("screenSpaceText_vert.spv", vert);
+			assetManager->LoadShaderFile("screenSpaceText_frag.spv", frag);
 			screenSpaceTextPipeline->CreateGraphicsPipeline(vert, frag, screenSpaceTransformUploader.transferBuffers, true);
 		}
-#else
-		colorPipeline->CreateGraphicsPipeline(shaderDir + "color_vert.spv", shaderDir + "color_frag.spv", cameraUploader.transferBuffers);
-		texturePipeline->CreateGraphicsPipeline(shaderDir + "texture_vert.spv", shaderDir + "texture_frag.spv", cameraUploader.transferBuffers);
-		tilemapPipeline->CreateGraphicsPipeline(shaderDir + "tilemap_vert.spv", shaderDir + "tilemap_frag.spv", cameraUploader.transferBuffers);
-		textPipeline->CreateGraphicsPipeline(shaderDir + "text_vert.spv", shaderDir + "text_frag.spv", cameraUploader.transferBuffers);
-		lightingPipeline->CreateComputePipeline(shaderDir + "lighting_comp.spv", shaderDir + "lightingBlur_comp.spv");
-		screenSpaceColorPipeline->CreateGraphicsPipeline(shaderDir + "screenSpaceShape_vert.spv", shaderDir + "screenSpaceShape_frag.spv", screenSpaceTransformUploader.transferBuffers, true);
-		screenSpaceTextPipeline->CreateGraphicsPipeline(shaderDir + "screenSpaceText_vert.spv", shaderDir + "screenSpaceText_frag.spv", screenSpaceTransformUploader.transferBuffers, true);
-#endif
 	}
 
 	rengine->createSyncObjects();

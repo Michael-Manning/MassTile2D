@@ -22,6 +22,7 @@
 
 
 #include "VKEngine.h"
+#include "AssetManager.h"
 #include "Engine.h"
 
 #ifdef USING_EDITOR
@@ -49,10 +50,9 @@
 #include <flatbuffers/flatbuffers.h>
 #include <assetPack/Sprite_generated.h>
 
+
 const uint32_t winW = 1400;
 const uint32_t winH = 800;
-
-
 
 using namespace std;
 using namespace glm;
@@ -119,26 +119,52 @@ int main() {
 #endif
 
 
+	void* resourcePtr = nullptr;
+#ifdef USE_EMBEDDED_ASSETS
+	{
+		HMODULE hModule = GetModuleHandle(NULL);
+		LPCSTR lpType = "BINARY";
+		LPCSTR lpName = "Assets";
+		HRSRC hResource = FindResource(hModule, MAKEINTRESOURCEA(101), lpType);
+		if (hResource == NULL) {
+			std::cerr << "Unable to find resource." << std::endl;
+			return  1;
+		}
+
+		// Load the resource
+		HGLOBAL hMemory = LoadResource(hModule, hResource);
+		if (hMemory == NULL) {
+			std::cerr << "Unable to load resource." << std::endl;
+			return 1;
+		}
+
+		// Lock the resource and get a pointer to the data
+		resourcePtr = LockResource(hMemory);
+		if (resourcePtr == NULL) {
+			std::cerr << "Unable to lock resource." << std::endl;
+			return 1;
+		}
+	}
+#endif
 
 	auto exePath = get_executable_directory();
-
-	string shaderPath = makePathAbsolute(exePath, "../../shaders/compiled/") + "/";
 	AssetManager::AssetPaths AssetDirectories;
+#ifndef USE_PACKED_ASSETS
 	AssetDirectories.prefabDir = makePathAbsolute(exePath, "../../data/Prefabs/") + "/";
 	AssetDirectories.assetDir = makePathAbsolute(exePath, "../../data/Assets/") + "/";
-	AssetDirectories.textureSrcDir = makePathAbsolute(exePath, "../../data/Assets/") + "/";
 	AssetDirectories.fontsDir = makePathAbsolute(exePath, "../../data/Fonts/") + "/";
+	AssetDirectories.shaderDir = makePathAbsolute(exePath, "../../shaders/compiled/") + "/";
+#endif
+	AssetDirectories.resourcePtr = resourcePtr;
 
 	SwapChainSetting swapchainSettings;
 	swapchainSettings.vsync = true;
 	swapchainSettings.capFramerate = false;
 
-
-
 	auto rengine = std::make_shared<VKEngine>();
 	Engine engine(rengine, AssetDirectories);
 	const auto& scene = engine.GetCurrentScene(); // quick reference
-	engine.Start("video game", winW, winH, shaderPath, swapchainSettings);
+	engine.Start("video game", winW, winH, swapchainSettings);
 
 	const auto input = engine.GetInput();
 
@@ -150,9 +176,13 @@ int main() {
 
 	{
 		// load this from packed resources. 
-		std::ifstream inStream(AssetDirectories.assetDir + "worldgen.json");
-		nlohmann::json j;
-		inStream >> j;
+
+		//std::ifstream inStream(AssetDirectories.assetDir + "worldgen.json");
+		vector<uint8_t> worldGenData;
+		engine.assetManager->LoadResourceFile("worldgen.json", worldGenData);
+		worldGenData.push_back('\0');
+		auto j = nlohmann::json::parse(worldGenData.data());
+
 
 		auto baseParams = NoiseParams::fromJson(j["baseTerrain"]);
 		auto ironParams = NoiseParams::fromJson(j["ironDist"]);
@@ -245,9 +275,9 @@ int main() {
 
 
 			});
-	//	engine.worldMap->saveToDisk(AssetDirectories.assetDir + "world.dat");
+		//	engine.worldMap->saveToDisk(AssetDirectories.assetDir + "world.dat");
 #else
-		engine.worldMap->loadFromDisk(AssetDirectories.assetDir + "world.dat");
+		//engine.worldMap->loadFromDisk(AssetDirectories.assetDir + "world.dat");
 
 		PROFILE_START(world_post_process);
 #endif 
@@ -286,21 +316,32 @@ int main() {
 
 	auto ctest = engine.worldMap->getTile(0, 0);
 
-	engine.setTilemapAtlasTexture(engine.assetManager->GetSprite("tilemapSprites")->textureID);
+	//engine.setTilemapAtlasTexture(engine.assetManager->GetSprite("tilemapSprites")->textureID);
 
 
 	vector<vec2> torchPositions;
 
-	shared_ptr<Player> player = dynamic_pointer_cast<Player>(scene->Instantiate(engine.assetManager->GetPrefab("Player"), "Player", vec2(0, 106), 0));
+	//shared_ptr<Player> player = dynamic_pointer_cast<Player>(scene->Instantiate(engine.assetManager->GetPrefab("Player"), "Player", vec2(0, 106), 0));
 
-	//	fontID coolfont = engine.assetManager->GetFontID("roboto-32");
+	fontID coolfont = engine.assetManager->GetFontID("roboto-32");
 	//
 	while (!engine.ShouldClose())
 	{
-
 		engine.clearScreenSpaceDrawlist();
-		engine.addScreenSpaceQuad(vec4(1.0), input->getMousePos(), vec2(50));
-		//engine.addScreenSpaceText("hello world", coolfont, vec2(100, 100), vec4(1, 0, 0, 1));
+		{
+			auto white = vec4(1.0);
+			//engine.addScreenSpaceQuad(vec4(1.0), input->getMousePos(), vec2(50));
+		
+			engine.addScreenSpaceText(coolfont, { 200, 100 }, white, "Settings");
+
+			const auto optionA = "fullscreen";
+			engine.addScreenSpaceText(coolfont, {200, 300 }, white, "Window mode: %s", optionA);
+
+
+			
+
+
+		}
 
 		using namespace ImGui;
 
@@ -339,7 +380,7 @@ int main() {
 #else
 		engine.camera.position = GcameraPos;
 #endif
-#if 1
+#if 0
 		{
 
 			static int lastX = -1;

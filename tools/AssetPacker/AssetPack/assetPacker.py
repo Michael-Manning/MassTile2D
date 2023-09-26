@@ -6,9 +6,11 @@ import flatbuffers
 
 builder = flatbuffers.Builder(1024)
 
+packageExportDir = "../../MyGame/"
 packagedFileName = "Assets.bin"
 
 assetSrcDir = "../../data/Assets/";
+prefabsDir = "../../data/Prefabs/";
 shadersSrcDir = "../../shaders/compiled/";
 flatcPath = "flatc"
 
@@ -59,11 +61,21 @@ def combineFiles (output_filepath, filepaths):
                print(f'Appended data from {filepath} to {output_filepath}')
    return lengths;
 
+
+excludeJson = getJson(assetSrcDir + "package_exclude.json")
+excludeList = []
+excludeList.append("package_exclude.json")
+for filename in excludeJson["ignoredFiles"]:
+   excludeList.append(filename)
+
 # Create a list of all files in the asset source directory
-jsonFiles = []
+allAssetFiles = []
 for root, dirs, files in os.walk(assetSrcDir):
    for file in files:
-      jsonFiles.append(os.path.join(root, file))
+      allAssetFiles.append(os.path.join(root, file))
+for root, dirs, files in os.walk(prefabsDir):
+   for file in files:
+      allAssetFiles.append(os.path.join(root, file))
 
 
 
@@ -82,7 +94,7 @@ rourceFileSizes = []
 
 resourceFilePaths = []
 
-for file in jsonFiles:
+for file in allAssetFiles:
     # Get the file extension
    fileExt = os.path.splitext(file)[1]
 
@@ -91,22 +103,23 @@ for file in jsonFiles:
       spriteNames.append(spr["name"])
       spriteIDs.append(spr["ID"])
       sprites.append(spr)
-   if fileExt == ".fjson": 
+   elif fileExt == ".fjson": 
       fnt = getJson(file)
       fontNames.append(fnt["name"])
       fontIDs.append(fnt["ID"])
       fonts.append(fnt)
-   if fileExt == ".prefab": 
+   elif fileExt == ".prefab": 
       pfb = getJson(file)
       prefabNames.append(pfb["name"])
       prefabs.append(pfb)
-   if fileExt == ".scene": 
+   elif fileExt == ".scene": 
       scn = getJson(file)
       sceneNames.append(scn["name"])
       scenes.append(scn)
    else:
-      resourceFileNames.append(os.path.basename(file))
-      resourceFilePaths.append(file)
+      if os.path.basename(file) not in excludeList:
+         resourceFileNames.append(os.path.basename(file))
+         resourceFilePaths.append(file)
 
 # add shaders as assets
 for root, dirs, files in os.walk(shadersSrcDir):
@@ -182,7 +195,7 @@ with open(HeaderFileName + ".json", 'w') as json_file:
 jsonToFlatbuffer(HeaderFileName + ".json", "schemas/PackageHeader.fbs")
 os.remove(HeaderFileName + ".json")
 
-combineFiles(packagedFileName, [HeaderFileName + ".bin", combinedLayoutAssetsFileName, combinedResourceFileName])
+combineFiles(packageExportDir + packagedFileName, [HeaderFileName + ".bin", combinedLayoutAssetsFileName, combinedResourceFileName])
 
 os.remove(HeaderFileName + ".bin");
 os.remove(LayoutFileName + ".bin");
