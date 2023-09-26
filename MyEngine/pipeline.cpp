@@ -29,12 +29,15 @@
 
 using namespace std;
 
-std::vector<VkPipelineShaderStageCreateInfo> Pipeline::createShaderStages(std::string vertexSrc, std::string fragmentSrc) {
-	auto vertShaderCode = readFile(vertexSrc);
-	auto fragShaderCode = readFile(fragmentSrc);
+std::vector<VkPipelineShaderStageCreateInfo> Pipeline::createShaderStages(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc) {
+	/*auto vertShaderCode = readFile(vertexSrc);
+	auto fragShaderCode = readFile(fragmentSrc);*/
 
-	VkShaderModule vertShaderModule = VKUtil::createShaderModule(vertShaderCode, engine->device);
-	VkShaderModule fragShaderModule = VKUtil::createShaderModule(fragShaderCode, engine->device);
+	/*VkShaderModule vertShaderModule = VKUtil::createShaderModule(vertShaderCode, engine->device);
+	VkShaderModule fragShaderModule = VKUtil::createShaderModule(fragShaderCode, engine->device);*/
+
+	VkShaderModule vertShaderModule = VKUtil::createShaderModule(vertexSrc, engine->device);
+	VkShaderModule fragShaderModule = VKUtil::createShaderModule(fragmentSrc, engine->device);
 
 	VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
 	vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -51,8 +54,8 @@ std::vector<VkPipelineShaderStageCreateInfo> Pipeline::createShaderStages(std::s
 	return { vertShaderStageInfo, fragShaderStageInfo };
 }
 
-VkPipelineShaderStageCreateInfo Pipeline::createComputeShaderStage(std::string computeSrc) {
-	auto shaderCode = readFile(computeSrc);
+VkPipelineShaderStageCreateInfo Pipeline::createComputeShaderStage(const std::vector<uint8_t>& shaderCode) {
+	//auto shaderCode = readFile(computeSrc);
 
 	VkShaderModule vertShaderModule = VKUtil::createShaderModule(shaderCode, engine->device);
 

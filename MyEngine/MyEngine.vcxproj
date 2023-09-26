@@ -330,6 +330,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="AssetManager.cpp" />
+    <ClCompile Include="Audio.cpp" />
     <ClCompile Include="descriptorSetBuilder.cpp" />
     <ClCompile Include="Entity.cpp" />
     <ClCompile Include="FontGenerator.cpp" />
@@ -356,6 +357,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AssetManager.h" />
+    <ClInclude Include="Audio.h" />
     <ClInclude Include="BehaviorRegistry.h" />
     <ClInclude Include="benchmark.h" />
     <ClInclude Include="BinaryWriter.h" />

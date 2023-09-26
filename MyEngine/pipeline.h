@@ -67,8 +67,10 @@ protected:
 	void buildDescriptorSets();
 	void updateDescriptorSet(int frame, descriptorSetInfo& info);
 
-	std::vector<VkPipelineShaderStageCreateInfo> createShaderStages(std::string vertexSrc, std::string fragmentSrc);
-	VkPipelineShaderStageCreateInfo createComputeShaderStage(std::string computeSrc);
+	//std::vector<VkPipelineShaderStageCreateInfo> createShaderStages(std::string vertexSrc, std::string fragmentSrc);
+	std::vector<VkPipelineShaderStageCreateInfo> createShaderStages(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc);
+	VkPipelineShaderStageCreateInfo createComputeShaderStage(const std::vector<uint8_t>& computeSrc);
+	//VkPipelineShaderStageCreateInfo createComputeShaderStage(std::string computeSrc);
 
 	VkPipelineInputAssemblyStateCreateInfo defaultInputAssembly();
 	VkPipelineViewportStateCreateInfo defaultViewportState();

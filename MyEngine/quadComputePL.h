@@ -46,7 +46,7 @@ public:
 
 	void UploadInstanceData(std::vector<InstanceBufferData>& drawlist);
 
-	void CreateComputePipeline(std::string computeSrc, MappedDoubleBuffer<>& cameradb, VkBuffer transformBuffer);
+	void CreateComputePipeline(const std::vector<uint8_t>& computeSrc, MappedDoubleBuffer<>& cameradb, VkBuffer transformBuffer);
 
 	void recordCommandBuffer(VkCommandBuffer commandBuffer, int instanceCount);
 

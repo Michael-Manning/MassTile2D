@@ -35,7 +35,8 @@ public:
 
 	void createStagingBuffers();
 
-	void CreateComputePipeline(std::string computeSrc_firstPass, std::string computeSrc_secondPass);
+	void CreateComputePipeline(const std::vector<uint8_t>& computeSrc_firstPass, const std::vector<uint8_t>& computeSrc_secondPass);
+	//void CreateComputePipeline(std::string computeSrc_firstPass, std::string computeSrc_secondPass);
 
 	void recordCommandBuffer(VkCommandBuffer commandBuffer, int chunkUpdateCount);
 
@@ -47,7 +48,7 @@ public:
 	}
 
 private:
-	
+
 	VkPipeline firstStagePipeline;
 	VkPipeline secondStagePipeline;
 

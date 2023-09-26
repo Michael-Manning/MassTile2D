@@ -40,7 +40,8 @@ struct MapProxy {
 
 #define USE_PACKED_ASSETS
 
-const auto AssetPackFileName = "../../tools/AssetPacker/Assets.bin";
+//const auto AssetPackFileName = "../../tools/AssetPacker/Assets.bin";
+const auto AssetPackFileName = "Assets.bin";
 
 
 class AssetManager {
@@ -76,7 +77,7 @@ public:
 
 	std::vector<uint8_t> temp_packAssetData;
 	const AssetPack::PackageAssets* packageAssets;
-	
+
 	std::string assetPackPath;
 
 	uint32_t headerSize;
@@ -107,7 +108,7 @@ public:
 		// load header data
 		{
 			// header is usually 32 bytes, but we just need to make sure it at least fits in a buffer for our first file read
-			const int ProbablyHeaderSize = 128; 
+			const int ProbablyHeaderSize = 128;
 
 			std::vector<uint8_t> headerData(ProbablyHeaderSize);
 			std::ifstream file(assetPackPath.c_str(), std::ios::ate | std::ios::binary);
@@ -121,7 +122,7 @@ public:
 			assetsOffset = layoutOffset + layoutSize;
 			resourcesSize = header->ResourcesSize();
 			resourcesOffset = assetsOffset + assetsSize;
-			
+
 		}
 
 		packLayoutData = readFile(assetPackPath, layoutOffset, layoutSize);
@@ -159,9 +160,9 @@ public:
 	void LoadFont(std::string name, bool loadResources = true);
 	void UnloadFont(fontID fontID, bool freeResources = true);
 	std::shared_ptr<Font> GetFont(fontID id) { return fontAssets[id]; };
-	fontID GetFontID(std::string name) { 
+	fontID GetFontID(std::string name) {
 		assert(loadedFontsByName.contains(name));
-		return loadedFontsByName[name]; 
+		return loadedFontsByName[name];
 	};
 
 	// load and assemble all prefabs
@@ -186,6 +187,15 @@ public:
 		sprite->serializeJson(spritePathsByID[id]);
 #endif
 	};
+
+#ifdef USE_PACKED_ASSETS
+	void LoadPackedResourceFile(std::string name, std::vector<uint8_t>& data) {
+		auto offset = resourceFileOffsets[name];
+		auto size = resourceFileSizes[name];
+		data = readFile(assetPackPath, offset + resourcesOffset, size);
+	};
+#endif
+
 
 #ifndef PUBLISH
 	// Generated assets can be exported with these functions which assign an ID and save the asset to disk
@@ -244,7 +254,7 @@ private:
 			spriteIndexesByID[packageLayout->spriteIDs()->Get(i)] = i;
 			spriteIndexesByName[packageLayout->spriteNames()->Get(i)->str()] = i;
 		}
-		for (size_t i = 0; i < packageLayout->fontIDs()->size(); i++){
+		for (size_t i = 0; i < packageLayout->fontIDs()->size(); i++) {
 			fontIndexesByID[packageLayout->fontIDs()->Get(i)] = i;
 			fontIndexesByName[packageLayout->fontNames()->Get(i)->str()] = i;
 		}
@@ -263,13 +273,13 @@ private:
 			resourceFileSizes[name] = size;
 			totalOffset += size;
 		}
-		
+
 		// release memory
 		packLayoutData.clear();
 		packLayoutData.shrink_to_fit();
 	}
 
-	void GetPackedResourceData(uint8_t * data, uint32_t offset, uint32_t count) {
+	void GetPackedResourceData(uint8_t* data, uint32_t offset, uint32_t count) {
 		std::ifstream file(assetPackPath.c_str(), std::ios::ate | std::ios::binary);
 		file.seekg(offset + resourcesOffset);
 		file.read(reinterpret_cast<char*>(data), count);
@@ -345,8 +355,8 @@ private:
 			//		}
 			//	}
 			//}
-		}
-	};
+	}
+};
 #endif
 
 	void loadPrefabResources(Prefab& prefab);

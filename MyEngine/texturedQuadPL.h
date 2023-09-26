@@ -48,7 +48,8 @@ public:
 		defaultTexture(defaultTexture), 
 		Pipeline(engine) { }
 
-	void CreateGraphicsPipeline(std::string vertexSrc, std::string fragmentSrc, MappedDoubleBuffer<void>& cameradb);
+	void CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc, MappedDoubleBuffer<void>& cameradb);
+	//void CreateGraphicsPipeline(std::string vertexSrc, std::string fragmentSrc, MappedDoubleBuffer<void>& cameradb);
 	void createSSBOBuffer();
 
 	void updateDescriptorSets();

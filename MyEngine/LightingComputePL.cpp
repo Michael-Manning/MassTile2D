@@ -28,7 +28,8 @@
 using namespace glm;
 using namespace std;
 
-void LightingComputePL::CreateComputePipeline(std::string computeSrc_firstPass, std::string computeSrc_secondPass) {
+void LightingComputePL::CreateComputePipeline(const std::vector<uint8_t>& computeSrc_firstPass, const std::vector<uint8_t>& computeSrc_secondPass) {
+//void LightingComputePL::CreateComputePipeline(std::string computeSrc_firstPass, std::string computeSrc_secondPass) {
 	auto firstComputeStage = createComputeShaderStage(computeSrc_firstPass);
 	auto secondComputeStage = createComputeShaderStage(computeSrc_secondPass);
 

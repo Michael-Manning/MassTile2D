@@ -134,15 +134,6 @@ int main() {
 	swapchainSettings.capFramerate = false;
 
 
-	{
-		auto bytes = readFile(AssetDirectories.assetDir + "man.bin");
-		auto buf = AssetPack::GetSprite(bytes.data());
-		auto sprite = Sprite::deserializeFlatbuffer(buf);
-
-		int bbreak = 2;
-	}
-
-
 
 	auto rengine = std::make_shared<VKEngine>();
 	Engine engine(rengine, AssetDirectories);
@@ -158,7 +149,7 @@ int main() {
 	tileWolrdGlobalRef = engine.worldMap;
 
 	{
-
+		// load this from packed resources. 
 		std::ifstream inStream(AssetDirectories.assetDir + "worldgen.json");
 		nlohmann::json j;
 		inStream >> j;
@@ -254,7 +245,7 @@ int main() {
 
 
 			});
-		engine.worldMap->saveToDisk(AssetDirectories.assetDir + "world.dat");
+	//	engine.worldMap->saveToDisk(AssetDirectories.assetDir + "world.dat");
 #else
 		engine.worldMap->loadFromDisk(AssetDirectories.assetDir + "world.dat");
 

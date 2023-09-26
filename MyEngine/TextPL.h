@@ -55,7 +55,8 @@ public:
 		Pipeline(engine) {
 	}
 
-	void CreateGraphicsPipeline(std::string vertexSrc, std::string fragmentSrc, MappedDoubleBuffer<>& cameradb, bool flipFaces = false);
+	void CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc, MappedDoubleBuffer<>& cameradb, bool flipFaces = false);
+	//void CreateGraphicsPipeline(std::string vertexSrc, std::string fragmentSrc, MappedDoubleBuffer<>& cameradb, bool flipFaces = false);
 	void createSSBOBuffer();
 	void recordCommandBuffer(VkCommandBuffer commandBuffer);
 
