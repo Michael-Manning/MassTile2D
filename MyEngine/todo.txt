@@ -1,18 +1,13 @@
 
- - screen space fonts
+- integrate vk-bootstrap 
+- support downscaled resolution (run full screen at lower resolution the monitor resolution)
+
  - screen space textures (or all in one pipeline)
 
 - fix getkeyup
 
-- asset move/destroy/copy operators causing problems in asset loading if not preloading all assets when sprite/font destructor called
-
-- load asset via sprite/font id set flawed as it has to load every asset meta just to check it's ID, then discards it if it's the wrong ID.
-Could get around this by building some sort of lookup file which contains the IDs of all assets by filename or by creating a way of "peaking" IDs
-
 - convert entity transform into component, store in contiguous memory, or use faster map. Then use compute shader to calculate
 entity transform matrices for color/texture pipeline instead of per vertex calculation - profile first
-
-- make shared ptr asset usage like sprites use weak pointers everywhere to enforce memory freeing
 
 - replace file path string concatenation with filesystem api (to elemenate having to check for trailing slahes on directory paths)
 
@@ -31,16 +26,9 @@ reserve scene component maps with max count to prevenent rehashing which would b
 
 - replace upload text data function with zero copy method for uploading data
 
-integrate vk-bootstrap to simplify initializion
-
-- tool for managing texture bindings. Replace function in instanced pipline
-
 - shader auto workflow with sprv reflect
 
-- replace "spritesAdded" flag with something more descriptive. Doesn't work as well when a font sprite is added before the font metadata which actually signals
-the font pipeline that a new ID binding should be created
-
-- create default 
+- create default font
 
 - create bulk generate texture function to avoid having to recreate staging buffers and synchronize the graphics queue for every single texture creation
 
@@ -54,10 +42,9 @@ things to abstract:
 
 - for mapped double buffers (instancing, lighting), populate data directly into void pointer instead constructing an array and calling memcpy
 
-
 ---- features:
 
-- texture animators
+- texture animator
 
 - partical system
 

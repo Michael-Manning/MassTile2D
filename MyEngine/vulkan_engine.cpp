@@ -192,7 +192,7 @@ void VKEngine::waitForCompute() {
 	vkResetFences(device, 1, &computeInFlightFences[currentFrame]);
 }
 
-uint32_t VKEngine::waitForSwapchain() {
+uint32_t VKEngine::waitForSwapchain(WindowSetting* newSettings) {
 	ZoneScoped;
 
 	vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
@@ -201,7 +201,12 @@ uint32_t VKEngine::waitForSwapchain() {
 	uint32_t imageIndex;
 	VkResult result = vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
 
-	if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+	bool settingsChanged = newSettings != nullptr;
+	if (settingsChanged) {
+		updateWindow(*newSettings);
+	}
+
+	if (result == VK_ERROR_OUT_OF_DATE_KHR || settingsChanged) {
 		recreateSwapChain(lastUsedSwapChainSetting);
 		return -1;
 	}

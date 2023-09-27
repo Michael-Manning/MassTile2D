@@ -57,8 +57,9 @@ struct VertexMeshBuffer {
 class VKEngine {
 public:
 
-	void initWindow(int width, int height, std::string name, bool visible = true);
-	void initVulkan(SwapChainSetting setting, int subPassCount);
+	void initWindow(const WindowSetting& settings, bool visible = true);
+
+	void initVulkan(const SwapChainSetting& setting, int subPassCount);
 	void Update();
 	bool shouldClose();
 	void cleanup();
@@ -81,7 +82,7 @@ public:
 	void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VmaAllocation& imageAllocation);
 	VkImageView createImageView(VkImage image, VkFormat format);
 
-	void recreateSwapChain(SwapChainSetting setting);
+	void recreateSwapChain(const SwapChainSetting& setting);
 	void cleanupSwapChain();
 
 
@@ -109,7 +110,7 @@ public:
 
 	// call in sequence
 	void waitForCompute();
-	uint32_t waitForSwapchain();
+	uint32_t waitForSwapchain(WindowSetting* newSettings = nullptr);
 	VkCommandBuffer getNextCommandBuffer(); // temporary solution which resets the command buffer every frame
 	VkCommandBuffer getNextComputeCommandBuffer();
 
@@ -124,9 +125,6 @@ public:
 	GLFWwindow* window;
 
 	uint32_t currentFrame = 0;
-
-	int winW;
-	int winH;
 
 	VmaAllocator allocator;
 
@@ -190,6 +188,17 @@ public:
 
 private:
 	void genTexture(unsigned char* pixels, VkDeviceSize imageSize, FilterMode filterMode, Texture& tex);
-
+	void updateWindow(WindowSetting& settings); // private to enforce synchronization
+	WindowMode currentWindowMode = WindowMode::Windowed;
+	int glfw_initial_primary_monitor_redBits;
+	int glfw_initial_primary_monitor_greenBits;
+	int glfw_initial_primary_monitor_blueBits;
+	int glfw_initial_primary_monitor_refreshRate;
+	int glfw_initial_primary_monitor_width;
+	int glfw_initial_primary_monitor_height;
+	int pre_fullscren_windowSizeX;
+	int pre_fullscren_windowSizeY;
+	int pre_fullscren_windowPosX = 100; // set to 100 unless starting out in windowed mode
+	int pre_fullscren_windowPosY = 100;
 };
 

@@ -81,7 +81,8 @@ public:
 		DebugLog("Engine created");
 	}
 
-	void Start(std::string windowName, int winW, int winH, const SwapChainSetting swapchainSetting);
+	void Start(const VideoSettings& initialSettings);
+	void ApplyNewVideoSettings(const VideoSettings settings);
 
 	bool ShouldClose();
 	void Close();
@@ -281,4 +282,7 @@ private:
 	const double timeStep = 1.0f / 60.0f;
 	const int32 velocityIterations = 6;
 	const int32 positionIterations = 2;
+
+	bool newVideoSettingsRequested = false;
+	VideoSettings requestedSettings;
 };

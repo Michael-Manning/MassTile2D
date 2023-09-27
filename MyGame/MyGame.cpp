@@ -50,15 +50,9 @@
 #include <flatbuffers/flatbuffers.h>
 #include <assetPack/Sprite_generated.h>
 
-
-const uint32_t winW = 1400;
-const uint32_t winH = 800;
-
 using namespace std;
 using namespace glm;
 using namespace nlohmann;
-
-
 
 
 std::unordered_map<uint32_t, std::pair<std::string, std::function<std::shared_ptr<Entity>()>>> BehaviorMap = {
@@ -168,14 +162,27 @@ int main() {
 #endif
 	AssetDirectories.resourcePtr = resourcePtr;
 
+
+	WindowSetting windowSetting;
+	windowSetting.windowSizeX = 1400;
+	windowSetting.windowSizeY = 800;
+	windowSetting.windowMode = WindowMode::Windowed;
+	windowSetting.name = "video game";
+
 	SwapChainSetting swapchainSettings;
+	swapchainSettings.resolutionX = windowSetting.windowSizeX; // not requried in windowed mode
+	swapchainSettings.resolutionY = windowSetting.windowSizeY;
 	swapchainSettings.vsync = true;
 	swapchainSettings.capFramerate = false;
+
+	VideoSettings videoSettings;
+	videoSettings.windowSetting = windowSetting;
+	videoSettings.swapChainSetting = swapchainSettings;
 
 	auto rengine = std::make_shared<VKEngine>();
 	Engine engine(rengine, AssetDirectories);
 	const auto& scene = engine.GetCurrentScene(); // quick reference
-	engine.Start("video game", winW, winH, swapchainSettings);
+	engine.Start(videoSettings);
 
 	input = engine.GetInput();
 
@@ -342,25 +349,25 @@ int main() {
 	float updateTimer = 0;
 	float frameRateStat = 0;
 
-	const char  *options[] = {"fullscreen", "borderless fullscreen", "windowed"};
-	int selectedWindowOption = 0;
+	const char* options[] = { "windowed", "windowed fullscreen", "exclusive fullscreen" };
+	WindowMode selectedWindowOption = windowSetting.windowMode;
 	while (!engine.ShouldClose())
 	{
 		engine.clearScreenSpaceDrawlist();
 		{
 			auto white = vec4(1.0);
 			//engine.addScreenSpaceQuad(vec4(1.0), input->getMousePos(), vec2(50));
-		
+
 			engine.addScreenSpaceText(smallfont, { 0, 0 }, white, "fps: %d", (int)frameRateStat);
-		
+
 			engine.addScreenSpaceText(bigfont, { 200, 100 }, white, "Settings");
 
 			const auto optionA = "fullscreen";
-			engine.addScreenSpaceText(medfont, {200, 300 }, white, "Window mode: %s", options[selectedWindowOption]);
+			engine.addScreenSpaceText(medfont, { 200, 300 }, white, "Window mode: %s", options[(int)selectedWindowOption]);
 
-			engine.addScreenSpaceQuad(white, vec2(900, 320)+ btnSize / 2.0f, btnSize);
+			engine.addScreenSpaceQuad(white, vec2(900, 320) + btnSize / 2.0f, btnSize);
 			if (Button({ 900, 320 })) {
-				selectedWindowOption = (selectedWindowOption + 1) % 3;
+				selectedWindowOption = (WindowMode)(((int)selectedWindowOption + 1) % 3);
 			}
 
 			if (engine.time - updateTimer > 0.2f) {
@@ -368,11 +375,16 @@ int main() {
 				updateTimer = engine.time;
 			}
 
-			
-		//	engine.addScreenSpaceQuad(vec4(0.7), vec2(250, 527), vec2(100, 40));
+
+			//	engine.addScreenSpaceQuad(vec4(0.7), vec2(250, 527), vec2(100, 40));
 			vec4 tc = vec4(1.0);
-			if (within(vec2(250, 527) - vec2(100, 40) / 2.0f, vec2(250, 527) + vec2(100, 40) / 2.0f, input->getMousePos()))
+			if (within(vec2(250, 527) - vec2(100, 40) / 2.0f, vec2(250, 527) + vec2(100, 40) / 2.0f, input->getMousePos())) {
 				tc = vec4(0.3, 0.9, 0.3, 1.0);
+				if (input->getMouseBtnDown(MouseBtn::Left)) {
+					videoSettings.windowSetting.windowMode = selectedWindowOption;
+					engine.ApplyNewVideoSettings(videoSettings);
+				}
+			}
 			engine.addScreenSpaceText(medfont, { 200, 500 }, tc, "Apply");
 		}
 

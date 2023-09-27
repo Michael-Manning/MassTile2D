@@ -168,24 +168,82 @@ bool checkValidationLayerSupport() {
 
 
 
-void VKEngine::initWindow(int width, int height, std::string title, bool visible) {
+void VKEngine::initWindow(const WindowSetting& settings, bool visible) {
 	glfwInit();
+
+	// even when starting up in fullscreen, these values should be set as the size to transition to when changing to windowed mode
+	assert(settings.windowSizeX != 0 && settings.windowSizeY != 0);
+	pre_fullscren_windowSizeX = settings.windowSizeX;
+	pre_fullscren_windowSizeY = settings.windowSizeY;
+
+	currentWindowMode = settings.windowMode;
 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 	glfwWindowHint(GLFW_VISIBLE, visible ? GLFW_TRUE : GLFW_FALSE);
-	//glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
-	winW = width;
-	winH = height;
+	GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+	const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+	glfw_initial_primary_monitor_redBits = mode->redBits;
+	glfw_initial_primary_monitor_greenBits = mode->greenBits;
+	glfw_initial_primary_monitor_blueBits = mode->blueBits;
+	glfw_initial_primary_monitor_refreshRate = mode->refreshRate;
+	glfw_initial_primary_monitor_width = mode->width;
+	glfw_initial_primary_monitor_height= mode->height;
 
-	window = glfwCreateWindow(winW, winH, title.c_str(), nullptr, nullptr);
+
+	// The following logic assumes 3 possible window modes
+	static_assert((int)WindowMode::WindowModeCount == 3);
+
+	if (settings.windowMode == WindowMode::Fullscreen) {
+		window = glfwCreateWindow(mode->width, mode->height, settings.name.c_str(), monitor, nullptr);
+	}
+	else if (settings.windowMode == WindowMode::Borderless) {
+		glfwWindowHint(GLFW_RED_BITS, mode->redBits);
+		glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
+		glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
+		glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
+		window = glfwCreateWindow(mode->width, mode->height, settings.name.c_str(), monitor, nullptr);
+	}
+	else { // windowed
+		window = glfwCreateWindow(settings.windowSizeX, settings.windowSizeY, settings.name.c_str(), nullptr, nullptr);
+	}
+}
+
+void VKEngine::updateWindow(WindowSetting& settings) {
+
+	if (settings.windowMode == currentWindowMode)
+		return;
+
+	// transitioning away from windowed mode, so save orignal position and size
+	if (currentWindowMode == WindowMode::Windowed) {
+		glfwGetWindowPos(window, &pre_fullscren_windowPosX, &pre_fullscren_windowPosY);
+		glfwGetWindowSize(window, &pre_fullscren_windowSizeX, &pre_fullscren_windowSizeY);
+	}
+
+	GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+	if (settings.windowMode == WindowMode::Fullscreen) {
+		// I'm not sure if this is required, but I don't know how to invalidate the last call to glfwWindowHint when setting borderless mode.
+		// If it is reset between glfwSetWindow and glfwCreate window calls, then this is not neccassary. Need to try and get windows to use exclusive fullscreen.
+		glfwDefaultWindowHints();
+		glfwSetWindowMonitor(window, monitor, 0, 0, glfw_initial_primary_monitor_width, glfw_initial_primary_monitor_height, GLFW_DONT_CARE);
+	}
+	else if (settings.windowMode == WindowMode::Borderless) {
+		glfwWindowHint(GLFW_RED_BITS, glfw_initial_primary_monitor_redBits);
+		glfwWindowHint(GLFW_GREEN_BITS, glfw_initial_primary_monitor_greenBits);
+		glfwWindowHint(GLFW_BLUE_BITS, glfw_initial_primary_monitor_blueBits);
+		glfwWindowHint(GLFW_REFRESH_RATE, glfw_initial_primary_monitor_refreshRate);
+		glfwSetWindowMonitor(window, monitor, 0, 0, glfw_initial_primary_monitor_width, glfw_initial_primary_monitor_height, GLFW_DONT_CARE);
+	}
+	else { // windowed
+		glfwSetWindowMonitor(window, nullptr, pre_fullscren_windowPosX, pre_fullscren_windowPosY, pre_fullscren_windowSizeX, pre_fullscren_windowSizeY, GLFW_DONT_CARE);
+	}	
 }
 
 bool VKEngine::shouldClose() {
 	return glfwWindowShouldClose(window);
 }
 
-void VKEngine::initVulkan(SwapChainSetting setting, int subPassCount) {
+void VKEngine::initVulkan(const SwapChainSetting& setting, int subPassCount) {
 	createInstance();
 
 	// setup debug messager
@@ -578,7 +636,7 @@ VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& avai
 			requestedMode = VK_PRESENT_MODE_IMMEDIATE_KHR;
 	}
 	else {
-		if(setting.vsync == true)
+		if (setting.vsync == true)
 			requestedMode = VK_PRESENT_MODE_FIFO_KHR;
 		else
 			requestedMode = VK_PRESENT_MODE_FIFO_RELAXED_KHR;
@@ -705,7 +763,7 @@ void VKEngine::createSwapChain(SwapChainSetting setting) {
 	lastUsedSwapChainSetting = setting;
 }
 
-void VKEngine::recreateSwapChain(SwapChainSetting setting) {
+void VKEngine::recreateSwapChain(const SwapChainSetting& setting) {
 	int width = 0, height = 0;
 	glfwGetFramebufferSize(window, &width, &height);
 
@@ -774,7 +832,7 @@ void VKEngine::initTracyContext() {
 	for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++)
 	{
 		tracyComputeContexts[i] = TracyVkContext(physicalDevice, device, computeQueue, computeCommandBuffers[i])
-		tracyGraphicsContexts[i] = TracyVkContext(physicalDevice, device, graphicsQueue, commandBuffers[i])
+			tracyGraphicsContexts[i] = TracyVkContext(physicalDevice, device, graphicsQueue, commandBuffers[i])
 	}
 }
 #endif

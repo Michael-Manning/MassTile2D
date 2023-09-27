@@ -110,11 +110,12 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 	app->GetInput()->_onScroll(xoffset, yoffset);
 }
 
-void Engine::Start(std::string windowName, int winW, int winH, const SwapChainSetting swapchainSetting) {
+void Engine::Start(const VideoSettings& initialSettings) {
+
 
 	PROFILE_START(Engine_Startup);
 
-	rengine->initWindow(winW, winH, windowName, false);
+	rengine->initWindow(initialSettings.windowSetting, false);
 	glfwSetWindowUserPointer(rengine->window, this);
 	glfwSetFramebufferSizeCallback(rengine->window, framebufferResizeCallback);
 	glfwSetKeyCallback(rengine->window, KeyCallback);
@@ -126,7 +127,7 @@ void Engine::Start(std::string windowName, int winW, int winH, const SwapChainSe
 
 	DebugLog("Initialized Window");
 
-	rengine->initVulkan(swapchainSetting, 1);
+	rengine->initVulkan(initialSettings.swapChainSetting, 1);
 	rengine->createFramebuffers();
 	rengine->createCommandPool();
 	rengine->createDescriptorPool();
@@ -140,8 +141,8 @@ void Engine::Start(std::string windowName, int winW, int winH, const SwapChainSe
 	DebugLog("Initialized Tracy");
 #endif
 
-	this->winW = winW;
-	this->winH = winH;
+	this->winW = initialSettings.windowSetting.windowSizeX;
+	this->winH = initialSettings.windowSetting.windowSizeY;
 
 	vector<uint8_t> checkerData;
 	genCheckerboard(400, vec4(1, 0, 0, 1), vec4(0, 0, 1, 1), 6, checkerData);
@@ -241,28 +242,34 @@ void Engine::Start(std::string windowName, int winW, int winH, const SwapChainSe
 }
 
 
-mat3 translate(vec2 v) {
-	return mat3(
-		1.0, 0.0, 0.0,
-		0.0, 1.0, 0.0,
-		v.x, v.y, 1.0
-	);
-}
-mat3 scale(vec2 v) {
-	return mat3(
-		v.x, 0.0, 0.0,
-		0.0, v.y, 0.0,
-		0.0, 0.0, 1.0
-	);
-}
-mat3 rotate(float angle) {
-	float c = cos(angle);
-	float s = sin(angle);
-	return mat3(
-		c, s, 0.0,
-		-s, c, 0.0,
-		0.0, 0.0, 1.0
-	);
+//mat3 translate(vec2 v) {
+//	return mat3(
+//		1.0, 0.0, 0.0,
+//		0.0, 1.0, 0.0,
+//		v.x, v.y, 1.0
+//	);
+//}
+//mat3 scale(vec2 v) {
+//	return mat3(
+//		v.x, 0.0, 0.0,
+//		0.0, v.y, 0.0,
+//		0.0, 0.0, 1.0
+//	);
+//}
+//mat3 rotate(float angle) {
+//	float c = cos(angle);
+//	float s = sin(angle);
+//	return mat3(
+//		c, s, 0.0,
+//		-s, c, 0.0,
+//		0.0, 0.0, 1.0
+//	);
+//}
+
+
+void Engine::ApplyNewVideoSettings(const VideoSettings settings) {
+	newVideoSettingsRequested = true;
+	requestedSettings = settings;
 }
 
 bool Engine::QueueNextFrame(bool drawImgui) {
@@ -345,7 +352,10 @@ bool Engine::QueueNextFrame(bool drawImgui) {
 	}
 
 
-	uint32_t imageIndex = rengine->waitForSwapchain();
+
+
+	uint32_t imageIndex = rengine->waitForSwapchain((newVideoSettingsRequested ? &requestedSettings.windowSetting : nullptr));
+	newVideoSettingsRequested = false;
 	if (imageIndex == -1) {
 		// swapchain invalid - recreate
 		frameCounter = 0;
