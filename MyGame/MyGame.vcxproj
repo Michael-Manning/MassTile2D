@@ -285,7 +285,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;NOMINMAX;_CRT_SECURE_NO_WARNINGS;FASTNOISE_STATIC_LIB;PUBLISH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;NOMINMAX;_CRT_SECURE_NO_WARNINGS;FASTNOISE_STATIC_LIB;USE_PACKED_ASSETS;PUBLISH;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalIncludeDirectories>$(SolutionDir)/Editor;$(SolutionDir)/MyEngine;$(VULKAN_SDK)/include;$(SolutionDir)/lib/FastNoise2/include;$(SolutionDir)$(ProjectName)</AdditionalIncludeDirectories>
@@ -298,6 +298,12 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>$(SolutionDir)/$(Platform)/Publish/MyEngine.lib;$(VULKAN_SDK)/Lib/vulkan-1.lib;$(SolutionDir)lib/FastNoise2/lib-static/FastNoise.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PreBuildEvent>
+      <Command>python "$(SolutionDir)/tools/AssetPacker/AssetPack/assetPacker.py</Command>
+    </PreBuildEvent>
+    <PreBuildEvent>
+      <Message>Pack Assets</Message>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release-Tracy|x64'">
     <ClCompile>

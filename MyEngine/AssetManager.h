@@ -235,7 +235,7 @@ public:
 		data = readFile(directories.shaderDir + name);
 	};
 	void LoadResourceFile(std::string name, std::vector<uint8_t>& data) {
-		data = readFile(directories.assetDir + name);
+	data = readFile(directories.assetDir + name);
 	};
 #endif
 

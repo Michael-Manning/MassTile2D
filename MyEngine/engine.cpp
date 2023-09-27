@@ -541,7 +541,7 @@ bool Engine::QueueNextFrame(bool drawImgui) {
 
 			CalculateQuads(f, i.text, textData.quads);
 
-			i.header.scale = vec2(f->fontHeight * 2);
+			i.header.scale = vec2(f->fontHeight * 2) * i.scaleFactor;
 
 			screenSpaceTextPipeline->UploadTextData(rengine->currentFrame, memSlot++, i.header, i.font, textData);
 		}

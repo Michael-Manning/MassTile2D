@@ -107,6 +107,17 @@ void CalcTileVariation(uint32_t x, uint32_t y) {
 	}
 }
 
+bool within(vec2 rectStart, vec2  rectEnd, vec2 pos) {
+	return pos.x > rectStart.x && pos.x < rectEnd.x && pos.y > rectStart.y && pos.y < rectEnd.y;
+}
+
+std::shared_ptr<Input> input = nullptr;
+const vec2 btnSize(60, 30);
+bool Button(vec2 pos, vec2 size = btnSize) {
+	if (input->getMouseBtnDown(MouseBtn::Left) == false)
+		return false;
+	return within(pos, pos + size, input->getMousePos());
+}
 
 #ifdef USING_EDITOR
 Editor editor;
@@ -166,7 +177,7 @@ int main() {
 	const auto& scene = engine.GetCurrentScene(); // quick reference
 	engine.Start("video game", winW, winH, swapchainSettings);
 
-	const auto input = engine.GetInput();
+	input = engine.GetInput();
 
 	engine.assetManager->LoadAllSprites();
 	engine.assetManager->LoadAllFonts();
@@ -323,8 +334,16 @@ int main() {
 
 	//shared_ptr<Player> player = dynamic_pointer_cast<Player>(scene->Instantiate(engine.assetManager->GetPrefab("Player"), "Player", vec2(0, 106), 0));
 
-	fontID coolfont = engine.assetManager->GetFontID("roboto-32");
+
+	fontID bigfont = engine.assetManager->GetFontID("roboto-32");
+	fontID medfont = engine.assetManager->GetFontID("roboto-24");
+	fontID smallfont = engine.assetManager->GetFontID("roboto-16");
 	//
+	float updateTimer = 0;
+	float frameRateStat = 0;
+
+	const char  *options[] = {"fullscreen", "borderless fullscreen", "windowed"};
+	int selectedWindowOption = 0;
 	while (!engine.ShouldClose())
 	{
 		engine.clearScreenSpaceDrawlist();
@@ -332,15 +351,29 @@ int main() {
 			auto white = vec4(1.0);
 			//engine.addScreenSpaceQuad(vec4(1.0), input->getMousePos(), vec2(50));
 		
-			engine.addScreenSpaceText(coolfont, { 200, 100 }, white, "Settings");
+			engine.addScreenSpaceText(smallfont, { 0, 0 }, white, "fps: %d", (int)frameRateStat);
+		
+			engine.addScreenSpaceText(bigfont, { 200, 100 }, white, "Settings");
 
 			const auto optionA = "fullscreen";
-			engine.addScreenSpaceText(coolfont, {200, 300 }, white, "Window mode: %s", optionA);
+			engine.addScreenSpaceText(medfont, {200, 300 }, white, "Window mode: %s", options[selectedWindowOption]);
 
+			engine.addScreenSpaceQuad(white, vec2(900, 320)+ btnSize / 2.0f, btnSize);
+			if (Button({ 900, 320 })) {
+				selectedWindowOption = (selectedWindowOption + 1) % 3;
+			}
+
+			if (engine.time - updateTimer > 0.2f) {
+				frameRateStat = engine._getAverageFramerate();
+				updateTimer = engine.time;
+			}
 
 			
-
-
+		//	engine.addScreenSpaceQuad(vec4(0.7), vec2(250, 527), vec2(100, 40));
+			vec4 tc = vec4(1.0);
+			if (within(vec2(250, 527) - vec2(100, 40) / 2.0f, vec2(250, 527) + vec2(100, 40) / 2.0f, input->getMousePos()))
+				tc = vec4(0.3, 0.9, 0.3, 1.0);
+			engine.addScreenSpaceText(medfont, { 200, 500 }, tc, "Apply");
 		}
 
 		using namespace ImGui;

@@ -233,6 +233,7 @@ private:
 		TextPL::textHeader header;
 		std::string text;
 		fontID font;
+		float scaleFactor = 1.0f;
 	};
 	std::vector<screenSpaceTextDrawItem> screenSpaceTextDrawlist;
 
