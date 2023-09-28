@@ -42,7 +42,7 @@
 #include "worldGen.h"
 #include "Settings.h"
 #include "BinaryWriter.h"
-
+#include "worldGen.h"
 #include <FastNoise/FastNoise.h>
 #include <FastNoise/SmartNode.h>
 #include <FastSIMD/FastSIMD.h>
@@ -71,13 +71,6 @@ bool showingEditor = false;
 const bool showingEditor = false;
 #endif 
 
-
-std::random_device rd; // obtain a random number from hardware
-std::mt19937 gen(rd()); // seed the generator
-int ran(int min, int max) {
-	std::uniform_int_distribution<> dis(min, max);
-	return dis(gen);
-}
 
 void CalcTileVariation(uint32_t x, uint32_t y) {
 	if (x > 1 && x < mapW - 1 && y > 1 && y < mapH - 1) {
@@ -166,7 +159,7 @@ int main() {
 	WindowSetting windowSetting;
 	windowSetting.windowSizeX = 1400;
 	windowSetting.windowSizeY = 800;
-	windowSetting.windowMode = WindowMode::Fullscreen;
+	windowSetting.windowMode = WindowMode::Windowed;
 	windowSetting.name = "video game";
 
 	SwapChainSetting swapchainSettings;
@@ -195,144 +188,26 @@ int main() {
 	{
 		// load this from packed resources. 
 
-		//std::ifstream inStream(AssetDirectories.assetDir + "worldgen.json");
+		WorldGenerator generator(engine.worldMap);
+#if NDEBUG
 		vector<uint8_t> worldGenData;
 		engine.assetManager->LoadResourceFile("worldgen.json", worldGenData);
 		worldGenData.push_back('\0');
 		auto j = nlohmann::json::parse(worldGenData.data());
 
+		WorldGenSettings settings;
+		settings.baseTerrain = NoiseParams::fromJson(j["baseTerrain"]);
+		settings.ironOre = NoiseParams::fromJson(j["ironDist"]);
 
-		auto baseParams = NoiseParams::fromJson(j["baseTerrain"]);
-		auto ironParams = NoiseParams::fromJson(j["ironDist"]);
-
-
-
-
-
-		PROFILE_START(World_Gen);
-		vector<float> noiseOutput(mapW * mapH);
-		vector<float> ironOutput(mapW * mapH);
-		vector<bool> blockPresence(mapW * mapH);
-		vector<bool> ironPresence(mapW * mapH);
-
-		vector<int> indexes(mapCount - mapPadding);
-		std::iota(indexes.begin(), indexes.end(), 0);
-
-#ifdef  NDEBUG
-		FastNoise::SmartNode<> fnGenerator = FastNoise::NewFromEncodedNodeTree(baseParams.nodeTree.c_str(), FastSIMD::CPUMaxSIMDLevel());
-		FastNoise::SmartNode<> ironGenerator = FastNoise::NewFromEncodedNodeTree(ironParams.nodeTree.c_str(), FastSIMD::CPUMaxSIMDLevel());
-		fnGenerator->GenUniformGrid2D(noiseOutput.data(), -mapW / 2, -mapH / 2, mapW, mapH, baseParams.frequency, 1337); // rd()
-		ironGenerator->GenUniformGrid2D(ironOutput.data(), -mapW / 2, -mapH / 2, mapW, mapH, ironParams.frequency, 1337);
-
-		vector<uint8_t> tData(mapW * mapH * 4);
-
-		for (size_t i = 0; i < mapW * mapH; i++) {
-			int y = i / mapW;
-			int x = i % mapW;
-
-			int j = x + ((mapH - y - 1) * mapW);
-			float f = glm::clamp(noiseOutput[j], -1.0f, 1.0f);
-			//float f = noiseOutput[j];
-			uint8_t val = (f + 1.0f) / 2.0f * 255;
-			tData[i * 4 + 0] = val;
-			tData[i * 4 + 1] = val;
-			tData[i * 4 + 2] = val;
-			tData[i * 4 + 3] = 255;
-		}
-
-		for (size_t i = 0; i < mapCount - mapPadding; i++) {
-			blockPresence[i] = noiseOutput[i] > baseParams.min;
-			ironPresence[i] = ironOutput[i] > ironParams.min;
-		}
-
-
-
-		PROFILE_END(World_Gen);
-
-
-		// upload world data
-		PROFILE_START(world_post_process);
-
-
-		std::for_each(std::execution::par_unseq, indexes.begin(), indexes.end(), [&engine, &blockPresence, &ironPresence](const int& i) {
-
-			int y = i / mapW;
-			int x = i % mapW;
-
-			blockID id = Tiles::Air;
-
-			if ((y < mapH - 1 && y > 1 && x > 1 && x < mapW - 1)) {
-				if (blockPresence[y * mapW + x]) {
-
-					id = Tiles::Dirt;
-
-					//if (y < (mapH - 1) && y >(mapH - 205) && blockPresence[(y + 1) * mapW + x] == false) {
-					if (y < (mapH - 1) && y >(mapH - 205)) {
-
-						int airCount = 0;
-						airCount += blockPresence[(y + 1) * mapW + (x)] == true;
-						airCount += blockPresence[(y - 1) * mapW + (x)] == true;
-						airCount += blockPresence[(y)*mapW + (x + 1)] == true;
-						airCount += blockPresence[(y)*mapW + (x - 1)] == true;
-
-						if (airCount != 4)
-							id = Tiles::Grass;
-					}
-					if (y < mapH - 195) {
-						id = Tiles::Stone;
-
-						if (ironPresence[y * mapW + x]) {
-							id = Tiles::Iron;
-						}
-					}
-				}
-			}
-
-			engine.worldMap->preloadTile(x, mapH - y - 1, id);
-			engine.worldMap->preloadBGTile(x, mapH - y - 1, y > (mapH - 205) ? 1023 : 1022);
-
-
-			});
-		//	engine.worldMap->saveToDisk(AssetDirectories.assetDir + "world.dat");
+		generator.GenerateTiles(settings);
 #else
-		//engine.worldMap->loadFromDisk(AssetDirectories.assetDir + "world.dat");
+		engine.worldMap->loadFromDisk(AssetDirectories.assetDir + "world.dat");
+#endif
+		generator.PostProcess();
 
-		PROFILE_START(world_post_process);
-#endif 
-
-
-		//std::for_each(std::execution::seq, indexes.begin(), indexes.end(), [&engine, &blockPresence, &ironPresence](const int& i) {
-
-		for (size_t i = 0; i < mapCount - mapPadding; i++)
-		{
-
-
-
-			int y = i / mapW;
-			int x = i % mapW;
-
-			//if (y < mapH - 3 && y > 3 && x > 3 && x < mapW - 3)
-			{
-				blockID tileType = engine.worldMap->getTile(x, mapH - y - 1);
-				if (tileType != Tiles::Air)
-				{
-
-					uint8_t hash = engine.worldMap->getAdjacencyHash(x, mapH - y - 1);
-					tileID tile = hash * 3 + 16 * 3 * tileType + ran(0, 2);
-
-					engine.worldMap->preloadTile(x, mapH - y - 1, tile);
-				}
-				engine.worldMap->preloadBrightness(x, mapH - y - 1, 255 * ambiantLight);
-			}
-
-		};
-
-		PROFILE_END(world_post_process);
-
-		engine.worldMap->uploadWorldPreloadData();
 	}
 
-	auto ctest = engine.worldMap->getTile(0, 0);
+
 
 	//engine.setTilemapAtlasTexture(engine.assetManager->GetSprite("tilemapSprites")->textureID);
 
@@ -349,7 +224,7 @@ int main() {
 	float updateTimer = 0;
 	float frameRateStat = 0;
 
-	const char* options[] = { "windowed", "windowed fullscreen", "exclusive fullscreen" };
+	const char* options[] = { "windowed", "borderless", "exclusive fullscreen" };
 	WindowMode selectedWindowOption = windowSetting.windowMode;
 	while (!engine.ShouldClose())
 	{
@@ -428,7 +303,7 @@ int main() {
 #else
 		engine.camera.position = GcameraPos;
 #endif
-#if 0
+#if 1
 		{
 
 			static int lastX = -1;

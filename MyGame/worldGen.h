@@ -1,9 +1,11 @@
 #pragma once
 
 #include <string>
+#include <memory>
 
 #include <nlohmann/json.hpp>
 
+#include "TileWorld.h"
 
 namespace Tiles {
 	constexpr blockID Grass = 0;
@@ -47,9 +49,23 @@ struct NoiseParams {
 	}
 };
 
-static void genWorld() {
+struct WorldGenSettings {
+	NoiseParams baseTerrain;
+	NoiseParams ironOre;
+};
 
-}
+class WorldGenerator {
+public:
+	WorldGenerator(std::shared_ptr<TileWorld> worldMap) : world(worldMap) {
+	}
+
+	void GenerateTiles(WorldGenSettings& settings);
+	void PostProcess();
+
+private:
+	std::shared_ptr<TileWorld> world;
+};
+
 
 static void loadWorld() {
 
