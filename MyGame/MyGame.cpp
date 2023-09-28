@@ -166,7 +166,7 @@ int main() {
 	WindowSetting windowSetting;
 	windowSetting.windowSizeX = 1400;
 	windowSetting.windowSizeY = 800;
-	windowSetting.windowMode = WindowMode::Windowed;
+	windowSetting.windowMode = WindowMode::Fullscreen;
 	windowSetting.name = "video game";
 
 	SwapChainSetting swapchainSettings;
@@ -405,6 +405,9 @@ int main() {
 			}
 			if (input->getKeyDown('l')) {
 				engine.worldMap->FullLightingUpdate();
+			}
+			if (input->getKeyDown('m')) {
+				break;
 			}
 		}
 

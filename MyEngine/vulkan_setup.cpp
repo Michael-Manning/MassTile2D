@@ -220,6 +220,8 @@ void VKEngine::updateWindow(WindowSetting& settings) {
 		glfwGetWindowSize(window, &pre_fullscren_windowSizeX, &pre_fullscren_windowSizeY);
 	}
 
+	currentWindowMode = settings.windowMode;
+
 	GLFWmonitor* monitor = glfwGetPrimaryMonitor();
 	if (settings.windowMode == WindowMode::Fullscreen) {
 		// I'm not sure if this is required, but I don't know how to invalidate the last call to glfwWindowHint when setting borderless mode.

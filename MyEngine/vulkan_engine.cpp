@@ -195,6 +195,7 @@ void VKEngine::waitForCompute() {
 uint32_t VKEngine::waitForSwapchain(WindowSetting* newSettings) {
 	ZoneScoped;
 
+
 	vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 	vkResetFences(device, 1, &inFlightFences[currentFrame]);
 
@@ -206,7 +207,7 @@ uint32_t VKEngine::waitForSwapchain(WindowSetting* newSettings) {
 		updateWindow(*newSettings);
 	}
 
-	if (result == VK_ERROR_OUT_OF_DATE_KHR || settingsChanged) {
+	if (result == VK_ERROR_OUT_OF_DATE_KHR) {
 		recreateSwapChain(lastUsedSwapChainSetting);
 		return -1;
 	}
