@@ -43,6 +43,8 @@
 #include "Settings.h"
 #include "BinaryWriter.h"
 #include "worldGen.h"
+#include "Menus.h"
+
 #include <FastNoise/FastNoise.h>
 #include <FastNoise/SmartNode.h>
 #include <FastSIMD/FastSIMD.h>
@@ -71,6 +73,15 @@ bool showingEditor = false;
 const bool showingEditor = false;
 #endif 
 
+
+namespace {
+	std::random_device rd; // obtain a random number from hardware
+	std::mt19937 gen(rd()); // seed the generator
+	int ran(int min, int max) {
+		std::uniform_int_distribution<> dis(min, max);
+		return dis(gen);
+	}
+}
 
 void CalcTileVariation(uint32_t x, uint32_t y) {
 	if (x > 1 && x < mapW - 1 && y > 1 && y < mapH - 1) {
@@ -216,51 +227,33 @@ int main() {
 
 	//shared_ptr<Player> player = dynamic_pointer_cast<Player>(scene->Instantiate(engine.assetManager->GetPrefab("Player"), "Player", vec2(0, 106), 0));
 
+	UIState UI;
+	UI.bigfont = engine.assetManager->GetFontID("roboto-32");
+	UI.medfont = engine.assetManager->GetFontID("roboto-24");
+	UI.smallfont = engine.assetManager->GetFontID("roboto-16");
+	UI.input = input;
+	UI.currentPage = UIState::Page::VideoSettings;
+	UI.videoSettings = &videoSettings;
+	UI.selectedWindowOption = windowSetting.windowMode;
 
-	fontID bigfont = engine.assetManager->GetFontID("roboto-32");
-	fontID medfont = engine.assetManager->GetFontID("roboto-24");
-	fontID smallfont = engine.assetManager->GetFontID("roboto-16");
-	//
-	float updateTimer = 0;
-	float frameRateStat = 0;
+	////
+	//float updateTimer = 0;
+	//float frameRateStat = 0;
 
-	const char* options[] = { "windowed", "borderless", "exclusive fullscreen" };
-	WindowMode selectedWindowOption = windowSetting.windowMode;
+	//const char* options[] = { "windowed", "borderless", "exclusive fullscreen" };
+	//WindowMode selectedWindowOption = windowSetting.windowMode;
 	while (!engine.ShouldClose())
 	{
 		engine.clearScreenSpaceDrawlist();
 		{
-			auto white = vec4(1.0);
-			//engine.addScreenSpaceQuad(vec4(1.0), input->getMousePos(), vec2(50));
-
-			engine.addScreenSpaceText(smallfont, { 0, 0 }, white, "fps: %d", (int)frameRateStat);
-
-			engine.addScreenSpaceText(bigfont, { 200, 100 }, white, "Settings");
-
-			const auto optionA = "fullscreen";
-			engine.addScreenSpaceText(medfont, { 200, 300 }, white, "Window mode: %s", options[(int)selectedWindowOption]);
-
-			engine.addScreenSpaceQuad(white, vec2(900, 320) + btnSize / 2.0f, btnSize);
-			if (Button({ 900, 320 })) {
-				selectedWindowOption = (WindowMode)(((int)selectedWindowOption + 1) % 3);
+			switch (UI.currentPage)
+			{
+			case UIState::Page::VideoSettings:
+				DoSettingsMenu(UI, engine);
+				break;
+			default:
+				break;
 			}
-
-			if (engine.time - updateTimer > 0.2f) {
-				frameRateStat = engine._getAverageFramerate();
-				updateTimer = engine.time;
-			}
-
-
-			//	engine.addScreenSpaceQuad(vec4(0.7), vec2(250, 527), vec2(100, 40));
-			vec4 tc = vec4(1.0);
-			if (within(vec2(250, 527) - vec2(100, 40) / 2.0f, vec2(250, 527) + vec2(100, 40) / 2.0f, input->getMousePos())) {
-				tc = vec4(0.3, 0.9, 0.3, 1.0);
-				if (input->getMouseBtnDown(MouseBtn::Left)) {
-					videoSettings.windowSetting.windowMode = selectedWindowOption;
-					engine.ApplyNewVideoSettings(videoSettings);
-				}
-			}
-			engine.addScreenSpaceText(medfont, { 200, 500 }, tc, "Apply");
 		}
 
 		using namespace ImGui;
@@ -303,7 +296,7 @@ int main() {
 #else
 		engine.camera.position = GcameraPos;
 #endif
-#if 1
+#if 0
 		{
 
 			static int lastX = -1;
