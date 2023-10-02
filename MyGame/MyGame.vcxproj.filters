@@ -27,6 +27,9 @@
     <ClCompile Include="Menus.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="GameUI.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CopyFileToFolders Include="..\lib\FastNoise2\lib\FastNoiseD.dll">
@@ -59,6 +62,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Menus.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GameUI.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

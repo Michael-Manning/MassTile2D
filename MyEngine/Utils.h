@@ -160,3 +160,11 @@ static std::vector<uint8_t> readFile(const std::string& filename, int offset, in
 
     return buffer;
 }
+
+
+static bool within(glm::vec2 rectStart, glm::vec2  rectEnd, glm::vec2 pos) {
+    return pos.x > rectStart.x && pos.x < rectEnd.x && pos.y > rectStart.y && pos.y < rectEnd.y;
+}
+
+
+

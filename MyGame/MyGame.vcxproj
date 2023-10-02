@@ -325,6 +325,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="GameUI.cpp" />
     <ClCompile Include="Menus.cpp" />
     <ClCompile Include="MyGame.cpp" />
     <ClCompile Include="worldGen.cpp" />
@@ -352,6 +353,7 @@
   <ItemGroup>
     <ClInclude Include="benchmark.h" />
     <ClInclude Include="demon.h" />
+    <ClInclude Include="GameUI.h" />
     <ClInclude Include="global.h" />
     <ClInclude Include="Menus.h" />
     <ClInclude Include="Player.h" />

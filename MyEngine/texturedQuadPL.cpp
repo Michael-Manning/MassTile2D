@@ -32,8 +32,7 @@ using namespace glm;
 using namespace std;
 
 
-void TexturedQuadPL::CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc, MappedDoubleBuffer<void>& cameradb) {
-//void TexturedQuadPL::CreateGraphicsPipeline(std::string vertexSrc, std::string fragmentSrc, MappedDoubleBuffer<void>& cameradb) {
+void TexturedQuadPL::CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc, MappedDoubleBuffer<void>& cameradb, bool flipFaces) {
 
 	assert(defaultTexture.textureImageAllocation != nullptr);
 
@@ -67,6 +66,9 @@ void TexturedQuadPL::CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSr
 	auto colorBlendAttachment = defaultColorBlendAttachment(true);
 	auto colorBlending = defaultColorBlending(&colorBlendAttachment);
 	auto dynamicState = defaultDynamicState();
+
+	if (flipFaces)
+		rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
 
 	VkGraphicsPipelineCreateInfo pipelineInfo{};
 	pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;

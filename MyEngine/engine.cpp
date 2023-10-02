@@ -165,6 +165,7 @@ void Engine::Start(const VideoSettings& initialSettings) {
 		tilemapPipeline = make_unique<TilemapPL>(rengine, worldMap);
 		lightingPipeline = make_unique<LightingComputePL>(rengine, worldMap);
 		textPipeline = make_unique<TextPL>(rengine, texNotFound);
+		screenSpaceTexturePipeline = make_unique<TexturedQuadPL>(rengine, texNotFound);
 		screenSpaceTextPipeline = make_unique<TextPL>(rengine, texNotFound);
 	}
 
@@ -177,6 +178,7 @@ void Engine::Start(const VideoSettings& initialSettings) {
 		textPipeline->createSSBOBuffer();
 		lightingPipeline->createStagingBuffers();
 		screenSpaceColorPipeline->CreateInstancingBuffer();
+		screenSpaceTexturePipeline->createSSBOBuffer();
 		screenSpaceTextPipeline->createSSBOBuffer();
 
 		{
@@ -208,6 +210,12 @@ void Engine::Start(const VideoSettings& initialSettings) {
 			assetManager->LoadShaderFile("lighting_comp.spv", comp);
 			assetManager->LoadShaderFile("lightingBlur_comp.spv", blur);
 			lightingPipeline->CreateComputePipeline(comp, blur);
+		}
+		{
+			vector<uint8_t> vert, frag;
+			assetManager->LoadShaderFile("screenSpaceTexture_vert.spv", vert);
+			assetManager->LoadShaderFile("screenSpaceTexture_frag.spv", frag);
+			screenSpaceTexturePipeline->CreateGraphicsPipeline(vert, frag, screenSpaceTransformUploader.transferBuffers, true);
 		}
 		{
 			vector<uint8_t> vert, frag;
@@ -288,6 +296,8 @@ bool Engine::QueueNextFrame(bool drawImgui) {
 
 	lastTime = time;
 	this->time = time;
+
+	runningStats.sprite_render_count = 0;
 
 	if (paused)
 	{
@@ -467,7 +477,7 @@ bool Engine::QueueNextFrame(bool drawImgui) {
 			texturePipeline->UploadInstanceData(drawlist);
 			texturePipeline->recordCommandBuffer(cmdBuffer, drawlist.size());
 
-			runningStats.sprite_render_count = drawlist.size();
+			runningStats.sprite_render_count += drawlist.size();
 		}
 	}
 
@@ -529,6 +539,22 @@ bool Engine::QueueNextFrame(bool drawImgui) {
 		screenSpaceColorPipeline->UploadInstanceData(screenSpaceColorDrawlist);
 		screenSpaceColorPipeline->recordCommandBuffer(cmdBuffer, screenSpaceColorDrawlist.size());
 
+	}
+	// screenspace texture
+	{
+		if (assetChangeFlags->SpritesAdded()) {
+			for (auto& [sprID, sprite] : assetManager->_getSpriteIterator())
+				screenSpaceTexturePipeline->addTextureBinding(sprite->textureID, resourceManager->GetTexture(sprite->textureID));
+		}
+
+		if (assetChangeFlags->TextureFiltersChanged())
+			screenSpaceTexturePipeline->invalidateTextureDescriptors();
+
+		screenSpaceTexturePipeline->updateDescriptorSets();
+		screenSpaceTexturePipeline->UploadInstanceData(screenSpaceTextureDrawlist);
+		screenSpaceTexturePipeline->recordCommandBuffer(cmdBuffer, screenSpaceTextureDrawlist.size());
+
+		runningStats.sprite_render_count += screenSpaceTextureDrawlist.size();
 	}
 
 	// screenspace text

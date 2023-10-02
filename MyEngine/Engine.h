@@ -178,6 +178,39 @@ public:
 		screenSpaceColorDrawlist.push_back(item);
 	}
 
+	inline void addScreenCenteredSpaceTexture(std::shared_ptr<Sprite> sprite, int atlasIndex, glm::vec2 pos, float height, float rotation = 0.0f) {
+		TexturedQuadPL::ssboObjectInstanceData item;
+		item.uvMin = glm::vec2(0.0f);
+		item.uvMax = glm::vec2(1.0f);
+		item.translation = pos;
+		item.scale = glm::vec2(sprite->resolution.x / sprite->resolution.y * height, height);
+		item.rotation = rotation;
+		item.tex = sprite->textureID;
+
+		if (sprite->atlas.size() > 0) {
+			auto atEntry = sprite->atlas[atlasIndex];
+			item.uvMin = atEntry.uv_min;
+			item.uvMax = atEntry.uv_max;
+		}
+
+		screenSpaceTextureDrawlist.push_back(item);
+	}
+	inline void addScreenCenteredSpaceTexture(spriteID sprID, int atlasIndex, glm::vec2 pos, float height, float rotation = 0.0f){
+		auto s = assetManager->GetSprite(sprID);
+		addScreenCenteredSpaceTexture(s, atlasIndex, pos, height, rotation);
+	}
+	inline void addScreenCenteredSpaceTexture(std::string sprite, int atlasIndex, glm::vec2 pos, float height, float rotation = 0.0f) {
+		auto s = assetManager->GetSprite(sprite);
+		addScreenCenteredSpaceTexture(s, atlasIndex, pos, height, rotation);
+	}
+	inline void addScreenSpaceTexture(spriteID sprID, int atlasIndex, glm::vec2 pos, float height, float rotation = 0.0f) {
+		auto s = assetManager->GetSprite(sprID);
+		addScreenCenteredSpaceTexture(s, atlasIndex, pos + (s->resolution / 2.0f) * (height / s->resolution.y), height, rotation);
+	}
+	inline void addScreenSpaceTexture(std::string sprite, int atlasIndex, glm::vec2 pos, float height, float rotation = 0.0f) {
+		auto s = assetManager->GetSprite(sprite);
+		addScreenCenteredSpaceTexture(s, atlasIndex, pos + (s->resolution / 2.0f) * (height / s->resolution.y), height, rotation);
+	}
 
 	inline void addScreenSpaceText(fontID font, glm::vec2 position, glm::vec4 color, std::string text) {
 		screenSpaceTextDrawItem item;
@@ -214,6 +247,7 @@ public:
 	void clearScreenSpaceDrawlist() {
 		screenSpaceColorDrawlist.clear();
 		screenSpaceTextDrawlist.clear();
+		screenSpaceTextureDrawlist.clear();
 	}
 
 	void SetScene(std::shared_ptr<Scene> scene) {
@@ -229,6 +263,7 @@ private:
 	std::shared_ptr<AssetManager::ChangeFlags> assetChangeFlags;
 	std::shared_ptr<ResourceManager> resourceManager = nullptr;
 	std::vector<ColoredQuadPL::InstanceBufferData> screenSpaceColorDrawlist;
+	std::vector<TexturedQuadPL::ssboObjectInstanceData> screenSpaceTextureDrawlist;
 
 	struct screenSpaceTextDrawItem {
 		TextPL::textHeader header;
@@ -257,6 +292,7 @@ private:
 	std::unique_ptr<LightingComputePL> lightingPipeline = nullptr;
 
 	std::unique_ptr<ColoredQuadPL> screenSpaceColorPipeline = nullptr;
+	std::unique_ptr<TexturedQuadPL> screenSpaceTexturePipeline = nullptr;
 	std::unique_ptr<TextPL> screenSpaceTextPipeline = nullptr;
 
 	VKUtil::BufferUploader<cameraUBO_s> cameraUploader;

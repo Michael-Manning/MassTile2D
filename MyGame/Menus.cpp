@@ -4,17 +4,13 @@
 
 #include <glm/glm.hpp>
 
+#include "Utils.h"
 #include "Menus.h"
 
 using namespace std;
 using namespace glm;
 
 namespace {
-
-	bool within(vec2 rectStart, vec2  rectEnd, vec2 pos) {
-		return pos.x > rectStart.x && pos.x < rectEnd.x && pos.y > rectStart.y && pos.y < rectEnd.y;
-	}
-
 	const vec2 btnSize(60, 30);
 	bool Button(vec2 pos, std::shared_ptr<Input> input, vec2 size = btnSize ) {
 		if (input->getMouseBtnDown(MouseBtn::Left) == false)

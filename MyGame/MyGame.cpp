@@ -44,6 +44,7 @@
 #include "BinaryWriter.h"
 #include "worldGen.h"
 #include "Menus.h"
+#include "GameUI.h"
 
 #include <FastNoise/FastNoise.h>
 #include <FastNoise/SmartNode.h>
@@ -81,6 +82,14 @@ namespace {
 		std::uniform_int_distribution<> dis(min, max);
 		return dis(gen);
 	}
+
+	enum class AppState {
+		SplashScreen,
+		MainMenu,
+		PlayingGame
+	};
+
+	AppState appState = AppState::PlayingGame;
 }
 
 void CalcTileVariation(uint32_t x, uint32_t y) {
@@ -103,10 +112,6 @@ void CalcTileVariation(uint32_t x, uint32_t y) {
 		tileID tile = hash * tileVariations + tilesPerBlock * tileType + ran(0, 2);
 		tileWolrdGlobalRef->setTile(x, y, tile);
 	}
-}
-
-bool within(vec2 rectStart, vec2  rectEnd, vec2 pos) {
-	return pos.x > rectStart.x && pos.x < rectEnd.x && pos.y > rectStart.y && pos.y < rectEnd.y;
 }
 
 std::shared_ptr<Input> input = nullptr;
@@ -236,15 +241,16 @@ int main() {
 	UI.videoSettings = &videoSettings;
 	UI.selectedWindowOption = windowSetting.windowMode;
 
-	////
-	//float updateTimer = 0;
-	//float frameRateStat = 0;
+	UI::State uiState;
+	uiState.engine = &engine;
+	uiState.selectedHotBarSlot = 0;
+	uiState.showingInventory = true;
 
-	//const char* options[] = { "windowed", "borderless", "exclusive fullscreen" };
-	//WindowMode selectedWindowOption = windowSetting.windowMode;
 	while (!engine.ShouldClose())
 	{
 		engine.clearScreenSpaceDrawlist();
+
+		if (appState == AppState::MainMenu)
 		{
 			switch (UI.currentPage)
 			{
@@ -256,134 +262,142 @@ int main() {
 			}
 		}
 
-		using namespace ImGui;
+		else if (appState == AppState::PlayingGame) {
 
-		GcameraPos = engine.camera.position;
 
-		engine.EntityStartUpdate();
+			/*engine.addScreenSpaceTexture("hotbar", 0, vec2(0, 0), 60);*/
 
-		if (ImGui::GetIO().WantTextInput == false) {
+			UI::DoUI(uiState);
+
+			using namespace ImGui;
+
+			GcameraPos = engine.camera.position;
+
+			engine.EntityStartUpdate();
+
+			if (ImGui::GetIO().WantTextInput == false) {
 #ifdef USING_EDITOR
-			if (input->getKeyDown('e')) {
-				showingEditor = !showingEditor;
-			}
+				if (input->getKeyDown('e')) {
+					showingEditor = !showingEditor;
+				}
 #endif
-			if (input->getKeyDown('p')) {
-				engine.paused = !engine.paused;
+				if (input->getKeyDown('p')) {
+					engine.paused = !engine.paused;
+				}
+				if (input->getKeyDown('l')) {
+					engine.worldMap->FullLightingUpdate();
+				}
+				if (input->getKeyDown('m')) {
+					break;
+				}
 			}
-			if (input->getKeyDown('l')) {
-				engine.worldMap->FullLightingUpdate();
-			}
-			if (input->getKeyDown('m')) {
-				break;
-			}
-		}
 
 #ifdef USING_EDITOR
-		if (showingEditor) {
-			ImGui_ImplVulkan_NewFrame();
-			ImGui_ImplGlfw_NewFrame();
+			if (showingEditor) {
+				ImGui_ImplVulkan_NewFrame();
+				ImGui_ImplGlfw_NewFrame();
 
-			ImGui::NewFrame();
+				ImGui::NewFrame();
 
-			editor.editorCamera = engine.camera;
-			editor.Run(engine);
-			engine.camera = editor.editorCamera;
-		}
-		else {
-			engine.camera.position = GcameraPos;
-		}
+				editor.editorCamera = engine.camera;
+				editor.Run(engine);
+				engine.camera = editor.editorCamera;
+			}
+			else {
+				engine.camera.position = GcameraPos;
+			}
 #else
-		engine.camera.position = GcameraPos;
+			engine.camera.position = GcameraPos;
 #endif
 #if 0
-		{
+			{
 
-			static int lastX = -1;
-			static int lastY = -1;
+				static int lastX = -1;
+				static int lastY = -1;
 
-			vec2 worldClick = engine.screenToWorldPos(input->getMousePos());
-			//cout << worldClick.x << " " << worldClick.y << endl;
-			int tileX = worldClick.x / tileWorldSize + mapW / 2;
-			int tileY = worldClick.y / tileWorldSize + mapH / 2;
+				vec2 worldClick = engine.screenToWorldPos(input->getMousePos());
+				//cout << worldClick.x << " " << worldClick.y << endl;
+				int tileX = worldClick.x / tileWorldSize + mapW / 2;
+				int tileY = worldClick.y / tileWorldSize + mapH / 2;
 
-			if (tileX > 1 && tileX < mapW - 1 && tileY > 1 && tileY < mapH - 1) {
-				int x = tileX;
-				int y = mapH - tileY - 1;
-
-
-
-				if (input->getMouseBtn(MouseBtn::Left)) {
+				if (tileX > 1 && tileX < mapW - 1 && tileY > 1 && tileY < mapH - 1) {
+					int x = tileX;
+					int y = mapH - tileY - 1;
 
 
 
-					/*if (x != lastX || y != lastY) {
-
-						engine.worldMap->setTile(x, y, Tiles::Grass * tilesPerBlock);
-
-						for (int i = -1; i < 2; i++)
-							for (int j = -1; j < 2; j++)
-								CalcTileVariation(x + i, y + j);
-
-						lastX = x;
-						lastY = y;
-					}*/
-
-					//if (input->getMouseBtnDown(MouseBtn::Left)) {
-
-					float tileXf = worldClick.x / tileWorldSize + mapW / 2.0f;
-					float tileYf = mapH - (worldClick.y / tileWorldSize + mapH / 2.0f) - 1;
-
-					engine.worldMap->setMovingTorch(vec2(tileXf, tileYf), true);
+					if (input->getMouseBtn(MouseBtn::Left)) {
 
 
+
+						/*if (x != lastX || y != lastY) {
+
+							engine.worldMap->setTile(x, y, Tiles::Grass * tilesPerBlock);
+
+							for (int i = -1; i < 2; i++)
+								for (int j = -1; j < 2; j++)
+									CalcTileVariation(x + i, y + j);
+
+							lastX = x;
+							lastY = y;
+						}*/
+
+						//if (input->getMouseBtnDown(MouseBtn::Left)) {
+
+						float tileXf = worldClick.x / tileWorldSize + mapW / 2.0f;
+						float tileYf = mapH - (worldClick.y / tileWorldSize + mapH / 2.0f) - 1;
+
+						engine.worldMap->setMovingTorch(vec2(tileXf, tileYf), true);
+
+
+					}
+					else {
+						//
+					//	engine.worldMap->setMovingTorch(ivec2(x, y), false);
+					}
+
+					static bool lastState = true;
+
+					if (input->getMouseBtn(MouseBtn::Left) == false && lastState == true) {
+						//else if (input->getMouseBtnUp(MouseBtn::Left)) {
+
+					//	torchPositions.push_back(vec2(x, y));
+
+
+						engine.worldMap->setTorch(x, y);
+					}
+
+					lastState = input->getMouseBtn(MouseBtn::Left);
+
+					engine.worldMap->updateLighing();
 				}
-				else {
-					//
-				//	engine.worldMap->setMovingTorch(ivec2(x, y), false);
-				}
-
-				static bool lastState = true;
-
-				if (input->getMouseBtn(MouseBtn::Left) == false && lastState == true) {
-					//else if (input->getMouseBtnUp(MouseBtn::Left)) {
-
-				//	torchPositions.push_back(vec2(x, y));
-
-
-					engine.worldMap->setTorch(x, y);
-				}
-
-				lastState = input->getMouseBtn(MouseBtn::Left);
-
-				engine.worldMap->updateLighing();
 			}
-		}
-		if (showingEditor == false && input->getMouseBtn(MouseBtn::Right)) {
-			vec2 worldClick = engine.screenToWorldPos(input->getMousePos());
+			if (showingEditor == false && input->getMouseBtn(MouseBtn::Right)) {
+				vec2 worldClick = engine.screenToWorldPos(input->getMousePos());
 
-			int tileX = worldClick.x / tileWorldSize + mapW / 2;
-			int tileY = worldClick.y / tileWorldSize + mapH / 2;
+				int tileX = worldClick.x / tileWorldSize + mapW / 2;
+				int tileY = worldClick.y / tileWorldSize + mapH / 2;
 
-			if (tileX > 1 && tileX < mapW - 1 && tileY > 1 && tileY < mapH - 1) {
+				if (tileX > 1 && tileX < mapW - 1 && tileY > 1 && tileY < mapH - 1) {
 
-				int x = tileX;
-				int y = mapH - tileY - 1;
+					int x = tileX;
+					int y = mapH - tileY - 1;
 
-				engine.worldMap->setTile(x, y, Tiles::Air);
+					engine.worldMap->setTile(x, y, Tiles::Air);
 
-				for (int i = -1; i < 2; i++)
-					for (int j = -1; j < 2; j++)
-						CalcTileVariation(x + i, y + j);
+					for (int i = -1; i < 2; i++)
+						for (int j = -1; j < 2; j++)
+							CalcTileVariation(x + i, y + j);
+				}
+
+				/*if (input->getMouseBtnDown(MouseBtn::Right)) {
+					auto demon = scene->Instantiate(engine.assetManager.get[["Demon"], "Demon", worldClick, 0);
+					dynamic_pointer_cast<Demon>(demon)->setPlayerRef(player);
+				}*/
 			}
-
-			/*if (input->getMouseBtnDown(MouseBtn::Right)) {
-				auto demon = scene->Instantiate(engine.assetManager.get[["Demon"], "Demon", worldClick, 0);
-				dynamic_pointer_cast<Demon>(demon)->setPlayerRef(player);
-			}*/
-		}
 #endif
 
+		}
 		engine.QueueNextFrame(showingEditor);
 	}
 
