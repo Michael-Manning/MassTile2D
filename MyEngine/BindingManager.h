@@ -64,6 +64,8 @@ public:
 				slotAvailable[i] = true;
 
 		boundIDs.erase(ID);
+
+		InvalidateDescriptors();
 	};
 
 	void ClearBindings(){
