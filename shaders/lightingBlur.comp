@@ -5,7 +5,7 @@
 #define chunksX  64 
 #define maxLightsPerChunk 100
 #define mapOffset 0
-#define ambiantLight 0.002
+#define ambiantLight 1.0
 #define mapCount 2097152
 
 struct LightingUpdate {

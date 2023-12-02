@@ -934,7 +934,7 @@ bool Editor::drawInspector<TextRenderer>(TextRenderer& r, Engine& engine) {
 bool _drawInspector(shared_ptr<Collider> collider) {
 	int type = collider->_getType();
 
-	if (type == 0) {
+	if (type == 1) {
 		auto bc = dynamic_pointer_cast<BoxCollider>(collider);
 
 		SeparatorText("Box Collider");

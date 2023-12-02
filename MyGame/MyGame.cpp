@@ -225,7 +225,7 @@ int main() {
 
 
 
-	//engine.setTilemapAtlasTexture(engine.assetManager->GetSprite("tilemapSprites")->textureID);
+	engine.setTilemapAtlasTexture(engine.assetManager->GetSprite("tilemapSprites")->textureID);
 
 
 	vector<vec2> torchPositions;
@@ -267,7 +267,7 @@ int main() {
 
 			/*engine.addScreenSpaceTexture("hotbar", 0, vec2(0, 0), 60);*/
 
-			UI::DoUI(uiState);
+			//UI::DoUI(uiState);
 
 			using namespace ImGui;
 
@@ -309,7 +309,7 @@ int main() {
 #else
 			engine.camera.position = GcameraPos;
 #endif
-#if 0
+#if 1
 			{
 
 				static int lastX = -1;
