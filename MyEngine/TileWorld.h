@@ -34,7 +34,7 @@ constexpr float tileWorldSize = 0.25f;
 static_assert(mapW% chunkSize == 0);
 static_assert(mapH% chunkSize == 0);
 
-constexpr float ambiantLight = 0.002f;
+constexpr float ambiantLight = 1.0f;
 
 const static int maxChunkUpdatesPerFrame = 16;
 const static int maxLightsPerChunk = 100;

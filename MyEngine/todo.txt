@@ -1,4 +1,6 @@
 
+- text render spaces don't work with kerning hash lookup
+
 - integrate vk-bootstrap 
 - support downscaled resolution (run full screen at lower resolution the monitor resolution)
 
