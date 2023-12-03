@@ -8,7 +8,7 @@
 #include <string>
 #include <utility>
 
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
 #include <glm/glm.hpp>
 
 #include <vk_mem_alloc.h>

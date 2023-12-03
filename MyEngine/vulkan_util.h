@@ -4,7 +4,7 @@
 #include <string>
 #include <stdint.h>
 
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
 #include <vk_mem_alloc.h>
 
 #include <glm/glm.hpp>
@@ -14,14 +14,14 @@
 
 namespace VKUtil{
 
-	VkShaderModule createShaderModule(const std::vector<uint8_t>& code, VkDevice device);
+	vk::ShaderModule createShaderModule(const std::vector<uint8_t>& code, vk::Device device);
 
 	// mapped double buffer wrapped with frame dirty logic
 	template<typename T>
 	class BufferUploader {
 	public:
 
-		void CreateBuffers(std::shared_ptr<VKEngine> engine, VkBufferUsageFlags usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT) {
+		void CreateBuffers(std::shared_ptr<VKEngine> engine, vk::BufferUsageFlags usage = vk::BufferUsageFlagBits::eUniformBuffer) {
 			engine->createMappedBuffer(sizeof(T), usage, transferBuffers);
 		};
 

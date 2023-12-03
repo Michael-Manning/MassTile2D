@@ -9,7 +9,7 @@
 #include <string>
 #include <memory>
 
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
 #include <glm/glm.hpp>
 
 #include <vk_mem_alloc.h>
@@ -33,26 +33,27 @@ struct QueueFamilyIndices {
 
 template<typename T = void>
 struct MappedBuffer {
-	VkBuffer buffer;
+	vk::Buffer buffer;
 	VmaAllocation allocation;
 	T* bufferMapped;
-	VkDeviceSize size;
+	vk::DeviceSize size;
 };
 
 template<typename T = void>
 struct MappedDoubleBuffer {
-	std::array<VkBuffer, FRAMES_IN_FLIGHT> buffers;
+	std::array<vk::Buffer, FRAMES_IN_FLIGHT> buffers;
 	std::array<VmaAllocation, FRAMES_IN_FLIGHT> allocations;
 	std::array<T*, FRAMES_IN_FLIGHT> buffersMapped;
-	VkDeviceSize size;
+	vk::DeviceSize size;
 };
 
 struct VertexMeshBuffer {
-	VkBuffer vertexBuffer;
+	vk::Buffer vertexBuffer;
 	VmaAllocation vertexBufferAllocation;
-	VkBuffer indexBuffer;
+	vk::Buffer indexBuffer;
 	VmaAllocation indexBufferAllocation;
 };
+
 
 class VKEngine {
 public:
@@ -77,10 +78,10 @@ public:
 	void freeTexture(Texture& texture);
 
 	void createTextureSamplers();
-	void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
-	void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
-	void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VmaAllocation& imageAllocation);
-	VkImageView createImageView(VkImage image, VkFormat format);
+	void transitionImageLayout(vk::Image image, vk::Format format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout);
+	void copyBufferToImage(vk::Buffer buffer, vk::Image image, uint32_t width, uint32_t height);
+	void createImage(uint32_t width, uint32_t height, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags usage, vk::MemoryPropertyFlags properties, vk::Image& image, VmaAllocation& imageAllocation);
+	vk::ImageView createImageView(vk::Image image, vk::Format format);
 
 	void recreateSwapChain(const SwapChainSetting& setting);
 	void cleanupSwapChain();
@@ -88,17 +89,17 @@ public:
 
 	void createFramebuffers();
 
-	VkCommandBuffer beginSingleTimeCommands();
-	void endSingleTimeCommands(VkCommandBuffer commandBuffer);
+	vk::CommandBuffer beginSingleTimeCommands();
+	void endSingleTimeCommands(vk::CommandBuffer commandBuffer);
 
 
-	void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size, VkDeviceSize destinationOffset = 0);
-	void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VmaAllocationCreateFlags flags, VkBuffer& buffer, VmaAllocation& allocation, bool preferDevice = false);
+	void copyBuffer(vk::Buffer srcBuffer, vk::Buffer dstBuffer, vk::DeviceSize size, vk::DeviceSize destinationOffset = 0);
+	void createBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, VmaAllocationCreateFlags flags, vk::Buffer& buffer, VmaAllocation& allocation, bool preferDevice = false);
 
 
 	// should learn why this has to be implimented in the header to work
 	template<typename T>
-	void createMappedBuffer(VkDeviceSize size, VkBufferUsageFlags usage, MappedDoubleBuffer<T>& buffer) {
+	void createMappedBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, MappedDoubleBuffer<T>& buffer) {
 
 		for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++)
 		{
@@ -111,14 +112,14 @@ public:
 	// call in sequence
 	void waitForCompute();
 	uint32_t waitForSwapchain(WindowSetting* newSettings = nullptr);
-	VkCommandBuffer getNextCommandBuffer(); // temporary solution which resets the command buffer every frame
-	VkCommandBuffer getNextComputeCommandBuffer();
+	vk::CommandBuffer getNextCommandBuffer(); // temporary solution which resets the command buffer every frame
+	vk::CommandBuffer getNextComputeCommandBuffer();
 
-	void endCommandBuffer(VkCommandBuffer commandBuffer);
+	void endCommandBuffer(vk::CommandBuffer commandBuffer);
 
 	void submitCompute();
 	bool submitAndPresent(uint32_t imageIndex); // returns framebuffer recreation
-	void beginRenderpass(uint32_t imageIndex, VkCommandBuffer cmdBuffer, glm::vec4 clearColor);
+	void beginRenderpass(uint32_t imageIndex, vk::CommandBuffer cmdBuffer, glm::vec4 clearColor);
 
 	bool framebufferResized = false;
 
@@ -128,43 +129,43 @@ public:
 
 	VmaAllocator allocator;
 
-	VkInstance instance;
-	VkDebugUtilsMessengerEXT debugMessenger;
-	VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
-	VkDevice device;
+	vk::Instance instance;
+	vk::DebugUtilsMessengerEXT debugMessenger;
+	vk::PhysicalDevice physicalDevice = VK_NULL_HANDLE;
+	vk::Device device;
 
-	VkQueue graphicsQueue;
-	VkQueue computeQueue;
-	VkQueue presentQueue;
+	vk::Queue graphicsQueue;
+	vk::Queue computeQueue;
+	vk::Queue presentQueue;
 
-	VkSurfaceKHR surface;
-	VkSwapchainKHR swapChain;
-	std::vector<VkImage> swapChainImages;
-	VkFormat swapChainImageFormat;
-	VkExtent2D swapChainExtent;
+	vk::SurfaceKHR surface;
+	vk::SwapchainKHR swapChain;
+	std::vector<vk::Image> swapChainImages;
+	vk::Format swapChainImageFormat;
+	vk::Extent2D swapChainExtent;
 
 	// different mag filters
-	VkSampler textureSampler_nearest;
-	VkSampler textureSampler_linear;
+	vk::Sampler textureSampler_nearest;
+	vk::Sampler textureSampler_linear;
 
-	std::vector<VkImageView> swapChainImageViews;
+	std::vector<vk::ImageView> swapChainImageViews;
 
-	VkRenderPass renderPass;
+	vk::RenderPass renderPass;
 
-	std::vector<VkFramebuffer> swapChainFramebuffers;
-	VkCommandPool commandPool;
+	std::vector<vk::Framebuffer> swapChainFramebuffers;
+	vk::CommandPool commandPool;
 
-	VkDescriptorPool descriptorPool;
+	vk::DescriptorPool descriptorPool;
 
 
-	std::array<VkCommandBuffer, FRAMES_IN_FLIGHT> commandBuffers;
-	std::array<VkCommandBuffer, FRAMES_IN_FLIGHT>  computeCommandBuffers;
+	std::array<vk::CommandBuffer, FRAMES_IN_FLIGHT> commandBuffers;
+	std::array<vk::CommandBuffer, FRAMES_IN_FLIGHT>  computeCommandBuffers;
 
-	std::array<VkSemaphore, FRAMES_IN_FLIGHT>  imageAvailableSemaphores;
-	std::array<VkSemaphore, FRAMES_IN_FLIGHT>  renderFinishedSemaphores;
-	std::array<VkSemaphore, FRAMES_IN_FLIGHT>  computeFinishedSemaphores;
-	std::array<VkFence, FRAMES_IN_FLIGHT> inFlightFences;
-	std::array<VkFence, FRAMES_IN_FLIGHT> computeInFlightFences;
+	std::array<vk::Semaphore, FRAMES_IN_FLIGHT>  imageAvailableSemaphores;
+	std::array<vk::Semaphore, FRAMES_IN_FLIGHT>  renderFinishedSemaphores;
+	std::array<vk::Semaphore, FRAMES_IN_FLIGHT>  computeFinishedSemaphores;
+	std::array<vk::Fence, FRAMES_IN_FLIGHT> inFlightFences;
+	std::array<vk::Fence, FRAMES_IN_FLIGHT> computeInFlightFences;
 
 	QueueFamilyIndices queueFamilyIndices;
 
@@ -180,14 +181,16 @@ public:
 	SwapChainSetting lastUsedSwapChainSetting;
 
 #ifdef TRACY_ENABLE
-	std::array<TracyVkCtx, FRAMES_IN_FLIGHT> tracyComputeContexts;
-	std::array<TracyVkCtx, FRAMES_IN_FLIGHT> tracyGraphicsContexts;
+	std::array<Tracyvk::Ctx, FRAMES_IN_FLIGHT> tracyComputeContexts;
+	std::array<Tracyvk::Ctx, FRAMES_IN_FLIGHT> tracyGraphicsContexts;
 
 	void initTracyContext();
 #endif
 
+	vk::DispatchLoaderDynamic dynamicDispatcher;
+
 private:
-	void genTexture(unsigned char* pixels, VkDeviceSize imageSize, FilterMode filterMode, Texture& tex);
+	void genTexture(unsigned char* pixels, vk::DeviceSize imageSize, FilterMode filterMode, Texture& tex);
 	void updateWindow(WindowSetting& settings); // private to enforce synchronization
 	WindowMode currentWindowMode = WindowMode::Windowed;
 	int glfw_initial_primary_monitor_redBits;
@@ -200,5 +203,6 @@ private:
 	int pre_fullscren_windowSizeY;
 	int pre_fullscren_windowPosX = 100; // set to 100 unless starting out in windowed mode
 	int pre_fullscren_windowPosY = 100;
+
 };
 

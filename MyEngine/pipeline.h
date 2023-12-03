@@ -5,7 +5,7 @@
 #include <string>
 #include <memory>
 
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
 #include <glm/glm.hpp>
 
 #include <vk_mem_alloc.h>
@@ -23,13 +23,13 @@ public:
 protected:
 
 	// for each frame in flight
-	std::array<VkDescriptorSet, FRAMES_IN_FLIGHT> generalDescriptorSets;
+	std::array<vk::DescriptorSet, FRAMES_IN_FLIGHT> generalDescriptorSets;
 
 
 	std::shared_ptr<VKEngine> engine = nullptr;
 
-	VkPipeline _pipeline;
-	VkPipelineLayout pipelineLayout;
+	vk::Pipeline _pipeline;
+	vk::PipelineLayout pipelineLayout;
 
 	
 
@@ -37,25 +37,25 @@ protected:
 	struct descriptorSetInfo {
 		int set;
 		int binding;
-		VkDescriptorType type;
-		VkShaderStageFlags stageFlags;
-		std::array<VkBuffer, FRAMES_IN_FLIGHT> * doubleBuffer = nullptr;
-		VkDeviceSize bufferRange = 0;
+		vk::DescriptorType type;
+		vk::ShaderStageFlags stageFlags;
+		std::array<vk::Buffer, FRAMES_IN_FLIGHT> * doubleBuffer = nullptr;
+		vk::DeviceSize bufferRange = 0;
 		Texture * textures= nullptr;
 		int textureCount = 0;
 
 
-		descriptorSetInfo(int set, int binding, VkDescriptorType type, VkShaderStageFlags stageFlags, std::array<VkBuffer, FRAMES_IN_FLIGHT>* db, VkDeviceSize bufferRange)
+		descriptorSetInfo(int set, int binding, vk::DescriptorType type, vk::ShaderStageFlags stageFlags, std::array<vk::Buffer, FRAMES_IN_FLIGHT>* db, vk::DeviceSize bufferRange)
 			: set(set), binding(binding), type(type), stageFlags(stageFlags), doubleBuffer(db), bufferRange(bufferRange),  textures(nullptr) {
 		};
-		descriptorSetInfo(int set, int binding, VkDescriptorType type, VkShaderStageFlags stageFlags, Texture* texture, int textureCount)
+		descriptorSetInfo(int set, int binding, vk::DescriptorType type, vk::ShaderStageFlags stageFlags, Texture* texture, int textureCount)
 			: set(set), binding(binding), type(type), stageFlags(stageFlags), doubleBuffer(nullptr), bufferRange(0), textures(texture), textureCount(textureCount) {
 		};
 	};
 	
 	// set number to layout
-	std::unordered_map<int, VkDescriptorSetLayout> builderLayouts;
-	std::unordered_map<int, std::array<VkDescriptorSet, FRAMES_IN_FLIGHT>> builderDescriptorSets;
+	std::unordered_map<int, vk::DescriptorSetLayout> builderLayouts;
+	std::unordered_map<int, std::array<vk::DescriptorSet, FRAMES_IN_FLIGHT>> builderDescriptorSets;
 	
 	std::vector<descriptorSetInfo> builderDescriptorSetsDetails;
 
@@ -67,26 +67,26 @@ protected:
 	void buildDescriptorSets();
 	void updateDescriptorSet(int frame, descriptorSetInfo& info);
 
-	//std::vector<VkPipelineShaderStageCreateInfo> createShaderStages(std::string vertexSrc, std::string fragmentSrc);
-	std::vector<VkPipelineShaderStageCreateInfo> createShaderStages(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc);
-	VkPipelineShaderStageCreateInfo createComputeShaderStage(const std::vector<uint8_t>& computeSrc);
-	//VkPipelineShaderStageCreateInfo createComputeShaderStage(std::string computeSrc);
+	//std::vector<vk::PipelineShaderStageCreateInfo> createShaderStages(std::string vertexSrc, std::string fragmentSrc);
+	std::vector<vk::PipelineShaderStageCreateInfo> createShaderStages(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc);
+	vk::PipelineShaderStageCreateInfo createComputeShaderStage(const std::vector<uint8_t>& computeSrc);
+	//vk::PipelineShaderStageCreateInfo createComputeShaderStage(std::string computeSrc);
 
-	VkPipelineInputAssemblyStateCreateInfo defaultInputAssembly();
-	VkPipelineViewportStateCreateInfo defaultViewportState();
-	VkPipelineRasterizationStateCreateInfo defaultRasterizer();
-	VkPipelineMultisampleStateCreateInfo defaultMultisampling();
-	VkPipelineColorBlendAttachmentState defaultColorBlendAttachment(bool blendEnabled);
-	VkPipelineColorBlendStateCreateInfo defaultColorBlending(VkPipelineColorBlendAttachmentState *attachment);
-	VkPipelineDynamicStateCreateInfo defaultDynamicState();
+	vk::PipelineInputAssemblyStateCreateInfo defaultInputAssembly();
+	vk::PipelineViewportStateCreateInfo defaultViewportState();
+	vk::PipelineRasterizationStateCreateInfo defaultRasterizer();
+	vk::PipelineMultisampleStateCreateInfo defaultMultisampling();
+	vk::PipelineColorBlendAttachmentState defaultColorBlendAttachment(bool blendEnabled);
+	vk::PipelineColorBlendStateCreateInfo defaultColorBlending(vk::PipelineColorBlendAttachmentState *attachment);
+	vk::PipelineDynamicStateCreateInfo defaultDynamicState();
 
-	std::vector<VkDynamicState> defaultDynamicStates = {
-		VK_DYNAMIC_STATE_VIEWPORT,
-		VK_DYNAMIC_STATE_SCISSOR
+	std::vector<vk::DynamicState> defaultDynamicStates = {
+		vk::DynamicState::eViewport,
+		vk::DynamicState::eScissor
 	};
 
-	inline VkViewport fullframeViewport() {
-		VkViewport viewport{};
+	inline vk::Viewport fullframeViewport() {
+		vk::Viewport viewport{};
 		viewport.x = 0.0f;
 		viewport.y = 0.0f;
 		viewport.width = (float)engine->swapChainExtent.width;
@@ -96,12 +96,12 @@ protected:
 		return viewport;
 	};
 
-	VkDescriptorSetLayoutBinding buildSamplerBinding(int binding, int descriptorCount, VkShaderStageFlags stageFlags);
-	VkDescriptorSetLayoutBinding buildUBOBinding(int binding, VkShaderStageFlags stageFlags);
-	VkDescriptorSetLayoutBinding buildSSBOBinding(int binding, VkShaderStageFlags stageFlags);
-	void buildSetLayout(std::vector<VkDescriptorSetLayoutBinding>& bindings, VkDescriptorSetLayout& layout);
+	vk::DescriptorSetLayoutBinding buildSamplerBinding(int binding, int descriptorCount, vk::ShaderStageFlags stageFlags);
+	vk::DescriptorSetLayoutBinding buildUBOBinding(int binding, vk::ShaderStageFlags stageFlags);
+	vk::DescriptorSetLayoutBinding buildSSBOBinding(int binding, vk::ShaderStageFlags stageFlags);
+	void buildSetLayout(std::vector<vk::DescriptorSetLayoutBinding>& bindings, vk::DescriptorSetLayout& layout);
 
-	void buildPipelineLayout(std::vector<VkDescriptorSetLayout>& descriptorSetLayouts, uint32_t pushConstantSize = 0, VkShaderStageFlags pushConstantStages = 0);
+	void buildPipelineLayout(std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts, uint32_t pushConstantSize = 0, vk::ShaderStageFlags pushConstantStages = vk::ShaderStageFlags{});
 
-	void buidDBDescriptorSet(VkDescriptorSetLayout& layout, std::array<VkDescriptorSet, FRAMES_IN_FLIGHT>& sets);
+	void buidDBDescriptorSet(vk::DescriptorSetLayout& layout, std::array<vk::DescriptorSet, FRAMES_IN_FLIGHT>& sets);
 };

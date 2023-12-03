@@ -8,7 +8,7 @@
 #include <memory>
 #include <utility>
 
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <vk_mem_alloc.h>
@@ -33,19 +33,19 @@ void ColoredQuadPL::CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc
 	auto shaderStages = createShaderStages(vertexSrc, fragmentSrc);
 
 	configureDescriptorSets(vector<Pipeline::descriptorSetInfo> {
-		descriptorSetInfo(0, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, &cameradb.buffers, cameradb.size),
-		descriptorSetInfo(1, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, &ssboMappedDB.buffers, ssboMappedDB.size)
+		descriptorSetInfo(0, 0, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eVertex, &cameradb.buffers, cameradb.size),
+		descriptorSetInfo(1, 0, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, &ssboMappedDB.buffers, ssboMappedDB.size)
 	});
 	buildDescriptorLayouts();
 
 	// create vector containing the builder descriptor set layouts
-	vector< VkDescriptorSetLayout> setLayouts;
+	vector< vk::DescriptorSetLayout> setLayouts;
 	setLayouts.reserve(builderLayouts.size());
 	for (auto& [set, layout] : builderLayouts)
 		setLayouts.push_back(layout);
 	buildPipelineLayout(setLayouts);
 
-	VkVertexInputBindingDescription VbindingDescription;
+	vk::VertexInputBindingDescription VbindingDescription;
 	dbVertexAtribute Vattribute;
 	auto vertexInputInfo = Vertex::getVertexInputInfo(&VbindingDescription, &Vattribute);
 	auto inputAssembly = defaultInputAssembly();
@@ -56,11 +56,10 @@ void ColoredQuadPL::CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc
 	auto colorBlending = defaultColorBlending(&colorBlendAttachment);
 	auto dynamicState = defaultDynamicState();
 
-	if(flipFaces)
-		rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+	if (flipFaces)
+		rasterizer.frontFace = vk::FrontFace::eClockwise;
 
-	VkGraphicsPipelineCreateInfo pipelineInfo{};
-	pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+	vk::GraphicsPipelineCreateInfo pipelineInfo;
 	pipelineInfo.stageCount = 2;
 	pipelineInfo.pStages = shaderStages.data();
 	pipelineInfo.pVertexInputState = &vertexInputInfo;
@@ -75,18 +74,20 @@ void ColoredQuadPL::CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc
 	pipelineInfo.subpass = 0;
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-	auto res = vkCreateGraphicsPipelines(engine->device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &_pipeline);
-	assert(res == VK_SUCCESS);
+	auto rv = engine->device.createGraphicsPipeline(VK_NULL_HANDLE, pipelineInfo);
+	if (rv.result != vk::Result::eSuccess)
+			throw std::runtime_error("failed to create graphics pipeline!");
+	_pipeline = rv.value;
 
 	for (auto& stage : shaderStages) {
-		vkDestroyShaderModule(engine->device, stage.module, nullptr);
+		engine->device.destroyShaderModule(stage.module);
 	}
 
 	buildDescriptorSets();
 }
 
 void ColoredQuadPL::CreateInstancingBuffer() {
-	engine->createMappedBuffer(sizeof(InstanceBufferData) * ColoredQuadPL_MAX_OBJECTS, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, ssboMappedDB);
+	engine->createMappedBuffer(sizeof(InstanceBufferData) * ColoredQuadPL_MAX_OBJECTS, vk::BufferUsageFlagBits::eStorageBuffer, ssboMappedDB);
 }
 
 void ColoredQuadPL::UploadInstanceData(std::vector<InstanceBufferData>& drawlist) {
@@ -94,12 +95,12 @@ void ColoredQuadPL::UploadInstanceData(std::vector<InstanceBufferData>& drawlist
 	memcpy(ssboMappedDB.buffersMapped[engine->currentFrame], drawlist.data(), sizeof(InstanceBufferData) * drawlist.size());
 }
 
-void ColoredQuadPL::recordCommandBuffer(VkCommandBuffer commandBuffer, int instanceCount) {
+void ColoredQuadPL::recordCommandBuffer(vk::CommandBuffer commandBuffer, int instanceCount) {
 
-	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
+	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, _pipeline);
 
 	for (auto& i : builderDescriptorSetsDetails)
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, i.set, 1, &builderDescriptorSets[i.set][engine->currentFrame], 0, nullptr);
+		commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, i.set, 1, &builderDescriptorSets[i.set][engine->currentFrame], 0, nullptr);
 
 	{
 		TracyVkZone(engine->tracyGraphicsContexts[engine->currentFrame], commandBuffer, "Colored quad render");

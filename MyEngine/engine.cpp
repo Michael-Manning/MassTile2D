@@ -5,7 +5,7 @@
 #include <unordered_map>
 #include <random>
 
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <box2d/box2d.h>
@@ -378,24 +378,24 @@ bool Engine::QueueNextFrame(bool drawImgui) {
 	rengine->beginRenderpass(imageIndex, cmdBuffer, vec4(0.0, 0.4, 0.6, 1.0));
 
 	{
-		VkViewport viewport{};
+		vk::Viewport viewport;
 		viewport.x = 0.0f;
 		viewport.y = 0.0f;
 		viewport.width = (float)rengine->swapChainExtent.width;
 		viewport.height = (float)rengine->swapChainExtent.height;
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
-		vkCmdSetViewport(cmdBuffer, 0, 1, &viewport);
+		cmdBuffer.setViewport(0, 1, &viewport);
 
-		VkRect2D scissor{};
-		scissor.offset = { 0, 0 };
+		vk::Rect2D scissor;
+		scissor.offset = vk::Offset2D { 0, 0 };
 		scissor.extent = rengine->swapChainExtent;
-		vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
+		cmdBuffer.setScissor(0, 1, &scissor);
 
-		VkBuffer vertexBuffers[] = { quadMeshBuffer.vertexBuffer };
-		VkDeviceSize offsets[] = { 0 };
-		vkCmdBindVertexBuffers(cmdBuffer, 0, 1, vertexBuffers, offsets);
-		vkCmdBindIndexBuffer(cmdBuffer, quadMeshBuffer.indexBuffer, 0, VK_INDEX_TYPE_UINT16);
+		vk::Buffer vertexBuffers[] = { quadMeshBuffer.vertexBuffer };
+		vk::DeviceSize offsets[] = { 0 };
+		cmdBuffer.bindVertexBuffers(0, 1, vertexBuffers, offsets);
+		cmdBuffer.bindIndexBuffer(quadMeshBuffer.indexBuffer, 0, vk::IndexType::eUint16);
 	}
 
 
@@ -637,17 +637,17 @@ static void glfw_error_callback(int error, const char* description)
 {
 	fprintf(stderr, "GLFW Error %d: %s\n", error, description);
 }
-static void check_vk_result(VkResult err)
-{
-	if (err == 0)
-		return;
-	fprintf(stderr, "[vulkan] Error: VkResult = %d\n", err);
-	if (err < 0)
-		abort();
-}
+//static void check_vk_result(vk::Result err)
+//{
+//	if (err == 0)
+//		return;
+//	fprintf(stderr, "[vulkan] Error: vk::Result = %d\n", err);
+//	if (err < 0)
+//		abort();
+//}
 
 #ifdef IMGUI_VULKAN_DEBUG_REPORT
-static VKAPI_ATTR VkBool32 VKAPI_CALL debug_report(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, uint64_t object, size_t location, int32_t messageCode, const char* pLayerPrefix, const char* pMessage, void* pUserData)
+static VKAPI_ATTR vk::Bool32 VKAPI_CALL debug_report(vk::DebugReportFlagsEXT flags, vk::DebugReportObjectTypeEXT objectType, uint64_t object, size_t location, int32_t messageCode, const char* pLayerPrefix, const char* pMessage, void* pUserData)
 {
 	(void)flags; (void)object; (void)location; (void)messageCode; (void)pUserData; (void)pLayerPrefix; // Unused arguments
 	fprintf(stderr, "[vulkan] Debug report from ObjectType: %i\nMessage: %s\n\n", objectType, pMessage);
@@ -671,30 +671,29 @@ void Engine::InitImgui() {
 
 	//1: create descriptor pool for IMGUI
 	// the size of the pool is very oversize, but it's copied from imgui demo itself.
-	VkDescriptorPoolSize pool_sizes[] =
-	{
-		{ VK_DESCRIPTOR_TYPE_SAMPLER, 1000 },
-		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000 },
-		{ VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000 },
-		{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000 },
-		{ VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000 },
-		{ VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000 },
-		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000 },
-		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000 },
-		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000 },
-		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000 },
-		{ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000 }
+	vk::DescriptorPoolSize pool_sizes[] = {
+		{ vk::DescriptorType::eSampler, 1000 },
+		{ vk::DescriptorType::eCombinedImageSampler, 1000 },
+		{ vk::DescriptorType::eSampledImage, 1000 },
+		{ vk::DescriptorType::eStorageImage, 1000 },
+		{ vk::DescriptorType::eUniformTexelBuffer, 1000 },
+		{ vk::DescriptorType::eStorageTexelBuffer, 1000 },
+		{ vk::DescriptorType::eUniformBuffer, 1000 },
+		{ vk::DescriptorType::eStorageBuffer, 1000 },
+		{ vk::DescriptorType::eUniformBufferDynamic, 1000 },
+		{ vk::DescriptorType::eStorageBufferDynamic, 1000 },
+		{ vk::DescriptorType::eInputAttachment, 1000 }
 	};
 
-	VkDescriptorPoolCreateInfo pool_info = {};
-	pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-	pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+
+	vk::DescriptorPoolCreateInfo pool_info;
+	pool_info.flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet;
 	pool_info.maxSets = 1000;
 	pool_info.poolSizeCount = (uint32_t)std::size(pool_sizes);
 	pool_info.pPoolSizes = pool_sizes;
 
-	VkDescriptorPool imguiPool;
-	vkCreateDescriptorPool(rengine->device, &pool_info, nullptr, &imguiPool);
+	vk::DescriptorPool imguiPool;
+	rengine->device.createDescriptorPool(&pool_info, nullptr, &imguiPool);
 
 
 	// 2: initialize imgui library

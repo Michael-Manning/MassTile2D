@@ -9,7 +9,7 @@
 #include <string>
 #include <utility>
 
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
 #include <glm/glm.hpp>
 
 #include <vk_mem_alloc.h>
@@ -38,7 +38,7 @@ public:
 	void CreateComputePipeline(const std::vector<uint8_t>& computeSrc_firstPass, const std::vector<uint8_t>& computeSrc_secondPass);
 	//void CreateComputePipeline(std::string computeSrc_firstPass, std::string computeSrc_secondPass);
 
-	void recordCommandBuffer(VkCommandBuffer commandBuffer, int chunkUpdateCount);
+	void recordCommandBuffer(vk::CommandBuffer commandBuffer, int chunkUpdateCount);
 
 	void stageLightingUpdate(std::vector<chunkLightingUpdateinfo>& chunkUpdates) {
 		ZoneScoped;
@@ -49,8 +49,8 @@ public:
 
 private:
 
-	VkPipeline firstStagePipeline;
-	VkPipeline secondStagePipeline;
+	vk::Pipeline firstStagePipeline;
+	vk::Pipeline secondStagePipeline;
 
 	MappedDoubleBuffer<void> lightPositionsDB;
 
