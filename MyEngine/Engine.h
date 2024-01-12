@@ -7,7 +7,7 @@
 #include <memory>
 #include <string>
 
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
 #include <glm/glm.hpp>
 #include<box2d/box2d.h>
 

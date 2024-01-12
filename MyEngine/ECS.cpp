@@ -4,7 +4,7 @@
 #include <cassert>
 #include <unordered_map>
 
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
 #include <glm/glm.hpp>
 #include <nlohmann/json.hpp>
 

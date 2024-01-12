@@ -13,7 +13,7 @@
 #include <memory>
 #include <utility>
 
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <vk_mem_alloc.h>
@@ -44,20 +44,20 @@ void TextPL::CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc, const
 	std::fill(defaultTextureArray.begin(), defaultTextureArray.end(), defaultTexture);
 
 	configureDescriptorSets(vector<Pipeline::descriptorSetInfo> {
-		descriptorSetInfo(0, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, &cameradb.buffers, cameradb.size),
-			descriptorSetInfo(0, 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, defaultTextureArray.data(), defaultTextureArray.size()),
-			descriptorSetInfo(1, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, &textDataDB.buffers, textDataDB.size)
+		descriptorSetInfo(0, 0, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eVertex, &cameradb.buffers, cameradb.size),
+		descriptorSetInfo(0, 1, vk::DescriptorType::eCombinedImageSampler,vk::ShaderStageFlagBits::eFragment, defaultTextureArray.data(), defaultTextureArray.size()),
+		descriptorSetInfo(1, 0, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, &textDataDB.buffers, textDataDB.size)
 	});
 	buildDescriptorLayouts();
 
 	// create vector containing the builder descriptor set layouts
-	vector< VkDescriptorSetLayout> setLayouts;
+	vector< vk::DescriptorSetLayout> setLayouts;
 	setLayouts.reserve(builderLayouts.size());
 	for (auto& [set, layout] : builderLayouts)
 		setLayouts.push_back(layout);
 	buildPipelineLayout(setLayouts);
 
-	VkVertexInputBindingDescription VbindingDescription;
+	vk::VertexInputBindingDescription VbindingDescription;
 	dbVertexAtribute Vattribute;
 	auto vertexInputInfo = Vertex::getVertexInputInfo(&VbindingDescription, &Vattribute);
 
@@ -70,10 +70,9 @@ void TextPL::CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc, const
 	auto dynamicState = defaultDynamicState();
 
 	if (flipFaces)
-		rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+		rasterizer.frontFace = vk::FrontFace::eClockwise;
 
-	VkGraphicsPipelineCreateInfo pipelineInfo{};
-	pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+	vk::GraphicsPipelineCreateInfo pipelineInfo;
 	pipelineInfo.stageCount = 2;
 	pipelineInfo.pStages = shaderStages.data();
 	pipelineInfo.pVertexInputState = &vertexInputInfo;
@@ -88,11 +87,13 @@ void TextPL::CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc, const
 	pipelineInfo.subpass = 0;
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-	auto res = vkCreateGraphicsPipelines(engine->device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &_pipeline);
-	assert(res == VK_SUCCESS);
+	auto rv = engine->device.createGraphicsPipeline(VK_NULL_HANDLE, pipelineInfo);
+	if (rv.result != vk::Result::eSuccess)
+		throw std::runtime_error("failed to create graphics pipeline!");
+	_pipeline = rv.value;
 
 	for (auto& stage : shaderStages) {
-		vkDestroyShaderModule(engine->device, stage.module, nullptr);
+		engine->device.destroyShaderModule(stage.module);
 	}
 
 	buildDescriptorSets();
@@ -113,7 +114,7 @@ void TextPL::updateDescriptorSets() {
 			textureArray[i] = *bindingManager.getValueFromIndex(i);
 	}
 
-	auto info = descriptorSetInfo(0, 1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, textureArray.data(), textureArray.size());
+	auto info = descriptorSetInfo(0, 1, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment, textureArray.data(), textureArray.size());
 	updateDescriptorSet(engine->currentFrame, info);
 
 	bindingManager.ClearDescriptorDirty(engine->currentFrame);
@@ -121,22 +122,22 @@ void TextPL::updateDescriptorSets() {
 
 void TextPL::createSSBOBuffer() {
 
-	engine->createMappedBuffer(sizeof(textIndexes_ssbo), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, textDataDB);
+	engine->createMappedBuffer(sizeof(textIndexes_ssbo), vk::BufferUsageFlagBits::eStorageBuffer, textDataDB);
 }
 
-void TextPL::recordCommandBuffer(VkCommandBuffer commandBuffer) {
+void TextPL::recordCommandBuffer(vk::CommandBuffer commandBuffer) {
 	
 	int instanceCount = 0;
 	for (int i = 0; i < TEXTPL_maxTextObjects; i++)
 		instanceCount += textDataDB.buffersMapped[engine->currentFrame]->headers[i].textLength;
 
-	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
+	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, _pipeline);
 
 	for (auto& i : builderDescriptorSetsDetails)
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, i.set, 1, &builderDescriptorSets[i.set][engine->currentFrame], 0, nullptr);
+		commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, i.set, 1, &builderDescriptorSets[i.set][engine->currentFrame], 0, nullptr);
 
 	{
 		TracyVkZone(engine->tracyGraphicsContexts[engine->currentFrame], commandBuffer, "text render");
-		vkCmdDrawIndexed(commandBuffer, QuadIndices.size(), instanceCount, 0, 0, 0);
+		commandBuffer.drawIndexed(QuadIndices.size(), instanceCount, 0, 0, 0);
 	}
 }

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <optional>
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
 
 #include <vk_mem_alloc.h>
 
@@ -9,13 +9,13 @@
 #include <imgui_impl_vulkan.h>
 
 struct Texture {
-	VkImage textureImage;
+	vk::Image textureImage;
 	VmaAllocation textureImageAllocation;
-	VkImageView imageView;
+	vk::ImageView imageView;
 	int resolutionX;
 	int resolutionY;
 
-	VkSampler sampler; // cam be shared between textures.
+	vk::Sampler sampler; // cam be shared between textures.
 
-	std::optional<VkDescriptorSet> imTexture;
+	std::optional<vk::DescriptorSet> imTexture;
 };

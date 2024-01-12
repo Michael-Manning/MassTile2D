@@ -1,3 +1,7 @@
+
+// this ended up being slower than just calculating all four vertices in the vertex shaders
+#if false
+
 #include <iostream>
 #include <stdexcept>
 #include <algorithm>
@@ -11,7 +15,7 @@
 #include <memory>
 #include <utility>
 
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
 #include <vk_mem_alloc.h>
 #include <tracy/Tracy.hpp>
 #include <glm/glm.hpp>
@@ -95,3 +99,5 @@ void QuadComputePL::recordCommandBuffer(VkCommandBuffer commandBuffer, int insta
 	}
 
 }
+
+#endif

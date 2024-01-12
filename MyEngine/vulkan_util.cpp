@@ -5,7 +5,7 @@
 #include <filesystem>
 #include <iostream>
 
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
 #include <vk_mem_alloc.h>
 
 #include <glm/glm.hpp>
@@ -14,16 +14,13 @@
 
 namespace VKUtil {
 
-	VkShaderModule createShaderModule(const std::vector<uint8_t>& code, VkDevice device) {
-		VkShaderModuleCreateInfo createInfo{};
-		createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+	vk::ShaderModule createShaderModule(const std::vector<uint8_t>& code, vk::Device device) {
+		vk::ShaderModuleCreateInfo createInfo;
 		createInfo.codeSize = code.size();
 		createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
 
-		VkShaderModule shaderModule;
-		if (vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule) != VK_SUCCESS) {
-			throw std::runtime_error("failed to create shader module!");
-		}
+		vk::ShaderModule shaderModule;
+		shaderModule = device.createShaderModule(createInfo);
 
 		return shaderModule;
 	}

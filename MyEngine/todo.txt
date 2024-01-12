@@ -2,6 +2,8 @@
 - removeTextureBinding on pipelines isn't actually called after freeing a texture resource. Need to queue resource deletion in case it's being used due to multiple
 frames in flight
 
+- text render spaces don't work with kerning hash lookup
+
 - integrate vk-bootstrap 
 - support downscaled resolution (run full screen at lower resolution the monitor resolution)
 

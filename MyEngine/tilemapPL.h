@@ -9,7 +9,7 @@
 #include <string>
 #include <utility>
 
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
 #include <glm/glm.hpp>
 
 #include <vk_mem_alloc.h>
@@ -32,7 +32,7 @@ public:
 
 	void CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc, MappedDoubleBuffer<void>& cameradb);
 	//void CreateGraphicsPipeline(std::string vertexSrc, std::string fragmentSrc, MappedDoubleBuffer<void>& cameradb);
-	void recordCommandBuffer(VkCommandBuffer commandBuffer);
+	void recordCommandBuffer(vk::CommandBuffer commandBuffer);
 
 	void setTextureAtlas(Texture* textureAtlas) {
 
@@ -41,10 +41,10 @@ public:
 		this->textureAtlas = textureAtlas;
 		builderDescriptorSetsDetails[1].textures = this->textureAtlas.value();
 
-		std::array<VkBuffer, FRAMES_IN_FLIGHT> worldMapDeviceBuferRef = { world->_worldMapFGDeviceBuffer, world->_worldMapFGDeviceBuffer };
+		std::array<vk::Buffer, FRAMES_IN_FLIGHT> worldMapDeviceBuferRef = { world->_worldMapFGDeviceBuffer, world->_worldMapFGDeviceBuffer };
 		builderDescriptorSetsDetails[2].doubleBuffer = &worldMapDeviceBuferRef;
 
-		std::array<VkBuffer, FRAMES_IN_FLIGHT> worldMapBGDeviceBuferRef = { world->_worldMapBGDeviceBuffer, world->_worldMapBGDeviceBuffer };
+		std::array<vk::Buffer, FRAMES_IN_FLIGHT> worldMapBGDeviceBuferRef = { world->_worldMapBGDeviceBuffer, world->_worldMapBGDeviceBuffer };
 		builderDescriptorSetsDetails[3].doubleBuffer = &worldMapBGDeviceBuferRef;
 
 		buildDescriptorSets();
@@ -59,8 +59,8 @@ private:
 
 	std::shared_ptr<TileWorld> world = nullptr;
 
-	std::array<VkDescriptorSet, FRAMES_IN_FLIGHT> ssboDescriptorSets;
+	std::array<vk::DescriptorSet, FRAMES_IN_FLIGHT> ssboDescriptorSets;
 
-	VkDescriptorSetLayout descriptorSetLayout;
-	VkDescriptorSetLayout SSBOSetLayout;
+	vk::DescriptorSetLayout descriptorSetLayout;
+	vk::DescriptorSetLayout SSBOSetLayout;
 };

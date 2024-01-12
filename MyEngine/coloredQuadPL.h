@@ -8,7 +8,7 @@
 #include <string>
 #include <utility>
 
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
 #include <glm/glm.hpp>
 #include <vk_mem_alloc.h>
 
@@ -41,7 +41,7 @@ public:
 	void CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc, MappedDoubleBuffer<void>& cameradb, bool flipFaces = false);
 	void CreateInstancingBuffer();
 	void UploadInstanceData(std::vector<InstanceBufferData>& drawlist);
-	void recordCommandBuffer(VkCommandBuffer commandBuffer, int instanceCount);
+	void recordCommandBuffer(vk::CommandBuffer commandBuffer, int instanceCount);
 
 private:
 	MappedDoubleBuffer<void> ssboMappedDB;

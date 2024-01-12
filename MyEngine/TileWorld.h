@@ -34,7 +34,7 @@ constexpr float tileWorldSize = 0.25f;
 static_assert(mapW% chunkSize == 0);
 static_assert(mapH% chunkSize == 0);
 
-constexpr float ambiantLight = 0.002f;
+constexpr float ambiantLight = 1.0f;
 
 const static int maxChunkUpdatesPerFrame = 16;
 const static int maxLightsPerChunk = 100;
@@ -350,7 +350,7 @@ public:
 		return chunkLightingJobs;
 	}
 
-	void stageChunkUpdates(VkCommandBuffer commandBuffer) {
+	void stageChunkUpdates(vk::CommandBuffer commandBuffer) {
 
 		// only able to stage one chunk per frame. Expand to multiple chunks by increasing size of transfer buffer
 
@@ -365,13 +365,13 @@ public:
 				chunkDirtyFlags[i] = false;
 
 				{
-					VkBufferCopy copyRegion{};
+					vk::BufferCopy copyRegion{};
 					copyRegion.size = chunkTileCount * sizeof(ssboObjectData);
 					copyRegion.dstOffset = i * chunkTileCount * sizeof(ssboObjectData);
 					copyRegion.srcOffset = 0;
 
 					// expand by increasing size of transfer buffer. Upload multiple chunks by specifying multiple copy regions
-					vkCmdCopyBuffer(commandBuffer, chunkTransferBuffers.buffers[engine->currentFrame], _worldMapFGDeviceBuffer, 1, &copyRegion);
+					commandBuffer.copyBuffer(chunkTransferBuffers.buffers[engine->currentFrame], _worldMapFGDeviceBuffer, 1, &copyRegion);
 				}
 
 				return;
@@ -383,8 +383,8 @@ public:
 		maxDirtyIndex = 0;
 	};
 
-	VkBuffer _worldMapFGDeviceBuffer;
-	VkBuffer _worldMapBGDeviceBuffer;
+	vk::Buffer _worldMapFGDeviceBuffer;
+	vk::Buffer _worldMapBGDeviceBuffer;
 
 	struct ssboObjectData {
 		blockID index;
@@ -396,21 +396,21 @@ private:
 
 	void createWorldBuffer() {
 		// create foreground and background VRAM buffers
-		engine->createBuffer(sizeof(ssboObjectData) * (mapCount), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT, _worldMapFGDeviceBuffer, worldMapFGDeviceBufferAllocation, true);
-		engine->createBuffer(sizeof(ssboObjectData) * (mapCount), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT, _worldMapBGDeviceBuffer, worldMapBGDeviceBufferAllocation, true);
+		engine->createBuffer(sizeof(ssboObjectData) * (mapCount), vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eStorageBuffer, VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT, _worldMapFGDeviceBuffer, worldMapFGDeviceBufferAllocation, true);
+		engine->createBuffer(sizeof(ssboObjectData) * (mapCount), vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eStorageBuffer, VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT, _worldMapBGDeviceBuffer, worldMapBGDeviceBufferAllocation, true);
 	};
 	void createChunkTransferBuffers() {
 		// create large buffer for initial upload
-		engine->createBuffer(sizeof(ssboObjectData) * (largeChunkCount), VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT, largeChunkBuffer, largeChunkAllocation);
+		engine->createBuffer(sizeof(ssboObjectData) * (largeChunkCount), vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eStorageBuffer, VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT, largeChunkBuffer, largeChunkAllocation);
 		vmaMapMemory(engine->allocator, largeChunkAllocation, &largeChunkBufferMapped);
 
 		// create small buffers for individual chunk updates
-		engine->createMappedBuffer(sizeof(ssboObjectData) * chunkCount, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, chunkTransferBuffers);
+		engine->createMappedBuffer(sizeof(ssboObjectData) * chunkCount, vk::BufferUsageFlagBits::eTransferSrc, chunkTransferBuffers);
 	};
 
 	std::shared_ptr<VKEngine> engine;
 
-	VkBuffer largeChunkBuffer;
+	vk::Buffer largeChunkBuffer;
 	VmaAllocation largeChunkAllocation;
 	void* largeChunkBufferMapped;
 
