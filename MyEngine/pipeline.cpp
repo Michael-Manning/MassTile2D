@@ -189,6 +189,33 @@ void Pipeline::buildSetLayout(std::vector<vk::DescriptorSetLayoutBinding>& bindi
 
 void Pipeline::buildPipelineLayout(std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts, uint32_t pushConstantSize, vk::ShaderStageFlags pushConstantStages) {
 
+	//// ensure set numbers start from zero and don't skip any values
+	//{
+	//	for (int i = 0; i < myMap.size(); ++i) {
+	//		assert(myMap.find(i) != myMap.end());
+	//	}
+	//}
+
+	//// sort layouts by their set ID
+	//{
+	//	// Step 1: Extract key-value pairs into a vector
+	//	std::vector<std::pair<int, vk::DescriptorSetLayout>> pairs;
+	//	for (const auto& kv : myMap) {
+	//		pairs.push_back(kv);
+	//	}
+
+	//	// Step 2: Sort the pairs by key
+	//	std::sort(pairs.begin(), pairs.end(), [](const auto& a, const auto& b) {
+	//		return a.first < b.first;
+	//		});
+
+	//	// Step 3: Extract the values into a new vector
+	//	std::vector<vk::DescriptorSetLayout> sortedValues;
+	//	for (const auto& pair : pairs) {
+	//		sortedValues.push_back(pair.second);
+	//	}
+	//}
+
 	// setup layout
 	vk::PipelineLayoutCreateInfo pipelineLayoutInfo;
 	pipelineLayoutInfo.pushConstantRangeCount = pushConstantSize == 0 ? 0 : 1;
