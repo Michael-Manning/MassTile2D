@@ -251,7 +251,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;NOMINMAX;_CRT_SECURE_NO_WARNINGS;TRACY_ENABLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;NOMINMAX;_CRT_SECURE_NO_WARNINGS;USING_EDITOR;TRACY_ENABLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(VULKAN_SDK)/include;$(SolutionDir)$(ProjectName);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
@@ -331,6 +331,7 @@
   <ItemGroup>
     <ClCompile Include="AssetManager.cpp" />
     <ClCompile Include="Audio.cpp" />
+    <ClCompile Include="ComputeTemplate.cpp" />
     <ClCompile Include="descriptorManager.cpp" />
     <ClCompile Include="descriptorSetBuilder.cpp" />
     <ClCompile Include="Entity.cpp" />
@@ -367,6 +368,8 @@
     <ClInclude Include="coloredQuadPL.h" />
     <ClInclude Include="ColorRenderer.h" />
     <ClInclude Include="Component.h" />
+    <ClInclude Include="ComputeTemplate.h" />
+    <ClInclude Include="ConcurrentQueue.h" />
     <ClInclude Include="Constants.h" />
     <ClInclude Include="descriptorManager.h" />
     <ClInclude Include="descriptorSetBuilder.h" />

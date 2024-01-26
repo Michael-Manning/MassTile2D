@@ -3,7 +3,7 @@
 layout(location = 0) in vec2 inPosition;
 layout(location = 2) in vec2 inFragCoord;
 
-layout(binding = 0) uniform CamerUBO {
+layout(set = 1, binding = 1) uniform CamerUBO {
    vec2 position;
 	float zoom;
 	float aspectRatio;

@@ -10,6 +10,8 @@
 #include "typedefs.h"
 #include "texture.h"
 
+static constexpr uint32_t max_bindless_resources = 16536;
+
 class GlobalImageDescriptor {
 public:
 	GlobalImageDescriptor(std::shared_ptr<VKEngine> engine) : engine(engine) {
@@ -63,7 +65,7 @@ public:
 		}
 	}
 
-	void AddDescriptors(std::vector<int>& indexes, std::vector<std::shared_ptr<Texture>>& textures, int frame, vk::ImageLayout imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal) {
+	void AddDescriptors(std::vector<int>& indexes, std::vector<Texture*>& textures, int frame) {
 
 		assert(indexes.size() == textures.size());
 		if (indexes.size() == 0)
@@ -84,7 +86,7 @@ public:
 			vk::DescriptorImageInfo imageInfo{};
 			imageInfo.imageView = textures[i]->imageView;
 			imageInfo.sampler = textures[i]->sampler;
-			imageInfo.imageLayout = imageLayout;
+			imageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 			imageInfos[i] = imageInfo;
 
 			descriptorWrite.pImageInfo = &imageInfos[i];
@@ -104,4 +106,9 @@ private:
 	uint32_t binding = 0;
 	uint32_t descriptorCount = 0;
 	std::shared_ptr<VKEngine> engine = nullptr;
+};
+
+struct GlobalDescriptorBinding {
+	int setNumber;
+	GlobalImageDescriptor* descriptor;
 };

@@ -29,25 +29,29 @@ using namespace glm;
 using namespace std;
 
 void LightingComputePL::CreateComputePipeline(const std::vector<uint8_t>& computeSrc_firstPass, const std::vector<uint8_t>& computeSrc_secondPass) {
-//void LightingComputePL::CreateComputePipeline(std::string computeSrc_firstPass, std::string computeSrc_secondPass) {
+
 	auto firstComputeStage = createComputeShaderStage(computeSrc_firstPass);
 	auto secondComputeStage = createComputeShaderStage(computeSrc_secondPass);
 
 	std::array<vk::Buffer, FRAMES_IN_FLIGHT> worldMapFGDeviceBuferRef = { world->_worldMapFGDeviceBuffer, world->_worldMapFGDeviceBuffer };
 	std::array<vk::Buffer, FRAMES_IN_FLIGHT> worldMapBGDeviceBuferRef = { world->_worldMapBGDeviceBuffer, world->_worldMapBGDeviceBuffer };
-	configureDescriptorSets(vector<Pipeline::descriptorSetInfo> {
-		descriptorSetInfo(0, 0, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eCompute, &lightPositionsDB.buffers, sizeof(chunkLightingUpdateinfo)* (maxChunkUpdatesPerFrame)),
-		descriptorSetInfo(1, 0, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eCompute, &worldMapFGDeviceBuferRef, sizeof(TileWorld::ssboObjectData)* (mapCount)),
-		descriptorSetInfo(1, 1, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eCompute, &worldMapBGDeviceBuferRef, sizeof(TileWorld::ssboObjectData)* (mapCount))
+	descriptorManager.configureDescriptorSets(vector<DescriptorManager::descriptorSetInfo> {
+		DescriptorManager::descriptorSetInfo(0, 0, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eCompute, &lightPositionsDB.buffers, sizeof(chunkLightingUpdateinfo)* (maxChunkUpdatesPerFrame)),
+		DescriptorManager::descriptorSetInfo(1, 0, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eCompute, &worldMapFGDeviceBuferRef, sizeof(TileWorld::ssboObjectData)* (mapCount)),
+		DescriptorManager::descriptorSetInfo(1, 1, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eCompute, &worldMapBGDeviceBuferRef, sizeof(TileWorld::ssboObjectData)* (mapCount))
 	});
-	buildDescriptorLayouts();
+	descriptorManager.buildDescriptorLayouts();
 
-	// create vector containing the builder descriptor set layouts
-	vector< vk::DescriptorSetLayout> setLayouts;
-	setLayouts.reserve(builderLayouts.size());
-	for (auto& [set, layout] : builderLayouts) {
-		setLayouts.push_back(layout);
-	}
+	descriptorLayoutMap setLayouts;
+	for (auto& [set, layout] : descriptorManager.builderLayouts)
+		setLayouts[set] = layout;
+
+	//// create vector containing the builder descriptor set layouts
+	//vector< vk::DescriptorSetLayout> setLayouts;
+	//setLayouts.reserve(builderLayouts.size());
+	//for (auto& [set, layout] : builderLayouts) {
+	//	setLayouts.push_back(layout);
+	//}
 	buildPipelineLayout(setLayouts);
 
 	vk::ComputePipelineCreateInfo pipelineInfo;
@@ -55,14 +59,14 @@ void LightingComputePL::CreateComputePipeline(const std::vector<uint8_t>& comput
 
 	{
 		pipelineInfo.stage = firstComputeStage;
-		engine->device.createComputePipelines(VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &firstStagePipeline);
+		engine->devContext.device.createComputePipelines(VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &firstStagePipeline);
 	}
 	{
 		pipelineInfo.stage = secondComputeStage;
-		engine->device.createComputePipelines(VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &secondStagePipeline);
+		engine->devContext.device.createComputePipelines(VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &secondStagePipeline);
 	}
 
-	buildDescriptorSets();
+	descriptorManager.buildDescriptorSets();
 }
 
 void LightingComputePL::createStagingBuffers() {
@@ -77,19 +81,21 @@ void LightingComputePL::recordCommandBuffer(vk::CommandBuffer commandBuffer, int
 	{
 		commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, firstStagePipeline);
 
-		for (auto& i : builderDescriptorSetsDetails)
-			commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, pipelineLayout, i.set, 1, &builderDescriptorSets[i.set][engine->currentFrame], 0, nullptr);
+		for (auto& i : descriptorManager.builderDescriptorSetsDetails)
+			commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, pipelineLayout, i.set, 1, &descriptorManager.builderDescriptorSets[i.set][engine->currentFrame], 0, nullptr);
 
 		{
 			TracyVkZone(engine->tracyComputeContexts[engine->currentFrame], commandBuffer, "Lighting compute");
 			commandBuffer.dispatch(chunkUpdateCount > maxChunkUpdatesPerFrame ? maxChunkUpdatesPerFrame : chunkUpdateCount, 1, 1);
 		}
 	}
+
+	// idk if you have to rebind the same desciptor sets just because you bind a different pipeline. Do you need to unbind descriptor sets?
 	{
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, secondStagePipeline);
 
-		for (auto& i : builderDescriptorSetsDetails)
-			commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, pipelineLayout, i.set, 1, &builderDescriptorSets[i.set][engine->currentFrame], 0, nullptr);
+		for (auto& i : descriptorManager.builderDescriptorSetsDetails)
+			commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, pipelineLayout, i.set, 1, &descriptorManager.builderDescriptorSets[i.set][engine->currentFrame], 0, nullptr);
 
 		{
 			TracyVkZone(engine->tracyComputeContexts[engine->currentFrame], commandBuffer, "Lighting blur");

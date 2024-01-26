@@ -189,10 +189,10 @@ int main() {
 	videoSettings.swapChainSetting = swapchainSettings;
 
 	auto rengine = std::make_shared<VKEngine>();
-	Engine engine(rengine, AssetDirectories);
-	const auto& scene = engine.GetCurrentScene(); // quick reference
-	engine.Start(videoSettings);
+	Engine engine(rengine);
+	engine.Start(videoSettings, AssetDirectories);
 
+	const auto& scene = engine.GetCurrentScene(); // quick reference
 	input = engine.GetInput();
 
 	engine.assetManager->LoadAllSprites();
@@ -200,6 +200,7 @@ int main() {
 	engine.assetManager->LoadAllPrefabs(engine.bworld, false);
 
 	tileWolrdGlobalRef = engine.worldMap;
+
 
 	{
 		// load this from packed resources. 
@@ -217,7 +218,7 @@ int main() {
 
 		generator.GenerateTiles(settings);
 #else
-		engine.worldMap->loadFromDisk(AssetDirectories.assetDir + "world.dat");
+		//engine.worldMap->loadFromDisk(AssetDirectories.assetDir + "world.dat");
 #endif
 		generator.PostProcess();
 
@@ -225,7 +226,7 @@ int main() {
 
 
 
-	engine.setTilemapAtlasTexture(engine.assetManager->GetSprite("tilemapSprites")->textureID);
+	//engine.setTilemapAtlasTexture(engine.assetManager->GetSprite("tilemapSprites")->textureID);
 
 
 	vector<vec2> torchPositions;
@@ -248,6 +249,8 @@ int main() {
 
 	while (!engine.ShouldClose())
 	{
+		ZoneScopedN("main application loop");
+
 		engine.clearScreenSpaceDrawlist();
 
 		if (appState == AppState::MainMenu)
@@ -309,7 +312,7 @@ int main() {
 #else
 			engine.camera.position = GcameraPos;
 #endif
-#if 1
+#if 0
 			{
 
 				static int lastX = -1;

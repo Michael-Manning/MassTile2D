@@ -24,8 +24,6 @@
 #include "BindingManager.h"
 #include "globalBufferDefinitions.h"
 
-
-constexpr int TEXTPL_maxFonts = 10;
 constexpr int TEXTPL_maxTextObjects = 10;
 constexpr int TEXTPL_maxTextLength = 128;
 
@@ -49,28 +47,14 @@ public:
 	};
 	static_assert(sizeof(textHeader) % 16 == 0);
 
-	TextPL(std::shared_ptr<VKEngine>& engine, Texture defaultTexture) :
-		bindingManager(TEXTPL_maxFonts), 
-		defaultTexture(defaultTexture),
+	TextPL(std::shared_ptr<VKEngine>& engine) :
 		Pipeline(engine) {
 	}
 
-	void CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc, MappedDoubleBuffer<>& cameradb, bool flipFaces = false);
-	//void CreateGraphicsPipeline(std::string vertexSrc, std::string fragmentSrc, MappedDoubleBuffer<>& cameradb, bool flipFaces = false);
+	void CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc, vk::RenderPass& renderTarget, GlobalImageDescriptor* textureDescriptor, MappedDoubleBuffer<>& cameradb, bool flipFaces = false);
+	
 	void createSSBOBuffer();
 	void recordCommandBuffer(vk::CommandBuffer commandBuffer);
-
-	void updateDescriptorSets();
-
-	void addFontBinding(fontID ID, Texture* texture) {
-		bindingManager.AddBinding(ID, texture);
-	};
-	void removeTextureBinding(fontID ID) {
-		bindingManager.RemoveBinding(ID);
-	};
-	void InvalidateTextureDescriptors() {
-		bindingManager.InvalidateDescriptors();
-	};
 
 	void ClearTextData(int frame) {
 		for (size_t i = 0; i < TEXTPL_maxTextObjects; i++)
@@ -80,14 +64,13 @@ public:
 	// TODO replace with function to get pointers to a given memory slot for direct memory access to avoid copy
 	void UploadTextData(int frame, int memorySlot, textHeader& header, fontID font, textObject& text) {
 
-		header._textureIndex = bindingManager.getIndexFromBinding(font);
-
 		// transfers memory to GPU 
 		textDataDB.buffersMapped[frame]->headers[memorySlot] = header;
 		textDataDB.buffersMapped[frame]->textData[memorySlot] = text;
 	};
 
 private:
+	GlobalImageDescriptor* textureDescriptor = nullptr;
 
 	struct textIndexes_ssbo {
 		textHeader headers[TEXTPL_maxTextObjects];
@@ -95,8 +78,4 @@ private:
 	};
 
 	MappedDoubleBuffer<textIndexes_ssbo> textDataDB;
-
-	BindingManager<fontID, Texture*> bindingManager;
-
-	Texture defaultTexture;
 };

@@ -56,22 +56,6 @@ class AssetManager {
 
 public:
 
-	class ChangeFlags {
-	public:
-
-		bool SpritesAdded() { return _spritesAdded; };
-		bool FontsAdded() { return _fontsAdded; };
-		bool TextureFiltersChanged() { return _textureFiltersChanged; };
-
-		void ClearSpritesAdded() { _spritesAdded = false; };
-		void ClearFontsAdded() { _fontsAdded = false; };
-		void ClearTextureFilterschanged() { _textureFiltersChanged = false; };
-
-		bool _spritesAdded = false;
-		bool _fontsAdded = false;
-		bool _textureFiltersChanged = false;
-	};
-
 	struct AssetPaths {
 		std::string prefabDir;
 		std::string assetDir;
@@ -100,13 +84,11 @@ public:
 	AssetManager(
 		std::shared_ptr<VKEngine> engine,
 		AssetPaths directories,
-		std::shared_ptr<ResourceManager> resourceManager,
-		std::shared_ptr<ChangeFlags> changeFlags)
+		std::shared_ptr<ResourceManager> resourceManager)
 		:
 		rengine(engine),
 		resourceManager(resourceManager),
-		directories(directories),
-		changeFlags(changeFlags)
+		directories(directories)
 	{
 
 #ifdef  USE_PACKED_ASSETS
@@ -202,7 +184,6 @@ public:
 #ifndef  USE_PACKED_ASSETS
 		const auto& sprite = spriteAssets[id];
 		resourceManager->UpdateTexture(sprite->textureID, sprite->filterMode);
-		changeFlags->_textureFiltersChanged = true;
 
 		// update file on disk (used by editor only)
 		sprite->serializeJson(spritePathsByID[id]);
@@ -264,7 +245,6 @@ private:
 	std::unordered_map<std::string, fontID> loadedFontsByName;
 
 	std::shared_ptr<VKEngine> rengine = nullptr;
-	std::shared_ptr<ChangeFlags> changeFlags = nullptr;
 	std::shared_ptr<ResourceManager> resourceManager;
 
 	IDGenerator<spriteID> SpriteIDGenerator;

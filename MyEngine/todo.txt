@@ -1,4 +1,6 @@
 
+- only enable used device features instead of enabling everything for the sake of bindless textures
+
 - removeTextureBinding on pipelines isn't actually called after freeing a texture resource. Need to queue resource deletion in case it's being used due to multiple
 frames in flight
 
@@ -34,6 +36,9 @@ reserve scene component maps with max count to prevenent rehashing which would b
 - shader auto workflow with sprv reflect
 
 - create default font
+
+- check if the the swapchain is out of date earlier in the engine loop so that we can potentially bail out of submitting work which will not
+be displayed which should reduce latency
 
 - create bulk generate texture function to avoid having to recreate staging buffers and synchronize the graphics queue for every single texture creation
 

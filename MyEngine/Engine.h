@@ -39,6 +39,7 @@
 #include "Settings.h"
 #include "AssetManager.h"
 #include "ResourceManager.h"
+#include "GlobalImageDescriptor.h"
 
 #ifdef NDEBUG
 
@@ -60,6 +61,7 @@ class Engine {
 
 public:
 
+	framebufferID tmp_cameraFB;
 	Camera camera{
 		glm::vec2(0.0f),
 		1.0f
@@ -67,21 +69,20 @@ public:
 
 
 	Engine(
-		std::shared_ptr<VKEngine> rengine, 
-		AssetManager::AssetPaths assetPaths)
-		: 
+		std::shared_ptr<VKEngine> rengine)
+		:
 		rengine(rengine),
-		resourceManager(std::make_shared<ResourceManager>(rengine)),
-		assetChangeFlags(std::make_shared<AssetManager::ChangeFlags>())
+		resourceChangeFlags(std::make_shared<ResourceManager::ChangeFlags>()),
+		GlobalTextureDesc(rengine),
+		globalTextureBindingManager(MAX_TEXTURE_RESOURCES)
 	{
-		assetManager = std::make_shared<AssetManager>(rengine, assetPaths, resourceManager, assetChangeFlags);
 		bworld = std::make_shared<b2World>(gravity);
 		currentScene = std::make_shared<Scene>(bworld);
 
 		DebugLog("Engine created");
 	}
 
-	void Start(const VideoSettings& initialSettings);
+	void Start(const VideoSettings& initialSettings, AssetManager::AssetPaths assetPaths);
 	void ApplyNewVideoSettings(const VideoSettings settings);
 
 	bool ShouldClose();
@@ -185,7 +186,7 @@ public:
 		item.translation = pos;
 		item.scale = glm::vec2(sprite->resolution.x / sprite->resolution.y * height, height);
 		item.rotation = rotation;
-		item.tex = sprite->textureID;
+		item.tex = sprite->textureID; 
 
 		if (sprite->atlas.size() > 0) {
 			auto atEntry = sprite->atlas[atlasIndex];
@@ -211,6 +212,25 @@ public:
 		auto s = assetManager->GetSprite(sprite);
 		addScreenCenteredSpaceTexture(s, atlasIndex, pos + (s->resolution / 2.0f) * (height / s->resolution.y), height, rotation);
 	}
+
+	inline void addScreenCenteredSpaceFramebufferTexture(framebufferID fbID, glm::vec2 pos, float height, float rotation = 0.0f) {
+
+		auto fb = resourceManager->GetFramebuffer(fbID);
+
+		float w = fb->extents[rengine->currentFrame].width;
+		float h = fb->extents[rengine->currentFrame].height;
+
+		TexturedQuadPL::ssboObjectInstanceData item;
+		item.uvMin = glm::vec2(0.0f);
+		item.uvMax = glm::vec2(1.0f, -1.0f); // I don't actually know why this has to be flipped
+		item.translation = pos;
+		item.scale = glm::vec2((w / h) * height, height);
+		item.rotation = rotation;
+		item.tex = fb->textureIDs[rengine->currentFrame];
+
+		screenSpaceTextureDrawlist.push_back(item);
+	}
+
 
 	inline void addScreenSpaceText(fontID font, glm::vec2 position, glm::vec4 color, std::string text) {
 		screenSpaceTextDrawItem item;
@@ -259,8 +279,12 @@ public:
 
 private:
 
+	GlobalImageDescriptor GlobalTextureDesc;
+	BindingManager<texID, Texture*> globalTextureBindingManager;
+
 	std::shared_ptr<Scene> currentScene = nullptr;
-	std::shared_ptr<AssetManager::ChangeFlags> assetChangeFlags;
+	std::queue<texID> textureBindingDeletionQueue;
+	std::shared_ptr<ResourceManager::ChangeFlags> resourceChangeFlags;
 	std::shared_ptr<ResourceManager> resourceManager = nullptr;
 	std::vector<ColoredQuadPL::InstanceBufferData> screenSpaceColorDrawlist;
 	std::vector<TexturedQuadPL::ssboObjectInstanceData> screenSpaceTextureDrawlist;
@@ -280,10 +304,11 @@ private:
 
 	double physicsTimer = 0.0;
 
+	bool windowResizedThisFrame = false;
 
 	std::shared_ptr<VKEngine> rengine = nullptr;
 
-	Texture texNotFound; // displayed when indexing incorrectly 
+	texID texNotFoundID; // displayed when indexing incorrectly 
 
 	std::unique_ptr<TilemapPL> tilemapPipeline = nullptr;
 	std::unique_ptr<ColoredQuadPL> colorPipeline = nullptr;

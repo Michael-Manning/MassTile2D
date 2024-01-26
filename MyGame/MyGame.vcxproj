@@ -253,6 +253,7 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalIncludeDirectories>$(SolutionDir)/MyEngine;$(VULKAN_SDK)/include;$(SolutionDir)/lib/FastNoise2/include;$(SolutionDir)/Editor;$(SolutionDir)$(ProjectName)</AdditionalIncludeDirectories>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

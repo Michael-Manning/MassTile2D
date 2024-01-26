@@ -35,6 +35,7 @@
 #include "Vertex.h"
 #include "profiling.h"
 #include "Settings.h"
+#include "GlobalImageDescriptor.h"
 
 using namespace glm;
 using namespace std;
@@ -110,7 +111,7 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 	app->GetInput()->_onScroll(xoffset, yoffset);
 }
 
-void Engine::Start(const VideoSettings& initialSettings) {
+void Engine::Start(const VideoSettings& initialSettings, AssetManager::AssetPaths assetPaths) {
 
 
 	PROFILE_START(Engine_Startup);
@@ -128,11 +129,13 @@ void Engine::Start(const VideoSettings& initialSettings) {
 	DebugLog("Initialized Window");
 
 	rengine->initVulkan(initialSettings.swapChainSetting, 1);
-	rengine->createFramebuffers();
-	rengine->createCommandPool();
+	rengine->createCommandPools();
 	rengine->createDescriptorPool();
 	rengine->createCommandBuffers();
 	rengine->createTextureSamplers();
+
+	resourceManager = std::make_shared<ResourceManager>(rengine, resourceChangeFlags);
+	assetManager = std::make_shared<AssetManager>(rengine, assetPaths, resourceManager);
 
 	DebugLog("Initialized Vulkan");
 
@@ -146,7 +149,9 @@ void Engine::Start(const VideoSettings& initialSettings) {
 
 	vector<uint8_t> checkerData;
 	genCheckerboard(400, vec4(1, 0, 0, 1), vec4(0, 0, 1, 1), 6, checkerData);
-	texNotFound = rengine->genTexture(400, 400, checkerData, FilterMode::Nearest);
+	texNotFoundID = resourceManager->GenerateTexture(400, 400, checkerData, FilterMode::Nearest, false);
+	auto texNotFound = resourceManager->GetTexture(texNotFoundID);
+	globalTextureBindingManager.AddBinding(texNotFoundID, texNotFound);
 
 	// create some buffers
 	{
@@ -159,19 +164,31 @@ void Engine::Start(const VideoSettings& initialSettings) {
 
 	// contruct pipelines
 	{
-		texturePipeline = make_unique<TexturedQuadPL>(rengine, texNotFound);
+		texturePipeline = make_unique<TexturedQuadPL>(rengine);
 		colorPipeline = make_unique<ColoredQuadPL>(rengine);
 		screenSpaceColorPipeline = make_unique<ColoredQuadPL>(rengine);
 		tilemapPipeline = make_unique<TilemapPL>(rengine, worldMap);
 		lightingPipeline = make_unique<LightingComputePL>(rengine, worldMap);
-		textPipeline = make_unique<TextPL>(rengine, texNotFound);
-		screenSpaceTexturePipeline = make_unique<TexturedQuadPL>(rengine, texNotFound);
-		screenSpaceTextPipeline = make_unique<TextPL>(rengine, texNotFound);
+		textPipeline = make_unique<TextPL>(rengine);
+		screenSpaceTexturePipeline = make_unique<TexturedQuadPL>(rengine);
+		screenSpaceTextPipeline = make_unique<TextPL>(rengine);
+	}
+
+	InitImgui(); // imgui needs to be initialized to register textures with it
+
+	{
+		GlobalTextureDesc.CreateLayout(0, max_bindless_resources);
+		GlobalTextureDesc.CreateDescriptors();
+	}
+
+	// temp create main camera frambuffer
+	{
+		tmp_cameraFB = resourceManager->CreateFramebuffer({ winW , winH }, vec4(0.0, 0.4, 0.6, 1.0));
 	}
 
 	// section can be done in parrallel
-
 	{
+		auto tmpRP = resourceManager->GetFramebuffer(tmp_cameraFB)->renderpass;
 
 		colorPipeline->CreateInstancingBuffer();
 		texturePipeline->createSSBOBuffer();
@@ -185,25 +202,25 @@ void Engine::Start(const VideoSettings& initialSettings) {
 			vector<uint8_t> vert, frag;
 			assetManager->LoadShaderFile("color_vert.spv", vert);
 			assetManager->LoadShaderFile("color_frag.spv", frag);
-			colorPipeline->CreateGraphicsPipeline(vert, frag, cameraUploader.transferBuffers);
+			colorPipeline->CreateGraphicsPipeline(vert, frag, tmpRP, cameraUploader.transferBuffers);
 		}
 		{
 			vector<uint8_t> vert, frag;
 			assetManager->LoadShaderFile("texture_vert.spv", vert);
 			assetManager->LoadShaderFile("texture_frag.spv", frag);
-			texturePipeline->CreateGraphicsPipeline(vert, frag, cameraUploader.transferBuffers);
+			texturePipeline->CreateGraphicsPipeline(vert, frag, tmpRP, &GlobalTextureDesc, cameraUploader.transferBuffers);
 		}
 		{
 			vector<uint8_t> vert, frag;
 			assetManager->LoadShaderFile("tilemap_vert.spv", vert);
 			assetManager->LoadShaderFile("tilemap_frag.spv", frag);
-			tilemapPipeline->CreateGraphicsPipeline(vert, frag, cameraUploader.transferBuffers);
+			tilemapPipeline->CreateGraphicsPipeline(vert, frag, tmpRP, cameraUploader.transferBuffers);
 		}
 		{
 			vector<uint8_t> vert, frag;
 			assetManager->LoadShaderFile("text_vert.spv", vert);
 			assetManager->LoadShaderFile("text_frag.spv", frag);
-			textPipeline->CreateGraphicsPipeline(vert, frag, cameraUploader.transferBuffers);
+			textPipeline->CreateGraphicsPipeline(vert, frag, tmpRP, &GlobalTextureDesc, cameraUploader.transferBuffers);
 		}
 		{
 			vector<uint8_t> comp, blur;
@@ -215,26 +232,21 @@ void Engine::Start(const VideoSettings& initialSettings) {
 			vector<uint8_t> vert, frag;
 			assetManager->LoadShaderFile("screenSpaceTexture_vert.spv", vert);
 			assetManager->LoadShaderFile("screenSpaceTexture_frag.spv", frag);
-			screenSpaceTexturePipeline->CreateGraphicsPipeline(vert, frag, screenSpaceTransformUploader.transferBuffers, true);
+			screenSpaceTexturePipeline->CreateGraphicsPipeline(vert, frag, rengine->swapchainRenderPass, &GlobalTextureDesc, screenSpaceTransformUploader.transferBuffers, true);
 		}
 		{
 			vector<uint8_t> vert, frag;
 			assetManager->LoadShaderFile("screenSpaceShape_vert.spv", vert);
 			assetManager->LoadShaderFile("screenSpaceShape_frag.spv", frag);
-			screenSpaceColorPipeline->CreateGraphicsPipeline(vert, frag, screenSpaceTransformUploader.transferBuffers, true);
+			screenSpaceColorPipeline->CreateGraphicsPipeline(vert, frag, rengine->swapchainRenderPass, screenSpaceTransformUploader.transferBuffers, true);
 		}
 		{
 			vector<uint8_t> vert, frag;
 			assetManager->LoadShaderFile("screenSpaceText_vert.spv", vert);
 			assetManager->LoadShaderFile("screenSpaceText_frag.spv", frag);
-			screenSpaceTextPipeline->CreateGraphicsPipeline(vert, frag, screenSpaceTransformUploader.transferBuffers, true);
+			screenSpaceTextPipeline->CreateGraphicsPipeline(vert, frag, rengine->swapchainRenderPass, &GlobalTextureDesc, screenSpaceTransformUploader.transferBuffers, true);
 		}
 	}
-
-	rengine->createSyncObjects();
-
-
-	InitImgui(); // imgui needs to be initialized to register a sprite with it
 
 	genCheckerboard(400, vec4(1, 1, 0, 1), vec4(0, 0, 1, 1), 6, checkerData);
 	assetManager->CreateDefaultSprite(400, 400, checkerData);
@@ -249,32 +261,6 @@ void Engine::Start(const VideoSettings& initialSettings) {
 	PROFILE_END(Engine_Startup);
 }
 
-
-//mat3 translate(vec2 v) {
-//	return mat3(
-//		1.0, 0.0, 0.0,
-//		0.0, 1.0, 0.0,
-//		v.x, v.y, 1.0
-//	);
-//}
-//mat3 scale(vec2 v) {
-//	return mat3(
-//		v.x, 0.0, 0.0,
-//		0.0, v.y, 0.0,
-//		0.0, 0.0, 1.0
-//	);
-//}
-//mat3 rotate(float angle) {
-//	float c = cos(angle);
-//	float s = sin(angle);
-//	return mat3(
-//		c, s, 0.0,
-//		-s, c, 0.0,
-//		0.0, 0.0, 1.0
-//	);
-//}
-
-
 void Engine::ApplyNewVideoSettings(const VideoSettings settings) {
 	newVideoSettingsRequested = true;
 	requestedSettings = settings;
@@ -282,10 +268,6 @@ void Engine::ApplyNewVideoSettings(const VideoSettings settings) {
 
 bool Engine::QueueNextFrame(bool drawImgui) {
 	ZoneScopedN("queue next frame");
-
-	if (firstFrame) {
-		//glfwSetTime(0.0);
-	}
 
 	double time = glfwGetTime();
 	deltaTime = time - lastTime;
@@ -322,30 +304,15 @@ bool Engine::QueueNextFrame(bool drawImgui) {
 		}
 	}
 
-	// update global buffers
-	{
-		ZoneScopedN("UBO updates");
-
-		cameraUploader.Invalidate();
-		cameraUBO_s camData;
-		camData.aspectRatio = (float)winH / (float)winW;
-		camData.position = camera.position;
-		camData.zoom = camera.zoom;
-		cameraUploader.SyncBufferData(camData, rengine->currentFrame);
-
-		cameraUBO_s screenSpaceData;
-		screenSpaceData.aspectRatio = (float)winH / (float)winW;
-		//screenSpaceData.position = vec2((float)winW / 2.0f, -(float)winH / 2.0f);
-		screenSpaceData.position = vec2((float)winW / 2.0f, -(float)winH / 2.0f);
-		screenSpaceData.zoom = 2.0f / (float)winH;
-		screenSpaceTransformUploader.SyncBufferData(screenSpaceData, rengine->currentFrame);
-	}
+	// wait for the this frame's compute command buffer to become available
+	rengine->WaitForComputeSubmission();
+	rengine->WaitForComputeCompletion();
 
 
+	// record compute command buffer without submmiting it
 	{
 		ZoneScopedN("compute shaders");
 
-		rengine->waitForCompute();
 		auto computeCmdBuffer = rengine->getNextComputeCommandBuffer();
 
 		// transfer tiles to read-only memory before starting renderpass
@@ -358,24 +325,116 @@ bool Engine::QueueNextFrame(bool drawImgui) {
 		lightingPipeline->stageLightingUpdate(lightingData);
 		lightingPipeline->recordCommandBuffer(computeCmdBuffer, lightingData.size());
 		worldMap->chunkLightingJobs.clear();
-		rengine->submitCompute();
+
+		TracyVkCollect(rengine->tracyComputeContexts[rengine->currentFrame], rengine->computeCommandBuffers[rengine->currentFrame]);
+
+		computeCmdBuffer.end();
 	}
 
 
+	// NOTE!!!!
+	/*
+	* We could submit the compute command buffer before waiting for the graphics buffer, 
+	* but since the camera UBO is shared between the compute and graphics command buffers
+	* we must wait for both to complete in the previous frame before updating them
+	*/
+	
+	rengine->WaitForGraphicsSubmission();
+	rengine->WaitForGraphicsCompletion();
 
 
-	uint32_t imageIndex = rengine->waitForSwapchain((newVideoSettingsRequested ? &requestedSettings.windowSetting : nullptr));
-	newVideoSettingsRequested = false;
-	if (imageIndex == -1) {
-		// swapchain invalid - recreate
-		frameCounter = 0;
-		return false;
+	// update global buffers now that they are not in use by either queue, they can be updated
+	{
+		ZoneScopedN("UBO updates");
+
+		cameraUploader.Invalidate();
+		cameraUBO_s camData;
+		camData.aspectRatio = (float)winH / (float)winW;
+		camData.position = camera.position;
+		camData.zoom = camera.zoom;
+		cameraUploader.SyncBufferData(camData, rengine->currentFrame);
+
+		cameraUBO_s screenSpaceData;
+		screenSpaceData.aspectRatio = (float)winH / (float)winW;
+		screenSpaceData.position = vec2((float)winW / 2.0f, -(float)winH / 2.0f);
+		screenSpaceData.zoom = 2.0f / (float)winH;
+		screenSpaceTransformUploader.SyncBufferData(screenSpaceData, rengine->currentFrame);
 	}
 
+	// now free to execute compute buffer
+	rengine->QueueComputeSubmission();
 
-	auto cmdBuffer = rengine->getNextCommandBuffer();
+	
+	resourceManager->ReleaseFreeableTextures();
 
-	rengine->beginRenderpass(imageIndex, cmdBuffer, vec4(0.0, 0.4, 0.6, 1.0));
+	resourceManager->HandleFramebufferRecreation();
+
+
+	{
+		// free up indexes in bindless descriptor set
+		while (textureBindingDeletionQueue.size() > 0) {
+			auto& id = textureBindingDeletionQueue.front();
+			textureBindingDeletionQueue.pop();
+			if (globalTextureBindingManager.HasBinding(id)) // may have been deleted before it was finished uploading
+				globalTextureBindingManager.RemoveBinding(id);
+		}
+
+		bool texturesAdded = resourceChangeFlags->TexturesAdded();
+		if (texturesAdded) {
+			globalTextureBindingManager.InvalidateDescriptors();
+		}
+
+		// mainly needed for asynchronous textures becoming available
+		if (texturesAdded) {
+			for (auto& [ID, tex] : *resourceManager->GetInternalTextureResources()) {
+
+				// REMOVE ONCE TESTED
+				assert(&tex == resourceManager->GetTexture(ID));
+
+				globalTextureBindingManager.AddBinding(ID, (Texture*)&tex);
+			}
+		}
+
+		if (resourceChangeFlags->TextureFiltersChanged())
+			globalTextureBindingManager.InvalidateDescriptors();
+
+		if (globalTextureBindingManager.IsDescriptorDirty(rengine->currentFrame) == true) {
+
+			std::vector<int> indexes;
+			std::vector <Texture*> textures;
+
+			// TODO: Optimize use of bindless descriptors by only adding new textures to descriptor instead of all loaded textures.
+			// Will need additional queues for each frame in flight to keep track of what textures have been fully uploaded and need to be bound.
+			{
+				std::unique_lock<std::mutex> lock(resourceManager->texMapMtx);
+				for (auto& [ID, tex] : *resourceManager->GetInternalTextureResources()) {
+
+					// REMOVE ONCE TESTED
+					//assert(&tex == resourceManager->GetTexture(ID));
+
+					if (globalTextureBindingManager.HasBinding(ID)) {
+
+						indexes.push_back(globalTextureBindingManager.getIndexFromBinding(ID));
+						auto tt = globalTextureBindingManager.getValueFromBinding(ID);
+						textures.push_back(tt);
+					}
+				}
+			}
+
+			GlobalTextureDesc.AddDescriptors(indexes, textures, rengine->currentFrame);
+			globalTextureBindingManager.ClearDescriptorDirty(rengine->currentFrame);
+		}
+
+		// use flag for thread safety
+		if (texturesAdded)
+			resourceChangeFlags->ClearTexturesAdded();
+
+		resourceChangeFlags->ClearTextureFilterschanged();
+	}
+
+	auto cmdBuffer = rengine->getNextGfxCommandBuffer();
+
+	rengine->beginRenderpass(resourceManager->GetFramebuffer(tmp_cameraFB), cmdBuffer);
 
 	{
 		vk::Viewport viewport;
@@ -388,7 +447,7 @@ bool Engine::QueueNextFrame(bool drawImgui) {
 		cmdBuffer.setViewport(0, 1, &viewport);
 
 		vk::Rect2D scissor;
-		scissor.offset = vk::Offset2D { 0, 0 };
+		scissor.offset = vk::Offset2D{ 0, 0 };
 		scissor.extent = rengine->swapChainExtent;
 		cmdBuffer.setScissor(0, 1, &scissor);
 
@@ -427,7 +486,7 @@ bool Engine::QueueNextFrame(bool drawImgui) {
 
 	// tilemap
 	{
-		//ZoneScopedN("tilemap PL");
+		ZoneScopedN("tilemap PL");
 
 		if (tilemapPipeline->textureAtlas.has_value()) {
 			tilemapPipeline->recordCommandBuffer(cmdBuffer);
@@ -437,14 +496,6 @@ bool Engine::QueueNextFrame(bool drawImgui) {
 	// Textured quad
 	{
 		ZoneScopedN("Textured quad PL");
-
-		if (assetChangeFlags->SpritesAdded()) {
-			for (auto& [sprID, sprite] : assetManager->_getSpriteIterator())
-				texturePipeline->addTextureBinding(sprite->textureID, resourceManager->GetTexture(sprite->textureID));
-		}
-
-		if (assetChangeFlags->TextureFiltersChanged())
-			texturePipeline->invalidateTextureDescriptors();
 
 		if (currentScene->sceneData.spriteRenderers.size() > 0) {
 			vector<TexturedQuadPL::ssboObjectInstanceData> drawlist;
@@ -462,7 +513,7 @@ bool Engine::QueueNextFrame(bool drawImgui) {
 				drawObject.translation = entity->transform.position;
 				drawObject.scale = entity->transform.scale;
 				drawObject.rotation = entity->transform.rotation;
-				drawObject.tex = s->textureID;
+				drawObject.tex = globalTextureBindingManager.getIndexFromBinding(s->textureID);
 
 				if (s->atlas.size() > 0) {
 					auto atEntry = s->atlas[renderer.atlasIndex];
@@ -473,7 +524,6 @@ bool Engine::QueueNextFrame(bool drawImgui) {
 				drawlist.push_back(drawObject);
 			}
 
-			texturePipeline->updateDescriptorSets();
 			texturePipeline->UploadInstanceData(drawlist);
 			texturePipeline->recordCommandBuffer(cmdBuffer, drawlist.size());
 
@@ -485,16 +535,6 @@ bool Engine::QueueNextFrame(bool drawImgui) {
 	{
 		ZoneScopedN("Text PL");
 
-		if (assetChangeFlags->FontsAdded()) {
-			for (auto& [fntID, font] : assetManager->_getFontIterator()) {
-				auto sprite = assetManager->GetSprite(font->atlas);
-				textPipeline->addFontBinding(font->ID, resourceManager->GetTexture(sprite->textureID));
-			}
-		}
-
-		if (assetChangeFlags->TextureFiltersChanged())
-			textPipeline->InvalidateTextureDescriptors();
-
 		if (currentScene->sceneData.textRenderers.size() > 0) {
 			textPipeline->ClearTextData(rengine->currentFrame);
 
@@ -504,6 +544,7 @@ bool Engine::QueueNextFrame(bool drawImgui) {
 				const auto& entity = currentScene->sceneData.entities[entID];
 
 				shared_ptr<Font> f = assetManager->GetFont(r.font);
+				auto sprite = assetManager->GetSprite(f->atlas);
 
 				if (r.dirty) {
 					r.quads.clear();
@@ -518,6 +559,7 @@ bool Engine::QueueNextFrame(bool drawImgui) {
 				header.rotation = entity->transform.rotation;
 				header.scale = entity->transform.scale;
 				header.textLength = glm::min(TEXTPL_maxTextLength, (int)r.quads.size());
+				header._textureIndex = globalTextureBindingManager.getIndexFromBinding(sprite->textureID);
 
 				//TODO: could potentially assume this data is already here if the renderer is not dirty ?
 				TextPL::textObject textData;
@@ -526,11 +568,49 @@ bool Engine::QueueNextFrame(bool drawImgui) {
 				textPipeline->UploadTextData(rengine->currentFrame, i, header, r.font, textData);
 				i++;
 			}
-
-			textPipeline->updateDescriptorSets();
 			textPipeline->recordCommandBuffer(cmdBuffer);
 		}
 	}
+
+	cmdBuffer.endRenderPass();
+
+	{
+		auto fb = resourceManager->GetFramebuffer(tmp_cameraFB);
+		rengine->insertFramebufferTransitionBarrier(cmdBuffer, fb);
+
+		addScreenCenteredSpaceFramebufferTexture(tmp_cameraFB, vec2(winW, winH) / 2.0f, winH, 0);
+	}
+
+	// we have to wait for the previous frame to finish presenting so we can determine what image the
+	// next swapchain renderpass will be using
+	uint32_t imageIndex;
+	{
+		//newVideoSettingsRequested = false;
+		
+		// wait for the presentation to be subbmited
+		if (!firstFrame)
+			rengine->WaitForFramePresentationSubmission();
+
+		// this is the earliest point which we know for absolute certain that the window was resized as this flag is updated
+		// when the present queue is submitted, although it could also be flagged before this point is reached
+		if (rengine->ShouldRecreateSwapchain()) {
+			// everything submitted for this frame is now in the wrong resolution and the swapchain must be resized 
+			// before it can be presented again. We just resize it and display one stretched frame
+
+			rengine->recreateSwapChain(rengine->lastUsedSwapChainSetting);
+
+			// TODO verify that the glfw callback happens before this to ensure the new winW and winH values are updated
+			resourceManager->ResizeFramebuffer(tmp_cameraFB, { winW, winH });
+
+			_onWindowResize();
+		}
+
+
+		// then wait for the frame to be presented
+		imageIndex = rengine->WaitForSwapChainImageAvailableAndHandleWindowChanges((newVideoSettingsRequested ? &requestedSettings.windowSetting : nullptr));
+	}
+
+	rengine->beginSwapchainRenderpass(imageIndex, cmdBuffer, vec4(0.0, 0.0, 0.0, 1.0));
 
 	runningStats.entity_count = currentScene->sceneData.entities.size();
 
@@ -540,17 +620,9 @@ bool Engine::QueueNextFrame(bool drawImgui) {
 		screenSpaceColorPipeline->recordCommandBuffer(cmdBuffer, screenSpaceColorDrawlist.size());
 
 	}
+
 	// screenspace texture
 	{
-		if (assetChangeFlags->SpritesAdded()) {
-			for (auto& [sprID, sprite] : assetManager->_getSpriteIterator())
-				screenSpaceTexturePipeline->addTextureBinding(sprite->textureID, resourceManager->GetTexture(sprite->textureID));
-		}
-
-		if (assetChangeFlags->TextureFiltersChanged())
-			screenSpaceTexturePipeline->invalidateTextureDescriptors();
-
-		screenSpaceTexturePipeline->updateDescriptorSets();
 		screenSpaceTexturePipeline->UploadInstanceData(screenSpaceTextureDrawlist);
 		screenSpaceTexturePipeline->recordCommandBuffer(cmdBuffer, screenSpaceTextureDrawlist.size());
 
@@ -559,59 +631,46 @@ bool Engine::QueueNextFrame(bool drawImgui) {
 
 	// screenspace text
 	{
-		if (assetChangeFlags->FontsAdded()) {
-			for (auto& [fntID, font] : assetManager->_getFontIterator()) {
-				auto sprite = assetManager->GetSprite(font->atlas);
-				screenSpaceTextPipeline->addFontBinding(font->ID, resourceManager->GetTexture(sprite->textureID));
-			}
-		}
-
-		if (assetChangeFlags->TextureFiltersChanged())
-			screenSpaceTextPipeline->InvalidateTextureDescriptors();
-
 		int memSlot = 0;
 		for (auto& i : screenSpaceTextDrawlist)
 		{
 			shared_ptr<Font> f = assetManager->GetFont(i.font);
+			auto sprite = assetManager->GetSprite(f->atlas);
+
 			TextPL::textObject textData;
 
 			CalculateQuads(f, i.text, textData.quads);
 
 			i.header.scale = vec2(f->fontHeight * 2) * i.scaleFactor;
+			i.header._textureIndex = globalTextureBindingManager.getIndexFromBinding(sprite->textureID);
 
 			screenSpaceTextPipeline->UploadTextData(rengine->currentFrame, memSlot++, i.header, i.font, textData);
 		}
-		screenSpaceTextPipeline->updateDescriptorSets();
 		screenSpaceTextPipeline->recordCommandBuffer(cmdBuffer);
 	}
-
-
-
-	// reset binding flags
-	assetChangeFlags->ClearSpritesAdded();
-	assetChangeFlags->ClearFontsAdded();
-	assetChangeFlags->ClearTextureFilterschanged();
 
 	if (drawImgui) {
 		ImGui::Render();
 		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdBuffer);
 	}
 
-	vkCmdEndRenderPass(cmdBuffer);
+	cmdBuffer.endRenderPass();
+	TracyVkCollect(rengine->tracyGraphicsContexts[rengine->currentFrame], rengine->graphicsCommandBuffers[rengine->currentFrame]);
 	rengine->endCommandBuffer(cmdBuffer);
 
-	if (rengine->submitAndPresent(imageIndex)) {
-		_onWindowResize();
-	}
+	rengine->QueueGraphicsSubmission();
 
-	rengine->Update();
+	rengine->QueuePresentSubmission(imageIndex);
+
+	rengine->IncrementFrameInFlight();
+
+	rengine->GetWindowEvents();
 
 	input->_newFrame();
 
 	frameCounter++;
 
 	firstFrame = false;
-
 
 	FrameMark;
 	return true;
@@ -637,14 +696,6 @@ static void glfw_error_callback(int error, const char* description)
 {
 	fprintf(stderr, "GLFW Error %d: %s\n", error, description);
 }
-//static void check_vk_result(vk::Result err)
-//{
-//	if (err == 0)
-//		return;
-//	fprintf(stderr, "[vulkan] Error: vk::Result = %d\n", err);
-//	if (err < 0)
-//		abort();
-//}
 
 #ifdef IMGUI_VULKAN_DEBUG_REPORT
 static VKAPI_ATTR vk::Bool32 VKAPI_CALL debug_report(vk::DebugReportFlagsEXT flags, vk::DebugReportObjectTypeEXT objectType, uint64_t object, size_t location, int32_t messageCode, const char* pLayerPrefix, const char* pMessage, void* pUserData)
@@ -693,7 +744,7 @@ void Engine::InitImgui() {
 	pool_info.pPoolSizes = pool_sizes;
 
 	vk::DescriptorPool imguiPool;
-	rengine->device.createDescriptorPool(&pool_info, nullptr, &imguiPool);
+	rengine->devContext.device.createDescriptorPool(&pool_info, nullptr, &imguiPool);
 
 
 	// 2: initialize imgui library
@@ -709,21 +760,21 @@ void Engine::InitImgui() {
 	ImGui_ImplVulkan_InitInfo init_info = {};
 	init_info.Instance = rengine->instance;
 	init_info.PhysicalDevice = rengine->physicalDevice;
-	init_info.Device = rengine->device;
-	init_info.Queue = rengine->graphicsQueue;
+	init_info.Device = rengine->devContext.device;
+	init_info.Queue = rengine->devContext.graphicsQueue;
 	init_info.DescriptorPool = imguiPool;
 	init_info.MinImageCount = rengine->swapChainImages.size();
 	init_info.ImageCount = rengine->swapChainImages.size();
 	init_info.Subpass = 0;
 	init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 
-	ImGui_ImplVulkan_Init(&init_info, rengine->renderPass);
+	ImGui_ImplVulkan_Init(&init_info, rengine->swapchainRenderPass);
 
 
 	//execute a gpu command to upload imgui font textures
-	auto cmdBuffer = rengine->beginSingleTimeCommands();
+	auto cmdBuffer = rengine->beginSingleTimeCommands_gfx();
 	ImGui_ImplVulkan_CreateFontsTexture(cmdBuffer);
-	rengine->endSingleTimeCommands(cmdBuffer);
+	rengine->endSingleTimeCommands_gfx(cmdBuffer);
 
 	//clear font textures from cpu data
 	ImGui_ImplVulkan_DestroyFontUploadObjects();
@@ -738,8 +789,8 @@ void Engine::InitImgui() {
 
 }
 
-void stageChunkUpdates() {
-
-}
-
+//void stageChunkUpdates() {
+//
+//}
+//
 

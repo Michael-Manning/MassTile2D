@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 
+typedef int32_t framebufferID;
 typedef int32_t texID;
 typedef uint32_t entityID;
 typedef uint32_t spriteID;
