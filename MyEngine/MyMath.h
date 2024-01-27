@@ -15,3 +15,7 @@ static float exponentialScale(float input, float minv, float maxv) {
 static glm::vec2 smoothstep(const glm::vec2& edge0, const glm::vec2& edge1, float x) {
     return glm::mix(edge0, edge1, glm::smoothstep(0.0f, 1.0f, x));
 }
+
+static float magnitude(const glm::vec2& v) {
+    return sqrtf(v.x * v.x + v.y * v.y);
+}

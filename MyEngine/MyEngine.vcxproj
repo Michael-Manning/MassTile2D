@@ -331,6 +331,7 @@
   <ItemGroup>
     <ClCompile Include="AssetManager.cpp" />
     <ClCompile Include="Audio.cpp" />
+    <ClCompile Include="boidsCompute.cpp" />
     <ClCompile Include="descriptorSetBuilder.cpp" />
     <ClCompile Include="Entity.cpp" />
     <ClCompile Include="FontGenerator.cpp" />
@@ -362,6 +363,7 @@
     <ClInclude Include="benchmark.h" />
     <ClInclude Include="BinaryWriter.h" />
     <ClInclude Include="BindingManager.h" />
+    <ClInclude Include="boidsCompute.h" />
     <ClInclude Include="coloredQuadPL.h" />
     <ClInclude Include="ColorRenderer.h" />
     <ClInclude Include="Component.h" />

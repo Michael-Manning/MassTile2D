@@ -111,6 +111,9 @@
     <ClCompile Include="Audio.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="boidsCompute.cpp">
+      <Filter>Source Files\vulkan\piplines</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pipeline.h">
@@ -241,6 +244,9 @@
     </ClInclude>
     <ClInclude Include="Audio.h">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="boidsCompute.h">
+      <Filter>Source Files\vulkan\piplines</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

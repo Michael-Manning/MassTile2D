@@ -143,6 +143,8 @@ void Engine::Start(const VideoSettings& initialSettings) {
 
 	this->winW = initialSettings.windowSetting.windowSizeX;
 	this->winH = initialSettings.windowSetting.windowSizeY;
+	lastwinW = winW;
+	lastwinH = winH;
 
 	vector<uint8_t> checkerData;
 	genCheckerboard(400, vec4(1, 0, 0, 1), vec4(0, 0, 1, 1), 6, checkerData);
@@ -611,6 +613,15 @@ bool Engine::QueueNextFrame(bool drawImgui) {
 	frameCounter++;
 
 	firstFrame = false;
+
+	if (lastwinH != winH || lastwinW != winW) {
+		windowResizedLastFrame = true;
+	}
+	else {
+		windowResizedLastFrame = false;
+	}
+	lastwinW = winW;
+	lastwinH = winH;
 
 
 	FrameMark;

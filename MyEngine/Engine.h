@@ -111,6 +111,10 @@ public:
 		return glm::vec2(winW, winH);
 	};
 
+	// window was recently resized
+	bool WindowResizedLastFrame() {
+		return windowResizedLastFrame;
+	};
 
 
 	std::shared_ptr<b2World> bworld = nullptr;
@@ -168,12 +172,12 @@ public:
 
 	std::shared_ptr<TileWorld> worldMap = nullptr;
 
-	inline void addScreenSpaceQuad(glm::vec4 color, glm::vec2 pos, glm::vec2 scale) {
+	inline void addScreenSpaceQuad(glm::vec4 color, glm::vec2 pos, glm::vec2 scale, float rotation = 0.0f) {
 		ColoredQuadPL::InstanceBufferData item;
 		item.color = color;
 		item.position = pos;
 		item.scale = scale;
-		item.rotation = 0.0f;
+		item.rotation = rotation;
 		item.circle = 0;
 		screenSpaceColorDrawlist.push_back(item);
 	}
@@ -280,6 +284,8 @@ private:
 
 	double physicsTimer = 0.0;
 
+	int lastwinW, lastwinH;
+	bool windowResizedLastFrame = false;
 
 	std::shared_ptr<VKEngine> rengine = nullptr;
 
