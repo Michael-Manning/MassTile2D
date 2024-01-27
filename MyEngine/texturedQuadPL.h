@@ -20,6 +20,7 @@
 #include "typedefs.h"
 #include "Constants.h"
 #include "BindingManager.h"
+#include "GlobalImageDescriptor.h"
 
 constexpr int TexturedQuadPL_MAX_TEXTURES = 10;
 constexpr int TexturedQuadPL_MAX_OBJECTS = 100000;
@@ -43,26 +44,13 @@ public:
 	};
 	static_assert(sizeof(ssboObjectInstanceData) % 16 == 0);
 
-	TexturedQuadPL(std::shared_ptr<VKEngine>& engine, Texture defaultTexture) : 
-		bindingManager(TexturedQuadPL_MAX_TEXTURES), 
-		defaultTexture(defaultTexture), 
+	TexturedQuadPL(std::shared_ptr<VKEngine>& engine) : 
+		//bindingManager(TexturedQuadPL_MAX_TEXTURES), 
 		Pipeline(engine) { }
 
-	void CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc, MappedDoubleBuffer<void>& cameradb, bool flipFaces = false);
+	void CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc, vk::RenderPass& renderTarget, GlobalImageDescriptor* textureDescriptor, MappedDoubleBuffer<void>& cameradb, bool flipFaces = false);
 	
 	void createSSBOBuffer();
-
-	void updateDescriptorSets();
-
-	void addTextureBinding(texID ID, Texture* texture) {
-		bindingManager.AddBinding(ID, texture);
-	};
-	void removeTextureBinding(texID ID) {
-		bindingManager.RemoveBinding(ID);
-	};
-	void invalidateTextureDescriptors() {
-		bindingManager.InvalidateDescriptors();
-	};
 
 	void recordCommandBuffer(vk::CommandBuffer commandBuffer, int instanceCount);
 
@@ -70,9 +58,9 @@ public:
 
 private:
 
+	GlobalImageDescriptor* textureDescriptor = nullptr;
+
 	MappedDoubleBuffer<> ssboMappedDB;
 
-	BindingManager<texID, Texture*> bindingManager;
-
-	Texture defaultTexture;
+	//BindingManager<texID, Texture*> bindingManager;
 };

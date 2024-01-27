@@ -28,21 +28,27 @@ using namespace glm;
 using namespace std;
 
 //void ColoredQuadPL::CreateGraphicsPipeline(std::string vertexSrc, std::string fragmentSrc, MappedDoubleBuffer<void>& cameradb, bool flipFaces) {
-void ColoredQuadPL::CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc, MappedDoubleBuffer<void>& cameradb, bool flipFaces) {
+void ColoredQuadPL::CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc, vk::RenderPass& renderTarget, MappedDoubleBuffer<void>& cameradb, bool flipFaces) {
 
 	auto shaderStages = createShaderStages(vertexSrc, fragmentSrc);
 
-	configureDescriptorSets(vector<Pipeline::descriptorSetInfo> {
-		descriptorSetInfo(0, 0, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eVertex, &cameradb.buffers, cameradb.size),
-		descriptorSetInfo(1, 0, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, &ssboMappedDB.buffers, ssboMappedDB.size)
+	descriptorManager.configureDescriptorSets(vector<DescriptorManager::descriptorSetInfo> {
+		DescriptorManager::descriptorSetInfo(0, 0, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eVertex, &cameradb.buffers, cameradb.size),
+		DescriptorManager::descriptorSetInfo(1, 0, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, &ssboMappedDB.buffers, ssboMappedDB.size)
 	});
-	buildDescriptorLayouts();
+	descriptorManager.buildDescriptorLayouts();
 
-	// create vector containing the builder descriptor set layouts
-	vector< vk::DescriptorSetLayout> setLayouts;
-	setLayouts.reserve(builderLayouts.size());
-	for (auto& [set, layout] : builderLayouts)
-		setLayouts.push_back(layout);
+
+	descriptorLayoutMap setLayouts;
+
+	for (auto& [set, layout] : descriptorManager.builderLayouts)
+		setLayouts[set] = layout;
+
+	//// create vector containing the builder descriptor set layouts
+	//vector< vk::DescriptorSetLayout> setLayouts;
+	//setLayouts.reserve(builderLayouts.size());
+	//for (auto& [set, layout] : builderLayouts)
+	//	setLayouts.push_back(layout);
 	buildPipelineLayout(setLayouts);
 
 	vk::VertexInputBindingDescription VbindingDescription;
@@ -70,20 +76,20 @@ void ColoredQuadPL::CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc
 	pipelineInfo.pColorBlendState = &colorBlending;
 	pipelineInfo.pDynamicState = &dynamicState;
 	pipelineInfo.layout = pipelineLayout;
-	pipelineInfo.renderPass = engine->renderPass;
+	pipelineInfo.renderPass = renderTarget;
 	pipelineInfo.subpass = 0;
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-	auto rv = engine->device.createGraphicsPipeline(VK_NULL_HANDLE, pipelineInfo);
+	auto rv = engine->devContext.device.createGraphicsPipeline(VK_NULL_HANDLE, pipelineInfo);
 	if (rv.result != vk::Result::eSuccess)
 			throw std::runtime_error("failed to create graphics pipeline!");
 	_pipeline = rv.value;
 
 	for (auto& stage : shaderStages) {
-		engine->device.destroyShaderModule(stage.module);
+		engine->devContext.device.destroyShaderModule(stage.module);
 	}
 
-	buildDescriptorSets();
+	descriptorManager.buildDescriptorSets();
 }
 
 void ColoredQuadPL::CreateInstancingBuffer() {
@@ -99,8 +105,8 @@ void ColoredQuadPL::recordCommandBuffer(vk::CommandBuffer commandBuffer, int ins
 
 	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, _pipeline);
 
-	for (auto& i : builderDescriptorSetsDetails)
-		commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, i.set, 1, &builderDescriptorSets[i.set][engine->currentFrame], 0, nullptr);
+	for (auto& i : descriptorManager.builderDescriptorSetsDetails)
+		commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, i.set, 1, &descriptorManager.builderDescriptorSets[i.set][engine->currentFrame], 0, nullptr);
 
 	{
 		TracyVkZone(engine->tracyGraphicsContexts[engine->currentFrame], commandBuffer, "Colored quad render");

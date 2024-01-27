@@ -27,32 +27,30 @@
 #include "texturedQuadPL.h"
 #include "globalBufferDefinitions.h"
 #include "Vertex.h"
+#include "GlobalImageDescriptor.h"
 
 using namespace glm;
 using namespace std;
 
 
-void TexturedQuadPL::CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc, MappedDoubleBuffer<void>& cameradb, bool flipFaces) {
+void TexturedQuadPL::CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc, vk::RenderPass& renderTarget, GlobalImageDescriptor* textureDescriptor, MappedDoubleBuffer<void>& cameradb, bool flipFaces) {
 
-	assert(defaultTexture.textureImageAllocation != nullptr);
+	this->textureDescriptor = textureDescriptor;
 
 	auto shaderStages = createShaderStages(vertexSrc, fragmentSrc);
 
-	array<Texture, TexturedQuadPL_MAX_TEXTURES> defaultTextureArray;
-	std::fill(defaultTextureArray.begin(), defaultTextureArray.end(), defaultTexture);
-
-	configureDescriptorSets(vector<Pipeline::descriptorSetInfo> {
-		descriptorSetInfo(0, 0, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eVertex, &cameradb.buffers, cameradb.size),
-		descriptorSetInfo(0, 1, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment, defaultTextureArray.data(), defaultTextureArray.size()),
-		descriptorSetInfo(1, 0, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, &ssboMappedDB.buffers, ssboMappedDB.size)
+	descriptorManager.configureDescriptorSets(vector<DescriptorManager::descriptorSetInfo> {
+		DescriptorManager::descriptorSetInfo(1, 1, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eVertex, &cameradb.buffers, cameradb.size),
+		DescriptorManager::descriptorSetInfo(1, 0, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, &ssboMappedDB.buffers, ssboMappedDB.size)
 	});
-	buildDescriptorLayouts();
+	descriptorManager.buildDescriptorLayouts();
 
-	// create vector containing the builder descriptor set layouts
-	vector< vk::DescriptorSetLayout> setLayouts;
-	setLayouts.reserve(builderLayouts.size());
-	for (auto& [set, layout] : builderLayouts)
-		setLayouts.push_back(layout);
+	descriptorLayoutMap setLayouts;
+
+	for (auto& [set, layout] : descriptorManager.builderLayouts)
+		setLayouts[set] = layout;
+	setLayouts[0] = textureDescriptor->layout;
+
 	buildPipelineLayout(setLayouts);
 
 	vk::VertexInputBindingDescription VbindingDescription;
@@ -81,42 +79,22 @@ void TexturedQuadPL::CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSr
 	pipelineInfo.pColorBlendState = &colorBlending;
 	pipelineInfo.pDynamicState = &dynamicState;
 	pipelineInfo.layout = pipelineLayout;
-	pipelineInfo.renderPass = engine->renderPass;
+	pipelineInfo.renderPass = renderTarget;
 	pipelineInfo.subpass = 0;
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-	auto rv = engine->device.createGraphicsPipeline(VK_NULL_HANDLE, pipelineInfo);
+	auto rv = engine->devContext.device.createGraphicsPipeline(VK_NULL_HANDLE, pipelineInfo);
 	if (rv.result != vk::Result::eSuccess)
 		throw std::runtime_error("failed to create graphics pipeline!");
 	_pipeline = rv.value;
 
 	for (auto& stage : shaderStages) {
-		engine->device.destroyShaderModule(stage.module);
+		engine->devContext.device.destroyShaderModule(stage.module);
 	}
 
-	buildDescriptorSets();
+	descriptorManager.buildDescriptorSets();
 }
 
-// For now, update every descriptor array element. Could update individual elements as an optimization
-void TexturedQuadPL::updateDescriptorSets() {
-
-	if(bindingManager.IsDescriptorDirty(engine->currentFrame) == false)
-		return;
-
-	array<Texture, TexturedQuadPL_MAX_TEXTURES> textureArray;
-
-	for (int i = 0; i < textureArray.size(); i++) {
-		if (bindingManager.IsSlotInUse(i) == false)
-			textureArray[i] = defaultTexture;
-		else
-			textureArray[i] = *bindingManager.getValueFromIndex(i);
-	}
-
-	auto info = descriptorSetInfo(0, 1, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment, textureArray.data(), textureArray.size());
-	updateDescriptorSet(engine->currentFrame, info);
-
-	bindingManager.ClearDescriptorDirty(engine->currentFrame);
-}
 
 void TexturedQuadPL::createSSBOBuffer() {
 
@@ -129,8 +107,12 @@ void TexturedQuadPL::recordCommandBuffer(vk::CommandBuffer commandBuffer, int in
 
 	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, _pipeline);
 
-	for (auto& i : builderDescriptorSetsDetails)
-		commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, i.set, 1, &builderDescriptorSets[i.set][engine->currentFrame], 0, nullptr);
+	{
+		commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, 1, &textureDescriptor->descriptorSets[engine->currentFrame], 0, VK_NULL_HANDLE);
+	}
+
+	for (auto& i : descriptorManager.builderDescriptorSetsDetails)
+		commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, i.set, 1, &descriptorManager.builderDescriptorSets[i.set][engine->currentFrame], 0, nullptr);
 
 	{
 		TracyVkZone(engine->tracyGraphicsContexts[engine->currentFrame], commandBuffer, "textured quad render");
@@ -145,9 +127,5 @@ void TexturedQuadPL::UploadInstanceData(std::vector<ssboObjectInstanceData>& dra
 
 	assert(drawlist.size() <= TexturedQuadPL_MAX_OBJECTS);
 
-	for (auto& i : drawlist) {
-		// replace texture with index in descriptor set
-		i.tex = bindingManager.getIndexFromBinding(i.tex);
-	}
 	memcpy(ssboMappedDB.buffersMapped[engine->currentFrame], drawlist.data(), sizeof(ssboObjectInstanceData) * drawlist.size());
 }

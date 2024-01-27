@@ -111,6 +111,15 @@
     <ClCompile Include="Audio.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="GlobalImageDescriptor.h">
+      <Filter>Source Files\vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="descriptorManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ComputeTemplate.cpp">
+      <Filter>Source Files\vulkan\piplines</Filter>
+    </ClCompile>
     <ClCompile Include="boidsCompute.cpp">
       <Filter>Source Files\vulkan\piplines</Filter>
     </ClCompile>
@@ -215,9 +224,6 @@
     <ClInclude Include="TextPL.h">
       <Filter>Source Files\vulkan\piplines</Filter>
     </ClInclude>
-    <ClInclude Include="BindingManager.h">
-      <Filter>Source Files\vulkan\piplines</Filter>
-    </ClInclude>
     <ClInclude Include="BinaryWriter.h">
       <Filter>Source Files\Engine</Filter>
     </ClInclude>
@@ -243,6 +249,18 @@
       <Filter>Source Files\Editor</Filter>
     </ClInclude>
     <ClInclude Include="Audio.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="descriptorManager.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ComputeTemplate.h">
+      <Filter>Source Files\vulkan\piplines</Filter>
+    </ClInclude>
+    <ClInclude Include="ConcurrentQueue.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BindingManager.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="boidsCompute.h">

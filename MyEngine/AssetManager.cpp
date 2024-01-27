@@ -49,8 +49,6 @@ void AssetManager::LoadAllSprites(bool loadResources) {
 #endif
 		}
 	}
-
-	changeFlags->_spritesAdded = true;
 }
 
 
@@ -77,7 +75,6 @@ void AssetManager::LoadSprite(spriteID spriteID, bool loadResources) {
 		resourceManager->LoadTexture(directories.assetDir + sprite->imageFileName, sprite->filterMode, usingEditor);
 #endif
 	}
-	changeFlags->_spritesAdded = true;
 }
 
 void AssetManager::LoadSprite(std::string name, bool loadResources) {
@@ -106,13 +103,13 @@ void AssetManager::LoadSprite(std::string name, bool loadResources) {
 		resourceManager->LoadTexture(directories.assetDir + sprite->imageFileName, sprite->filterMode, usingEditor);
 #endif
 	}
-	changeFlags->_spritesAdded = true;
 }
 
 void AssetManager::UnloadSprite(spriteID spriteID, bool freeResources) {
 	auto& sprite = spriteAssets[spriteID];
 	if (freeResources)
-		resourceManager->FreeTexture(sprite->textureID);
+		resourceManager->SetTextureFreeable(sprite->textureID);
+		//resourceManager->FreeTexture(sprite->textureID);
 
 	loadedSpritesByName.erase(sprite->name);
 	spriteAssets.erase(spriteID);
@@ -145,8 +142,6 @@ void AssetManager::LoadAllFonts(bool loadResources) {
 		if (loadResources && spriteAssets.contains(font->atlas) == false)
 			LoadSprite(font->atlas, true);
 	}
-
-	changeFlags->_fontsAdded = true;
 }
 
 void AssetManager::LoadFont(fontID fontID, bool loadResources) {
@@ -162,8 +157,6 @@ void AssetManager::LoadFont(fontID fontID, bool loadResources) {
 
 	if (loadResources && spriteAssets.contains(font->atlas) == false)
 		LoadSprite(font->atlas, true);
-
-	changeFlags->_fontsAdded = true;
 }
 
 void AssetManager::LoadFont(std::string name, bool loadResources) {
@@ -182,8 +175,6 @@ void AssetManager::LoadFont(std::string name, bool loadResources) {
 
 	if (loadResources && spriteAssets.contains(font->atlas) == false)
 		LoadSprite(font->atlas, true);
-
-	changeFlags->_fontsAdded = true;
 }
 void AssetManager::UnloadFont(fontID fontID, bool freeResources) {
 	auto& font = fontAssets[fontID];
@@ -298,7 +289,8 @@ spriteID AssetManager::ExportSprite(std::string spriteAssetExportPath, std::stri
 	unidentified_sprite.ID = SpriteIDGenerator.GenerateID(unidentified_sprite.name);
 	unidentified_sprite.serializeJson(spriteAssetExportPath);
 
-	resourceManager->FreeTexture(id);
+	resourceManager->SetTextureFreeable(id);
+	//resourceManager->FreeTexture(id);
 
 	createAssetLookups();
 
@@ -344,8 +336,6 @@ void AssetManager::CreateDefaultSprite(int w, int h, std::vector<uint8_t>&data) 
 	sprite->resolution = glm::vec2(tex->resolutionX, tex->resolutionY);
 
 	SpriteIDGenerator.Input(defaultSpriteID);
-
-	changeFlags->_spritesAdded = true;
 
 	spriteAssets[defaultSpriteID] = sprite;
 }

@@ -1,4 +1,5 @@
 #version 460
+#extension GL_EXT_nonuniform_qualifier : enable
 
 struct ssboObject{
    vec2 uvMin;
@@ -15,8 +16,7 @@ layout(std140, set = 1, binding = 0) readonly buffer ObjectInstaceBuffer{
 } ssboBuffer;
 
 
-#define MAX_TEXTURES 10
-layout(binding = 1) uniform sampler2D texSampler[MAX_TEXTURES];
+layout(binding = 0) uniform sampler2D texSampler[];
 
 layout(location = 2) in flat int instance_index;
 layout(location = 1) in vec2 uv;

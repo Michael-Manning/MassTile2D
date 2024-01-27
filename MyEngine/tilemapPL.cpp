@@ -27,24 +27,27 @@
 using namespace glm;
 using namespace std;
 
-void TilemapPL::CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc, MappedDoubleBuffer<void>& cameradb) {
-//void TilemapPL::CreateGraphicsPipeline(std::string vertexSrc, std::string fragmentSrc, MappedDoubleBuffer<void>& cameradb) {
+void TilemapPL::CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc, vk::RenderPass& renderTarget, MappedDoubleBuffer<void>& cameradb) {
 
 	auto shaderStages = createShaderStages(vertexSrc, fragmentSrc);
 
-	configureDescriptorSets(vector<Pipeline::descriptorSetInfo> {
-		descriptorSetInfo(0, 0, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eVertex, &cameradb.buffers, cameradb.size),
-		descriptorSetInfo(0, 1, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment, nullptr, 1),
-		descriptorSetInfo(1, 0, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, nullptr, sizeof(TileWorld::ssboObjectData)* (mapCount)),
-		descriptorSetInfo(1, 1, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, nullptr, sizeof(TileWorld::ssboObjectData)* (mapCount))
+	descriptorManager.configureDescriptorSets(vector<DescriptorManager::descriptorSetInfo> {
+		DescriptorManager::descriptorSetInfo(0, 0, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eVertex, &cameradb.buffers, cameradb.size),
+		DescriptorManager::descriptorSetInfo(0, 1, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment, nullptr, 1),
+		DescriptorManager::descriptorSetInfo(1, 0, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, nullptr, sizeof(TileWorld::ssboObjectData)* (mapCount)),
+		DescriptorManager::descriptorSetInfo(1, 1, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, nullptr, sizeof(TileWorld::ssboObjectData)* (mapCount))
 	});
-	buildDescriptorLayouts();
+	descriptorManager.buildDescriptorLayouts();
 
-	// create vector containing the builder descriptor set layouts
-	vector< vk::DescriptorSetLayout> setLayouts;
-	setLayouts.reserve(builderLayouts.size());
-	for (auto& [set, layout] : builderLayouts)
-		setLayouts.push_back(layout);
+	descriptorLayoutMap setLayouts;
+	for (auto& [set, layout] : descriptorManager.builderLayouts)
+		setLayouts[set] = layout;
+
+	//// create vector containing the builder descriptor set layouts
+	//vector< vk::DescriptorSetLayout> setLayouts;
+	//setLayouts.reserve(builderLayouts.size());
+	//for (auto& [set, layout] : builderLayouts)
+	//	setLayouts.push_back(layout);
 	buildPipelineLayout(setLayouts);
 
 	vk::VertexInputBindingDescription VbindingDescription;
@@ -69,17 +72,17 @@ void TilemapPL::CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc, co
 	pipelineInfo.pColorBlendState = &colorBlending;
 	pipelineInfo.pDynamicState = &dynamicState;
 	pipelineInfo.layout = pipelineLayout;
-	pipelineInfo.renderPass = engine->renderPass;
+	pipelineInfo.renderPass = engine->swapchainRenderPass;
 	pipelineInfo.subpass = 0;
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-	auto rv = engine->device.createGraphicsPipeline(VK_NULL_HANDLE, pipelineInfo);
+	auto rv = engine->devContext.device.createGraphicsPipeline(VK_NULL_HANDLE, pipelineInfo);
 	if (rv.result != vk::Result::eSuccess)
 		throw std::runtime_error("failed to create graphics pipeline!");
 	_pipeline = rv.value;
 
 	for (auto& stage : shaderStages) {
-		engine->device.destroyShaderModule(stage.module);
+		engine->devContext.device.destroyShaderModule(stage.module);
 	}
 }
 
@@ -87,8 +90,8 @@ void TilemapPL::recordCommandBuffer(vk::CommandBuffer commandBuffer) {
 
 	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, _pipeline);
 
-	for (auto& i : builderDescriptorSetsDetails)
-		commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, i.set, 1, &builderDescriptorSets[i.set][engine->currentFrame], 0, nullptr);
+	for (auto& i : descriptorManager.builderDescriptorSetsDetails)
+		commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, i.set, 1, &descriptorManager.builderDescriptorSets[i.set][engine->currentFrame], 0, nullptr);
 
 	{
 		TracyVkZone(engine->tracyGraphicsContexts[engine->currentFrame], commandBuffer, "Tilemap render");

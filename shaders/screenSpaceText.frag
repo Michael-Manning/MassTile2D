@@ -1,6 +1,6 @@
 #version 460
+#extension GL_EXT_nonuniform_qualifier : enable
 
-#define TEXTPL_maxFonts 10
 #define TEXTPL_maxTextObjects 10
 #define TEXTPL_maxTextLength 128
 
@@ -31,7 +31,7 @@ layout(std140, set = 1, binding = 0) readonly buffer ObjectInstaceBuffer{
 };
 
 
-layout(binding = 1) uniform sampler2D texSampler[TEXTPL_maxFonts];
+layout(set = 0, binding = 0) uniform sampler2D texSampler[];
 
 layout(location = 1) in vec2 uv;
 layout(location = 2) in flat int obj_index;

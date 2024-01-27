@@ -24,16 +24,17 @@ public:
 		}
 	};
 
-	// map a binding in the next availble slot of the vector
-	void AddBinding(I ID, T value) {
+	// map a binding in the next availble slot of the vector. Returns slot index
+	int AddBinding(I ID, T value) {
 
 		// attempting to bind duplicate ID is acceptable, but redundant
 		if (boundIDs.contains(ID)) {
-			return;
+			return bindIndexes[ID];
 		}
 
 		assert(bindingCount < maxEntries);
 
+		int foundSlot = -1;
 		for (size_t i = 0; i < maxEntries; i++)
 		{
 			// available slot
@@ -41,6 +42,7 @@ public:
 				values[i] = std::pair(ID, value);
 				bindIndexes[ID] = i;
 				slotAvailable[i] = false;
+				foundSlot = i;
 				goto found;
 			}
 		}
@@ -53,6 +55,8 @@ public:
 
 		// both descriptor sets are now out of date
 		InvalidateDescriptors();
+
+		return foundSlot;
 	};
 
 	void RemoveBinding(I ID) {
@@ -68,7 +72,7 @@ public:
 		InvalidateDescriptors();
 	};
 
-	void ClearBindings(){
+	void ClearBindings() {
 		for (size_t i = 0; i < maxEntries; i++)
 			slotAvailable[i] = true;
 
@@ -81,14 +85,19 @@ public:
 			descriptorDirtyFlags[i] = true;
 	};
 
+	bool HasBinding(I ID) {
+		return boundIDs.contains(ID);
+	}
+
 	T getValueFromIndex(int index) {
 		return values[index].second;
 	};
 	int getIndexFromBinding(I key) {
 		return bindIndexes[key];
 	};
-	T& getValueFromBinding(I key) {
-		return values[getIndexFromBinding(key)];
+
+	T getValueFromBinding(I key) {
+		return values[getIndexFromBinding(key)].second;
 	};
 
 	bool IsDescriptorDirty(int frame) {

@@ -19,7 +19,6 @@
 
 constexpr int ColoredQuadPL_MAX_OBJECTS = 1000000;
 
-
 class ColoredQuadPL :public  Pipeline {
 public:
 
@@ -37,8 +36,7 @@ public:
 	ColoredQuadPL(std::shared_ptr<VKEngine>& engine) : Pipeline(engine) {
 	}
 
-	//void CreateGraphicsPipeline(std::string vertexSrc, std::string fragmentSrc, MappedDoubleBuffer<void>& cameradb, bool flipFaces = false);
-	void CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc, MappedDoubleBuffer<void>& cameradb, bool flipFaces = false);
+	void CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc, vk::RenderPass& renderTarget, MappedDoubleBuffer<void>& cameradb, bool flipFaces = false);
 	void CreateInstancingBuffer();
 	void UploadInstanceData(std::vector<InstanceBufferData>& drawlist);
 	void recordCommandBuffer(vk::CommandBuffer commandBuffer, int instanceCount);

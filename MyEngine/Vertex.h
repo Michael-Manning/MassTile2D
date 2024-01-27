@@ -88,7 +88,7 @@ static void AllocateQuad(std::shared_ptr<VKEngine> engine, VertexMeshBuffer& ver
 
 		engine->copyBuffer(stagingBuffer, vertexBuf.vertexBuffer, bufferSize);
 
-		vkDestroyBuffer(engine->device, stagingBuffer, nullptr);
+		vkDestroyBuffer(engine->devContext.device, stagingBuffer, nullptr);
 		vmaFreeMemory(engine->allocator, stagingBufferAllocation);
 	}
 
@@ -108,7 +108,7 @@ static void AllocateQuad(std::shared_ptr<VKEngine> engine, VertexMeshBuffer& ver
 
 		engine->copyBuffer(stagingBuffer, vertexBuf.indexBuffer, bufferSize);
 
-		vkDestroyBuffer(engine->device, stagingBuffer, nullptr);
+		vkDestroyBuffer(engine->devContext.device, stagingBuffer, nullptr);
 		vmaFreeMemory(engine->allocator, stagingBufferAllocation);
 	}
 }

@@ -221,10 +221,10 @@ int main() {
 	videoSettings.swapChainSetting = swapchainSettings;
 
 	auto rengine = std::make_shared<VKEngine>();
-	Engine engine(rengine, AssetDirectories);
-	const auto& scene = engine.GetCurrentScene(); // quick reference
-	engine.Start(videoSettings);
+	Engine engine(rengine);
+	engine.Start(videoSettings, AssetDirectories);
 
+	const auto& scene = engine.GetCurrentScene(); // quick reference
 	input = engine.GetInput();
 
 	engine.assetManager->LoadAllSprites();
@@ -232,6 +232,7 @@ int main() {
 	engine.assetManager->LoadAllPrefabs(engine.bworld, false);
 
 	tileWolrdGlobalRef = engine.worldMap;
+
 
 	{
 		// load this from packed resources. 
@@ -249,7 +250,7 @@ int main() {
 
 		generator.GenerateTiles(settings);
 #else
-		engine.worldMap->loadFromDisk(AssetDirectories.assetDir + "world.dat");
+		//engine.worldMap->loadFromDisk(AssetDirectories.assetDir + "world.dat");
 #endif
 		generator.PostProcess();
 
@@ -295,6 +296,8 @@ int main() {
 
 	while (!engine.ShouldClose())
 	{
+		ZoneScopedN("main application loop");
+
 		engine.clearScreenSpaceDrawlist();
 
 		if (appState == AppState::MainMenu)

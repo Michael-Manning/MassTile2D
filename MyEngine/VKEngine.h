@@ -8,10 +8,11 @@
 #include <array>
 #include <string>
 #include <memory>
+#include <variant>
+#include <mutex>
 
 #include <vulkan/vulkan.hpp>
 #include <glm/glm.hpp>
-
 #include <vk_mem_alloc.h>
 #include <tracy/TracyVulkan.hpp>
 
@@ -19,6 +20,8 @@
 #include "typedefs.h"
 #include "Constants.h"
 #include "Settings.h"
+#include "IDGenerator.h"
+#include "ConcurrentQueue.h"
 
 
 struct QueueFamilyIndices {
@@ -54,44 +57,119 @@ struct VertexMeshBuffer {
 	VmaAllocation indexBufferAllocation;
 };
 
+struct DeviceContext {
+	vk::Device device;
+
+	QueueFamilyIndices queueFamilyIndices;
+	vk::Queue graphicsQueue;
+	vk::Queue computeQueue;
+	vk::Queue presentQueue;
+};
+
+const vk::Format framebufferImageFormat = vk::Format::eR8G8B8A8Srgb;
+struct DoubleFrameBufferContext {
+	vk::RenderPass renderpass;
+	std::array<vk::Extent2D, FRAMES_IN_FLIGHT> extents;
+	std::array<vk::Framebuffer, FRAMES_IN_FLIGHT> framebuffers;
+	std::array<Texture*, FRAMES_IN_FLIGHT> textures = { nullptr, nullptr };
+	std::array<bool, FRAMES_IN_FLIGHT> resizeDirtyFlags = { false, false };
+	glm::vec4 clearColor;
+	glm::ivec2 targetSize;
+
+	// technically should be in resource manager instead of stored here, but this is just way more convenient
+	std::array<texID, FRAMES_IN_FLIGHT> textureIDs;
+};
+
+struct AsyncQueueSubmitInfo {
+	std::vector<vk::Semaphore> waitSemaphores;
+	std::vector<vk::PipelineStageFlags> waitStageFlags;
+	std::vector<vk::Semaphore> signalSemaphores;
+	vk::CommandBuffer* cmdBuffer;
+	vk::Queue* queue = nullptr;
+
+	// optional parameters
+	vk::Fence* fence = nullptr;
+	std::condition_variable* submissionCV = nullptr;
+	std::atomic<bool>* submissionCompleteFlag = nullptr;
+};
+struct AsyncPresentSubmitInfo {
+	std::vector<vk::Semaphore> waitSemaphores;
+	//vk::PresentInfoKHR presentInfo;
+	uint32_t imageIndex;
+};
 
 class VKEngine {
 public:
 
+	VKEngine() {
+		defaultThreadID = std::this_thread::get_id();
+		defaultThreadContext.id = contextIDGenerator.GenerateID();
+	}
+
+	struct ThreadContext {
+		vk::Fence SingleUseCommandFence = nullptr;
+		vk::CommandPool commandPool = nullptr;
+		int id = 0;
+	};
+
 	void initWindow(const WindowSetting& settings, bool visible = true);
 
 	void initVulkan(const SwapChainSetting& setting, int subPassCount);
-	void Update();
+	void GetWindowEvents();
 	bool shouldClose();
 	void cleanup();
 
 
-	void createCommandPool();
+	void createCommandPools();
 
 	void createDescriptorPool();
 	void createCommandBuffers();
 	void createSyncObjects();
+	ThreadContext GenerateThreadContext_gfx(bool transientCommands = false);
+	void createRenderPass(vk::RenderPass& renderpass, vk::Format imageFormat, vk::ImageLayout initialLayout, vk::ImageLayout finalLayout, int subpassCount = 1);
 
-	Texture genTexture(int w, int h, std::vector<uint8_t>& pixels, FilterMode filterMode = FilterMode::Linear);
-	Texture genTexture(const uint8_t * imageFileData, int dataLength, FilterMode filterMode = FilterMode::Linear);
-	Texture genTexture(std::string imagePath, FilterMode filterMode = FilterMode::Linear);
+	Texture genTexture(int w, int h, std::vector<uint8_t>& pixels, FilterMode filterMode, const ThreadContext& context);
+	Texture genTexture(const uint8_t * imageFileData, int dataLength, FilterMode filterMode, const ThreadContext& context);
+	Texture genTexture(std::string imagePath, FilterMode filterMode, const ThreadContext& context);
+	
+	Texture genTexture(int w, int h, std::vector<uint8_t>& pixels, FilterMode filterMode = FilterMode::Linear) {
+		assert(defaultThreadID == std::this_thread::get_id());
+		return genTexture(w, h, pixels, filterMode, defaultThreadContext);
+	}
+	Texture genTexture(const uint8_t* imageFileData, int dataLength, FilterMode filterMode = FilterMode::Linear) {
+		assert(defaultThreadID == std::this_thread::get_id());
+		return genTexture(imageFileData, dataLength, filterMode, defaultThreadContext);
+	}
+	Texture genTexture(std::string imagePath, FilterMode filterMode = FilterMode::Linear) {
+		assert(defaultThreadID == std::this_thread::get_id());
+		return genTexture(imagePath, filterMode, defaultThreadContext);
+	}
+	
 	void freeTexture(Texture& texture);
 
 	void createTextureSamplers();
-	void transitionImageLayout(vk::Image image, vk::Format format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout);
-	void copyBufferToImage(vk::Buffer buffer, vk::Image image, uint32_t width, uint32_t height);
-	void createImage(uint32_t width, uint32_t height, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags usage, vk::MemoryPropertyFlags properties, vk::Image& image, VmaAllocation& imageAllocation);
+	void transitionImageLayout(vk::CommandBuffer& cmdBuffer, vk::Image image, vk::Format format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout);
+	void copyBufferToImage(vk::CommandBuffer& cmdBuffer, vk::Buffer buffer, vk::Image image, uint32_t width, uint32_t height);
+	void createImage(uint32_t width, uint32_t height, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags usage, vk::MemoryPropertyFlags properties, vk::Image* image, VmaAllocation& imageAllocation);
 	vk::ImageView createImageView(vk::Image image, vk::Format format);
 
 	void recreateSwapChain(const SwapChainSetting& setting);
 	void cleanupSwapChain();
 
 
-	void createFramebuffers();
+	//void createFramebuffers();
 
-	vk::CommandBuffer beginSingleTimeCommands();
-	void endSingleTimeCommands(vk::CommandBuffer commandBuffer);
+	vk::CommandBuffer beginSingleTimeCommands_gfx(const ThreadContext& context);
+	vk::CommandBuffer beginSingleTimeCommands_gfx() {
+		assert(defaultThreadID == std::this_thread::get_id());
+		return beginSingleTimeCommands_gfx(defaultThreadContext);
+	}
 
+	void endSingleTimeCommands_gfx(vk::CommandBuffer commandBuffer, const ThreadContext& context);
+	void endSingleTimeCommands_gfx(vk::CommandBuffer commandBuffer) {
+		assert(defaultThreadID == std::this_thread::get_id());
+		endSingleTimeCommands_gfx(commandBuffer, defaultThreadContext);
+	}
 
 	void copyBuffer(vk::Buffer srcBuffer, vk::Buffer dstBuffer, vk::DeviceSize size, vk::DeviceSize destinationOffset = 0);
 	void createBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, VmaAllocationCreateFlags flags, vk::Buffer& buffer, VmaAllocation& allocation, bool preferDevice = false);
@@ -109,17 +187,39 @@ public:
 		buffer.size = size;
 	};
 
-	// call in sequence
-	void waitForCompute();
-	uint32_t waitForSwapchain(WindowSetting* newSettings = nullptr);
-	vk::CommandBuffer getNextCommandBuffer(); // temporary solution which resets the command buffer every frame
+	
+	void WaitForComputeSubmission();
+	void WaitForComputeCompletion();
+	
+	void WaitForGraphicsSubmission();
+	void WaitForGraphicsCompletion();
+
+	void WaitForFramePresentationSubmission(); 
+	uint32_t WaitForSwapChainImageAvailableAndHandleWindowChanges(WindowSetting* newSettings);
+
+	
+	vk::CommandBuffer getNextGfxCommandBuffer(); // temporary solution which resets the command buffer every frame
 	vk::CommandBuffer getNextComputeCommandBuffer();
 
 	void endCommandBuffer(vk::CommandBuffer commandBuffer);
 
-	void submitCompute();
-	bool submitAndPresent(uint32_t imageIndex); // returns framebuffer recreation
-	void beginRenderpass(uint32_t imageIndex, vk::CommandBuffer cmdBuffer, glm::vec4 clearColor);
+	void QueueComputeSubmission();
+	void QueueGraphicsSubmission();
+	void QueuePresentSubmission(uint32_t imageIndex);
+	void IncrementFrameInFlight() {
+		currentFrame = (currentFrame + 1) % FRAMES_IN_FLIGHT;
+	};
+	
+
+
+	void beginSwapchainRenderpass(uint32_t imageIndex, vk::CommandBuffer cmdBuffer, glm::vec4 clearColor);
+	void beginRenderpass(DoubleFrameBufferContext* framebufferContext, vk::CommandBuffer cmdBuffer);
+
+	void CreateDoubleFrameBuffer(glm::ivec2 size, DoubleFrameBufferContext& dfb, const ThreadContext& context, glm::vec4 clearColor);
+	// effectively resizes the framebuffer, modifying the vulkan objects of the specified index
+	void RecreateFramebuffer(glm::ivec2 size, DoubleFrameBufferContext* dfb, int index, const ThreadContext& context);
+
+	void insertFramebufferTransitionBarrier(vk::CommandBuffer cmdBuffer, DoubleFrameBufferContext* framebufferContext);
 
 	bool framebufferResized = false;
 
@@ -132,16 +232,13 @@ public:
 	vk::Instance instance;
 	vk::DebugUtilsMessengerEXT debugMessenger;
 	vk::PhysicalDevice physicalDevice = VK_NULL_HANDLE;
-	vk::Device device;
-
-	vk::Queue graphicsQueue;
-	vk::Queue computeQueue;
-	vk::Queue presentQueue;
 
 	vk::SurfaceKHR surface;
 	vk::SwapchainKHR swapChain;
-	std::vector<vk::Image> swapChainImages;
 	vk::Format swapChainImageFormat;
+
+	vk::RenderPass swapchainRenderPass;
+	std::vector<vk::Image> swapChainImages;
 	vk::Extent2D swapChainExtent;
 
 	// different mag filters
@@ -149,48 +246,80 @@ public:
 	vk::Sampler textureSampler_linear;
 
 	std::vector<vk::ImageView> swapChainImageViews;
-
-	vk::RenderPass renderPass;
-
 	std::vector<vk::Framebuffer> swapChainFramebuffers;
-	vk::CommandPool commandPool;
-
 	vk::DescriptorPool descriptorPool;
 
+	DeviceContext devContext;
 
-	std::array<vk::CommandBuffer, FRAMES_IN_FLIGHT> commandBuffers;
+	std::array<vk::CommandBuffer, FRAMES_IN_FLIGHT> graphicsCommandBuffers;
 	std::array<vk::CommandBuffer, FRAMES_IN_FLIGHT>  computeCommandBuffers;
 
 	std::array<vk::Semaphore, FRAMES_IN_FLIGHT>  imageAvailableSemaphores;
 	std::array<vk::Semaphore, FRAMES_IN_FLIGHT>  renderFinishedSemaphores;
 	std::array<vk::Semaphore, FRAMES_IN_FLIGHT>  computeFinishedSemaphores;
-	std::array<vk::Fence, FRAMES_IN_FLIGHT> inFlightFences;
+	std::array<vk::Fence, FRAMES_IN_FLIGHT> swapchainFBRenderFinishedFences;
 	std::array<vk::Fence, FRAMES_IN_FLIGHT> computeInFlightFences;
 
-	QueueFamilyIndices queueFamilyIndices;
+	std::mutex queueSubmitMutex;
 
 	void createInstance();
 	void createSurface();
 	void pickPhysicalDevice();
 	void createLogicalDevice();
 	void createSwapChain(SwapChainSetting setting);
-	void createImageViews();
-	//void createRenderPass();
-	void createRenderPass(int subpassCount = 1);
+	//void createRenderPass(int subpassCount = 1);
 
 	SwapChainSetting lastUsedSwapChainSetting;
 
 #ifdef TRACY_ENABLE
-	std::array<Tracyvk::Ctx, FRAMES_IN_FLIGHT> tracyComputeContexts;
-	std::array<Tracyvk::Ctx, FRAMES_IN_FLIGHT> tracyGraphicsContexts;
+	std::array<TracyVkCtx, FRAMES_IN_FLIGHT> tracyComputeContexts;
+	std::array<TracyVkCtx, FRAMES_IN_FLIGHT> tracyGraphicsContexts;
 
 	void initTracyContext();
 #endif
 
 	vk::DispatchLoaderDynamic dynamicDispatcher;
 
+	std::thread::id defaultThreadID;
+	ThreadContext defaultThreadContext;
+
+	void AddToSubmitQueue(AsyncQueueSubmitInfo info) {
+		queueSubmitQueue.push(info);
+	};
+	void AddToSubmitQueue(AsyncPresentSubmitInfo info) {
+		queueSubmitQueue.push(info);
+	};
+
+	bool ShouldRecreateSwapchain() {
+		return swapchainOutOfDate.load();
+	}
+
 private:
-	void genTexture(unsigned char* pixels, vk::DeviceSize imageSize, FilterMode filterMode, Texture& tex);
+
+	std::array <std::atomic<bool>, FRAMES_IN_FLIGHT> computeSubmittedFlags;
+	std::array <std::atomic<bool>, FRAMES_IN_FLIGHT> graphicsSubmittedFlags;
+
+	std::array <std::condition_variable, FRAMES_IN_FLIGHT> computeSubmitCompleteCVs;
+	std::array <std::condition_variable, FRAMES_IN_FLIGHT> graphicsSubmitCompleteCVs;
+
+	// Have a dedicated thread which only transfers data to the GPU
+	std::thread queueSubmitThread;
+	std::atomic<bool> queueSubmitThreadCancel = false;
+	ConcurrentQueue<std::variant<AsyncQueueSubmitInfo, AsyncPresentSubmitInfo>> queueSubmitQueue;
+	std::mutex presentationMutex;
+	// graphics doesn't need a condition variable becauseit is gated by the presentation CV
+	std::condition_variable presentationCV;
+	std::atomic<bool> presentSubmitted = false;
+	std::atomic<bool> swapchainOutOfDate = false;
+
+	void queueSubmitThreadWorkFunc();
+	void cancelSubmitThread();
+
+	void createSwapchainFramebuffers();
+
+	IDGenerator<int> contextIDGenerator;
+
+	void genTexture(unsigned char* pixels, vk::DeviceSize imageSize, FilterMode filterMode, Texture& tex, const ThreadContext& context);
 	void updateWindow(WindowSetting& settings); // private to enforce synchronization
 	WindowMode currentWindowMode = WindowMode::Windowed;
 	int glfw_initial_primary_monitor_redBits;

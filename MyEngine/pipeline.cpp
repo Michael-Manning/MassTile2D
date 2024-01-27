@@ -33,11 +33,11 @@ std::vector<vk::PipelineShaderStageCreateInfo> Pipeline::createShaderStages(cons
 	/*auto vertShaderCode = readFile(vertexSrc);
 	auto fragShaderCode = readFile(fragmentSrc);*/
 
-	/*vk::ShaderModule vertShaderModule = VKUtil::createShaderModule(vertShaderCode, engine->device);
-	vk::ShaderModule fragShaderModule = VKUtil::createShaderModule(fragShaderCode, engine->device);*/
+	/*vk::ShaderModule vertShaderModule = VKUtil::createShaderModule(vertShaderCode, engine->devContext.device);
+	vk::ShaderModule fragShaderModule = VKUtil::createShaderModule(fragShaderCode, engine->devContext.device);*/
 
-	vk::ShaderModule vertShaderModule = VKUtil::createShaderModule(vertexSrc, engine->device);
-	vk::ShaderModule fragShaderModule = VKUtil::createShaderModule(fragmentSrc, engine->device);
+	vk::ShaderModule vertShaderModule = VKUtil::createShaderModule(vertexSrc, engine->devContext.device);
+	vk::ShaderModule fragShaderModule = VKUtil::createShaderModule(fragmentSrc, engine->devContext.device);
 
 	vk::PipelineShaderStageCreateInfo vertShaderStageInfo;
 	vertShaderStageInfo.stage = vk::ShaderStageFlagBits::eVertex;
@@ -55,7 +55,7 @@ std::vector<vk::PipelineShaderStageCreateInfo> Pipeline::createShaderStages(cons
 vk::PipelineShaderStageCreateInfo Pipeline::createComputeShaderStage(const std::vector<uint8_t>& shaderCode) {
 	//auto shaderCode = readFile(computeSrc);
 
-	vk::ShaderModule vertShaderModule = VKUtil::createShaderModule(shaderCode, engine->device);
+	vk::ShaderModule vertShaderModule = VKUtil::createShaderModule(shaderCode, engine->devContext.device);
 
 	vk::PipelineShaderStageCreateInfo stageInfo{};
 	stageInfo.stage = vk::ShaderStageFlagBits::eCompute;
@@ -147,53 +147,79 @@ vk::PipelineDynamicStateCreateInfo Pipeline::defaultDynamicState() {
 }
 
 
-vk::DescriptorSetLayoutBinding Pipeline::buildSamplerBinding(int binding, int descriptorCount, vk::ShaderStageFlags stageFlags) {
-	vk::DescriptorSetLayoutBinding samplerLayoutBinding;
-	samplerLayoutBinding.binding = binding;
-	samplerLayoutBinding.descriptorCount = descriptorCount;
-	samplerLayoutBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-	samplerLayoutBinding.pImmutableSamplers = nullptr;
-	samplerLayoutBinding.stageFlags = stageFlags;
-	return samplerLayoutBinding;
-}
+//vk::DescriptorSetLayoutBinding Pipeline::buildSamplerBinding(int binding, int descriptorCount, vk::ShaderStageFlags stageFlags) {
+//	vk::DescriptorSetLayoutBinding samplerLayoutBinding;
+//	samplerLayoutBinding.binding = binding;
+//	samplerLayoutBinding.descriptorCount = descriptorCount;
+//	samplerLayoutBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+//	samplerLayoutBinding.pImmutableSamplers = nullptr;
+//	samplerLayoutBinding.stageFlags = stageFlags;
+//	return samplerLayoutBinding;
+//}
+//
+//vk::DescriptorSetLayoutBinding Pipeline::buildUBOBinding(int binding, vk::ShaderStageFlags stageFlags) {
+//	vk::DescriptorSetLayoutBinding uboLayoutBinding;
+//	uboLayoutBinding.binding = binding;
+//	uboLayoutBinding.descriptorCount = 1;
+//	uboLayoutBinding.descriptorType = vk::DescriptorType::eUniformBuffer;
+//	uboLayoutBinding.pImmutableSamplers = nullptr;
+//	uboLayoutBinding.stageFlags = stageFlags;
+//	return uboLayoutBinding;
+//}
+//
+//vk::DescriptorSetLayoutBinding Pipeline::buildSSBOBinding(int binding, vk::ShaderStageFlags stageFlags) {
+//	vk::DescriptorSetLayoutBinding ssboLayoutBinding;
+//	ssboLayoutBinding.binding = binding;
+//	ssboLayoutBinding.descriptorCount = 1;
+//	ssboLayoutBinding.descriptorType = vk::DescriptorType::eStorageBuffer;
+//	ssboLayoutBinding.pImmutableSamplers = nullptr;
+//	ssboLayoutBinding.stageFlags = stageFlags;
+//	return ssboLayoutBinding;
+//}
+//
+//void Pipeline::buildSetLayout(std::vector<vk::DescriptorSetLayoutBinding>& bindings, vk::DescriptorSetLayout& layout) {
+//	vk::DescriptorSetLayoutCreateInfo setInfo;
+//	setInfo.bindingCount = bindings.size();
+//	setInfo.flags = vk::DescriptorSetLayoutCreateFlags{};
+//	setInfo.pNext = nullptr;
+//	setInfo.pBindings = bindings.data();
+//
+//	layout = engine->devContext.device.createDescriptorSetLayout(setInfo);
+//}
 
-vk::DescriptorSetLayoutBinding Pipeline::buildUBOBinding(int binding, vk::ShaderStageFlags stageFlags) {
-	vk::DescriptorSetLayoutBinding uboLayoutBinding;
-	uboLayoutBinding.binding = binding;
-	uboLayoutBinding.descriptorCount = 1;
-	uboLayoutBinding.descriptorType = vk::DescriptorType::eUniformBuffer;
-	uboLayoutBinding.pImmutableSamplers = nullptr;
-	uboLayoutBinding.stageFlags = stageFlags;
-	return uboLayoutBinding;
-}
+void Pipeline::buildPipelineLayout(descriptorLayoutMap& descriptorSetLayouts, uint32_t pushConstantSize, vk::ShaderStageFlags pushConstantStages) {
 
-vk::DescriptorSetLayoutBinding Pipeline::buildSSBOBinding(int binding, vk::ShaderStageFlags stageFlags) {
-	vk::DescriptorSetLayoutBinding ssboLayoutBinding;
-	ssboLayoutBinding.binding = binding;
-	ssboLayoutBinding.descriptorCount = 1;
-	ssboLayoutBinding.descriptorType = vk::DescriptorType::eStorageBuffer;
-	ssboLayoutBinding.pImmutableSamplers = nullptr;
-	ssboLayoutBinding.stageFlags = stageFlags;
-	return ssboLayoutBinding;
-}
+	// ensure set numbers start from zero and don't skip any values
+	{
+		for (int i = 0; i < descriptorSetLayouts.size(); ++i) {
+			assert(descriptorSetLayouts.contains(i));
+		}
+	}
 
-void Pipeline::buildSetLayout(std::vector<vk::DescriptorSetLayoutBinding>& bindings, vk::DescriptorSetLayout& layout) {
-	vk::DescriptorSetLayoutCreateInfo setInfo;
-	setInfo.bindingCount = bindings.size();
-	setInfo.flags = vk::DescriptorSetLayoutCreateFlags{};
-	setInfo.pNext = nullptr;
-	setInfo.pBindings = bindings.data();
+	// sort layouts by their set ID
 
-	layout = engine->device.createDescriptorSetLayout(setInfo);
-}
+	// Step 1: Extract key-value pairs into a vector
+	std::vector<std::pair<int, vk::DescriptorSetLayout>> pairs;
+	for (const auto& kv : descriptorSetLayouts) {
+		pairs.push_back(kv);
+	}
 
-void Pipeline::buildPipelineLayout(std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts, uint32_t pushConstantSize, vk::ShaderStageFlags pushConstantStages) {
+	// Step 2: Sort the pairs by key
+	std::sort(pairs.begin(), pairs.end(), [](const auto& a, const auto& b) {
+		return a.first < b.first;
+		});
 
-	// setup layout
+	// Step 3: Extract the values into a new vector
+	std::vector<vk::DescriptorSetLayout> sortedValues;
+	for (const auto& pair : pairs) {
+		sortedValues.push_back(pair.second);
+	}
+
+
 	vk::PipelineLayoutCreateInfo pipelineLayoutInfo;
 	pipelineLayoutInfo.pushConstantRangeCount = pushConstantSize == 0 ? 0 : 1;
-	pipelineLayoutInfo.setLayoutCount = descriptorSetLayouts.size();
-	pipelineLayoutInfo.pSetLayouts = descriptorSetLayouts.data();;
+	pipelineLayoutInfo.setLayoutCount = sortedValues.size();
+	pipelineLayoutInfo.pSetLayouts = sortedValues.data();
 
 	vk::PushConstantRange push_constant;
 	if (pushConstantSize > 0) {
@@ -204,116 +230,116 @@ void Pipeline::buildPipelineLayout(std::vector<vk::DescriptorSetLayout>& descrip
 		pipelineLayoutInfo.pPushConstantRanges = &push_constant;
 	}
 
-	pipelineLayout = engine->device.createPipelineLayout(pipelineLayoutInfo);
+	pipelineLayout = engine->devContext.device.createPipelineLayout(pipelineLayoutInfo);
 }
 
-void Pipeline::buidDBDescriptorSet(vk::DescriptorSetLayout& layout, std::array<vk::DescriptorSet, FRAMES_IN_FLIGHT>& sets) {
-
-	std::array<vk::DescriptorSetLayout, FRAMES_IN_FLIGHT> layouts = { layout, layout };
-
-	vk::DescriptorSetAllocateInfo allocInfo;
-	allocInfo.descriptorPool = engine->descriptorPool;
-	allocInfo.descriptorSetCount = static_cast<uint32_t>(FRAMES_IN_FLIGHT);
-	allocInfo.pSetLayouts = layouts.data();
-
-	auto dsV = engine->device.allocateDescriptorSets(allocInfo);
-	for (size_t i = 0; i < sets.size(); i++){
-		sets[i] = dsV[i];
-	}
-}
-
-
-void Pipeline::buildDescriptorLayouts() {
-
-	// a layout binding for each set
-	unordered_map<int, vector<vk::DescriptorSetLayoutBinding>> builderLayoutBindings;
-
-	for (auto& i : builderDescriptorSetsDetails) {
-
-		vk::DescriptorSetLayoutBinding binding;
-
-		switch (i.type)
-		{
-		case vk::DescriptorType::eUniformBuffer:
-			binding = buildUBOBinding(i.binding, i.stageFlags);
-			break;
-		case vk::DescriptorType::eStorageBuffer:
-			binding = buildSSBOBinding(i.binding, i.stageFlags);
-			break;
-		case vk::DescriptorType::eCombinedImageSampler:
-			binding = buildSamplerBinding(i.binding, i.textureCount, i.stageFlags);
-			break;
-		default:
-			assert(false);
-			break;
-		}
-
-		builderLayoutBindings[i.set].push_back(binding);
-	}
-
-	// iterate builderLayoBindings and build the actual layouts
-	for (auto& [set, binding] : builderLayoutBindings) {
-		vk::DescriptorSetLayout layout;
-		buildSetLayout(binding, layout);
-		builderLayouts[set] = layout;
-	}
-}
-void Pipeline::buildDescriptorSets() {
-
-
-	for (auto& [set, layout] : builderLayouts) {
-		buidDBDescriptorSet(layout, builderDescriptorSets[set]);
-	}
-
-	// one time write to every descriptor set
-	for (auto& info : builderDescriptorSetsDetails)
-	{
-		for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++) {
-
-			updateDescriptorSet(i, info);
-		}
-	}
-}
-
-void Pipeline::updateDescriptorSet(int frame, descriptorSetInfo& info) {
-	vk::WriteDescriptorSet descriptorWrite;
-	descriptorWrite.dstSet = builderDescriptorSets[info.set][frame];
-	descriptorWrite.dstBinding = info.binding;
-	descriptorWrite.dstArrayElement = 0;
-	descriptorWrite.descriptorType = info.type;
-
-	if (info.type == vk::DescriptorType::eUniformBuffer || info.type == vk::DescriptorType::eStorageBuffer) {
-		assert(info.doubleBuffer != nullptr);
-		assert(info.bufferRange != 0);
-
-		vk::DescriptorBufferInfo bufferInfo{};
-		bufferInfo.buffer = (*info.doubleBuffer)[frame];
-		bufferInfo.offset = 0;
-		bufferInfo.range = info.bufferRange;
-		descriptorWrite.descriptorCount = 1;
-		descriptorWrite.pBufferInfo = &bufferInfo;
-
-		engine->device.updateDescriptorSets(1, &descriptorWrite, 0, nullptr);
-	}
-	else if (info.type == vk::DescriptorType::eCombinedImageSampler) {
-
-		assert(info.textures != nullptr);
-
-		vector<vk::DescriptorImageInfo> imageInfos(info.textureCount);
-		for (size_t i = 0; i < info.textureCount; i++) {
-			vk::DescriptorImageInfo imageInfo{};
-			imageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-			imageInfo.imageView = info.textures[i].imageView;
-			imageInfo.sampler = info.textures[i].sampler;
-			imageInfos[i] = imageInfo;
-		}
-
-		descriptorWrite.descriptorCount = info.textureCount;
-		descriptorWrite.pImageInfo = imageInfos.data();
-
-		engine->device.updateDescriptorSets(1, &descriptorWrite, 0, nullptr);
-	}
-	else {
-		assert(false);
-	}
-}
+//void Pipeline::buidDBDescriptorSet(vk::DescriptorSetLayout& layout, std::array<vk::DescriptorSet, FRAMES_IN_FLIGHT>& sets) {
+//
+//	std::array<vk::DescriptorSetLayout, FRAMES_IN_FLIGHT> layouts = { layout, layout };
+//
+//	vk::DescriptorSetAllocateInfo allocInfo;
+//	allocInfo.descriptorPool = engine->descriptorPool;
+//	allocInfo.descriptorSetCount = static_cast<uint32_t>(FRAMES_IN_FLIGHT);
+//	allocInfo.pSetLayouts = layouts.data();
+//
+//	auto dsV = engine->devContext.device.allocateDescriptorSets(allocInfo);
+//	for (size_t i = 0; i < sets.size(); i++) {
+//		sets[i] = dsV[i];
+//	}
+//}
+//
+//
+//void Pipeline::buildDescriptorLayouts() {
+//
+//	// a layout binding for each set
+//	unordered_map<int, vector<vk::DescriptorSetLayoutBinding>> builderLayoutBindings;
+//
+//	for (auto& i : builderDescriptorSetsDetails) {
+//
+//		vk::DescriptorSetLayoutBinding binding;
+//
+//		switch (i.type)
+//		{
+//		case vk::DescriptorType::eUniformBuffer:
+//			binding = buildUBOBinding(i.binding, i.stageFlags);
+//			break;
+//		case vk::DescriptorType::eStorageBuffer:
+//			binding = buildSSBOBinding(i.binding, i.stageFlags);
+//			break;
+//		case vk::DescriptorType::eCombinedImageSampler:
+//			binding = buildSamplerBinding(i.binding, i.textureCount, i.stageFlags);
+//			break;
+//		default:
+//			assert(false);
+//			break;
+//		}
+//
+//		builderLayoutBindings[i.set].push_back(binding);
+//	}
+//
+//	// iterate builderLayoBindings and build the actual layouts
+//	for (auto& [set, binding] : builderLayoutBindings) {
+//		vk::DescriptorSetLayout layout;
+//		buildSetLayout(binding, layout);
+//		builderLayouts[set] = layout;
+//	}
+//}
+//void Pipeline::buildDescriptorSets() {
+//
+//
+//	for (auto& [set, layout] : builderLayouts) {
+//		buidDBDescriptorSet(layout, builderDescriptorSets[set]);
+//	}
+//
+//	// one time write to every descriptor set
+//	for (auto& info : builderDescriptorSetsDetails)
+//	{
+//		for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++) {
+//
+//			updateDescriptorSet(i, info);
+//		}
+//	}
+//}
+//
+//void Pipeline::updateDescriptorSet(int frame, descriptorSetInfo& info) {
+//	vk::WriteDescriptorSet descriptorWrite;
+//	descriptorWrite.dstSet = builderDescriptorSets[info.set][frame];
+//	descriptorWrite.dstBinding = info.binding;
+//	descriptorWrite.dstArrayElement = 0;
+//	descriptorWrite.descriptorType = info.type;
+//
+//	if (info.type == vk::DescriptorType::eUniformBuffer || info.type == vk::DescriptorType::eStorageBuffer) {
+//		assert(info.doubleBuffer != nullptr);
+//		assert(info.bufferRange != 0);
+//
+//		vk::DescriptorBufferInfo bufferInfo{};
+//		bufferInfo.buffer = (*info.doubleBuffer)[frame];
+//		bufferInfo.offset = 0;
+//		bufferInfo.range = info.bufferRange;
+//		descriptorWrite.descriptorCount = 1;
+//		descriptorWrite.pBufferInfo = &bufferInfo;
+//
+//		engine->devContext.device.updateDescriptorSets(1, &descriptorWrite, 0, nullptr);
+//	}
+//	else if (info.type == vk::DescriptorType::eCombinedImageSampler) {
+//
+//		assert(info.textures != nullptr);
+//
+//		vector<vk::DescriptorImageInfo> imageInfos(info.textureCount);
+//		for (size_t i = 0; i < info.textureCount; i++) {
+//			vk::DescriptorImageInfo imageInfo{};
+//			imageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+//			imageInfo.imageView = info.textures[i].imageView;
+//			imageInfo.sampler = info.textures[i].sampler;
+//			imageInfos[i] = imageInfo;
+//		}
+//
+//		descriptorWrite.descriptorCount = info.textureCount;
+//		descriptorWrite.pImageInfo = imageInfos.data();
+//
+//		engine->devContext.device.updateDescriptorSets(1, &descriptorWrite, 0, nullptr);
+//	}
+//	else {
+//		assert(false);
+//	}
+//}
