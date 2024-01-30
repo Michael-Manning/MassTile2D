@@ -1,3 +1,5 @@
+#include "stdafx.h"
+
 #ifndef IM_VEC2_CLASS_EXTRA
 #define IM_VEC2_CLASS_EXTRA                                                 \
     ImVec2(const glm::vec2& f) { x = f.x; y = f.y; }                        \

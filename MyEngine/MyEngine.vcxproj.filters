@@ -78,9 +78,6 @@
     <ClCompile Include="tilemapPL.cpp">
       <Filter>Source Files\vulkan\piplines</Filter>
     </ClCompile>
-    <ClCompile Include="descriptorSetBuilder.cpp">
-      <Filter>Source Files\vulkan\piplines</Filter>
-    </ClCompile>
     <ClCompile Include="globalBufferDefinitions.h">
       <Filter>Source Files\vulkan</Filter>
     </ClCompile>
@@ -114,14 +111,17 @@
     <ClCompile Include="GlobalImageDescriptor.h">
       <Filter>Source Files\vulkan</Filter>
     </ClCompile>
-    <ClCompile Include="descriptorManager.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="ComputeTemplate.cpp">
       <Filter>Source Files\vulkan\piplines</Filter>
     </ClCompile>
     <ClCompile Include="boidsCompute.cpp">
       <Filter>Source Files\vulkan\piplines</Filter>
+    </ClCompile>
+    <ClCompile Include="stdafx.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="descriptorManager.cpp">
+      <Filter>Source Files\vulkan</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -191,9 +191,6 @@
     <ClInclude Include="BehaviorRegistry.h">
       <Filter>Source Files\Engine</Filter>
     </ClInclude>
-    <ClInclude Include="descriptorSetBuilder.h">
-      <Filter>Source Files\vulkan\piplines</Filter>
-    </ClInclude>
     <ClInclude Include="coloredQuadPL.h">
       <Filter>Source Files\vulkan\piplines</Filter>
     </ClInclude>
@@ -251,9 +248,6 @@
     <ClInclude Include="Audio.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="descriptorManager.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="ComputeTemplate.h">
       <Filter>Source Files\vulkan\piplines</Filter>
     </ClInclude>
@@ -265,6 +259,12 @@
     </ClInclude>
     <ClInclude Include="boidsCompute.h">
       <Filter>Source Files\vulkan\piplines</Filter>
+    </ClInclude>
+    <ClInclude Include="stdafx.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="descriptorManager.h">
+      <Filter>Source Files\vulkan</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

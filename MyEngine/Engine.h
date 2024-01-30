@@ -57,14 +57,23 @@ struct debugStats {
 	int entity_count = 0;
 };
 
+
+struct ScenePipelineContext {
+	std::unique_ptr<TilemapPL> tilemapPipeline = nullptr;
+	std::unique_ptr<ColoredQuadPL> colorPipeline = nullptr;
+	std::unique_ptr<TexturedQuadPL> texturePipeline = nullptr;
+	std::unique_ptr<TextPL> textPipeline = nullptr;
+};
+
+
 class Engine {
 
 public:
 
-	framebufferID tmp_cameraFB;
-	Camera camera{
-		glm::vec2(0.0f),
-		1.0f
+	struct SceneRenderJob{
+		std::shared_ptr<Scene> scene;
+		Camera camera;
+		sceneRenderContextID sceneRenderCtxID;
 	};
 
 
@@ -88,7 +97,7 @@ public:
 	bool ShouldClose();
 	void Close();
 
-	bool QueueNextFrame(bool drawImgui);
+	bool QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, bool drawImgui);
 
 	void EntityStartUpdate() {
 		if (paused)
@@ -128,11 +137,13 @@ public:
 
 	std::shared_ptr<AssetManager> assetManager;
 
+	Camera tmp_camera;
+
 	// convert from normalized coordinates to pixels from top left
 	glm::vec2 worldToScreenPos(glm::vec2 pos) {
 		pos *= glm::vec2(1.0f, -1.0f);
-		pos += glm::vec2(-camera.position.x, camera.position.y);
-		pos *= camera.zoom;
+		pos += glm::vec2(-tmp_camera.position.x, tmp_camera.position.y);
+		pos *= tmp_camera.zoom;
 		pos += glm::vec2((float)winW / winH, 1.0f);
 		pos *= glm::vec2(winH / 2.0f);
 		return pos;
@@ -142,8 +153,8 @@ public:
 
 		pos /= glm::vec2(winH / 2.0f);
 		pos -= glm::vec2((float)winW / winH, 1.0f);
-		pos /= camera.zoom;
-		pos -= glm::vec2(-camera.position.x, camera.position.y);
+		pos /= tmp_camera.zoom;
+		pos -= glm::vec2(-tmp_camera.position.x, tmp_camera.position.y);
 		pos /= glm::vec2(1.0f, -1.0f);
 
 		return pos;
@@ -161,8 +172,9 @@ public:
 	}
 
 	void setTilemapAtlasTexture(texID texture) {
-		assert(tilemapPipeline->textureAtlas.has_value() == false);
-		tilemapPipeline->setTextureAtlas(resourceManager->GetTexture(texture));
+		assert(false);
+		//assert(tilemapPipeline->textureAtlas.has_value() == false);
+		//tilemapPipeline->setTextureAtlas(resourceManager->GetTexture(texture));
 	};
 
 	int winW = 0, winH = 0;
@@ -281,6 +293,24 @@ public:
 		return currentScene;
 	}
 
+	sceneRenderContextID CreateSceneRenderContext(glm::ivec2 size, glm::vec4 clearColor = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)) {
+
+		auto fbID = resourceManager->CreateFramebuffer(size, clearColor);
+		auto fb = resourceManager->GetFramebuffer(fbID);
+
+		sceneRenderContextID id = renderContextGenerator.GenerateID();
+		sceneRenderContextMap[id] = {};
+		
+		sceneRenderContextMap.find(id)->second.fb = fbID;
+
+		createScenePLContext(&sceneRenderContextMap.find(id)->second.pl, fb->renderpass);
+
+		return id;
+	}
+	void ResizeSceneRenderContext(sceneRenderContextID id, glm::ivec2 size) {
+		resourceManager->ResizeFramebuffer(sceneRenderContextMap.find(id)->second.fb, size);
+	}
+
 private:
 
 	GlobalImageDescriptor GlobalTextureDesc;
@@ -301,6 +331,12 @@ private:
 	};
 	std::vector<screenSpaceTextDrawItem> screenSpaceTextDrawlist;
 
+	IDGenerator<sceneRenderContextID> renderContextGenerator;
+	struct sceneFB_PL{
+		framebufferID fb;
+		ScenePipelineContext pl;
+	};
+	std::unordered_map <sceneRenderContextID, sceneFB_PL> sceneRenderContextMap;
 
 	VertexMeshBuffer quadMeshBuffer;
 
@@ -315,11 +351,18 @@ private:
 
 	texID texNotFoundID; // displayed when indexing incorrectly 
 
-	std::unique_ptr<TilemapPL> tilemapPipeline = nullptr;
-	std::unique_ptr<ColoredQuadPL> colorPipeline = nullptr;
-	std::unique_ptr<TexturedQuadPL> texturePipeline = nullptr;
-	std::unique_ptr<TextPL> textPipeline = nullptr;
+	//std::unique_ptr<TilemapPL> tilemapPipeline = nullptr;
+	//std::unique_ptr<ColoredQuadPL> colorPipeline = nullptr;
+	//std::unique_ptr<TexturedQuadPL> texturePipeline = nullptr;
+	//std::unique_ptr<TextPL> textPipeline = nullptr;
+
 	std::unique_ptr<LightingComputePL> lightingPipeline = nullptr;
+
+	void createScenePLContext(ScenePipelineContext* ctx, vk::RenderPass renderpass);
+
+	void recordSceneContextGraphics(const ScenePipelineContext& ctx, framebufferID framebuffer, std::shared_ptr<Scene> scene, const Camera& camera, vk::CommandBuffer& cmdBuffer);
+
+	ScenePipelineContext tmp_sceneContext;
 
 	std::unique_ptr<ColoredQuadPL> screenSpaceColorPipeline = nullptr;
 	std::unique_ptr<TexturedQuadPL> screenSpaceTexturePipeline = nullptr;

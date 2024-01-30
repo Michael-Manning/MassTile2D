@@ -74,7 +74,7 @@ mat4 rotate(float angle) {
 void main() {
 
    int indexAccumulator = 0;
-   int i;
+   int i = 0;
    for(; i < TEXTPL_maxTextObjects; i++){
       if(gl_InstanceIndex < (indexAccumulator + ssboData.headers[i].textLength)){
          break;

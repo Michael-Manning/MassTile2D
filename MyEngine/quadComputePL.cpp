@@ -1,4 +1,6 @@
 
+#include "stdafx.h"
+
 // this ended up being slower than just calculating all four vertices in the vertex shaders
 #if false
 

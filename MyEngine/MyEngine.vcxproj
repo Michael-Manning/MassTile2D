@@ -239,7 +239,8 @@
       <AdditionalIncludeDirectories>$(VULKAN_SDK)/include;$(SolutionDir)$(ProjectName);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <DisableSpecificWarnings>26495; 26813</DisableSpecificWarnings>
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <UseStandardPreprocessor>true</UseStandardPreprocessor>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -334,21 +335,32 @@
     <ClCompile Include="ComputeTemplate.cpp" />
     <ClCompile Include="descriptorManager.cpp" />
     <ClCompile Include="boidsCompute.cpp" />
-    <ClCompile Include="descriptorSetBuilder.cpp" />
     <ClCompile Include="Entity.cpp" />
     <ClCompile Include="FontGenerator.cpp" />
-    <ClCompile Include="globalBufferDefinitions.h" />
-    <ClCompile Include="GlobalImageDescriptor.h" />
+    <ClCompile Include="globalBufferDefinitions.h">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="GlobalImageDescriptor.h">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="LightingComputePL.cpp" />
     <ClCompile Include="quadComputePL.cpp" />
     <ClCompile Include="ResourceManager.cpp" />
+    <ClCompile Include="stdafx.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug-Tracy|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="TextPL.cpp" />
-    <ClCompile Include="TextRenderer.h" />
+    <ClCompile Include="TextRenderer.h">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="texturedQuadPL.cpp" />
     <ClCompile Include="coloredQuadPL.cpp" />
     <ClCompile Include="ECS.cpp" />
     <ClCompile Include="engine.cpp" />
-    <ClCompile Include="IDGenerator.h" />
+    <ClCompile Include="IDGenerator.h">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="Input.cpp" />
     <ClCompile Include="Physics.cpp" />
     <ClCompile Include="pipeline.cpp" />
@@ -374,7 +386,6 @@
     <ClInclude Include="ConcurrentQueue.h" />
     <ClInclude Include="Constants.h" />
     <ClInclude Include="descriptorManager.h" />
-    <ClInclude Include="descriptorSetBuilder.h" />
     <ClInclude Include="ECS.h" />
     <ClInclude Include="engine.h" />
     <ClInclude Include="Entity.h" />
@@ -388,6 +399,7 @@
     <ClInclude Include="ResourceManager.h" />
     <ClInclude Include="Settings.h" />
     <ClInclude Include="SpriteGenerator.h" />
+    <ClInclude Include="stdafx.h" />
     <ClInclude Include="TextPL.h" />
     <ClInclude Include="texturedQuadPL.h" />
     <ClInclude Include="MyMath.h" />

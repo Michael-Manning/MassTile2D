@@ -4,6 +4,8 @@
 //#define GLFW_EXPOSE_NATIVE_WIN32
 //#include <GLFW/glfw3native.h>
 
+#include "stdafx.h"
+
 #include <iostream>
 #include <stdexcept>
 #include <algorithm>
@@ -220,7 +222,7 @@ void VKEngine::beginSwapchainRenderpass(uint32_t imageIndex, vk::CommandBuffer c
 }
 
 void VKEngine::beginRenderpass(DoubleFrameBufferContext* framebufferContext, vk::CommandBuffer cmdBuffer) {
-	vk::RenderPassBeginInfo renderPassInfo{};
+	vk::RenderPassBeginInfo renderPassInfo;
 	renderPassInfo.renderPass = framebufferContext->renderpass;
 	renderPassInfo.framebuffer = framebufferContext->framebuffers[currentFrame];
 	renderPassInfo.renderArea.offset = vk::Offset2D(0, 0);

@@ -1,3 +1,5 @@
+#include "stdafx.h"
+
 #include <iostream>
 #include <stdexcept>
 #include <algorithm>
@@ -125,7 +127,7 @@ void TexturedQuadPL::UploadInstanceData(std::vector<ssboObjectInstanceData>& dra
 	if (drawlist.size() == 0)
 		return;
 
-	assert(drawlist.size() <= TexturedQuadPL_MAX_OBJECTS);
+	assert(drawlist.size() < TexturedQuadPL_MAX_OBJECTS);
 
 	memcpy(ssboMappedDB.buffersMapped[engine->currentFrame], drawlist.data(), sizeof(ssboObjectInstanceData) * drawlist.size());
 }

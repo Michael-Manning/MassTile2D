@@ -56,5 +56,6 @@ void main() {
 
    col = vec4(col.rgb, mix(0.0, col.a, alpha));
    //col.a = max(col.a, 0.3);
+   //outColor = vec4(1.0, 1.0, 1.0, 1.0);
    outColor = col;
 }

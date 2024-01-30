@@ -238,6 +238,7 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalIncludeDirectories>$(SolutionDir)/MyEngine;$(SolutionDir)/Editor;$(VULKAN_SDK)/include;$(SolutionDir)/lib/FastNoise2/include;$(SolutionDir)$(ProjectName)</AdditionalIncludeDirectories>
+      <PrecompiledHeader>Use</PrecompiledHeader>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -254,6 +255,7 @@
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalIncludeDirectories>$(SolutionDir)/MyEngine;$(VULKAN_SDK)/include;$(SolutionDir)/lib/FastNoise2/include;$(SolutionDir)/Editor;$(SolutionDir)$(ProjectName)</AdditionalIncludeDirectories>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -329,6 +331,9 @@
     <ClCompile Include="GameUI.cpp" />
     <ClCompile Include="Menus.cpp" />
     <ClCompile Include="MyGame.cpp" />
+    <ClCompile Include="stdafx.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="worldGen.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -360,6 +365,7 @@
     <ClInclude Include="Menus.h" />
     <ClInclude Include="Player.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="stdafx.h" />
     <ClInclude Include="worldGen.h" />
   </ItemGroup>
   <ItemGroup>

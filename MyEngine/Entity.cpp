@@ -1,3 +1,5 @@
+#include "stdafx.h"
+
 #include <stdint.h>
 #include <glm/glm.hpp>
 #include <string>

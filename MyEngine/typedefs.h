@@ -3,6 +3,7 @@
 #include <stdint.h>
 
 typedef int32_t framebufferID;
+typedef int32_t sceneRenderContextID;
 typedef int32_t texID;
 typedef uint32_t entityID;
 typedef uint32_t spriteID;
@@ -13,6 +14,8 @@ typedef uint32_t blockID; // type of block
 typedef uint32_t tileID; // specific tile in the texture atlas
 
 #include <glm/glm.hpp>
+
+#include "typedefs.h"
 
 struct Camera {
 	glm::vec2 position = glm::vec2(0.0f);

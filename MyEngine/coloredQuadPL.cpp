@@ -1,3 +1,5 @@
+#include "stdafx.h"
+
 #include <iostream>
 #include <stdexcept>
 #include <algorithm>
@@ -27,7 +29,6 @@
 using namespace glm;
 using namespace std;
 
-//void ColoredQuadPL::CreateGraphicsPipeline(std::string vertexSrc, std::string fragmentSrc, MappedDoubleBuffer<void>& cameradb, bool flipFaces) {
 void ColoredQuadPL::CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc, vk::RenderPass& renderTarget, MappedDoubleBuffer<void>& cameradb, bool flipFaces) {
 
 	auto shaderStages = createShaderStages(vertexSrc, fragmentSrc);
@@ -44,11 +45,6 @@ void ColoredQuadPL::CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc
 	for (auto& [set, layout] : descriptorManager.builderLayouts)
 		setLayouts[set] = layout;
 
-	//// create vector containing the builder descriptor set layouts
-	//vector< vk::DescriptorSetLayout> setLayouts;
-	//setLayouts.reserve(builderLayouts.size());
-	//for (auto& [set, layout] : builderLayouts)
-	//	setLayouts.push_back(layout);
 	buildPipelineLayout(setLayouts);
 
 	vk::VertexInputBindingDescription VbindingDescription;

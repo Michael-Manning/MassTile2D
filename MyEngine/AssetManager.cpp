@@ -1,3 +1,5 @@
+#include "stdafx.h"
+
 #include "AssetManager.h"
 #include <imgui.h>
 #include <imgui_impl_vulkan.h>

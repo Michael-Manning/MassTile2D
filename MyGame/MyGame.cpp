@@ -1,3 +1,4 @@
+#include "stdafx.h"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -16,7 +17,7 @@
 #include <algorithm>
 #include <execution>
 #include <omp.h>
-#include<glm/glm.hpp>
+#include <glm/glm.hpp>
 #include <nlohmann/json.hpp>
 #include <imgui.h>
 #include <Windows.h>
@@ -227,6 +228,13 @@ int main() {
 	const auto& scene = engine.GetCurrentScene(); // quick reference
 	input = engine.GetInput();
 
+	sceneRenderContextID sceneRenderCtx = engine.CreateSceneRenderContext({ engine.winW , engine.winH }, { 0.3, 0.3, 1.0, 1 });
+
+	Camera mainCamera{
+		glm::vec2(0.0f),
+		1.0f
+	};
+
 	engine.assetManager->LoadAllSprites();
 	engine.assetManager->LoadAllFonts();
 	engine.assetManager->LoadAllPrefabs(engine.bworld, false);
@@ -310,6 +318,16 @@ int main() {
 			default:
 				break;
 			}
+
+
+			{
+				for (size_t i = 0; i < 100; i++)
+				{
+					//engine.addScreenSpaceQuad(vec4(1, 1, 1, 1), vec2(i / 30, i % 30) * 15.0f, vec2(10), engine.time * 0.1f);
+					//engine.addScreenCenteredSpaceTexture("roboto-24", 0,  vec2(i / 30, i % 30) * 40.0f + 100.0f, 60, engine.time * 0.1f);
+
+				}
+			}
 		}
 
 		else if (appState == AppState::PlayingGame) {
@@ -321,9 +339,10 @@ int main() {
 
 			using namespace ImGui;
 
-			GcameraPos = engine.camera.position;
+			GcameraPos = mainCamera.position;
 
 
+#if false
 			// define cell layout
 			{
 				if (recreateBoidCells || engine.WindowResizedLastFrame()) {
@@ -408,123 +427,124 @@ int main() {
 
 			std::for_each(std::execution::par_unseq, boids.begin(), boids.end(), [&engine, &cellSize, &cellsX, &cellsY](Boid& b) {
 
-			//for (auto& b : boids)
-			{
-
-				// inter bird behaviour
+				//for (auto& b : boids)
 				{
-					vec2 center = vec2(0);
-					vec2 avoidVector = vec2(0);
-					vec2 avgVelocity = vec2(0.0f);
-					int numNeighbors = 0;
 
-					int currentCellX = (int)(b.pos.x / cellSize);
-					int currentCellY = (int)(b.pos.y / cellSize);
-
-					// only matters if boid goes out of bounds
-					currentCellX = glm::clamp(currentCellX, 0, cellsX - 1);
-					currentCellY = glm::clamp(currentCellY, 0, cellsY - 1);
-
-					for (int cx = -1; cx < 2; cx++)
+					// inter bird behaviour
 					{
-						for (int cy = -1; cy < 2; cy++)
+						vec2 center = vec2(0);
+						vec2 avoidVector = vec2(0);
+						vec2 avgVelocity = vec2(0.0f);
+						int numNeighbors = 0;
+
+						int currentCellX = (int)(b.pos.x / cellSize);
+						int currentCellY = (int)(b.pos.y / cellSize);
+
+						// only matters if boid goes out of bounds
+						currentCellX = glm::clamp(currentCellX, 0, cellsX - 1);
+						currentCellY = glm::clamp(currentCellY, 0, cellsY - 1);
+
+						for (int cx = -1; cx < 2; cx++)
 						{
-							int cellx = (currentCellX + cx);
-							int celly = (currentCellY + cy);
-							if (cellx < 0 || cellx > cellsX - 1 || celly < 0 || celly > cellsY - 1)
-								continue;
-							int cellIndex = cellx + celly * cellsX;
-
-							BoidCell cell = boidCells[cellIndex];
-
-							for (size_t j = cell.startIndex; j < cell.endIndex; j++)
+							for (int cy = -1; cy < 2; cy++)
 							{
-								//Boid& ob = boids[boidBinIndexes[j]];
-								Boid& ob = boids[j];
+								int cellx = (currentCellX + cx);
+								int celly = (currentCellY + cy);
+								if (cellx < 0 || cellx > cellsX - 1 || celly < 0 || celly > cellsY - 1)
+									continue;
+								int cellIndex = cellx + celly * cellsX;
 
-								float dist = glm::length(b.pos - ob.pos);
-								if (dist < boidSettings.visualRange) {
-									center += ob.pos;
-									avgVelocity += ob.velocity;
-									numNeighbors++;
-								}
+								BoidCell cell = boidCells[cellIndex];
 
-								if (&b != &ob)
+								for (size_t j = cell.startIndex; j < cell.endIndex; j++)
 								{
-									if (dist < boidSettings.minDistance)
-										avoidVector += b.pos - ob.pos;
+									//Boid& ob = boids[boidBinIndexes[j]];
+									Boid& ob = boids[j];
+
+									float dist = glm::length(b.pos - ob.pos);
+									if (dist < boidSettings.visualRange) {
+										center += ob.pos;
+										avgVelocity += ob.velocity;
+										numNeighbors++;
+									}
+
+									if (&b != &ob)
+									{
+										if (dist < boidSettings.minDistance)
+											avoidVector += b.pos - ob.pos;
+									}
 								}
 							}
 						}
+
+						//for (auto& ob : boids)
+						//{
+						//	float dist = glm::length(b.pos - ob.pos);
+						//	if (dist < boidSettings.visualRange) {
+						//		center += ob.pos;
+						//		avgVelocity += ob.velocity;
+						//		numNeighbors++;
+						//	}
+
+						//	if (&b != &ob)
+						//	{
+						//		if (length(b.pos - ob.pos) < boidSettings.minDistance)
+						//			avoidVector += b.pos - ob.pos;
+						//	}
+						//}
+
+						if (numNeighbors > 0) {
+							center = center / (float)numNeighbors;
+							b.velocity += (center - b.pos) * boidSettings.centeringFactor * (float)engine.deltaTime;
+
+							avgVelocity = avgVelocity / (float)numNeighbors;
+							b.velocity += (avgVelocity - b.velocity) * boidSettings.matchingFactor * (float)engine.deltaTime;
+						}
+
+						b.velocity += avoidVector * boidSettings.avoidFactor * (float)engine.deltaTime;
 					}
 
-					//for (auto& ob : boids)
-					//{
-					//	float dist = glm::length(b.pos - ob.pos);
-					//	if (dist < boidSettings.visualRange) {
-					//		center += ob.pos;
-					//		avgVelocity += ob.velocity;
-					//		numNeighbors++;
-					//	}
 
-					//	if (&b != &ob)
-					//	{
-					//		if (length(b.pos - ob.pos) < boidSettings.minDistance)
-					//			avoidVector += b.pos - ob.pos;
-					//	}
-					//}
-
-					if (numNeighbors > 0) {
-						center = center / (float)numNeighbors;
-						b.velocity += (center - b.pos) * boidSettings.centeringFactor * (float)engine.deltaTime;
-
-						avgVelocity = avgVelocity / (float)numNeighbors;
-						b.velocity += (avgVelocity - b.velocity) * boidSettings.matchingFactor * (float)engine.deltaTime;
+					// gentle acceleration
+					{
+						vec2 n = glm::normalize(b.velocity);
+						b.velocity += n * boidSettings.generalAccel * (float)engine.deltaTime;
 					}
 
-					b.velocity += avoidVector * boidSettings.avoidFactor * (float)engine.deltaTime;
+					// limit speed
+					{
+						float speed = magnitude(b.velocity);
+						if (speed > boidSettings.maxSpeed) {
+							float d = boidSettings.maxSpeed / speed;
+							b.velocity = (b.velocity / speed) * boidSettings.maxSpeed;
+						}
+					}
+
+					// keep within bounds
+					{
+						float delta = boidSettings.turnFactor * engine.deltaTime;
+						if (b.pos.x < boidSettings.margin) {
+							b.velocity.x += delta;
+						}
+						if (b.pos.x > boidSettings.bounds.x - boidSettings.margin) {
+							b.velocity.x -= delta;
+						}
+						if (b.pos.y < boidSettings.margin) {
+							b.velocity.y += delta;
+						}
+						if (b.pos.y > boidSettings.bounds.y - boidSettings.margin) {
+							b.velocity.y -= delta;
+						}
+					}
 				}
-
-
-				// gentle acceleration
-				{
-					vec2 n = glm::normalize(b.velocity);
-					b.velocity += n * boidSettings.generalAccel * (float)engine.deltaTime;
-				}
-
-				// limit speed
-				{
-					float speed = magnitude(b.velocity);
-					if (speed > boidSettings.maxSpeed) {
-						float d = boidSettings.maxSpeed / speed;
-						b.velocity = (b.velocity / speed) * boidSettings.maxSpeed;
-					}
-				}
-
-				// keep within bounds
-				{
-					float delta = boidSettings.turnFactor * engine.deltaTime;
-					if (b.pos.x < boidSettings.margin) {
-						b.velocity.x += delta;
-					}
-					if (b.pos.x > boidSettings.bounds.x - boidSettings.margin) {
-						b.velocity.x -= delta;
-					}
-					if (b.pos.y < boidSettings.margin) {
-						b.velocity.y += delta;
-					}
-					if (b.pos.y > boidSettings.bounds.y - boidSettings.margin) {
-						b.velocity.y -= delta;
-					}
-				}
-			}
-			});
+				});
 
 
 			for (auto& b : boids) {
 				b.pos += b.velocity * (float)engine.deltaTime * 1.0f;
 				engine.addScreenSpaceQuad(vec4(1, 0, 0, 1), b.pos, vec2(10, 5), atan2f(b.velocity.y, b.velocity.x));
 			}
+#endif
 
 			engine.EntityStartUpdate();
 
@@ -552,30 +572,30 @@ int main() {
 
 				ImGui::NewFrame();
 
-				editor.editorCamera = engine.camera;
+				editor.editorCamera = mainCamera;
 				editor.Run(engine);
-				engine.camera = editor.editorCamera;
+				mainCamera = editor.editorCamera;
 
 
-				ImGui::Begin("boids settings");
-				ImGui::SliderFloat("centering", &boidSettings.centeringFactor, 0.001f, 1.0f);
-				recreateBoidCells |= ImGui::SliderFloat("visual range", &boidSettings.visualRange, 0.0f, 1000.0f);
-				ImGui::SliderFloat("min distance", &boidSettings.minDistance, 0.0f, boidSettings.visualRange);
-				ImGui::SliderFloat("avoid factor", &boidSettings.avoidFactor, 0.0f, 10.0f);
-				ImGui::SliderFloat("match factor", &boidSettings.matchingFactor, 0.0f, 10.0f);
-				ImGui::SliderFloat("general acceleration", &boidSettings.generalAccel, 0.0f, 50.0f);
-				ImGui::SliderFloat("max speed", &boidSettings.maxSpeed, 0.0f, 1000.0f);
-				ImGui::SliderFloat("margin", &boidSettings.margin, 0.0f, 500.0f);
-				ImGui::SliderFloat("turn factor", &boidSettings.turnFactor, 0.0f, 1400.0f);
-				ImGui::End();
+				//ImGui::Begin("boids settings");
+				//ImGui::SliderFloat("centering", &boidSettings.centeringFactor, 0.001f, 1.0f);
+				//recreateBoidCells |= ImGui::SliderFloat("visual range", &boidSettings.visualRange, 0.0f, 1000.0f);
+				//ImGui::SliderFloat("min distance", &boidSettings.minDistance, 0.0f, boidSettings.visualRange);
+				//ImGui::SliderFloat("avoid factor", &boidSettings.avoidFactor, 0.0f, 10.0f);
+				//ImGui::SliderFloat("match factor", &boidSettings.matchingFactor, 0.0f, 10.0f);
+				//ImGui::SliderFloat("general acceleration", &boidSettings.generalAccel, 0.0f, 50.0f);
+				//ImGui::SliderFloat("max speed", &boidSettings.maxSpeed, 0.0f, 1000.0f);
+				//ImGui::SliderFloat("margin", &boidSettings.margin, 0.0f, 500.0f);
+				//ImGui::SliderFloat("turn factor", &boidSettings.turnFactor, 0.0f, 1400.0f);
+				//ImGui::End();
 
 
 			}
 			else {
-				engine.camera.position = GcameraPos;
+				mainCamera.position = GcameraPos;
 			}
 #else
-			engine.camera.position = GcameraPos;
+			mainCamera.position = GcameraPos;
 #endif
 #if 0
 			{
@@ -666,7 +686,20 @@ int main() {
 #endif
 
 		}
-		engine.QueueNextFrame(showingEditor);
+
+
+		Engine::SceneRenderJob mainSceneRender;
+		mainSceneRender.scene = scene;
+		mainSceneRender.camera = mainCamera;
+		mainSceneRender.sceneRenderCtxID = sceneRenderCtx;
+
+		vector<Engine::SceneRenderJob> sceneRenderJobs;
+		sceneRenderJobs.push_back(mainSceneRender);
+
+
+		engine.tmp_camera = mainCamera;
+
+		engine.QueueNextFrame(sceneRenderJobs, showingEditor);
 	}
 
 	engine.Close();
