@@ -16,6 +16,7 @@
 #include "pipeline.h"
 #include "typedefs.h"
 #include "Constants.h"
+#include "globalBufferDefinitions.h"
 
 constexpr int ColoredQuadPL_MAX_OBJECTS = 1000000;
 
@@ -36,7 +37,7 @@ public:
 	ColoredQuadPL(std::shared_ptr<VKEngine>& engine) : Pipeline(engine) {
 	}
 
-	void CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc, vk::RenderPass& renderTarget, MappedDoubleBuffer<void>& cameradb, bool flipFaces = false);
+	void CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc, vk::RenderPass& renderTarget, MappedDoubleBuffer<cameraUBO_s>& cameradb, bool flipFaces = false);
 	void CreateInstancingBuffer();
 	void UploadInstanceData(std::vector<InstanceBufferData>& drawlist);
 	void recordCommandBuffer(vk::CommandBuffer commandBuffer, int instanceCount);

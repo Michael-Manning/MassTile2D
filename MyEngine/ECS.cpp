@@ -163,23 +163,34 @@ nlohmann::json Rigidbody::serializeJson(entityID entId) {
 
 	return j;
 }
-Rigidbody Rigidbody::deserializeJson(const nlohmann::json& j, std::shared_ptr<b2World> world) {
+Rigidbody Rigidbody::deserializeJson(const nlohmann::json& j) {
 	auto collider = Collider_deserializeJson(j["collider"]);
 	Rigidbody r(collider);
 
-	b2BodyDef bdef;
-	bdef.linearDamping = j["linearDamping"];
-	bdef.angularDamping = j["angularDamping"];
-	bdef.fixedRotation = j["fixedRotation"];
-	bdef.bullet = j["bullet"];
-	bdef.gravityScale = j["gravityScale"];
+	//b2BodyDef bdef;
+	//bdef.linearDamping = j["linearDamping"];
+	//bdef.angularDamping = j["angularDamping"];
+	//bdef.fixedRotation = j["fixedRotation"];
+	//bdef.bullet = j["bullet"];
+	//bdef.gravityScale = j["gravityScale"];
 
-	b2FixtureDef fdef;
-	fdef.friction = j["friction"];
-	fdef.density = j["density"];
-	fdef.restitution = j["restitution"];
+	//b2FixtureDef fdef;
+	//fdef.friction = j["friction"];
+	//fdef.density = j["density"];
+	//fdef.restitution = j["restitution"];
 
-	r._generateBody(world, &fdef, &bdef);
+	/*r._generateBody(&fdef, &bdef);*/
+
+	r.desc.linearDamping = j["linearDamping"];
+	r.desc.angularDamping = j["angularDamping"];
+	r.desc.fixedRotation = j["fixedRotation"];
+	r.desc.bullet = j["bullet"];
+	r.desc.gravityScale = j["gravityScale"];
+
+	r.desc.friction = j["friction"];
+	r.desc.density = j["density"];
+	r.desc.restitution = j["restitution"];
+
 
 	return r;
 }
@@ -192,8 +203,8 @@ nlohmann::json Staticbody::serializeJson(entityID entId) {
 
 	return j;
 }
-Staticbody Staticbody::deserializeJson(const nlohmann::json& j, std::shared_ptr<b2World> world) {
+Staticbody Staticbody::deserializeJson(const nlohmann::json& j) {
 	auto collider = Collider_deserializeJson(j["collider"]);
-	Staticbody s(world, collider);
+	Staticbody s(collider);
 	return s;
 }

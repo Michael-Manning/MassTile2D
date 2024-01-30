@@ -61,60 +61,48 @@ You can submit the command buffer to a queue. If you've set up your synchronizat
 
 
 
+User
+I have a vulkan glsl compute shader managing a particle system which continuously emits particles. There is a storage buffer with an array of this struct
 
-
-
-
-
-
-
-
-
-
-
-
-
-#include <fstream>
-#include <cstdint>
-#include <bit> // for std::endian
-
-uint32_t toLittleEndian(uint32_t value) {
-    if constexpr (std::endian::native == std::endian::big) {
-        // Swap bytes if the native endianness is big-endian
-        return __builtin_bswap32(value);
-    } else {
-        return value;
-    }
+struct particle{
+   float life;
+   vec2 position;
+   vec2 velocity;
 }
 
-uint32_t fromLittleEndian(uint32_t value) {
-    if constexpr (std::endian::native == std::endian::big) {
-        // Swap bytes if the native endianness is big-endian
-        return __builtin_bswap32(value);
+The shader has an invocation for each particle updates the positions of the particles and reduces their life. When the particle's life is zero it is no longer active. Each frame the shader needs set 5 particles with a life of zero to a life of 1. How could this be done within the compute shader?
+- add a push constant with numbers of particles to emit per frame
+
+#version 450
+
+struct Particle {
+    float life;
+    vec2 position;
+    vec2 velocity;
+};
+
+layout(std430, binding = 0) buffer Particles {
+    Particle particles[];
+};
+
+layout(binding = 1) coherent uniform atomic_uint activeCount;
+
+void main() {
+    uint id = gl_GlobalInvocationID.x;
+
+    // Reactivate dead particles if less than 5 have been reactivated this frame
+    if (particles[id].life == 0) {
+        uint count = atomicCounterIncrement(activeCount);
+        if (count < 5) {
+            particles[id].life = 1.0;
+            // Initialize position, velocity, etc.
+        }
     } else {
-        return value;
+        // Update logic for active particles
+        particles[id].position += particles[id].velocity;
+        particles[id].life -= 0.01; // Decrease life or some logic to handle life
+        if (particles[id].life <= 0.0) {
+            particles[id].life = 0.0; // Ensure dead particles have zero life
+        }
     }
-}
-
-int main() {
-    const char* filename = "number.bin";
-
-    // Writing to file
-    {
-        std::ofstream outStream(filename, std::ios::binary | std::ios::out);
-        uint32_t number = 123;
-        number = toLittleEndian(number);
-        outStream.write(reinterpret_cast<char*>(&number), sizeof(number));
-    }
-
-    // Reading from file
-    {
-        std::ifstream inStream(filename, std::ios::binary | std::ios::in);
-        uint32_t number;
-        inStream.read(reinterpret_cast<char*>(&number), sizeof(number));
-        number = fromLittleEndian(number);
-        // Now 'number' contains the correct value regardless of system endianness
-    }
-
-    return 0;
 }

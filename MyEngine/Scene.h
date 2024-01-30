@@ -43,15 +43,22 @@ public:
 
 	std::string name;
 
-	Scene(std::shared_ptr<b2World> bworld) : bworld(bworld) {
+	Scene() : bworld(gravity) {
 		CreateComponentAccessor();
 	};
+
+	~Scene() {
+
+		// must destroy all registrered physics objects and world.
+		// either do it here, or have explicit unload function and then verify desctruction here
+		assert(false);
+	}
 
 	SceneData sceneData;	
 
 	void serializeJson(std::string filename);
-	static std::shared_ptr<Scene> deserializeJson (std::string filename, std::shared_ptr<b2World> world);
-	static std::shared_ptr<Scene> deserializeFlatbuffers(const AssetPack::Scene * scene, std::shared_ptr<b2World> world);
+	static std::shared_ptr<Scene> deserializeJson (std::string filename);
+	static std::shared_ptr<Scene> deserializeFlatbuffers(const AssetPack::Scene * scene);
 	static std::string peakJsonName(std::string filename) {
 		checkAppend(filename, ".scene");
 		std::ifstream input(filename);
@@ -111,11 +118,13 @@ public:
 	template <>
 	void registerComponent<Staticbody>(entityID id, Staticbody component);
 
+	// remove update responsibility from engine and make private again
+	b2World bworld;
+
 private:
 
 	IDGenerator<entityID> EntityGenerator;
 
-	std::shared_ptr<b2World> bworld;
 	std::shared_ptr<ComponentAccessor>	componentAccessor;
 
 	void CreateComponentAccessor();

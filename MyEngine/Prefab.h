@@ -68,7 +68,7 @@ public:
 		return static_cast<std::string>(j["name"]);
 	}
 
-	static Prefab deserializeJson(std::string filepath, std::shared_ptr<b2World> world ) {
+	static Prefab deserializeJson(std::string filepath) {
 		std::ifstream input(filepath);	
 		nlohmann::json j;
 		input >> j;
@@ -86,14 +86,14 @@ public:
 		if (j.contains("textRenderer"))
 			p.textRenderer = TextRenderer::deserializeJson(j["textRenderer"]);
 		if (j.contains("rigidbody"))
-			p.rigidbody = Rigidbody::deserializeJson(j["rigidbody"], world);
+			p.rigidbody = Rigidbody::deserializeJson(j["rigidbody"]);
 		if (j.contains("staticbody"))
-			p.staticbody = Staticbody::deserializeJson(j["staticbody"], world);
+			p.staticbody = Staticbody::deserializeJson(j["staticbody"]);
 
 		return p;
 	}
 
-	static Prefab deserializeFlatbuffer(const AssetPack::Prefab * p, std::shared_ptr<b2World> world) {
+	static Prefab deserializeFlatbuffer(const AssetPack::Prefab * p) {
 		Prefab prefab;
 		prefab.name = p->name()->str();
 		prefab.behaviorHash = p->behaviorHash();
@@ -112,9 +112,9 @@ public:
 		if (textRenderer != nullptr)
 			prefab.textRenderer = TextRenderer::deserializeFlatbuffers(textRenderer);
 		if (rigidbody != nullptr)
-			prefab.rigidbody = Rigidbody::deserializeFlatbuffers(rigidbody, world);
+			prefab.rigidbody = Rigidbody::deserializeFlatbuffers(rigidbody);
 		if (staticbody != nullptr)
-			prefab.staticbody = Staticbody::deserializeFlatbuffers(staticbody, world);
+			prefab.staticbody = Staticbody::deserializeFlatbuffers(staticbody);
 
 		return prefab;
 	}

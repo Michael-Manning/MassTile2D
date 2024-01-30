@@ -11,6 +11,21 @@ public:
 
 	void Run(Engine& engine);
 
+	void SetGameScene(std::shared_ptr<Scene> gameScene, sceneRenderContextID sceneRenderContext) {
+		this->gameScene = gameScene;
+		this->sceneRenderContext = sceneRenderContext;
+	};
+
+
+	bool showingCreateWindow = false;
+	
+	Camera editorCamera;
+
+private:
+
+	std::shared_ptr<Scene> gameScene = nullptr;
+	sceneRenderContextID sceneRenderContext;
+
 	template<typename T>
 	bool drawInspector(T& comp, Engine& engine);
 
@@ -19,7 +34,7 @@ public:
 
 	template<>
 	bool drawInspector<ColorRenderer>(ColorRenderer& t, Engine& engine);
-	
+
 	template<>
 	bool drawInspector<SpriteRenderer>(SpriteRenderer& r, Engine& engine);
 
@@ -31,14 +46,6 @@ public:
 
 	template<>
 	bool drawInspector<Staticbody>(Staticbody& r, Engine& engine);
-
-	bool showingCreateWindow = false;
-	
-	Camera editorCamera;
-
-private:
-
-	
 
 	void DrawGrid(Engine& engine);
 	void controlWindow(Engine& engine);
@@ -92,5 +99,19 @@ private:
 
 	// set every frame, read by different functions
 	glm::vec2 screenSize;
-	ImDrawList* drawlist;
+	glm::vec2 mainSceneFrameSize;
+	glm::vec2 lastMainSceneFrameSize;
+	glm::vec2 mainSceneViewerScreenLocation; // position of view window framebuffer image on screen
+	ImDrawList* sceneViewDrawlist;
+
+
+	// TODO: if rendering scene in an imgui window, must store screen space offset of the image render location and apply to these functions
+
+	glm::vec2 gameSceneWorldToScreenPos(glm::vec2 pos) {
+		return worldToScreenPos(pos, editorCamera, mainSceneFrameSize) + mainSceneViewerScreenLocation;
+	}
+
+	glm::vec2 gameSceneSreenToWorldPos(glm::vec2 pos) {
+		return screenToWorldPos(pos - mainSceneViewerScreenLocation, editorCamera, mainSceneFrameSize);
+	}
 };

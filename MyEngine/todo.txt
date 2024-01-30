@@ -1,6 +1,8 @@
 
 - only enable used device features instead of enabling everything for the sake of bindless textures
 
+- move physics updates somwhere managed by scene. Will requried timing conciderations
+
 - removeTextureBinding on pipelines isn't actually called after freeing a texture resource. Need to queue resource deletion in case it's being used due to multiple
 frames in flight
 
@@ -43,6 +45,8 @@ be displayed which should reduce latency
 - create bulk generate texture function to avoid having to recreate staging buffers and synchronize the graphics queue for every single texture creation
 
 things to abstract:
+
+- could add scene settings accessibel to editor such as clear color 
 
 - buffer management (group allocation and buffer, see vkguide)
 

@@ -14,6 +14,8 @@
 
 #include <assetPack/common_generated.h>
 
+const b2Vec2 gravity = b2Vec2(0.0f, -10.0f);
+
 // Convert glm::vec2 to b2Vec2
 inline b2Vec2 gtb(const glm::vec2& vec) {
 	return b2Vec2(vec.x, vec.y);
@@ -124,13 +126,13 @@ class Staticbody : Component {
 public:
 
 	Staticbody() {}
-	Staticbody(std::shared_ptr<b2World> world, std::shared_ptr<Collider> collider) {
-
+	Staticbody(std::shared_ptr<Collider> collider) {
 		this->collider = collider;
-		this->world = world;
 	};
 
-	void _generateBody(glm::vec2 position, float angle) {
+	void _generateBody(b2World* world, glm::vec2 position, float angle) {
+		this->world = world;
+
 		b2BodyDef bodyDef;
 		bodyDef.position = gtb(position);
 		bodyDef.angle = angle;
@@ -156,11 +158,11 @@ public:
 	};
 
 	Staticbody duplicate() {
-		Staticbody sb(world, collider->duplicate());
-		sb._generateBody(btg(body->GetPosition()), body->GetAngle());
+		assert(false); // haven't figured out if this works with new scene/world registration logic
+		Staticbody sb(collider->duplicate());
+		sb._generateBody(world, btg(body->GetPosition()), body->GetAngle());
 		return sb;
 	};
-
 
 
 	void SetTransform(glm::vec2 position, float rotation) {
@@ -177,9 +179,9 @@ public:
 
 
 	nlohmann::json serializeJson(entityID entId) override;
-	static Staticbody deserializeJson(const nlohmann::json& j, std::shared_ptr<b2World> world);
+	static Staticbody deserializeJson(const nlohmann::json& j);
 
-	static Staticbody deserializeFlatbuffers(const AssetPack::Staticbody* b, std::shared_ptr<b2World> world) {
+	static Staticbody deserializeFlatbuffers(const AssetPack::Staticbody* b) {
 
 		std::shared_ptr<Collider> collider;
 		auto fbCollider = b->collider();
@@ -190,14 +192,14 @@ public:
 			collider = std::make_shared<CircleCollider>(fbCollider.radius());
 		}
 
-		Staticbody body(world, collider);
+		Staticbody body(collider);
 		return body;
 	}
 
 	std::shared_ptr<Collider> collider;
 
 private:
-	std::shared_ptr<b2World> world;
+	b2World* world;
 
 	b2Body* body = nullptr;
 	b2Fixture* fixture = nullptr;
@@ -218,34 +220,52 @@ public:
 	};
 
 	// called upon registration
-	void _generateBody(std::shared_ptr<b2World> world, glm::vec2 position, float angle) {
+	void _generateBody(b2World* world, glm::vec2 position, float angle) {
 		this->world = world;
 
 		b2FixtureDef fixtureDef;
 		fixtureDef.shape = collider->_getB2Shape();
-		fixtureDef.density = 1.0f;
-		fixtureDef.friction = 0.3f;
+		fixtureDef.density = desc.density;
+		fixtureDef.friction = desc.friction;
+		fixtureDef.restitution = desc.restitution;
 
 		b2BodyDef bodyDef;
 		bodyDef.type = b2_dynamicBody;
 		bodyDef.position.Set(position.x, position.y);
 		bodyDef.angle = angle;
-		body = world->CreateBody(&bodyDef);
+		bodyDef.linearDamping = desc.linearDamping;
+		bodyDef.angularDamping = desc.angularDamping;
+		bodyDef.fixedRotation = desc.fixedRotation;
+		bodyDef.bullet = desc.bullet;
+		bodyDef.gravityScale = desc.gravityScale;
 
+		body = world->CreateBody(&bodyDef);
 		fixture = body->CreateFixture(&fixtureDef);
 	};
 
 	// full body initialization. Used when deserialization so all parameters can be set before body is created
-	void _generateBody(std::shared_ptr<b2World> world, b2FixtureDef* fixtureDef, b2BodyDef* bodyDef) {
-		this->world = world;
+	//void _generateBody(b2World* world, b2FixtureDef* fixtureDef, b2BodyDef* bodyDef) {
+	//	this->world = world;
 
-		fixtureDef->shape = collider->_getB2Shape();
+	//	b2BodyDef bdef;
+	//	bdef.linearDamping = linearDamping();
+	//	bdef.angularDamping = b->angularDamping();
+	//	bdef.fixedRotation = b->fixedRotation();
+	//	bdef.bullet = b->bullet();
+	//	bdef.gravityScale = b->gravityScale();
 
-		bodyDef->type = b2_dynamicBody;
+	//	b2FixtureDef fdef;
+	//	fdef.friction = b->friction();
+	//	fdef.density = b->density();
+	//	fdef.restitution = b->restitution();
 
-		body = world->CreateBody(bodyDef);
-		fixture = body->CreateFixture(fixtureDef);
-	};
+	//	fixtureDef->shape = collider->_getB2Shape();
+
+	//	bodyDef->type = b2_dynamicBody;
+
+	//	body = world->CreateBody(bodyDef);
+	//	fixture = body->CreateFixture(fixtureDef);
+	//};
 
 	//~Rigidbody(){
 	void Destroy() {
@@ -373,9 +393,9 @@ public:
 
 
 	nlohmann::json serializeJson(entityID entId) override;
-	static Rigidbody deserializeJson(const nlohmann::json& j, std::shared_ptr<b2World> world);
+	static Rigidbody deserializeJson(const nlohmann::json& j);
 
-	static Rigidbody deserializeFlatbuffers(const AssetPack::Rigidbody* b, std::shared_ptr<b2World> world) {
+	static Rigidbody deserializeFlatbuffers(const AssetPack::Rigidbody* b) {
 		Rigidbody r;
 
 		auto fbCollider = b->collider();
@@ -384,21 +404,30 @@ public:
 		}
 		else {
 			r.collider = std::make_shared<CircleCollider>(fbCollider.radius());
-		}
+		} 
 
-		b2BodyDef bdef;
-		bdef.linearDamping = b->linearDamping();
-		bdef.angularDamping = b->angularDamping();
-		bdef.fixedRotation = b->fixedRotation();
-		bdef.bullet = b->bullet();
-		bdef.gravityScale = b->gravityScale();
+		r.desc.linearDamping = b->linearDamping();
+		r.desc.angularDamping = b->angularDamping();
+		r.desc.fixedRotation = b->fixedRotation();
+		r.desc.bullet = b->bullet();
+		r.desc.gravityScale = b->gravityScale();
 
-		b2FixtureDef fdef;
-		fdef.friction = b->friction();
-		fdef.density = b->density();
-		fdef.restitution = b->restitution();
+		r.desc.friction = b->friction();
+		r.desc.density = b->density();
+		r.desc.restitution = b->restitution();
+		//b2BodyDef bdef;
+		//bdef.linearDamping = b->linearDamping();
+		//bdef.angularDamping = b->angularDamping();
+		//bdef.fixedRotation = b->fixedRotation();
+		//bdef.bullet = b->bullet();
+		//bdef.gravityScale = b->gravityScale();
 
-		r._generateBody(world, &fdef, &bdef);
+		//b2FixtureDef fdef;
+		//fdef.friction = b->friction();
+		//fdef.density = b->density();
+		//fdef.restitution = b->restitution();
+
+		//r._generateBody(world, &fdef, &bdef);
 
 		return r;
 
@@ -407,11 +436,24 @@ public:
 	std::shared_ptr<Collider> collider;
 
 private:
+
+	// state of body and fixture must be stored outside of world context as the rigidbody
+	// can be created before it is registered to a scene/world
+	struct RigidbodyDescription {
+		float linearDamping = 0.1f;
+		float angularDamping = 0.1f;
+		bool fixedRotation = false;
+		bool bullet = false;
+		float gravityScale = 1.0f;
+		float friction = 0.3f;
+		float density = 1.0f;
+		float restitution = 0.5f;
+	};
+	RigidbodyDescription desc; // currently only used for construction at registration
+
 	b2Body* body = nullptr;
 	b2Fixture* fixture = nullptr;
-	//b2FixtureDef fixtureDef;
-	//b2BodyDef bodyDef;
 
-	std::shared_ptr<b2World> world;
+	b2World * world;
 };
 

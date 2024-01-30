@@ -29,7 +29,7 @@
 using namespace glm;
 using namespace std;
 
-void ColoredQuadPL::CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc, vk::RenderPass& renderTarget, MappedDoubleBuffer<void>& cameradb, bool flipFaces) {
+void ColoredQuadPL::CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc, vk::RenderPass& renderTarget, MappedDoubleBuffer<cameraUBO_s>& cameradb, bool flipFaces) {
 
 	auto shaderStages = createShaderStages(vertexSrc, fragmentSrc);
 

@@ -37,7 +37,7 @@ namespace VKUtil{
 			}
 		};
 
-		MappedDoubleBuffer<void> transferBuffers;
+		MappedDoubleBuffer<T> transferBuffers;
 
 		std::array<bool, FRAMES_IN_FLIGHT> uploadDirtyFlags = { true, true };
 	};

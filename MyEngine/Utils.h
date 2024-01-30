@@ -16,6 +16,8 @@
 #include <filesystem>
 #include <Windows.h>
 
+#include <glm/glm.hpp>
+
 #include "typedefs.h"
 
 
@@ -164,6 +166,27 @@ static std::vector<uint8_t> readFile(const std::string& filename, int offset, in
 
 static bool within(glm::vec2 rectStart, glm::vec2  rectEnd, glm::vec2 pos) {
     return pos.x > rectStart.x && pos.x < rectEnd.x && pos.y > rectStart.y && pos.y < rectEnd.y;
+}
+
+// convert from normalized coordinates to pixels from top left
+static inline glm::vec2 worldToScreenPos(glm::vec2 pos, const Camera camera, const glm::vec2 frameSize) {
+    pos *= glm::vec2(1.0f, -1.0f);
+    pos += glm::vec2(-camera.position.x, camera.position.y);
+    pos *= camera.zoom;
+    pos += glm::vec2((float)frameSize.x / frameSize.y, 1.0f);
+    pos *= glm::vec2(frameSize.y / 2.0f);
+    return pos;
+}
+
+static inline glm::vec2 screenToWorldPos(glm::vec2 pos, const Camera camera, const glm::vec2 frameSize) {
+
+    pos /= glm::vec2(frameSize.y / 2.0f);
+    pos -= glm::vec2((float)frameSize.x / frameSize.y, 1.0f);
+    pos /= camera.zoom;
+    pos -= glm::vec2(-camera.position.x, camera.position.y);
+    pos /= glm::vec2(1.0f, -1.0f);
+
+    return pos;
 }
 
 

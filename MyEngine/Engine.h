@@ -59,6 +59,8 @@ struct debugStats {
 
 
 struct ScenePipelineContext {
+	MappedDoubleBuffer<cameraUBO_s> cameraBuffers;
+
 	std::unique_ptr<TilemapPL> tilemapPipeline = nullptr;
 	std::unique_ptr<ColoredQuadPL> colorPipeline = nullptr;
 	std::unique_ptr<TexturedQuadPL> texturePipeline = nullptr;
@@ -71,9 +73,9 @@ class Engine {
 public:
 
 	struct SceneRenderJob{
-		std::shared_ptr<Scene> scene;
-		Camera camera;
-		sceneRenderContextID sceneRenderCtxID;
+		std::shared_ptr<Scene> scene = nullptr;
+		Camera camera = {};
+		sceneRenderContextID sceneRenderCtxID = 0;
 	};
 
 
@@ -85,8 +87,8 @@ public:
 		GlobalTextureDesc(rengine),
 		globalTextureBindingManager(MAX_TEXTURE_RESOURCES)
 	{
-		bworld = std::make_shared<b2World>(gravity);
-		currentScene = std::make_shared<Scene>(bworld);
+		//bworld = std::make_shared<b2World>(gravity);
+		//currentScene = std::make_shared<Scene>(bworld);
 
 		DebugLog("Engine created");
 	}
@@ -99,12 +101,12 @@ public:
 
 	bool QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, bool drawImgui);
 
-	void EntityStartUpdate() {
+	void EntityStartUpdate(std::shared_ptr<Scene> scene) {
 		if (paused)
 			return;
 
 		Entity::DeltaTime = deltaTime;
-		for (auto& i : currentScene->sceneData.entities) {
+		for (auto& i : scene->sceneData.entities) {
 			i.second->_runStartUpdate();
 		}
 	};
@@ -127,7 +129,7 @@ public:
 	};
 
 
-	std::shared_ptr<b2World> bworld = nullptr;
+	//std::shared_ptr<b2World> bworld = nullptr;
 
 	bool paused = true;
 	double deltaTime = 0.0;
@@ -137,28 +139,28 @@ public:
 
 	std::shared_ptr<AssetManager> assetManager;
 
-	Camera tmp_camera;
+	//Camera tmp_camera;
 
-	// convert from normalized coordinates to pixels from top left
-	glm::vec2 worldToScreenPos(glm::vec2 pos) {
-		pos *= glm::vec2(1.0f, -1.0f);
-		pos += glm::vec2(-tmp_camera.position.x, tmp_camera.position.y);
-		pos *= tmp_camera.zoom;
-		pos += glm::vec2((float)winW / winH, 1.0f);
-		pos *= glm::vec2(winH / 2.0f);
-		return pos;
-	}
+	//// convert from normalized coordinates to pixels from top left
+	//glm::vec2 worldToScreenPos(glm::vec2 pos) {
+	//	pos *= glm::vec2(1.0f, -1.0f);
+	//	pos += glm::vec2(-tmp_camera.position.x, tmp_camera.position.y);
+	//	pos *= tmp_camera.zoom;
+	//	pos += glm::vec2((float)winW / winH, 1.0f);
+	//	pos *= glm::vec2(winH / 2.0f);
+	//	return pos;
+	//}
 
-	glm::vec2 screenToWorldPos(glm::vec2 pos) {
+	//glm::vec2 screenToWorldPos(glm::vec2 pos) {
 
-		pos /= glm::vec2(winH / 2.0f);
-		pos -= glm::vec2((float)winW / winH, 1.0f);
-		pos /= tmp_camera.zoom;
-		pos -= glm::vec2(-tmp_camera.position.x, tmp_camera.position.y);
-		pos /= glm::vec2(1.0f, -1.0f);
+	//	pos /= glm::vec2(winH / 2.0f);
+	//	pos -= glm::vec2((float)winW / winH, 1.0f);
+	//	pos /= tmp_camera.zoom;
+	//	pos -= glm::vec2(-tmp_camera.position.x, tmp_camera.position.y);
+	//	pos /= glm::vec2(1.0f, -1.0f);
 
-		return pos;
-	}
+	//	return pos;
+	//}
 
 	debugStats& _getDebugStats() {
 		return runningStats;
@@ -286,12 +288,12 @@ public:
 		screenSpaceTextureDrawlist.clear();
 	}
 
-	void SetScene(std::shared_ptr<Scene> scene) {
-		currentScene = scene;
-	}
-	std::shared_ptr<Scene> GetCurrentScene() {
-		return currentScene;
-	}
+	//void SetScene(std::shared_ptr<Scene> scene) {
+	//	currentScene = scene;
+	//}
+	//std::shared_ptr<Scene> GetCurrentScene() {
+	//	return currentScene;
+	//}
 
 	sceneRenderContextID CreateSceneRenderContext(glm::ivec2 size, glm::vec4 clearColor = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)) {
 
@@ -311,12 +313,26 @@ public:
 		resourceManager->ResizeFramebuffer(sceneRenderContextMap.find(id)->second.fb, size);
 	}
 
+	framebufferID GetSceneRenderContextFramebuffer(sceneRenderContextID id) {
+		return sceneRenderContextMap.find(id)->second.fb;
+	}
+
+	glm::ivec2 GetFramebufferSize(framebufferID id) {
+		return resourceManager->GetFramebuffer(id)->targetSize;
+	}
+
+	void ImGuiFramebufferImage(framebufferID framebuffer, glm::ivec2 displaySize) {
+		auto fb = resourceManager->GetFramebuffer(framebuffer);
+		auto tex = fb->textures[rengine->currentFrame];
+		ImGui::Image((ImTextureID)tex->imTexture.value(), ImVec2(displaySize.x, displaySize.y));
+	};
+
 private:
 
 	GlobalImageDescriptor GlobalTextureDesc;
 	BindingManager<texID, Texture*> globalTextureBindingManager;
 
-	std::shared_ptr<Scene> currentScene = nullptr;
+	//std::shared_ptr<Scene> currentScene = nullptr;
 	std::queue<texID> textureBindingDeletionQueue;
 	std::shared_ptr<ResourceManager::ChangeFlags> resourceChangeFlags;
 	std::shared_ptr<ResourceManager> resourceManager = nullptr;
@@ -351,11 +367,6 @@ private:
 
 	texID texNotFoundID; // displayed when indexing incorrectly 
 
-	//std::unique_ptr<TilemapPL> tilemapPipeline = nullptr;
-	//std::unique_ptr<ColoredQuadPL> colorPipeline = nullptr;
-	//std::unique_ptr<TexturedQuadPL> texturePipeline = nullptr;
-	//std::unique_ptr<TextPL> textPipeline = nullptr;
-
 	std::unique_ptr<LightingComputePL> lightingPipeline = nullptr;
 
 	void createScenePLContext(ScenePipelineContext* ctx, vk::RenderPass renderpass);
@@ -368,7 +379,7 @@ private:
 	std::unique_ptr<TexturedQuadPL> screenSpaceTexturePipeline = nullptr;
 	std::unique_ptr<TextPL> screenSpaceTextPipeline = nullptr;
 
-	VKUtil::BufferUploader<cameraUBO_s> cameraUploader;
+	//VKUtil::BufferUploader<cameraUBO_s> cameraUploader;
 	VKUtil::BufferUploader<cameraUBO_s> screenSpaceTransformUploader;
 
 	uint32_t frameCounter = 0;
@@ -382,12 +393,9 @@ private:
 	const static int frameTimeBufferCount = 128;
 	float frameTimes[frameTimeBufferCount];
 
-	void initPhysics();
-	void updatePhysics();
 	void InitImgui();
 
 	// physics settings
-	const b2Vec2 gravity = b2Vec2(0.0f, -10.0f);
 	const double timeStep = 1.0f / 60.0f;
 	const int32 velocityIterations = 6;
 	const int32 positionIterations = 2;

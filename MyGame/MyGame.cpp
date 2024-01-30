@@ -225,10 +225,12 @@ int main() {
 	Engine engine(rengine);
 	engine.Start(videoSettings, AssetDirectories);
 
-	const auto& scene = engine.GetCurrentScene(); // quick reference
+	shared_ptr<Scene> scene = make_shared<Scene>(); ///engine.GetCurrentScene(); // quick reference
+	sceneRenderContextID sceneRenderCtx = engine.CreateSceneRenderContext({ engine.winW , engine.winH }, { 0.2, 0.3, 1.0, 1 });
+	editor.SetGameScene(scene, sceneRenderCtx);
+
 	input = engine.GetInput();
 
-	sceneRenderContextID sceneRenderCtx = engine.CreateSceneRenderContext({ engine.winW , engine.winH }, { 0.3, 0.3, 1.0, 1 });
 
 	Camera mainCamera{
 		glm::vec2(0.0f),
@@ -237,7 +239,7 @@ int main() {
 
 	engine.assetManager->LoadAllSprites();
 	engine.assetManager->LoadAllFonts();
-	engine.assetManager->LoadAllPrefabs(engine.bworld, false);
+	engine.assetManager->LoadAllPrefabs(false);
 
 	tileWolrdGlobalRef = engine.worldMap;
 
@@ -305,6 +307,8 @@ int main() {
 	while (!engine.ShouldClose())
 	{
 		ZoneScopedN("main application loop");
+
+		bool editorToggledThisFrame = false;
 
 		engine.clearScreenSpaceDrawlist();
 
@@ -546,12 +550,13 @@ int main() {
 			}
 #endif
 
-			engine.EntityStartUpdate();
+			engine.EntityStartUpdate(scene);
 
 			if (ImGui::GetIO().WantTextInput == false) {
 #ifdef USING_EDITOR
 				if (input->getKeyDown('e')) {
 					showingEditor = !showingEditor;
+					editorToggledThisFrame = true;
 				}
 #endif
 				if (input->getKeyDown('p')) {
@@ -688,6 +693,20 @@ int main() {
 		}
 
 
+
+		if (engine.WindowResizedLastFrame() || (editorToggledThisFrame && showingEditor == false)) {
+			engine.ResizeSceneRenderContext(sceneRenderCtx, engine.getWindowSize());
+		}
+
+		// draw main scene full screen
+		if (showingEditor == false) {
+			framebufferID fb = engine.GetSceneRenderContextFramebuffer(sceneRenderCtx);
+			engine.addScreenCenteredSpaceFramebufferTexture(fb, vec2(engine.winW, engine.winH) / 2.0f, engine.winH, 0);
+		}
+
+
+		// render main scene no matter what as the editor will use it if active
+
 		Engine::SceneRenderJob mainSceneRender;
 		mainSceneRender.scene = scene;
 		mainSceneRender.camera = mainCamera;
@@ -696,8 +715,6 @@ int main() {
 		vector<Engine::SceneRenderJob> sceneRenderJobs;
 		sceneRenderJobs.push_back(mainSceneRender);
 
-
-		engine.tmp_camera = mainCamera;
 
 		engine.QueueNextFrame(sceneRenderJobs, showingEditor);
 	}

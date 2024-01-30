@@ -16,10 +16,15 @@
 #include "Physics.h"
 
 Rigidbody Rigidbody::duplicate() {
+
+	assert(false); // haven't figured out if this works with new scene/world registration logic
+
 	Rigidbody r;
 	r.collider = collider->duplicate();
 
-	b2BodyDef bd;
+	r.desc = desc; // ??
+
+	/*b2BodyDef bd;
 	bd.position = gtb(_getPosition());
 	bd.angle = _getRotation();
 	bd.linearDamping = GetLinearDamping();
@@ -33,7 +38,7 @@ Rigidbody Rigidbody::duplicate() {
 	fd.friction = GetFriction();
 	fd.restitution = GetRestitution();
 
-	r._generateBody(world, &fd, &bd);
+	r._generateBody(world, &fd, &bd);*/
 
 	return r;
 }

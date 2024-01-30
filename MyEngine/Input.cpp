@@ -47,6 +47,11 @@ namespace {
 
 void Input::_newFrame() {
 	scrollDelta = ScrollAccumulator;
+
+	if (scrollDelta > 0) {
+		int bbreak = 0;
+	}
+
 	ScrollAccumulator = 0;
 	
 	currentFrameIndex = !currentFrameIndex;

@@ -103,16 +103,14 @@ void Scene::serializeJson(std::string filename) {
 	output.close();
 }
 
-std::shared_ptr<Scene> Scene::deserializeJson(std::string filename, std::shared_ptr<b2World> world) {
-	assert(world != nullptr);
-
+std::shared_ptr<Scene> Scene::deserializeJson(std::string filename) {
 
 	checkAppend(filename, ".scene");
 	std::ifstream input(filename);
 	json j;
 	input >> j;
 
-	auto scene = std::make_shared<Scene>(world);
+	auto scene = std::make_shared<Scene>();
 
 	scene->name = j["name"];
 
@@ -139,12 +137,12 @@ std::shared_ptr<Scene> Scene::deserializeJson(std::string filename, std::shared_
 	}
 	for (auto& i : j["rigidbodies"]) {
 		entityID entID = i["entityID"];
-		Rigidbody r = Rigidbody::deserializeJson(i, world);
+		Rigidbody r = Rigidbody::deserializeJson(i);
 		scene->registerComponent(entID, r);
 	}
 	for (auto& i : j["staticbodies"]) {
 		entityID entID = i["entityID"];
-		Staticbody r = Staticbody::deserializeJson(i, world);
+		Staticbody r = Staticbody::deserializeJson(i);
 		scene->registerComponent(entID, r);
 	}
 
@@ -152,8 +150,8 @@ std::shared_ptr<Scene> Scene::deserializeJson(std::string filename, std::shared_
 }
 
 
-std::shared_ptr<Scene> Scene::deserializeFlatbuffers(const AssetPack::Scene * s, std::shared_ptr<b2World> world) {
-	auto scene = std::make_shared<Scene>(world);
+std::shared_ptr<Scene> Scene::deserializeFlatbuffers(const AssetPack::Scene * s) {
+	auto scene = std::make_shared<Scene>();
 
 	scene->name = s->name()->str();
 
@@ -179,12 +177,12 @@ std::shared_ptr<Scene> Scene::deserializeFlatbuffers(const AssetPack::Scene * s,
 		scene->registerComponent(entID, r);
 	}
 	for (size_t i = 0; i < s->rigidbodies()->size(); i++) {
-		Rigidbody r = Rigidbody::deserializeFlatbuffers(s->rigidbodies()->Get(i), world);
+		Rigidbody r = Rigidbody::deserializeFlatbuffers(s->rigidbodies()->Get(i));
 		entityID entID = s->rigidbodies()->Get(i)->entityID();
 		scene->registerComponent(entID, r);
 	}
 	for (size_t i = 0; i < s->staticbodies()->size(); i++) {
-		Staticbody r = Staticbody::deserializeFlatbuffers(s->staticbodies()->Get(i), world);
+		Staticbody r = Staticbody::deserializeFlatbuffers(s->staticbodies()->Get(i));
 		entityID entID = s->staticbodies()->Get(i)->entityID();
 		scene->registerComponent(entID, r);
 	}
@@ -338,7 +336,7 @@ template <>
 void Scene::registerComponent(entityID id, Rigidbody r) {
 	const auto& t = sceneData.entities[id]->transform;
 	if (r._bodyGenerated() == false) {
-		r._generateBody(bworld, t.position, t.rotation);
+		r._generateBody(&bworld, t.position, t.rotation);
 	}
 	else {
 		r.SetTransform(t.position, t.rotation);
@@ -351,7 +349,7 @@ template <>
 void Scene::registerComponent(entityID id, Staticbody s) {
 	const auto& t = sceneData.entities[id]->transform;
 	//s.body->SetTransform(gtb(t.position), t.rotation);
-	s._generateBody(t.position, t.rotation);
+	s._generateBody(&bworld, t.position, t.rotation);
 	sceneData.staticbodies[id] = s;
 };
 

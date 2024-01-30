@@ -115,6 +115,8 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 
 void Engine::createScenePLContext(ScenePipelineContext* ctx, vk::RenderPass renderpass) {
 
+	rengine->createMappedBuffer(sizeof(cameraUBO_s), vk::BufferUsageFlagBits::eUniformBuffer, ctx->cameraBuffers);
+
 	// section can be done in parrallel
 
 	{
@@ -132,25 +134,25 @@ void Engine::createScenePLContext(ScenePipelineContext* ctx, vk::RenderPass rend
 		vector<uint8_t> vert, frag;
 		assetManager->LoadShaderFile("color_vert.spv", vert);
 		assetManager->LoadShaderFile("color_frag.spv", frag);
-		ctx->colorPipeline->CreateGraphicsPipeline(vert, frag, renderpass, cameraUploader.transferBuffers);
+		ctx->colorPipeline->CreateGraphicsPipeline(vert, frag, renderpass, ctx->cameraBuffers);
 	}
 	{
 		vector<uint8_t> vert, frag;
 		assetManager->LoadShaderFile("texture_vert.spv", vert);
 		assetManager->LoadShaderFile("texture_frag.spv", frag);
-		ctx->texturePipeline->CreateGraphicsPipeline(vert, frag, renderpass, &GlobalTextureDesc, cameraUploader.transferBuffers);
+		ctx->texturePipeline->CreateGraphicsPipeline(vert, frag, renderpass, &GlobalTextureDesc, ctx->cameraBuffers);
 	}
 	{
 		vector<uint8_t> vert, frag;
 		assetManager->LoadShaderFile("tilemap_vert.spv", vert);
 		assetManager->LoadShaderFile("tilemap_frag.spv", frag);
-		ctx->tilemapPipeline->CreateGraphicsPipeline(vert, frag, renderpass, cameraUploader.transferBuffers);
+		ctx->tilemapPipeline->CreateGraphicsPipeline(vert, frag, renderpass, ctx->cameraBuffers);
 	}
 	{
 		vector<uint8_t> vert, frag;
 		assetManager->LoadShaderFile("text_vert.spv", vert);
 		assetManager->LoadShaderFile("text_frag.spv", frag);
-		ctx->textPipeline->CreateGraphicsPipeline(vert, frag, renderpass, &GlobalTextureDesc, cameraUploader.transferBuffers);
+		ctx->textPipeline->CreateGraphicsPipeline(vert, frag, renderpass, &GlobalTextureDesc, ctx->cameraBuffers);
 	}
 }
 
@@ -200,7 +202,7 @@ void Engine::Start(const VideoSettings& initialSettings, AssetManager::AssetPath
 
 	// create some buffers
 	{
-		cameraUploader.CreateBuffers(rengine);
+		//cameraUploader.CreateBuffers(rengine);
 		screenSpaceTransformUploader.CreateBuffers(rengine);
 		AllocateQuad(rengine, quadMeshBuffer);
 		worldMap = make_shared<TileWorld>(rengine);
@@ -276,23 +278,14 @@ void Engine::ApplyNewVideoSettings(const VideoSettings settings) {
 
 void Engine::recordSceneContextGraphics(const ScenePipelineContext& ctx, framebufferID framebuffer, std::shared_ptr<Scene> scene, const Camera& camera, vk::CommandBuffer& cmdBuffer) {
 
-	// user povided scene
-
-	// screen space to world space conversions use tmpcamera
-
-	// get rid of tmpcamera 
-
-	{
-		assert(false); // need per camera update
-		cameraUploader.Invalidate();
-		cameraUBO_s camData;
-		camData.aspectRatio = (float)winH / (float)winW;
-		camData.position = tmp_camera.position;
-		camData.zoom = tmp_camera.zoom;
-		cameraUploader.SyncBufferData(camData, rengine->currentFrame);
-	}
-
 	auto fb = resourceManager->GetFramebuffer(framebuffer);
+
+	// update camera transform for scene
+	{
+		ctx.cameraBuffers.buffersMapped[rengine->currentFrame]->aspectRatio = (float)fb->extents[rengine->currentFrame].height / (float)fb->extents[rengine->currentFrame].width;
+		ctx.cameraBuffers.buffersMapped[rengine->currentFrame]->position = camera.position;
+		ctx.cameraBuffers.buffersMapped[rengine->currentFrame]->zoom = camera.zoom;
+	}
 
 	// viewport for camera
 	{
@@ -328,11 +321,11 @@ void Engine::recordSceneContextGraphics(const ScenePipelineContext& ctx, framebu
 		ZoneScopedN("Colored quad PL");
 
 		vector<ColoredQuadPL::InstanceBufferData> drawlist;
-		drawlist.reserve(currentScene->sceneData.colorRenderers.size());
+		drawlist.reserve(scene->sceneData.colorRenderers.size());
 
-		for (auto& renderer : currentScene->sceneData.colorRenderers)
+		for (auto& renderer : scene->sceneData.colorRenderers)
 		{
-			const auto& entity = currentScene->sceneData.entities[renderer.first];
+			const auto& entity = scene->sceneData.entities[renderer.first];
 
 			ColoredQuadPL::InstanceBufferData instanceData;
 
@@ -362,13 +355,13 @@ void Engine::recordSceneContextGraphics(const ScenePipelineContext& ctx, framebu
 	{
 		ZoneScopedN("Textured quad PL");
 
-		if (currentScene->sceneData.spriteRenderers.size() > 0) {
+		if (scene->sceneData.spriteRenderers.size() > 0) {
 			vector<TexturedQuadPL::ssboObjectInstanceData> drawlist;
-			drawlist.reserve(currentScene->sceneData.spriteRenderers.size());
+			drawlist.reserve(scene->sceneData.spriteRenderers.size());
 
-			for (auto& [entID, renderer] : currentScene->sceneData.spriteRenderers)
+			for (auto& [entID, renderer] : scene->sceneData.spriteRenderers)
 			{
-				const auto& entity = currentScene->sceneData.entities[entID];
+				const auto& entity = scene->sceneData.entities[entID];
 
 				auto s = assetManager->GetSprite(renderer.sprite);
 
@@ -400,13 +393,13 @@ void Engine::recordSceneContextGraphics(const ScenePipelineContext& ctx, framebu
 	{
 		ZoneScopedN("Text PL");
 
-		if (currentScene->sceneData.textRenderers.size() > 0) {
+		if (scene->sceneData.textRenderers.size() > 0) {
 			ctx.textPipeline->ClearTextData(rengine->currentFrame);
 
 			int i = 0;
-			for (auto& [entID, r] : currentScene->sceneData.textRenderers) {
+			for (auto& [entID, r] : scene->sceneData.textRenderers) {
 
-				const auto& entity = currentScene->sceneData.entities[entID];
+				const auto& entity = scene->sceneData.entities[entID];
 
 				shared_ptr<Font> f = assetManager->GetFont(r.font);
 				auto sprite = assetManager->GetSprite(f->atlas);
@@ -454,6 +447,8 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 	frameTimes[frameTimeIndex++] = framerate;
 	frameTimeIndex = frameTimeIndex % frameTimeBufferCount;
 
+	windowResizedLastFrame = false;
+
 	lastTime = time;
 	this->time = time;
 
@@ -468,17 +463,26 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 		physicsTimer += deltaTime;
 	}
 
+	// TODO: this is not the place to do this. Function does not imply it will update the scene physics
 	{
 		ZoneScopedN("Update physics");
+
+
+		{
+
+		}
 		while (physicsTimer >= timeStep) {
-			updatePhysics();
+			for (auto& ctx : sceneRenderJobs)
+				ctx.scene->bworld.Step(timeStep, velocityIterations, positionIterations);
 			physicsTimer -= timeStep;
 		}
 
-		for (auto& body : currentScene->sceneData.rigidbodies)
-		{
-			currentScene->sceneData.entities[body.first]->transform.position = body.second._getPosition();
-			currentScene->sceneData.entities[body.first]->transform.rotation = body.second._getRotation();
+		for (auto& ctx : sceneRenderJobs) {
+			for (auto& body : ctx.scene->sceneData.rigidbodies)
+			{
+				ctx.scene->sceneData.entities[body.first]->transform.position = body.second._getPosition();
+				ctx.scene->sceneData.entities[body.first]->transform.rotation = body.second._getRotation();
+			}
 		}
 	}
 
@@ -555,9 +559,6 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 				std::unique_lock<std::mutex> lock(resourceManager->texMapMtx);
 				for (auto& [ID, tex] : *resourceManager->GetInternalTextureResources()) {
 
-					// REMOVE ONCE TESTED
-					//assert(&tex == resourceManager->GetTexture(ID));
-
 					if (globalTextureBindingManager.HasBinding(ID)) {
 
 						indexes.push_back(globalTextureBindingManager.getIndexFromBinding(ID));
@@ -580,16 +581,9 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 
 	auto cmdBuffer = rengine->getNextGfxCommandBuffer();
 
-	//recordSceneContextGraphics(tmp_sceneContext, camera, cmdBuffer);
-
 	for (auto& ctx : sceneRenderJobs)
 	{
 		recordSceneContextGraphics(sceneRenderContextMap.find(ctx.sceneRenderCtxID)->second.pl, sceneRenderContextMap.find(ctx.sceneRenderCtxID)->second.fb, ctx.scene, ctx.camera, cmdBuffer);
-	}
-
-
-	{
-		addScreenCenteredSpaceFramebufferTexture(sceneRenderContextMap.find(sceneRenderJobs[0].sceneRenderCtxID)->second.fb, vec2(winW, winH) / 2.0f, winH, 0);
 	}
 
 	// we have to wait for the previous frame to finish presenting so we can determine what image the
@@ -614,6 +608,7 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 			//resourceManager->ResizeFramebuffer(tmp_cameraFB, { winW, winH });
 
 			_onWindowResize();
+			windowResizedLastFrame = true;
 		}
 
 
@@ -656,8 +651,10 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 		cmdBuffer.bindIndexBuffer(quadMeshBuffer.indexBuffer, 0, vk::IndexType::eUint16);
 	}
 
-
-	runningStats.entity_count = currentScene->sceneData.entities.size();
+	for (auto& ctx : sceneRenderJobs)
+	{
+		runningStats.entity_count = ctx.scene->sceneData.entities.size();
+	}
 
 	// screenspace quad
 	{
@@ -736,12 +733,6 @@ bool Engine::ShouldClose() {
 void Engine::Close() {
 	rengine->cleanup();
 }
-
-
-void Engine::updatePhysics() {
-	bworld->Step(timeStep, velocityIterations, positionIterations);
-}
-
 
 
 

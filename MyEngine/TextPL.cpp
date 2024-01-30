@@ -35,7 +35,7 @@ using namespace glm;
 using namespace std;
 
 
-void TextPL::CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc, vk::RenderPass& renderTarget, GlobalImageDescriptor* textureDescriptor, MappedDoubleBuffer<void>& cameradb, bool flipFaces) {
+void TextPL::CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc, vk::RenderPass& renderTarget, GlobalImageDescriptor* textureDescriptor, MappedDoubleBuffer<cameraUBO_s>& cameradb, bool flipFaces) {
 
 	this->textureDescriptor = textureDescriptor;
 

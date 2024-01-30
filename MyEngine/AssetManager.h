@@ -169,12 +169,12 @@ public:
 	};
 
 	// load and assemble all prefabs
-	void LoadAllPrefabs(std::shared_ptr<b2World> world, bool loadResources);
-	void LoadPrefab(std::string name, std::shared_ptr<b2World> world, bool loadResources);
+	void LoadAllPrefabs(bool loadResources);
+	void LoadPrefab(std::string name, bool loadResources);
 	// void UnloadPrefab(std::string name, bool unloadResources); TODO: should impliment but probably won't ever need
 	Prefab GetPrefab(std::string name) { return prefabAssets[name]; };
 
-	void LoadScene(std::string sceneName, std::shared_ptr<b2World> world, bool loadResources = true);
+	void LoadScene(std::string sceneName, bool loadResources = true);
 	void UnloadScene(std::string sceneName, bool unloadResources);
 	std::shared_ptr<Scene> GetScene(std::string name) { return sceneAssets.find(name)->second; };
 

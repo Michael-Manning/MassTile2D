@@ -30,7 +30,7 @@ public:
 	TilemapPL(std::shared_ptr<VKEngine>& engine, std::shared_ptr<TileWorld> world) : Pipeline(engine), world(world) {
 	}
 
-	void CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc, vk::RenderPass& renderTarget, MappedDoubleBuffer<void>& cameradb);
+	void CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc, vk::RenderPass& renderTarget, MappedDoubleBuffer<cameraUBO_s>& cameradb);
 	void recordCommandBuffer(vk::CommandBuffer commandBuffer);
 
 	void setTextureAtlas(Texture* textureAtlas) {
@@ -54,7 +54,7 @@ public:
 private:
 
 
-	VKUtil::BufferUploader<cameraUBO_s> cameraUploader;
+	//VKUtil::BufferUploader<cameraUBO_s> cameraUploader;
 
 	std::shared_ptr<TileWorld> world = nullptr;
 

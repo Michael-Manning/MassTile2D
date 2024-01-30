@@ -188,7 +188,7 @@ void AssetManager::UnloadFont(fontID fontID, bool freeResources) {
 }
 
 // load and assemble all prefabs
-void AssetManager::LoadAllPrefabs(std::shared_ptr<b2World> world, bool loadResources) {
+void AssetManager::LoadAllPrefabs(bool loadResources) {
 
 	assert(allLoadedPrefabs == false);
 	allLoadedPrefabs = true;
@@ -198,33 +198,34 @@ void AssetManager::LoadAllPrefabs(std::shared_ptr<b2World> world, bool loadResou
 		return;
 
 	for (int i = 0; i < packageAssets->prefabs()->size(); i++) {
-		auto prefab = Prefab::deserializeFlatbuffer(packageAssets->prefabs()->Get(i), world);
+		auto prefab = Prefab::deserializeFlatbuffer(packageAssets->prefabs()->Get(i));
 		prefabAssets[prefab.name] = prefab;
 #else
 	for (auto& [name, path] : prefabPathsByName) {
-		prefabAssets[name] = Prefab::deserializeJson(path, world);
+		prefabAssets[name] = Prefab::deserializeJson(path);
 #endif
 	}
 }
 
 
-void AssetManager::LoadPrefab(std::string name, std::shared_ptr<b2World> world, bool loadResources) {
+void AssetManager::LoadPrefab(std::string name, bool loadResources) {
 #ifdef USE_PACKED_ASSETS
-	prefabAssets[name] = Prefab::deserializeFlatbuffer(packageAssets->prefabs()->Get(prefabIndexesByName[name]), world);
+	prefabAssets[name] = Prefab::deserializeFlatbuffer(packageAssets->prefabs()->Get(prefabIndexesByName[name]));
 #else
 	assert(prefabPathsByName.contains(name));
-	prefabAssets[name] = Prefab::deserializeJson(prefabPathsByName[name], world);
+	prefabAssets[name] = Prefab::deserializeJson(prefabPathsByName[name]);
 #endif
 	if (loadResources)
 		loadPrefabResources(prefabAssets[name]);
 }
 
 
-void AssetManager::LoadScene(std::string sceneName, std::shared_ptr<b2World> world, bool loadResources) {
+void AssetManager::LoadScene(std::string sceneName, bool loadResources) {
+
 #ifdef USE_PACKED_ASSETS
-	auto scene = Scene::deserializeFlatbuffers(packageAssets->scenes()->Get(sceneIndexesByName[sceneName]), world);
+	auto scene = Scene::deserializeFlatbuffers(packageAssets->scenes()->Get(sceneIndexesByName[sceneName]));
 #else
-	auto scene = Scene::deserializeJson(scenePathsByName[sceneName], world);
+	auto scene = Scene::deserializeJson(scenePathsByName[sceneName]);
 	assert(scenePathsByName.contains(sceneName));
 #endif
 	sceneAssets.emplace(sceneName, scene);

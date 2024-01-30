@@ -21,6 +21,7 @@
 #include "Constants.h"
 #include "BindingManager.h"
 #include "GlobalImageDescriptor.h"
+#include "globalBufferDefinitions.h"
 
 constexpr int TexturedQuadPL_MAX_TEXTURES = 10;
 constexpr int TexturedQuadPL_MAX_OBJECTS = 100000;
@@ -45,10 +46,9 @@ public:
 	static_assert(sizeof(ssboObjectInstanceData) % 16 == 0);
 
 	TexturedQuadPL(std::shared_ptr<VKEngine>& engine) : 
-		//bindingManager(TexturedQuadPL_MAX_TEXTURES), 
 		Pipeline(engine) { }
 
-	void CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc, vk::RenderPass& renderTarget, GlobalImageDescriptor* textureDescriptor, MappedDoubleBuffer<void>& cameradb, bool flipFaces = false);
+	void CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc, vk::RenderPass& renderTarget, GlobalImageDescriptor* textureDescriptor, MappedDoubleBuffer<cameraUBO_s>& cameradb, bool flipFaces = false);
 	
 	void createSSBOBuffer();
 
@@ -61,6 +61,4 @@ private:
 	GlobalImageDescriptor* textureDescriptor = nullptr;
 
 	MappedDoubleBuffer<> ssboMappedDB;
-
-	//BindingManager<texID, Texture*> bindingManager;
 };
