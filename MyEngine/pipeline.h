@@ -27,7 +27,8 @@ struct ShaderResourceConfig {
 	std::vector<uint8_t> computeSrc;
 	std::vector<DescriptorManager::descriptorSetInfo> descriptorInfos;
 	std::vector<GlobalDescriptorBinding> globalDescriptors;
-
+	bool flipFaces;
+	vk::RenderPass renderTarget;
 	PushConstantInfo pushInfo;
 };
 

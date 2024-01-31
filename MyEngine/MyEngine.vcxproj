@@ -343,7 +343,9 @@
     <ClCompile Include="GlobalImageDescriptor.h">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="GraphicsTemplate.cpp" />
     <ClCompile Include="LightingComputePL.cpp" />
+    <ClCompile Include="ParticleSystemPL.cpp" />
     <ClCompile Include="quadComputePL.cpp" />
     <ClCompile Include="ResourceManager.cpp" />
     <ClCompile Include="stdafx.cpp">
@@ -392,8 +394,10 @@
     <ClInclude Include="FileDialog.h" />
     <ClInclude Include="Font.h" />
     <ClInclude Include="FontGenerator.h" />
+    <ClInclude Include="GraphicsTemplate.h" />
     <ClInclude Include="Input.h" />
     <ClInclude Include="LightingComputePL.h" />
+    <ClInclude Include="ParticleSystemPL.h" />
     <ClInclude Include="PrefabGenerator.h" />
     <ClInclude Include="quadComputePL.h" />
     <ClInclude Include="ResourceManager.h" />
