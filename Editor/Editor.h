@@ -6,16 +6,21 @@
 #include "typedefs.h"
 
 
+// TODO: store engine in class instead of passing it all over the place
+
 class Editor {
 public:
 
 	void Run(Engine& engine);
 
-	void SetGameScene(std::shared_ptr<Scene> gameScene, sceneRenderContextID sceneRenderContext) {
-		this->gameScene = gameScene;
-		this->sceneRenderContext = sceneRenderContext;
-	};
+	void Initialize(Engine& engine, std::shared_ptr<Scene> gameScene, sceneRenderContextID sceneRenderContext);
 
+	std::vector<Engine::SceneRenderJob> GetAdditionalRenderJobs() {
+		std::vector<Engine::SceneRenderJob> jobs;
+		jobs.push_back(entityPreviewRenderJob);
+		return jobs;
+	}
+	
 
 	bool showingCreateWindow = false;
 	
@@ -23,8 +28,17 @@ public:
 
 private:
 
+	Camera previewCamera;
+	std::shared_ptr<Scene> entityPreviewScene;
+	Engine::SceneRenderJob entityPreviewRenderJob;
+	sceneRenderContextID entityPreviewsSeneRenderContextID;
+	glm::vec2 entityPrviewFrameSize;
+	framebufferID entityPreviewFramebuffer;
+	glm::vec2 previewSceneViewerScreenLocation;
+
 	std::shared_ptr<Scene> gameScene = nullptr;
 	sceneRenderContextID sceneRenderContext;
+	framebufferID sceneFramebuffer;
 
 	template<typename T>
 	bool drawInspector(T& comp, Engine& engine);
@@ -47,10 +61,13 @@ private:
 	template<>
 	bool drawInspector<Staticbody>(Staticbody& r, Engine& engine);
 
-	void DrawGrid(Engine& engine);
+	void DrawGameSceneGrid(Engine& engine, ImDrawList* drawlist, glm::vec2 size, glm::vec2 offset);
+	void DrawPreviewSceneGrid(Engine& engine, ImDrawList* drawlist, glm::vec2 size, glm::vec2 offset);
 	void controlWindow(Engine& engine);
 	void entityWindow(Engine& engine);
 	void assetWindow(Engine& engine);
+	void mainSceneWindow(Engine& engine);
+	void EntityPreviewWindow(Engine& engine);
 
 	glm::vec2 DrawSpriteAtlas(Engine& engine, spriteID id, glm::vec2 maxSize, int atlasIndex);
 	glm::vec2 DrawSprite(Engine& engine, spriteID id, glm::vec2 maxSize);
@@ -97,12 +114,15 @@ private:
 	float cameraSlepStartTime;
 	bool cameraEntityFocus = false;
 
+	std::shared_ptr<Input> input;
+
 	// set every frame, read by different functions
 	glm::vec2 screenSize;
 	glm::vec2 mainSceneFrameSize;
 	glm::vec2 lastMainSceneFrameSize;
 	glm::vec2 mainSceneViewerScreenLocation; // position of view window framebuffer image on screen
-	ImDrawList* sceneViewDrawlist;
+	bool mainSceneFrameSizeChanged;
+	/*ImDrawList* sceneViewDrawlist;*/
 
 
 	// TODO: if rendering scene in an imgui window, must store screen space offset of the image render location and apply to these functions
@@ -113,5 +133,13 @@ private:
 
 	glm::vec2 gameSceneSreenToWorldPos(glm::vec2 pos) {
 		return screenToWorldPos(pos - mainSceneViewerScreenLocation, editorCamera, mainSceneFrameSize);
+	}
+
+	glm::vec2 previewSceneWorldToScreenPos(glm::vec2 pos) {
+		return worldToScreenPos(pos, previewCamera, entityPrviewFrameSize) + previewSceneViewerScreenLocation;
+	}
+
+	glm::vec2 previewSceneSreenToWorldPos(glm::vec2 pos) {
+		return screenToWorldPos(pos - previewSceneViewerScreenLocation, previewCamera, entityPrviewFrameSize);
 	}
 };

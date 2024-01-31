@@ -23,11 +23,7 @@
 #include "texture.h"
 #include "VKEngine.h"
 
-#include "coloredQuadPL.h"
-#include "texturedQuadPL.h"
-#include "tilemapPL.h"
-#include "LightingComputePL.h"
-#include "TextPL.h"
+#include "pipelines.h"
 
 #include "MyMath.h"
 #include "engine.h"
@@ -122,8 +118,9 @@ void Engine::createScenePLContext(ScenePipelineContext* ctx, vk::RenderPass rend
 	{
 		ctx->texturePipeline = make_unique<TexturedQuadPL>(rengine);
 		ctx->colorPipeline = make_unique<ColoredQuadPL>(rengine);
-		ctx->tilemapPipeline = make_unique<TilemapPL>(rengine, worldMap);
+		ctx->tilemapPipeline = make_unique<TilemapPL>(rengine, worldMap); // TODO: WOlrd map not per scene yet!
 		ctx->textPipeline = make_unique<TextPL>(rengine);
+		ctx->particlePipeline = make_unique<ParticleSystemPL>(rengine);
 	}
 
 	ctx->colorPipeline->CreateInstancingBuffer();
@@ -153,6 +150,12 @@ void Engine::createScenePLContext(ScenePipelineContext* ctx, vk::RenderPass rend
 		assetManager->LoadShaderFile("text_vert.spv", vert);
 		assetManager->LoadShaderFile("text_frag.spv", frag);
 		ctx->textPipeline->CreateGraphicsPipeline(vert, frag, renderpass, &GlobalTextureDesc, ctx->cameraBuffers);
+	}
+	{
+		vector<uint8_t> vert, frag;
+		assetManager->LoadShaderFile("particleSystem_vert.spv", vert);
+		assetManager->LoadShaderFile("particleSystem_frag.spv", frag);
+		ctx->particlePipeline->CreateGraphicsPipeline(vert, frag, renderpass, ctx->cameraBuffers);
 	}
 }
 
@@ -389,6 +392,29 @@ void Engine::recordSceneContextGraphics(const ScenePipelineContext& ctx, framebu
 		}
 	}
 
+	// particles
+	{
+
+		ParticleSystemPL::particleSystem sys;
+		sys.particleCount = 10;
+
+		for (size_t i = 0; i < 10; i++)
+		{
+			sys.particles[i] = ParticleSystemPL::particle{
+				.position = vec2(i) * 3.5f,
+				.scale = 0.5f,
+				.life = 1.0f
+			};
+		}
+
+		ctx.particlePipeline->UploadInstanceData(sys, 0);
+
+		std::vector<int> indexes;
+		indexes.push_back(0);
+
+		ctx.particlePipeline->recordCommandBuffer(cmdBuffer, indexes);
+	}
+
 	// text
 	{
 		ZoneScopedN("Text PL");
@@ -429,7 +455,6 @@ void Engine::recordSceneContextGraphics(const ScenePipelineContext& ctx, framebu
 			ctx.textPipeline->recordCommandBuffer(cmdBuffer);
 		}
 	}
-
 
 	cmdBuffer.endRenderPass();
 

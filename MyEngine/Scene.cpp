@@ -206,7 +206,7 @@ void Scene::UnregisterEntity(entityID id) {
 	sceneData.staticbodies.erase(id);
 }
 
-void Scene::RegisterEntity(std::shared_ptr<Entity> entity) {
+entityID  Scene::RegisterEntity(std::shared_ptr<Entity> entity) {
 	entityID id = EntityGenerator.GenerateID();
 	entity->ID = id;
 	if (entity->name.empty()) {
@@ -214,6 +214,7 @@ void Scene::RegisterEntity(std::shared_ptr<Entity> entity) {
 	}
 	sceneData.entities[id] = entity;
 	entity->_setComponentAccessor(componentAccessor);
+	return id;
 }
 
 void Scene::OverwriteEntity(std::shared_ptr<Entity> entity, entityID ID) {

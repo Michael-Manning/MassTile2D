@@ -20,6 +20,8 @@ public:
 
 	void bindPipelineResources(vk::CommandBuffer& commandBuffer, void* pushConstantData = nullptr);
 
+	void updatePushConstant(vk::CommandBuffer& commandBuffer, void* pushConstantData);
+
 private:
 	vk::Pipeline compPipeline;
 	DescriptorManager descriptorManager;

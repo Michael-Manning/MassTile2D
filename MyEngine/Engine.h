@@ -16,11 +16,7 @@
 #include "texture.h"
 #include "VKEngine.h"
 
-#include "coloredQuadPL.h"
-#include "texturedQuadPL.h"
-#include "tilemapPL.h"
-#include "LightingComputePL.h"
-#include "TextPL.h"
+#include "pipelines.h"
 
 #include "IDGenerator.h"
 #include "typedefs.h"
@@ -65,6 +61,7 @@ struct ScenePipelineContext {
 	std::unique_ptr<ColoredQuadPL> colorPipeline = nullptr;
 	std::unique_ptr<TexturedQuadPL> texturePipeline = nullptr;
 	std::unique_ptr<TextPL> textPipeline = nullptr;
+	std::unique_ptr<ParticleSystemPL> particlePipeline = nullptr;
 };
 
 

@@ -17,7 +17,7 @@
 
 
 struct PushConstantInfo {
-	uint32_t pushConstantSize;
+	uint32_t pushConstantSize = 0;
 	vk::ShaderStageFlags pushConstantShaderStages;
 };
 

@@ -32,7 +32,7 @@ void GraphicsTemplate::CreateGraphicsPipeline(const ShaderResourceConfig& resour
 		setLayouts[globalDesc.setNumber] = globalDesc.descriptor->layout;
 
 
-	buildPipelineLayout(setLayouts);
+	buildPipelineLayout(setLayouts, pushInfo.pushConstantSize, pushInfo.pushConstantShaderStages);
 
 	vk::VertexInputBindingDescription VbindingDescription;
 	dbVertexAtribute Vattribute;
@@ -79,9 +79,9 @@ void GraphicsTemplate::CreateGraphicsPipeline(const ShaderResourceConfig& resour
 	globalDescriptors = resourceConfig.globalDescriptors;
 }
 
-void GraphicsTemplate::bindPipelineResources(vk::CommandBuffer& commandBuffer, void* pushConstantData = nullptr){
+void GraphicsTemplate::bindPipelineResources(vk::CommandBuffer& commandBuffer, void* pushConstantData){
 
-	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, compPipeline);
+	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, _pipeline);
 
 	// handle potential global descriptor
 	for (auto& desc : globalDescriptors)
@@ -100,7 +100,11 @@ void GraphicsTemplate::bindPipelineResources(vk::CommandBuffer& commandBuffer, v
 			nullptr);
 	}
 
-	if (pushInfo.pushConstantSize > 0) {
-		commandBuffer.pushConstants(pipelineLayout, pushInfo.pushConstantShaderStages, 0, pushInfo.pushConstantSize, pushConstantData);
+	if (pushInfo.pushConstantSize > 0 && pushConstantData != nullptr) {
+		updatePushConstant(commandBuffer, pushConstantData);
 	}
+}
+
+void GraphicsTemplate::updatePushConstant(vk::CommandBuffer& commandBuffer, void* pushConstantData) {
+	commandBuffer.pushConstants(pipelineLayout, pushInfo.pushConstantShaderStages, 0, pushInfo.pushConstantSize, pushConstantData);
 }

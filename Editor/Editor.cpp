@@ -150,44 +150,81 @@ vec2 Editor::DrawSpriteAtlas(Engine& engine, spriteID id, glm::vec2 maxSize, int
 
 
 
-void Editor::DrawGrid(Engine& engine) {
-	if (showGrid)
+void Editor::DrawGameSceneGrid(Engine& engine, ImDrawList* drawlist, glm::vec2 size, glm::vec2 offset) {
+
+	float gridSize = GetWorldGridSize(editorCamera.zoom);
+	const int gridOpacity = (int)(0.2 * 255);
+
 	{
-		float gridSize = GetWorldGridSize(editorCamera.zoom);
-		const int gridOpacity = (int)(0.2 * 255);
 
-		{
+		float x0 = gameSceneSreenToWorldPos(vec2(offset.x, 0)).x;
+		x0 = getWorldGridRounding(x0, editorCamera.zoom);
+		x0 = gameSceneWorldToScreenPos(vec2(x0, 0)).x;
 
-			float x0 = gameSceneSreenToWorldPos(vec2(mainSceneViewerScreenLocation.x, 0)).x;
-			x0 = getWorldGridRounding(x0, editorCamera.zoom);
-			x0 = gameSceneWorldToScreenPos(vec2(x0, 0)).x;
+		float inc = (gridSize * (size.y / 2.0f)) * editorCamera.zoom;
 
-			float inc = (gridSize * (mainSceneFrameSize.y / 2.0f)) * editorCamera.zoom;
-
-			float xi = x0;
-			while (xi <= mainSceneViewerScreenLocation.x + mainSceneFrameSize.x) {
-				sceneViewDrawlist->AddLine(
-					vec2(xi, mainSceneViewerScreenLocation.y),
-					vec2(xi, mainSceneViewerScreenLocation.y + mainSceneFrameSize.y),
-					IM_COL32(255, 255, 255, gridOpacity));
-				xi += inc;
-			}
+		float xi = x0;
+		while (xi <= offset.x + size.x) {
+			drawlist->AddLine(
+				vec2(xi, offset.y),
+				vec2(xi, offset.y + size.y),
+				IM_COL32(255, 255, 255, gridOpacity));
+			xi += inc;
 		}
-		{
-			float y0 = gameSceneSreenToWorldPos(vec2(0, mainSceneViewerScreenLocation.y)).y;
-			y0 = getWorldGridRounding(y0, editorCamera.zoom);
-			y0 = gameSceneWorldToScreenPos(vec2(0, y0)).y;
+	}
+	{
+		float y0 = gameSceneSreenToWorldPos(vec2(0, offset.y)).y;
+		y0 = getWorldGridRounding(y0, editorCamera.zoom);
+		y0 = gameSceneWorldToScreenPos(vec2(0, y0)).y;
 
-			float inc = (gridSize * (mainSceneFrameSize.y / 2.0f)) * editorCamera.zoom;
+		float inc = (gridSize * (size.y / 2.0f)) * editorCamera.zoom;
 
-			float yi = y0;
-			while (yi <= mainSceneViewerScreenLocation.y + mainSceneFrameSize.y) {
-				sceneViewDrawlist->AddLine(
-					vec2(mainSceneViewerScreenLocation.x, yi),
-					vec2(mainSceneViewerScreenLocation.x + mainSceneFrameSize.x, yi),
-					IM_COL32(255, 255, 255, gridOpacity));
-				yi += inc;
-			}
+		float yi = y0;
+		while (yi <= offset.y + size.y) {
+			drawlist->AddLine(
+				vec2(offset.x, yi),
+				vec2(offset.x + size.x, yi),
+				IM_COL32(255, 255, 255, gridOpacity));
+			yi += inc;
+		}
+	}
+}
+
+void Editor::DrawPreviewSceneGrid(Engine& engine, ImDrawList* drawlist, glm::vec2 size, glm::vec2 offset) {
+	float gridSize = GetWorldGridSize(previewCamera.zoom);
+	const int gridOpacity = (int)(0.2 * 255);
+
+	{
+
+		float x0 = previewSceneSreenToWorldPos(vec2(offset.x, 0)).x;
+		x0 = getWorldGridRounding(x0, previewCamera.zoom);
+		x0 = previewSceneWorldToScreenPos(vec2(x0, 0)).x;
+
+		float inc = (gridSize * (size.y / 2.0f)) * previewCamera.zoom;
+
+		float xi = x0;
+		while (xi <= offset.x + size.x) {
+			drawlist->AddLine(
+				vec2(xi, offset.y),
+				vec2(xi, offset.y + size.y),
+				IM_COL32(255, 255, 255, gridOpacity));
+			xi += inc;
+		}
+	}
+	{
+		float y0 = previewSceneSreenToWorldPos(vec2(0, offset.y)).y;
+		y0 = getWorldGridRounding(y0, previewCamera.zoom);
+		y0 = previewSceneWorldToScreenPos(vec2(0, y0)).y;
+
+		float inc = (gridSize * (size.y / 2.0f)) * previewCamera.zoom;
+
+		float yi = y0;
+		while (yi <= offset.y + size.y) {
+			drawlist->AddLine(
+				vec2(offset.x, yi),
+				vec2(offset.x + size.x, yi),
+				IM_COL32(255, 255, 255, gridOpacity));
+			yi += inc;
 		}
 	}
 }
@@ -196,7 +233,7 @@ void Editor::controlWindow(Engine& engine) {
 
 	const float margin = 10.0f;
 	auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar;
-	SetNextWindowPos(vec2(leftPanelWindowWidth + margin, margin));
+	SetNextWindowPos(vec2(leftPanelWindowWidth + margin, margin + 30));
 	SetNextWindowSize(vec2(engine.getWindowSize().x - leftPanelWindowWidth - inspectorWindowWidth - (margin * 2.0f), 40));
 	Begin("control", nullptr, flags);
 
@@ -497,22 +534,267 @@ void Editor::debugDataWindow(Engine& engine) {
 	}
 }
 
+void Editor::Initialize(Engine& engine, std::shared_ptr<Scene> gameScene, sceneRenderContextID sceneRenderContext) {
+	this->gameScene = gameScene;
+	this->sceneRenderContext = sceneRenderContext;
+
+	entityPreviewScene = make_shared<Scene>();
+	entityPreviewScene->name = "entity preview scene";
+	entityPrviewFrameSize = vec2(600);
+	entityPreviewsSeneRenderContextID = engine.CreateSceneRenderContext(entityPrviewFrameSize, glm::vec4(0.0, 0.0, 0.2, 1.0));
+	entityPreviewFramebuffer = engine.GetSceneRenderContextFramebuffer(entityPreviewsSeneRenderContextID);
+
+	shared_ptr<Entity> teste = make_shared<Entity>("myEntity");
+	auto id = entityPreviewScene->RegisterEntity(teste);
+
+	ColorRenderer r;
+	r.color = vec4(1.0, 0, 0, 1.0);
+	teste->transform.scale = vec2(3.0);
+	entityPreviewScene->registerComponent(id, r);
+};
+
+
+void Editor::mainSceneWindow(Engine& engine) {
+
+	vec2 mpos = input->getMousePos();
+
+	/*
+	
+	auto cursorPos = ImGui::GetCursorPos();
+			engine.ImGuiFramebufferImage(POVViewerFB, POVViewWinSize);
+			SetCursorPos(cursorPos);
+			InvisibleButton("povInvisibleBtn", (vec2)POVViewWinSize); // only to prevent window dragging when clicked
+
+			if (ImGui::IsItemHovered() && ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
+				povViewerState.focused = true;
+			}
+
+	*/
+	// panning
+	{
+		if ( input->getMouseBtn(MouseBtn::Right)) {
+			editorCamera.position -= ((mouseDelta * vec2(2.0, -2.0)) / engine.getWindowSize().y) / editorCamera.zoom;
+			cameraEntityFocus = false;
+		}
+	}
+
+	if (cameraEntityFocus == true) {
+		float fracComplete = (engine.time - cameraSlepStartTime) / 0.8f;
+		editorCamera.position = smoothstep(camSlerpStart, camSlerpEnd, fracComplete);
+		if (fracComplete >= 1.0f)
+			cameraEntityFocus = false;
+	}
+
+
+	auto flags = ImGuiWindowFlags_NoResize;
+	vec2 sceneWinPos = vec2(leftPanelWindowWidth, 0.0f);
+	vec2 sceneWinSize = vec2(engine.getWindowSize().x - inspectorWindowWidth - leftPanelWindowWidth, engine.getWindowSize().y);
+	SetNextWindowPos(sceneWinPos);
+	SetNextWindowSize(sceneWinSize);
+	Begin("Game View", nullptr, flags);
+
+	auto windowDrawlist = GetWindowDrawList();
+
+	vec2 avail = GetContentRegionAvail();
+	mainSceneViewerScreenLocation = GetCursorScreenPos();
+
+	windowDrawlist->PushClipRect(mainSceneViewerScreenLocation, mainSceneViewerScreenLocation + avail);
+
+	if (mainSceneFrameSizeChanged)
+		engine.ResizeSceneRenderContext(sceneRenderContext, avail);
+
+	engine.ImGuiFramebufferImage(sceneFramebuffer, ivec2(avail.x, avail.y));
+
+	if (ImGui::IsItemHovered()) {
+		allowZoomThisFrame = true;
+	}
+
+
+
+	if (selectedEntity != nullptr) {
+
+
+		// transform gizmo
+		{
+			float lineLen = 120; // translate gizmo arm length
+			float wheelRad = 140; // rotate gizmo radius
+
+			vec2 objScreenPos = gameSceneWorldToScreenPos(selectedEntity->transform.position);
+			vec2 yHandlePos = objScreenPos + vec2(0, -lineLen);
+			vec2 xHandlePos = objScreenPos + vec2(lineLen, 0);
+
+			if (input->getMouseBtnDown(MouseBtn::Left)) {
+				draggingY = glm::distance(mpos, yHandlePos) < 16;
+				draggingX = glm::distance(mpos, xHandlePos) < 16;
+
+				// central handle
+				if (glm::distance(mpos, objScreenPos) < 22) {
+					draggingX = true;
+					draggingY = true;
+				}
+
+				if ((draggingX || draggingY) == false) {
+					float mDist = glm::distance(mpos, objScreenPos);
+					if (mDist > wheelRad - 5 && mDist < wheelRad + 5) {
+						draggingAngle = true;
+						dragInitialAngle = atan2f(mpos.y - objScreenPos.y, mpos.x - objScreenPos.x);
+						dragInitialObjectAngle = selectedEntity->transform.rotation;
+					}
+				}
+			}
+
+			{
+				bool mDown = input->getMouseBtn(MouseBtn::Left);
+				draggingY &= mDown;
+				draggingX &= mDown;
+				draggingAngle &= mDown & (!draggingX) & (!draggingY);
+			}
+
+
+
+			if (draggingY) {
+
+				// offset handle length if not grabbing central handle
+				float mouseWorldObjPos = gameSceneSreenToWorldPos(mpos + (draggingX ? 0 : lineLen)).y;
+
+				if (input->getKey(KeyCode::LeftControl))
+					yHandlePos.y = roundf(mouseWorldObjPos * 100) / 100; // two decimal places
+				else
+					mouseWorldObjPos = getWorldGridRounding(mouseWorldObjPos, editorCamera.zoom);
+
+				objScreenPos.y = gameSceneWorldToScreenPos(vec2(0, mouseWorldObjPos)).y;
+				yHandlePos.y = objScreenPos.y - lineLen;
+			}
+
+			if (draggingX) {
+
+				float mouseWorldObjPos = gameSceneSreenToWorldPos(mpos - (draggingY ? 0 : lineLen)).x;
+
+				if (input->getKey(KeyCode::LeftControl))
+					xHandlePos.x = roundf(mouseWorldObjPos * 100) / 100; // two decimal places
+				else
+					mouseWorldObjPos = getWorldGridRounding(mouseWorldObjPos, editorCamera.zoom);
+
+				objScreenPos.x = gameSceneWorldToScreenPos(vec2(mouseWorldObjPos, 0.0)).x;
+				xHandlePos.x = objScreenPos.x + lineLen;
+
+			}
+
+			if (draggingX || draggingY) {
+				vec2 objPos = gameSceneSreenToWorldPos(objScreenPos);
+				selectedEntity->transform.position = objPos;
+				if (gameScene->sceneData.rigidbodies.contains(selectedEntity->ID)) {
+					gameScene->sceneData.rigidbodies[selectedEntity->ID].SetPosition(objPos);
+				}
+				if (gameScene->sceneData.staticbodies.contains(selectedEntity->ID)) {
+					gameScene->sceneData.staticbodies[selectedEntity->ID].SetPosition(objPos);
+				}
+			}
+
+			if (draggingAngle) {
+				const int rotationSnapAngles = 8;
+
+				float dragAngle = atan2f(mpos.y - objScreenPos.y, mpos.x - objScreenPos.x);
+				selectedEntity->transform.rotation = dragInitialObjectAngle + dragInitialAngle - dragAngle;
+				if (input->getKey(KeyCode::LeftControl) == false) {
+					float segment = 2.0f * PI / rotationSnapAngles;
+					selectedEntity->transform.rotation = roundf(selectedEntity->transform.rotation / segment) * segment;
+				}
+				if (gameScene->sceneData.rigidbodies.contains(selectedEntity->ID)) {
+					gameScene->sceneData.rigidbodies[selectedEntity->ID].SetRotation(selectedEntity->transform.rotation);
+				}
+				if (gameScene->sceneData.staticbodies.contains(selectedEntity->ID)) {
+					gameScene->sceneData.staticbodies[selectedEntity->ID].SetRotation(selectedEntity->transform.rotation);
+				}
+			}
+
+			auto yGizCol = draggingY ? IM_COL32(255, 255, 0, 255) : IM_COL32(255, 255, 255, 255);
+			auto xGizCol = draggingX ? IM_COL32(255, 255, 0, 255) : IM_COL32(255, 255, 255, 255);
+			auto cGizCol = (draggingX && draggingY) ? IM_COL32(255, 255, 0, 255) : IM_COL32(255, 255, 255, 255);
+			auto wGizCol = (draggingAngle) ? IM_COL32(255, 255, 0, 255) : IM_COL32(255, 255, 255, 255);
+
+
+			// axis handles
+			windowDrawlist->AddLine(objScreenPos, yHandlePos, yGizCol, 1);
+			windowDrawlist->AddTriangleFilled(
+				yHandlePos,
+				yHandlePos + vec2(8, 14),
+				yHandlePos + vec2(-8, 14), yGizCol);
+
+			windowDrawlist->AddLine(objScreenPos, xHandlePos, xGizCol, 1);
+			windowDrawlist->AddTriangleFilled(
+				xHandlePos,
+				xHandlePos + vec2(-14, 8),
+				xHandlePos + vec2(-14, -8), xGizCol);
+
+			// central handle
+			windowDrawlist->AddRectFilled(objScreenPos - 10.0f, objScreenPos + 10.0f, cGizCol);
+
+			// rotation handle
+			windowDrawlist->AddCircle(objScreenPos, wheelRad, wGizCol);
+		}
+	}
+
+	if (showGrid) {
+		DrawGameSceneGrid(engine, windowDrawlist, mainSceneFrameSize, mainSceneViewerScreenLocation);
+	}
+
+	windowDrawlist->PopClipRect();
+
+	End();
+}
+
+void Editor::EntityPreviewWindow(Engine& engine) {
+	vec2 mpos = input->getMousePos();
+
+	auto flags = ImGuiWindowFlags_NoResize;
+	/*vec2 sceneWinPos = vec2(leftPanelWindowWidth, 0.0f);
+	vec2 sceneWinSize = vec2(engine.getWindowSize().x - inspectorWindowWidth - leftPanelWindowWidth, engine.getWindowSize().y);*/
+	/*SetNextWindowPos(sceneWinPos);
+	SetNextWindowSize(sceneWinSize);*/
+	Begin("Entity Preview", nullptr, flags);
+
+	//auto windowDrawlist = GetWindowDrawList();
+
+	vec2 avail = GetContentRegionAvail();
+	//mainSceneViewerScreenLocation = GetCursorScreenPos();
+
+	//windowDrawlist->PushClipRect(mainSceneViewerScreenLocation, mainSceneViewerScreenLocation + avail);
+
+	/*if (mainSceneFrameSizeChanged)
+		engine.ResizeSceneRenderContext(sceneRenderContext, avail);*/
+
+	previewSceneViewerScreenLocation = GetCursorScreenPos();
+
+	engine.ImGuiFramebufferImage(entityPreviewFramebuffer, entityPrviewFrameSize);
+
+	/*if (ImGui::IsItemHovered()) {
+		allowZoomThisFrame = true;
+	}*/
+
+	// need to generalize to work with any scene and window
+	DrawGrid(engine, windowDrawlist);
+
+	//windowDrawlist->PopClipRect();
+
+	End();
+}
 
 void Editor::Run(Engine& engine) {
 
 	allowZoomThisFrame = false;
 
-	auto input = engine.GetInput();
+	input = engine.GetInput();
 	vec2 mpos = input->getMousePos();
 	screenSize = engine.getWindowSize();
 
-	framebufferID sceneFramebuffer = engine.GetSceneRenderContextFramebuffer(sceneRenderContext);
+	sceneFramebuffer = engine.GetSceneRenderContextFramebuffer(sceneRenderContext);
 	mainSceneFrameSize = engine.GetFramebufferSize(sceneFramebuffer);
-	bool mainSceneFrameSizeChanged = lastMainSceneFrameSize != mainSceneFrameSize;
+	mainSceneFrameSizeChanged = lastMainSceneFrameSize != mainSceneFrameSize;
 	lastMainSceneFrameSize = mainSceneFrameSize;
 
 	//drawlist = GetBackgroundDrawList();
-	sceneViewDrawlist = GetForegroundDrawList();
+	auto sceneViewDrawlist = GetForegroundDrawList();
 
 	auto io = GetIO();
 
@@ -529,60 +811,44 @@ void Editor::Run(Engine& engine) {
 		}
 	}
 
+	mouseDelta = mpos - lastMpos;
+	lastMpos = mpos;
 
-	// panning
-	{
-		vec2 delta = mpos - lastMpos;
-		lastMpos = mpos;
+	//// panning
+	//{
+	//	vec2 delta = mpos - lastMpos;
+	//	lastMpos = mpos;
 
-		if (input->getMouseBtn(MouseBtn::Right)) {
-			editorCamera.position -= ((delta * vec2(2.0, -2.0)) / engine.getWindowSize().y) / editorCamera.zoom;
-			cameraEntityFocus = false;
-		}
-	}
+	//	if (input->getMouseBtn(MouseBtn::Right)) {
+	//		editorCamera.position -= ((delta * vec2(2.0, -2.0)) / engine.getWindowSize().y) / editorCamera.zoom;
+	//		cameraEntityFocus = false;
+	//	}
+	//}
 
-	if (cameraEntityFocus == true) {
-		float fracComplete = (engine.time - cameraSlepStartTime) / 0.8f;
-		editorCamera.position = smoothstep(camSlerpStart, camSlerpEnd, fracComplete);
-		if (fracComplete >= 1.0f)
-			cameraEntityFocus = false;
-	}
-
-	controlWindow(engine);
+	//if (cameraEntityFocus == true) {
+	//	float fracComplete = (engine.time - cameraSlepStartTime) / 0.8f;
+	//	editorCamera.position = smoothstep(camSlerpStart, camSlerpEnd, fracComplete);
+	//	if (fracComplete >= 1.0f)
+	//		cameraEntityFocus = false;
+	//}
 
 	entityWindow(engine);
 
 	assetWindow(engine);
 
+	mainSceneWindow(engine);
 
-	// scene view window
+	controlWindow(engine);
+
+
 	{
-		auto flags = ImGuiWindowFlags_NoResize;
-		vec2 sceneWinPos = vec2(leftPanelWindowWidth, 0.0f);
-		vec2 sceneWinSize = vec2(engine.getWindowSize().x - inspectorWindowWidth - leftPanelWindowWidth, engine.getWindowSize().y);
-		SetNextWindowPos(sceneWinPos);
-		SetNextWindowSize(sceneWinSize);
-		Begin("Game View", nullptr, flags);
+		EntityPreviewWindow(engine);
 
-		vec2 avail = GetContentRegionAvail();
-		mainSceneViewerScreenLocation = GetCursorScreenPos();
+		entityPreviewRenderJob.camera = { .position = vec2(), .zoom = 1.0 };
+		entityPreviewRenderJob.scene = entityPreviewScene;
+		entityPreviewRenderJob.sceneRenderCtxID = entityPreviewsSeneRenderContextID;
 
-		sceneViewDrawlist->PushClipRect(mainSceneViewerScreenLocation, mainSceneViewerScreenLocation + avail);
-
-		if (mainSceneFrameSizeChanged)
-			engine.ResizeSceneRenderContext(sceneRenderContext, avail);
-
-		engine.ImGuiFramebufferImage(sceneFramebuffer, ivec2(avail.x, avail.y));
-
-		if(ImGui::IsItemHovered()) {
-			allowZoomThisFrame = true;
-		}
-
-		End();
-	
 	}
-
-	DrawGrid(engine);
 
 	{
 		auto flags = ImGuiWindowFlags_NoResize;
@@ -592,129 +858,6 @@ void Editor::Run(Engine& engine) {
 
 		// TODO: move gizmo logic outside of this window context
 		if (selectedEntity != nullptr) {
-
-
-			// transform gizmo
-			{
-				float lineLen = 120; // translate gizmo arm length
-				float wheelRad = 140; // rotate gizmo radius
-
-				vec2 objScreenPos = gameSceneWorldToScreenPos(selectedEntity->transform.position);
-				vec2 yHandlePos = objScreenPos + vec2(0, -lineLen);
-				vec2 xHandlePos = objScreenPos + vec2(lineLen, 0);
-
-				if (input->getMouseBtnDown(MouseBtn::Left)) {
-					draggingY = glm::distance(mpos, yHandlePos) < 16;
-					draggingX = glm::distance(mpos, xHandlePos) < 16;
-
-					// central handle
-					if (glm::distance(mpos, objScreenPos) < 22) {
-						draggingX = true;
-						draggingY = true;
-					}
-
-					if ((draggingX || draggingY) == false) {
-						float mDist = glm::distance(mpos, objScreenPos);
-						if (mDist > wheelRad - 5 && mDist < wheelRad + 5) {
-							draggingAngle = true;
-							dragInitialAngle = atan2f(mpos.y - objScreenPos.y, mpos.x - objScreenPos.x);
-							dragInitialObjectAngle = selectedEntity->transform.rotation;
-						}
-					}
-				}
-
-				{
-					bool mDown = input->getMouseBtn(MouseBtn::Left);
-					draggingY &= mDown;
-					draggingX &= mDown;
-					draggingAngle &= mDown & (!draggingX) & (!draggingY);
-				}
-
-
-
-				if (draggingY) {
-
-					// offset handle length if not grabbing central handle
-					float mouseWorldObjPos = gameSceneSreenToWorldPos(mpos + (draggingX ? 0 : lineLen)).y;
-
-					if (input->getKey(KeyCode::LeftControl))
-						yHandlePos.y = roundf(mouseWorldObjPos * 100) / 100; // two decimal places
-					else
-						mouseWorldObjPos = getWorldGridRounding(mouseWorldObjPos, editorCamera.zoom);
-
-					objScreenPos.y = gameSceneWorldToScreenPos(vec2(0, mouseWorldObjPos)).y;
-					yHandlePos.y = objScreenPos.y - lineLen;
-				}
-
-				if (draggingX) {
-
-					float mouseWorldObjPos = gameSceneSreenToWorldPos(mpos - (draggingY ? 0 : lineLen)).x;
-
-					if (input->getKey(KeyCode::LeftControl))
-						xHandlePos.x = roundf(mouseWorldObjPos * 100) / 100; // two decimal places
-					else
-						mouseWorldObjPos = getWorldGridRounding(mouseWorldObjPos, editorCamera.zoom);
-
-					objScreenPos.x = gameSceneWorldToScreenPos(vec2(mouseWorldObjPos, 0.0)).x;
-					xHandlePos.x = objScreenPos.x + lineLen;
-
-				}
-
-				if (draggingX || draggingY) {
-					vec2 objPos = gameSceneSreenToWorldPos(objScreenPos);
-					selectedEntity->transform.position = objPos;
-					if (gameScene->sceneData.rigidbodies.contains(selectedEntity->ID)) {
-						gameScene->sceneData.rigidbodies[selectedEntity->ID].SetPosition(objPos);
-					}
-					if (gameScene->sceneData.staticbodies.contains(selectedEntity->ID)) {
-						gameScene->sceneData.staticbodies[selectedEntity->ID].SetPosition(objPos);
-					}
-				}
-
-				if (draggingAngle) {
-					const int rotationSnapAngles = 8;
-
-					float dragAngle = atan2f(mpos.y - objScreenPos.y, mpos.x - objScreenPos.x);
-					selectedEntity->transform.rotation = dragInitialObjectAngle + dragInitialAngle - dragAngle;
-					if (input->getKey(KeyCode::LeftControl) == false) {
-						float segment = 2.0f * PI / rotationSnapAngles;
-						selectedEntity->transform.rotation = roundf(selectedEntity->transform.rotation / segment) * segment;
-					}
-					if (gameScene->sceneData.rigidbodies.contains(selectedEntity->ID)) {
-						gameScene->sceneData.rigidbodies[selectedEntity->ID].SetRotation(selectedEntity->transform.rotation);
-					}
-					if (gameScene->sceneData.staticbodies.contains(selectedEntity->ID)) {
-						gameScene->sceneData.staticbodies[selectedEntity->ID].SetRotation(selectedEntity->transform.rotation);
-					}
-				}
-
-				auto yGizCol = draggingY ? IM_COL32(255, 255, 0, 255) : IM_COL32(255, 255, 255, 255);
-				auto xGizCol = draggingX ? IM_COL32(255, 255, 0, 255) : IM_COL32(255, 255, 255, 255);
-				auto cGizCol = (draggingX && draggingY) ? IM_COL32(255, 255, 0, 255) : IM_COL32(255, 255, 255, 255);
-				auto wGizCol = (draggingAngle) ? IM_COL32(255, 255, 0, 255) : IM_COL32(255, 255, 255, 255);
-
-
-				// axis handles
-				sceneViewDrawlist->AddLine(objScreenPos, yHandlePos, yGizCol, 1);
-				sceneViewDrawlist->AddTriangleFilled(
-					yHandlePos,
-					yHandlePos + vec2(8, 14),
-					yHandlePos + vec2(-8, 14), yGizCol);
-
-				sceneViewDrawlist->AddLine(objScreenPos, xHandlePos, xGizCol, 1);
-				sceneViewDrawlist->AddTriangleFilled(
-					xHandlePos,
-					xHandlePos + vec2(-14, 8),
-					xHandlePos + vec2(-14, -8), xGizCol);
-
-				// central handle
-				sceneViewDrawlist->AddRectFilled(objScreenPos - 10.0f, objScreenPos + 10.0f, cGizCol);
-
-				// rotation handle
-				sceneViewDrawlist->AddCircle(objScreenPos, wheelRad, wGizCol);
-			}
-
-
 
 			if (Combo("Create", &comboSelected, "Sprite Renderer\0Color Renderer\0Text Renderer\0Box Staticbody\0Circle Staticbody\0Box Rigidbody\0Circle Rigidbody")) {
 				switch (comboSelected)
@@ -858,8 +1001,6 @@ void Editor::Run(Engine& engine) {
 		zoomP = glm::clamp(zoomP, 0.0f, 1.0f);
 		editorCamera.zoom = exponentialScale(zoomP, 0.01, 15.1);
 	}
-
-	sceneViewDrawlist->PopClipRect();
 }
 
 

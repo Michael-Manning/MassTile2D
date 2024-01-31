@@ -226,8 +226,9 @@ int main() {
 	engine.Start(videoSettings, AssetDirectories);
 
 	shared_ptr<Scene> scene = make_shared<Scene>(); ///engine.GetCurrentScene(); // quick reference
+	scene->name = "main scene";
 	sceneRenderContextID sceneRenderCtx = engine.CreateSceneRenderContext({ engine.winW , engine.winH }, { 0.2, 0.3, 1.0, 1 });
-	editor.SetGameScene(scene, sceneRenderCtx);
+	editor.Initialize(engine, scene, sceneRenderCtx);
 
 	input = engine.GetInput();
 
@@ -715,6 +716,12 @@ int main() {
 		vector<Engine::SceneRenderJob> sceneRenderJobs;
 		sceneRenderJobs.push_back(mainSceneRender);
 
+		if (showingEditor) {
+			auto jobs = editor.GetAdditionalRenderJobs();
+			for (auto& job : jobs) {
+				sceneRenderJobs.push_back(job);
+			}
+		}
 
 		engine.QueueNextFrame(sceneRenderJobs, showingEditor);
 	}

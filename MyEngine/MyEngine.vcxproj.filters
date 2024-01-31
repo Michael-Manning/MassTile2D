@@ -278,6 +278,9 @@
     <ClInclude Include="ParticleSystemPL.h">
       <Filter>Source Files\vulkan\piplines</Filter>
     </ClInclude>
+    <ClInclude Include="pipelines.h">
+      <Filter>Source Files\vulkan\piplines</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="notes.txt" />

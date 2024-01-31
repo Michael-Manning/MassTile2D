@@ -69,7 +69,7 @@ public:
 
 	void UnregisterEntity(entityID id);
 
-	void RegisterEntity(std::shared_ptr<Entity> entity);
+	entityID RegisterEntity(std::shared_ptr<Entity> entity);
 	void OverwriteEntity(std::shared_ptr<Entity> entity, entityID ID);
 	void RegisterAsChild(std::shared_ptr<Entity> parent, std::shared_ptr<Entity> child);
 
