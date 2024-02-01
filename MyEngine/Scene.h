@@ -20,6 +20,7 @@ struct SceneData {
 	std::unordered_map<entityID, Rigidbody> rigidbodies;
 	std::unordered_map<entityID, Staticbody> staticbodies;
 	std::unordered_map<entityID, TextRenderer> textRenderers;
+	std::unordered_map<entityID, ParticleSystemRenderer> particleSystemRenderers;
 
 
 	std::vector<spriteID> getUsedSprites() {
@@ -110,7 +111,10 @@ public:
 	void registerComponent<SpriteRenderer>(entityID id, SpriteRenderer component);
 
 	template <>
-	void registerComponent<TextRenderer>(entityID id, TextRenderer component);
+	void registerComponent<TextRenderer>(entityID id, TextRenderer component);	
+	
+	template <>
+	void registerComponent<ParticleSystemRenderer>(entityID id, ParticleSystemRenderer component);
 
 	template <>
 	void registerComponent<Rigidbody>(entityID id, Rigidbody component);

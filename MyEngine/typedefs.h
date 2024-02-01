@@ -10,6 +10,7 @@ typedef uint32_t spriteID;
 typedef uint32_t fontID;
 typedef uint32_t atlasID;
 typedef uint32_t colliderID;
+typedef uint32_t particleSystemID;
 typedef uint32_t blockID; // type of block
 typedef uint32_t tileID; // specific tile in the texture atlas
 

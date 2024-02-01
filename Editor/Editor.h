@@ -17,6 +17,7 @@ public:
 
 	std::vector<Engine::SceneRenderJob> GetAdditionalRenderJobs() {
 		std::vector<Engine::SceneRenderJob> jobs;
+		entityPreviewRenderJob.camera = previewCamera;
 		jobs.push_back(entityPreviewRenderJob);
 		return jobs;
 	}
@@ -97,6 +98,7 @@ private:
 	float frameRateStat;
 
 	glm::vec2 lastMpos = glm::vec2(0);
+	glm::vec2 mouseDelta = glm::vec2(0);
 
 	bool draggingY = false;
 	bool draggingX = false;
@@ -106,8 +108,8 @@ private:
 
 	bool showGrid = true;
 
-	bool allowZoomThisFrame = true;
-	float zoomP = 0.4f;
+	float mainSceneRawZoom = 0.4f;
+	float previewSceneRawZoom = 0.4f;
 
 	glm::vec2 camSlerpStart;
 	glm::vec2 camSlerpEnd;

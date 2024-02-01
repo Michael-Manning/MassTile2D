@@ -129,6 +129,9 @@
     <ClCompile Include="ParticleSystemPL.cpp">
       <Filter>Source Files\vulkan\piplines</Filter>
     </ClCompile>
+    <ClCompile Include="ParticleSystemRenderer.cpp">
+      <Filter>Source Files\Engine\ECS\Components</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pipeline.h">
@@ -280,6 +283,12 @@
     </ClInclude>
     <ClInclude Include="pipelines.h">
       <Filter>Source Files\vulkan\piplines</Filter>
+    </ClInclude>
+    <ClInclude Include="ParticleSystem.h">
+      <Filter>Source Files\Engine\ECS\Assets</Filter>
+    </ClInclude>
+    <ClInclude Include="ParticleSystemRenderer.h">
+      <Filter>Source Files\Engine\ECS\Components</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

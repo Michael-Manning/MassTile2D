@@ -316,6 +316,7 @@ std::shared_ptr<Entity> Scene::Instantiate(Prefab prefab, std::string name, glm:
 	return copy;
 }
 
+// I don't think these need to be templates
 
 template <>
 void Scene::registerComponent(entityID id, ColorRenderer t) {
@@ -330,6 +331,11 @@ void Scene::registerComponent<SpriteRenderer>(entityID id, SpriteRenderer t) {
 template <>
 void Scene::registerComponent<TextRenderer>(entityID id, TextRenderer t) {
 	sceneData.textRenderers[id] = t;
+}
+
+template <>
+void Scene::registerComponent<ParticleSystemRenderer>(entityID id, ParticleSystemRenderer component) {
+	sceneData.particleSystemRenderers[id] = component;
 }
 
 // Rigidbodoy

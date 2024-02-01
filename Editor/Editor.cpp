@@ -232,7 +232,7 @@ void Editor::DrawPreviewSceneGrid(Engine& engine, ImDrawList* drawlist, glm::vec
 void Editor::controlWindow(Engine& engine) {
 
 	const float margin = 10.0f;
-	auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar;
+	auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoBringToFrontOnFocus;
 	SetNextWindowPos(vec2(leftPanelWindowWidth + margin, margin + 30));
 	SetNextWindowSize(vec2(engine.getWindowSize().x - leftPanelWindowWidth - inspectorWindowWidth - (margin * 2.0f), 40));
 	Begin("control", nullptr, flags);
@@ -271,7 +271,7 @@ void Editor::controlWindow(Engine& engine) {
 
 void Editor::entityWindow(Engine& engine) {
 
-	auto flags = ImGuiWindowFlags_NoResize;
+	auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoBringToFrontOnFocus;
 	SetNextWindowPos(vec2(0.0f, 0.0f));
 	SetNextWindowSize(vec2(leftPanelWindowWidth, engine.getWindowSize().y / 2));
 	Begin("Entities", nullptr, flags);
@@ -363,7 +363,7 @@ void Editor::entityWindow(Engine& engine) {
 }
 
 void Editor::assetWindow(Engine& engine) {
-	auto flags = ImGuiWindowFlags_NoResize;
+	auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoBringToFrontOnFocus;
 	SetNextWindowPos(vec2(0.0f, engine.getWindowSize().y / 2.0f));
 	SetNextWindowSize(vec2(leftPanelWindowWidth, engine.getWindowSize().y / 2));
 	Begin("Assets", nullptr, flags);
@@ -541,42 +541,25 @@ void Editor::Initialize(Engine& engine, std::shared_ptr<Scene> gameScene, sceneR
 	entityPreviewScene = make_shared<Scene>();
 	entityPreviewScene->name = "entity preview scene";
 	entityPrviewFrameSize = vec2(600);
-	entityPreviewsSeneRenderContextID = engine.CreateSceneRenderContext(entityPrviewFrameSize, glm::vec4(0.0, 0.0, 0.2, 1.0));
+	entityPreviewsSeneRenderContextID = engine.CreateSceneRenderContext(entityPrviewFrameSize, glm::vec4(0.06, 0.06, 0.06, 1.0));
 	entityPreviewFramebuffer = engine.GetSceneRenderContextFramebuffer(entityPreviewsSeneRenderContextID);
 
 	shared_ptr<Entity> teste = make_shared<Entity>("myEntity");
 	auto id = entityPreviewScene->RegisterEntity(teste);
 
-	ColorRenderer r;
-	r.color = vec4(1.0, 0, 0, 1.0);
-	teste->transform.scale = vec2(3.0);
-	entityPreviewScene->registerComponent(id, r);
+	ParticleSystemRenderer psr;
+	entityPreviewScene->registerComponent(id, psr);
+
+	//ColorRenderer r;
+	//r.color = vec4(1.0, 0, 0, 1.0);
+	//teste->transform.scale = vec2(3.0);
+	//entityPreviewScene->registerComponent(id, r);
 };
 
 
 void Editor::mainSceneWindow(Engine& engine) {
 
 	vec2 mpos = input->getMousePos();
-
-	/*
-	
-	auto cursorPos = ImGui::GetCursorPos();
-			engine.ImGuiFramebufferImage(POVViewerFB, POVViewWinSize);
-			SetCursorPos(cursorPos);
-			InvisibleButton("povInvisibleBtn", (vec2)POVViewWinSize); // only to prevent window dragging when clicked
-
-			if (ImGui::IsItemHovered() && ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
-				povViewerState.focused = true;
-			}
-
-	*/
-	// panning
-	{
-		if ( input->getMouseBtn(MouseBtn::Right)) {
-			editorCamera.position -= ((mouseDelta * vec2(2.0, -2.0)) / engine.getWindowSize().y) / editorCamera.zoom;
-			cameraEntityFocus = false;
-		}
-	}
 
 	if (cameraEntityFocus == true) {
 		float fracComplete = (engine.time - cameraSlepStartTime) / 0.8f;
@@ -586,7 +569,7 @@ void Editor::mainSceneWindow(Engine& engine) {
 	}
 
 
-	auto flags = ImGuiWindowFlags_NoResize;
+	auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoBringToFrontOnFocus;
 	vec2 sceneWinPos = vec2(leftPanelWindowWidth, 0.0f);
 	vec2 sceneWinSize = vec2(engine.getWindowSize().x - inspectorWindowWidth - leftPanelWindowWidth, engine.getWindowSize().y);
 	SetNextWindowPos(sceneWinPos);
@@ -603,13 +586,26 @@ void Editor::mainSceneWindow(Engine& engine) {
 	if (mainSceneFrameSizeChanged)
 		engine.ResizeSceneRenderContext(sceneRenderContext, avail);
 
+	//auto cursorPos = ImGui::GetCursorPos();
 	engine.ImGuiFramebufferImage(sceneFramebuffer, ivec2(avail.x, avail.y));
+	//SetCursorPos(cursorPos);
+	//InvisibleButton("gameInvisibleBtn", (vec2)POVViewWinSize); // only to prevent window dragging when clicked
 
 	if (ImGui::IsItemHovered()) {
-		allowZoomThisFrame = true;
+
+		if (input->getMouseBtn(MouseBtn::Right)) {
+			editorCamera.position -= ((mouseDelta * vec2(2.0, -2.0)) / engine.getWindowSize().y) / editorCamera.zoom;
+			cameraEntityFocus = false;
+		}
+
+		// zoom
+		{
+			float off = input->GetScrollDelta();
+			mainSceneRawZoom += off * 0.02f;
+			mainSceneRawZoom = glm::clamp(mainSceneRawZoom, 0.0f, 1.0f);
+			editorCamera.zoom = exponentialScale(mainSceneRawZoom, 0.01, 15.1);
+		}
 	}
-
-
 
 	if (selectedEntity != nullptr) {
 
@@ -748,18 +744,21 @@ void Editor::EntityPreviewWindow(Engine& engine) {
 	vec2 mpos = input->getMousePos();
 
 	auto flags = ImGuiWindowFlags_NoResize;
+
+
 	/*vec2 sceneWinPos = vec2(leftPanelWindowWidth, 0.0f);
 	vec2 sceneWinSize = vec2(engine.getWindowSize().x - inspectorWindowWidth - leftPanelWindowWidth, engine.getWindowSize().y);*/
 	/*SetNextWindowPos(sceneWinPos);
 	SetNextWindowSize(sceneWinSize);*/
 	Begin("Entity Preview", nullptr, flags);
 
-	//auto windowDrawlist = GetWindowDrawList();
+	auto windowDrawlist = GetWindowDrawList();
+
 
 	vec2 avail = GetContentRegionAvail();
-	//mainSceneViewerScreenLocation = GetCursorScreenPos();
+	previewSceneViewerScreenLocation = GetCursorScreenPos();
 
-	//windowDrawlist->PushClipRect(mainSceneViewerScreenLocation, mainSceneViewerScreenLocation + avail);
+	windowDrawlist->PushClipRect(previewSceneViewerScreenLocation, previewSceneViewerScreenLocation + avail);
 
 	/*if (mainSceneFrameSizeChanged)
 		engine.ResizeSceneRenderContext(sceneRenderContext, avail);*/
@@ -768,21 +767,32 @@ void Editor::EntityPreviewWindow(Engine& engine) {
 
 	engine.ImGuiFramebufferImage(entityPreviewFramebuffer, entityPrviewFrameSize);
 
-	/*if (ImGui::IsItemHovered()) {
-		allowZoomThisFrame = true;
-	}*/
+
+	if (ImGui::IsItemHovered()) {
+
+		//if (input->getMouseBtn(MouseBtn::Right)) {
+		//	editorCamera.position -= ((mouseDelta * vec2(2.0, -2.0)) / engine.getWindowSize().y) / editorCamera.zoom;
+		//	cameraEntityFocus = false;
+		//}
+
+		// zoom
+		{
+			float off = input->GetScrollDelta();
+			previewSceneRawZoom += off * 0.02f;
+			previewSceneRawZoom = glm::clamp(previewSceneRawZoom, 0.0f, 1.0f);
+			previewCamera.zoom = exponentialScale(previewSceneRawZoom, 0.01, 15.1);
+		}
+	}
 
 	// need to generalize to work with any scene and window
-	DrawGrid(engine, windowDrawlist);
+	DrawPreviewSceneGrid(engine, windowDrawlist, entityPrviewFrameSize, previewSceneViewerScreenLocation);
 
-	//windowDrawlist->PopClipRect();
+	windowDrawlist->PopClipRect();
 
 	End();
 }
 
 void Editor::Run(Engine& engine) {
-
-	allowZoomThisFrame = false;
 
 	input = engine.GetInput();
 	vec2 mpos = input->getMousePos();
@@ -793,7 +803,6 @@ void Editor::Run(Engine& engine) {
 	mainSceneFrameSizeChanged = lastMainSceneFrameSize != mainSceneFrameSize;
 	lastMainSceneFrameSize = mainSceneFrameSize;
 
-	//drawlist = GetBackgroundDrawList();
 	auto sceneViewDrawlist = GetForegroundDrawList();
 
 	auto io = GetIO();
@@ -844,14 +853,14 @@ void Editor::Run(Engine& engine) {
 	{
 		EntityPreviewWindow(engine);
 
-		entityPreviewRenderJob.camera = { .position = vec2(), .zoom = 1.0 };
+		entityPreviewRenderJob.camera = previewCamera;
 		entityPreviewRenderJob.scene = entityPreviewScene;
 		entityPreviewRenderJob.sceneRenderCtxID = entityPreviewsSeneRenderContextID;
 
 	}
 
 	{
-		auto flags = ImGuiWindowFlags_NoResize;
+		auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoBringToFrontOnFocus;
 		SetNextWindowPos(vec2(engine.getWindowSize().x - inspectorWindowWidth, 0.0f));
 		SetNextWindowSize(vec2(300, engine.getWindowSize().y));
 		Begin("Inspector", nullptr, flags);
@@ -994,13 +1003,6 @@ void Editor::Run(Engine& engine) {
 	}
 
 	debugDataWindow(engine);
-
-	if (allowZoomThisFrame) {
-		float off = input->GetScrollDelta();
-		zoomP += off * 0.02f;
-		zoomP = glm::clamp(zoomP, 0.0f, 1.0f);
-		editorCamera.zoom = exponentialScale(zoomP, 0.01, 15.1);
-	}
 }
 
 
@@ -1038,7 +1040,7 @@ bool Editor::drawInspector<SpriteRenderer>(SpriteRenderer& r, Engine& engine) {
 		OpenPopup("Available Assets");
 	}
 
-	auto modelFlags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+	auto modelFlags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBringToFrontOnFocus;
 	float modelWidth = 360;
 	if (assetModel) {
 		SetNextWindowPos(vec2(glm::clamp(engine.winW / 2 - (int)modelWidth / 2, 0, engine.winW), 50));

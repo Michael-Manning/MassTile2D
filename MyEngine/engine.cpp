@@ -34,6 +34,7 @@
 #include "profiling.h"
 #include "Settings.h"
 #include "GlobalImageDescriptor.h"
+#include "ParticleSystem.h"
 
 using namespace glm;
 using namespace std;
@@ -395,22 +396,47 @@ void Engine::recordSceneContextGraphics(const ScenePipelineContext& ctx, framebu
 	// particles
 	{
 
-		ParticleSystemPL::particleSystem sys;
-		sys.particleCount = 10;
 
-		for (size_t i = 0; i < 10; i++)
+		ParticleSystem ps;
+		// epic temp particle system
 		{
-			sys.particles[i] = ParticleSystemPL::particle{
-				.position = vec2(i) * 3.5f,
-				.scale = 0.5f,
-				.life = 1.0f
-			};
+			ps.burstMode = false;
+			ps.particleCount = 200;
+			ps.particleLifeSpan = 2.0f;
+			ps.spawnRate = 10.0f;
 		}
 
-		ctx.particlePipeline->UploadInstanceData(sys, 0);
-
+		int systemIndex = 0;
 		std::vector<int> indexes;
-		indexes.push_back(0);
+		for (auto& [entID, renderer] : scene->sceneData.particleSystemRenderers)
+		{
+			const auto& entity = scene->sceneData.entities[entID];
+
+			renderer.particleData.particleCount = ps.particleCount;
+
+			renderer.runSimulation(deltaTime, ps, entity->transform.position);
+			ctx.particlePipeline->UploadInstanceData(renderer.particleData, systemIndex);
+
+			indexes.push_back(systemIndex);
+			systemIndex++; 
+		}
+
+
+		//ParticleSystemPL::particleSystem sys;
+		//sys.particleCount = 10;
+
+		//for (size_t i = 0; i < 10; i++)
+		//{
+		//	sys.particles[i] = ParticleSystemPL::particle{
+		//		.position = vec2(i) * 3.5f,
+		//		.scale = 0.5f,
+		//		.life = 1.0f
+		//	};
+		//}
+
+		//ctx.particlePipeline->UploadInstanceData(sys, 0);
+
+//		indexes.push_back(0);
 
 		ctx.particlePipeline->recordCommandBuffer(cmdBuffer, indexes);
 	}
