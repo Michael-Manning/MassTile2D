@@ -8,7 +8,7 @@
 #include "typedefs.h"
 #include "Component.h"
 #include "serialization.h"
-#include "ParticleSystem.h"
+//#include "ParticleSystem.h"
 #include "ParticleSystemPL.h"
 
 #include <assetPack/common_generated.h>
@@ -19,23 +19,23 @@ public:
 	ParticleSystemRenderer() {
 		for (size_t i = 0; i < MAX_PARTICLES_MEDIUM; i++)
 		{
-			particleData.particles->position = glm::vec2(0);
-			particleData.particles->life = 0.0f;
-			particleData.particles->velocity = glm::vec2(0);
+			particleSystem.particles[i].position = glm::vec2(0);
+			particleSystem.particles[i].life = 0.0f;
+			particleSystem.particles[i].velocity = glm::vec2(0);
 		}
 	};
 	/*ParticleSystemRenderer() {
 	}*/
 
-	particleSystemID particleSystemID;
+	//particleSystemID particleSystemID;
 
 	// for CPU simulation only
 	// change to smart pointer and dynamically allocate only if running simulation on CPU
-	ParticleSystemPL::particleSystem particleData;
+	ParticleSystemPL::ParticleSystem particleSystem;
 
 	float spawntimer = 0;
 	int particlesToSpawn = 0;
-	void runSimulation(float deltaTime, ParticleSystem& ps, glm::vec2 spawnOrigin);
+	void runSimulation(float deltaTime, glm::vec2 spawnOrigin);
 
 	//nlohmann::json serializeJson(entityID entId) override;
 	//static ColorRenderer deserializeJson(nlohmann::json);

@@ -99,7 +99,7 @@ public:
 	bool QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, bool drawImgui);
 
 	void EntityStartUpdate(std::shared_ptr<Scene> scene) {
-		if (paused)
+		if (scene->paused)
 			return;
 
 		Entity::DeltaTime = deltaTime;
@@ -128,9 +128,8 @@ public:
 
 	//std::shared_ptr<b2World> bworld = nullptr;
 
-	bool paused = true;
 	double deltaTime = 0.0;
-	double paused_deltaTime = 0.0; // delta time, but unaffected by pausing
+	//double paused_deltaTime = 0.0; // delta time, but unaffected by pausing
 	double framerate;
 	float time = 0.0f;
 
@@ -292,7 +291,7 @@ public:
 	//	return currentScene;
 	//}
 
-	sceneRenderContextID CreateSceneRenderContext(glm::ivec2 size, glm::vec4 clearColor = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)) {
+	sceneRenderContextID CreateSceneRenderContext(glm::ivec2 size, glm::vec4 clearColor = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f), bool transparentFramebufferBlending = false) {
 
 		auto fbID = resourceManager->CreateFramebuffer(size, clearColor);
 		auto fb = resourceManager->GetFramebuffer(fbID);
@@ -302,7 +301,7 @@ public:
 		
 		sceneRenderContextMap.find(id)->second.fb = fbID;
 
-		createScenePLContext(&sceneRenderContextMap.find(id)->second.pl, fb->renderpass);
+		createScenePLContext(&sceneRenderContextMap.find(id)->second.pl, fb->renderpass, transparentFramebufferBlending);
 
 		return id;
 	}
@@ -355,8 +354,6 @@ private:
 
 	double lastTime = 0.0;
 
-	double physicsTimer = 0.0;
-
 	int lastwinW, lastwinH;
 	bool windowResizedLastFrame = false;
 
@@ -366,7 +363,7 @@ private:
 
 	std::unique_ptr<LightingComputePL> lightingPipeline = nullptr;
 
-	void createScenePLContext(ScenePipelineContext* ctx, vk::RenderPass renderpass);
+	void createScenePLContext(ScenePipelineContext* ctx, vk::RenderPass renderpass, bool transparentFramebufferBlending);
 
 	void recordSceneContextGraphics(const ScenePipelineContext& ctx, framebufferID framebuffer, std::shared_ptr<Scene> scene, const Camera& camera, vk::CommandBuffer& cmdBuffer);
 

@@ -9,8 +9,18 @@ struct particle {
    float life;
 };
 
-struct particleSystem {
+struct ParticleSystemConfiguration {
    int particleCount;
+   bool burstMode;
+   float spawnRate; 
+   float particleLifeSpan;
+   float gravity;
+   float startSize; 
+   float endSize;
+};
+
+struct particleSystem {
+   ParticleSystemConfiguration configuration;
    particle particles[MAX_PARTICLES_MEDIUM];
 };
 

@@ -561,7 +561,7 @@ int main() {
 				}
 #endif
 				if (input->getKeyDown('p')) {
-					engine.paused = !engine.paused;
+					scene->paused = !scene->paused;
 				}
 				if (input->getKeyDown('l')) {
 					engine.worldMap->FullLightingUpdate();

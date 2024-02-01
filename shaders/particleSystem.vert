@@ -15,8 +15,18 @@ struct particle {
    float life;
 };
 
-struct particleSystem {
+struct ParticleSystemConfiguration {
    int particleCount;
+   bool burstMode;
+   float spawnRate; 
+   float particleLifeSpan;
+   float gravity;
+   float startSize; 
+   float endSize;
+};
+
+struct particleSystem {
+   ParticleSystemConfiguration configuration;
    particle particles[MAX_PARTICLES_MEDIUM];
 };
 
@@ -61,6 +71,7 @@ mat4 rotate(float angle) {
     );
 }
 
+
 void main() {
 
     mat4 view = mat4(1.0);
@@ -71,7 +82,7 @@ void main() {
     mat4 model = mat4(1.0);
     model *= translate(ssboData[systemIndex].particles[gl_InstanceIndex].position);
    //  model *= rotate(ssboData[systemIndex].rotation);
-    model *= scale(vec2(ssboData[systemIndex].particles[gl_InstanceIndex].scale));
+    model *= scale(vec2(ssboData[systemIndex].particles[gl_InstanceIndex].scale) * step(0.0, ssboData[systemIndex].particles[gl_InstanceIndex].life)); // step SHOULD hide dead particles
 
     gl_Position = view * model  * vec4(inPosition, 0.0, 1.0) * vec4(camera.aspectRatio, 1.0, 1.0, 1.0);
 

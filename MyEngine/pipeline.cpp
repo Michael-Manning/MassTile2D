@@ -104,7 +104,7 @@ vk::PipelineMultisampleStateCreateInfo Pipeline::defaultMultisampling() {
 	return multisampling;
 }
 
-vk::PipelineColorBlendAttachmentState Pipeline::defaultColorBlendAttachment(bool blendEnabled) {
+vk::PipelineColorBlendAttachmentState Pipeline::defaultColorBlendAttachment(bool blendEnabled, bool transparentFramebuffer) {
 	vk::PipelineColorBlendAttachmentState colorBlendAttachment;
 	colorBlendAttachment.colorWriteMask |= vk::ColorComponentFlagBits::eR;
 	colorBlendAttachment.colorWriteMask |= vk::ColorComponentFlagBits::eG;
@@ -116,10 +116,14 @@ vk::PipelineColorBlendAttachmentState Pipeline::defaultColorBlendAttachment(bool
 		colorBlendAttachment.srcColorBlendFactor = vk::BlendFactor::eSrcAlpha;
 		colorBlendAttachment.dstColorBlendFactor = vk::BlendFactor::eOneMinusSrcAlpha;
 		colorBlendAttachment.colorBlendOp = vk::BlendOp::eAdd;
-		//colorBlendAttachment.srcAlphaBlendFactor = vk::BlendFactor::eOne;
-		//colorBlendAttachment.dstAlphaBlendFactor = vk::BlendFactor::eZero;
-		colorBlendAttachment.srcAlphaBlendFactor = vk::BlendFactor::eZero;
-		colorBlendAttachment.dstAlphaBlendFactor = vk::BlendFactor::eOne;
+		if (transparentFramebuffer) {
+			colorBlendAttachment.srcAlphaBlendFactor = vk::BlendFactor::eOne;
+			colorBlendAttachment.dstAlphaBlendFactor = vk::BlendFactor::eZero;
+		}
+		else {
+			colorBlendAttachment.srcAlphaBlendFactor = vk::BlendFactor::eZero;
+			colorBlendAttachment.dstAlphaBlendFactor = vk::BlendFactor::eOne;
+		}
 		colorBlendAttachment.alphaBlendOp = vk::BlendOp::eAdd;
 	}
 	else {

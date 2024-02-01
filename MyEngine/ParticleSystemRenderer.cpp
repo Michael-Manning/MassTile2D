@@ -6,7 +6,7 @@
 #include "ParticleSystem.h"
 #include "ParticleSystemPL.h"
 #include "ParticleSystemRenderer.h"
-
+#include "MyMath.h"
 
 namespace {
 	std::random_device rd; // obtain a random number from hardware
@@ -34,35 +34,35 @@ namespace {
 	AppState appState = AppState::PlayingGame;
 }
 
-void ParticleSystemRenderer::runSimulation(float deltaTime, ParticleSystem& ps, glm::vec2 spawnOrigin) {
-
-
-	assert(particleData.particleCount == ps.particleCount);
+void ParticleSystemRenderer::runSimulation(float deltaTime, glm::vec2 spawnOrigin) {
 
 	spawntimer += deltaTime;
 
 	int particlesToSpawn = 0;
 
 	// math is hard
-	float step = (1.0f / ps.spawnRate);
+	float step = (1.0f / particleSystem.configuration.particleCount);
 	while (spawntimer >= step) {
 		particlesToSpawn++;
 		spawntimer -= step;
 	}
 
-	for (size_t i = 0; i < ps.particleCount; i++)
+	const auto& con = particleSystem.configuration;
+	const auto& ps = particleSystem.particles;
+
+	for (size_t i = 0; i < particleSystem.configuration.particleCount; i++)
 	{
-		particleData.particles[i].scale = 0.2f;
+		particleSystem.particles[i].life -= deltaTime;
 
-		particleData.particles[i].life -= deltaTime;
+		particleSystem.particles[i].scale = lerp(con.startSize, con.endSize, 1.0 - ps[i].life);
 
-		particleData.particles[i].position += particleData.particles[i].velocity * deltaTime;
+		particleSystem.particles[i].position += particleSystem.particles[i].velocity * deltaTime;
 
-		if (particlesToSpawn > 0 && particleData.particles[i].life <= 0.0f) {
+		if (particlesToSpawn > 0 && particleSystem.particles[i].life <= 0.0f) {
 			
-			particleData.particles[i].position = spawnOrigin;
-			particleData.particles[i].velocity = (randomNormal2() - 0.5f) * 4.0f;
-			particleData.particles[i].life = 1.0f;
+			particleSystem.particles[i].position = spawnOrigin;
+			particleSystem.particles[i].velocity = (randomNormal2() - 0.5f) * 4.0f;
+			particleSystem.particles[i].life = 1.0f;
 			particlesToSpawn--;
 		}
 	}

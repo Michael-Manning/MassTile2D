@@ -110,7 +110,7 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 	app->GetInput()->_onScroll(xoffset, yoffset);
 }
 
-void Engine::createScenePLContext(ScenePipelineContext* ctx, vk::RenderPass renderpass) {
+void Engine::createScenePLContext(ScenePipelineContext* ctx, vk::RenderPass renderpass, bool transparentFramebufferBlending) {
 
 	rengine->createMappedBuffer(sizeof(cameraUBO_s), vk::BufferUsageFlagBits::eUniformBuffer, ctx->cameraBuffers);
 
@@ -156,7 +156,7 @@ void Engine::createScenePLContext(ScenePipelineContext* ctx, vk::RenderPass rend
 		vector<uint8_t> vert, frag;
 		assetManager->LoadShaderFile("particleSystem_vert.spv", vert);
 		assetManager->LoadShaderFile("particleSystem_frag.spv", frag);
-		ctx->particlePipeline->CreateGraphicsPipeline(vert, frag, renderpass, ctx->cameraBuffers);
+		ctx->particlePipeline->CreateGraphicsPipeline(vert, frag, renderpass, ctx->cameraBuffers, false, transparentFramebufferBlending);
 	}
 }
 
@@ -397,14 +397,14 @@ void Engine::recordSceneContextGraphics(const ScenePipelineContext& ctx, framebu
 	{
 
 
-		ParticleSystem ps;
-		// epic temp particle system
-		{
-			ps.burstMode = false;
-			ps.particleCount = 200;
-			ps.particleLifeSpan = 2.0f;
-			ps.spawnRate = 10.0f;
-		}
+		//ParticleSystem ps;// = assetManager->getp;
+		//// epic temp particle system
+		//{
+		//	ps.burstMode = false;
+		//	ps.particleCount = 200;
+		//	ps.particleLifeSpan = 2.0f;
+		//	ps.spawnRate = 10.0f;
+		//}
 
 		int systemIndex = 0;
 		std::vector<int> indexes;
@@ -412,13 +412,14 @@ void Engine::recordSceneContextGraphics(const ScenePipelineContext& ctx, framebu
 		{
 			const auto& entity = scene->sceneData.entities[entID];
 
-			renderer.particleData.particleCount = ps.particleCount;
+			//renderer.particleData.particleCount = ps.particleCount;
 
-			renderer.runSimulation(deltaTime, ps, entity->transform.position);
-			ctx.particlePipeline->UploadInstanceData(renderer.particleData, systemIndex);
+			renderer.runSimulation(deltaTime, entity->transform.position);
+			ctx.particlePipeline->UploadInstanceData(renderer.particleSystem, systemIndex);
+			//ctx.particlePipeline->UploadInstanceData(renderer.particleData, systemIndex);
 
 			indexes.push_back(systemIndex);
-			systemIndex++; 
+			systemIndex++;
 		}
 
 
@@ -493,7 +494,7 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 
 	double time = glfwGetTime();
 	deltaTime = time - lastTime;
-	paused_deltaTime = deltaTime;
+	//paused_deltaTime = deltaTime;
 	framerate = 1.0 / deltaTime;
 	frameTimes[frameTimeIndex++] = framerate;
 	frameTimeIndex = frameTimeIndex % frameTimeBufferCount;
@@ -505,30 +506,26 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 
 	runningStats.sprite_render_count = 0;
 
-	if (paused)
-	{
-		deltaTime = 0.0;
-	}
+	//if (paused)
+	//{
+	//	deltaTime = 0.0;
+	//}
 
-	if (!paused) {
-		physicsTimer += deltaTime;
-	}
 
-	// TODO: this is not the place to do this. Function does not imply it will update the scene physics
+	// this can be simplified logically
 	{
 		ZoneScopedN("Update physics");
-
-
-		{
-
-		}
-		while (physicsTimer >= timeStep) {
-			for (auto& ctx : sceneRenderJobs)
-				ctx.scene->bworld.Step(timeStep, velocityIterations, positionIterations);
-			physicsTimer -= timeStep;
-		}
-
 		for (auto& ctx : sceneRenderJobs) {
+			if (ctx.scene->paused)
+				continue;
+
+			ctx.scene->physicsTimer += deltaTime;
+
+			while (ctx.scene->physicsTimer >= timeStep) {
+				ctx.scene->bworld.Step(timeStep, velocityIterations, positionIterations);
+				ctx.scene->physicsTimer -= timeStep;
+			}
+
 			for (auto& body : ctx.scene->sceneData.rigidbodies)
 			{
 				ctx.scene->sceneData.entities[body.first]->transform.position = body.second._getPosition();

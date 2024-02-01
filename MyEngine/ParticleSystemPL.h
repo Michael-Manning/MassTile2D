@@ -40,9 +40,20 @@ public:
 	};
 	//static_assert(sizeof(particle) % 16 == 0);
 
-	struct particleSystem {
+	struct ParticleSystemConfiguration {
+		int32_t particleCount = 200;
+		bool burstMode;
+		float spawnRate = 10.0f; // particles per second
+		float particleLifeSpan = 2.0f; // seconds
+		float gravity = -10.0f;
+		float startSize = 0.3; 
+		float endSize = 0.0;
+	};
 
-		int32_t particleCount;
+	// I have no idea how to actually align this
+	struct ParticleSystem {
+
+		ParticleSystemConfiguration configuration;
 		int32_t padding[1];
 		particle particles[MAX_PARTICLES_MEDIUM];
 	};
@@ -51,11 +62,11 @@ public:
 	ParticleSystemPL(std::shared_ptr<VKEngine>& engine) :
 		pipeline(engine), engine(engine) { }
 
-	void CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc, vk::RenderPass& renderTarget, MappedDoubleBuffer<cameraUBO_s>& cameradb, bool flipFaces = false);
+	void CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc, vk::RenderPass& renderTarget, MappedDoubleBuffer<cameraUBO_s>& cameradb, bool flipFaces = false, bool transparentFramebuffer = false);
 
 	void recordCommandBuffer(vk::CommandBuffer commandBuffer, std::vector<int>& systemIndexes);
 
-	void UploadInstanceData(particleSystem& psystem, int index) {
+	void UploadInstanceData(ParticleSystem& psystem, int index) {
 		assert(index < MAX_PARTICLE_SYSTEMS_MEDIUM);
 		particleDB.buffersMapped[engine->currentFrame]->systems[index] = psystem;
 	}
@@ -63,7 +74,7 @@ public:
 private:
 
 	struct particle_ssbo {
-		particleSystem systems[MAX_PARTICLE_SYSTEMS_MEDIUM];
+		ParticleSystem systems[MAX_PARTICLE_SYSTEMS_MEDIUM];
 	};
 	static_assert(sizeof(particle_ssbo) % 16 == 00);
 

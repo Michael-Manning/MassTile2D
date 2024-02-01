@@ -29,7 +29,7 @@ struct pushConstant_s {
 	int systemIndex;
 };
 
-void ParticleSystemPL::CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc, vk::RenderPass& renderTarget, MappedDoubleBuffer<cameraUBO_s>& cameradb, bool flipFaces) {
+void ParticleSystemPL::CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc, vk::RenderPass& renderTarget, MappedDoubleBuffer<cameraUBO_s>& cameradb, bool flipFaces, bool transparentFramebuffer) {
 
 	engine->createMappedBuffer(sizeof(particle_ssbo), vk::BufferUsageFlagBits::eStorageBuffer, particleDB);
 
@@ -37,6 +37,7 @@ void ParticleSystemPL::CreateGraphicsPipeline(const std::vector<uint8_t>& vertex
 	con.vertexSrc = vertexSrc;
 	con.fragmentSrc = fragmentSrc;
 	con.flipFaces = flipFaces;
+	con.transparentFramebuffer = transparentFramebuffer;
 	con.renderTarget = renderTarget;
 
 	con.descriptorInfos.push_back(DescriptorManager::descriptorSetInfo(0, 1, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eVertex, &cameradb.buffers, cameradb.size));
@@ -60,6 +61,6 @@ void ParticleSystemPL::recordCommandBuffer(vk::CommandBuffer commandBuffer, std:
 	for (auto& index : systemIndexes) {
 		pushConstant_s pc{ .systemIndex = index };
 		pipeline.updatePushConstant(commandBuffer, &pc);
-		commandBuffer.drawIndexed(static_cast<int32_t>(QuadIndices.size()), particleDB.buffersMapped[engine->currentFrame]->systems[index].particleCount, 0, 0, 0);
+		commandBuffer.drawIndexed(static_cast<int32_t>(QuadIndices.size()), particleDB.buffersMapped[engine->currentFrame]->systems[index].configuration.particleCount, 0, 0, 0);
 	}
 }

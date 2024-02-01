@@ -28,6 +28,7 @@ struct ShaderResourceConfig {
 	std::vector<DescriptorManager::descriptorSetInfo> descriptorInfos;
 	std::vector<GlobalDescriptorBinding> globalDescriptors;
 	bool flipFaces;
+	bool transparentFramebuffer;
 	vk::RenderPass renderTarget;
 	PushConstantInfo pushInfo;
 };
@@ -95,7 +96,7 @@ protected:
 	vk::PipelineViewportStateCreateInfo defaultViewportState();
 	vk::PipelineRasterizationStateCreateInfo defaultRasterizer();
 	vk::PipelineMultisampleStateCreateInfo defaultMultisampling();
-	vk::PipelineColorBlendAttachmentState defaultColorBlendAttachment(bool blendEnabled);
+	vk::PipelineColorBlendAttachmentState defaultColorBlendAttachment(bool blendEnabled, bool transparentFramebuffer = false);
 	vk::PipelineColorBlendStateCreateInfo defaultColorBlending(vk::PipelineColorBlendAttachmentState *attachment);
 	vk::PipelineDynamicStateCreateInfo defaultDynamicState();
 

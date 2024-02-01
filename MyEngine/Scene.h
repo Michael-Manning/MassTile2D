@@ -80,9 +80,8 @@ public:
 
 	std::shared_ptr<Entity> Instantiate(Prefab prefab, std::string name = "prefab", glm::vec2 position = glm::vec2(0.0f), float rotation = 0.0f);
 
-	//void setB2World(std::shared_ptr<b2World> bworld) {
-	//	this->bworld = bworld;
-	//}
+	double physicsTimer = 0.0;
+	bool paused = true;
 
 	template <typename T>
 	void registerComponent(entityID id, T component);

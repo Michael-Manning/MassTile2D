@@ -42,7 +42,7 @@ void GraphicsTemplate::CreateGraphicsPipeline(const ShaderResourceConfig& resour
 	auto viewportState = defaultViewportState();
 	auto rasterizer = defaultRasterizer();
 	auto multisampling = defaultMultisampling();
-	auto colorBlendAttachment = defaultColorBlendAttachment(true);
+	auto colorBlendAttachment = defaultColorBlendAttachment(true, resourceConfig.transparentFramebuffer);
 	auto colorBlending = defaultColorBlending(&colorBlendAttachment);
 	auto dynamicState = defaultDynamicState();
 

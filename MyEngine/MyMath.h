@@ -19,3 +19,11 @@ static glm::vec2 smoothstep(const glm::vec2& edge0, const glm::vec2& edge1, floa
 static float magnitude(const glm::vec2& v) {
     return sqrtf(v.x * v.x + v.y * v.y);
 }
+
+static constexpr glm::vec2 lerp(const glm::vec2 p0, const glm::vec2 p1, const float t) {
+    return p0 + t * (p1 - p0);
+};
+
+static constexpr float lerp(const float p0, const float p1, const float t) {
+    return p0 + t * (p1 - p0);
+};
