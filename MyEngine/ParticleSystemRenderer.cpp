@@ -48,7 +48,7 @@ void ParticleSystemRenderer::runSimulation(float deltaTime, glm::vec2 spawnOrigi
 	}
 
 	const auto& con = particleSystem.configuration;
-	const auto& ps = particleSystem.particles;
+	auto& ps = particleSystem.particles;
 
 	for (size_t i = 0; i < particleSystem.configuration.particleCount; i++)
 	{
@@ -56,6 +56,8 @@ void ParticleSystemRenderer::runSimulation(float deltaTime, glm::vec2 spawnOrigi
 
 		particleSystem.particles[i].scale = lerp(con.startSize, con.endSize, 1.0 - ps[i].life);
 
+		// technically incorrect way of applying changing velocity with deltatime
+		ps[i].velocity.y += con.gravity * deltaTime;
 		particleSystem.particles[i].position += particleSystem.particles[i].velocity * deltaTime;
 
 		if (particlesToSpawn > 0 && particleSystem.particles[i].life <= 0.0f) {

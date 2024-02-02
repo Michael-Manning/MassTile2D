@@ -541,7 +541,7 @@ void Editor::Initialize(Engine& engine, std::shared_ptr<Scene> gameScene, sceneR
 	entityPreviewScene = make_shared<Scene>();
 	entityPreviewScene->name = "entity preview scene";
 	entityPrviewFrameSize = vec2(600);
-	entityPreviewsSeneRenderContextID = engine.CreateSceneRenderContext(entityPrviewFrameSize, glm::vec4(0.0f), true);
+	entityPreviewsSeneRenderContextID = engine.CreateSceneRenderContext(entityPrviewFrameSize, glm::vec4(0.06, 0.06, 0.06, 1.0), false);
 	entityPreviewFramebuffer = engine.GetSceneRenderContextFramebuffer(entityPreviewsSeneRenderContextID);
 
 	shared_ptr<Entity> teste = make_shared<Entity>("myEntity");
@@ -603,8 +603,8 @@ void Editor::mainSceneWindow(Engine& engine) {
 			float off = input->GetScrollDelta();
 			mainSceneRawZoom += off * 0.02f;
 			mainSceneRawZoom = glm::clamp(mainSceneRawZoom, 0.0f, 1.0f);
-			editorCamera.zoom = exponentialScale(mainSceneRawZoom, 0.01, 15.1);
 		}
+		editorCamera.zoom = exponentialScale(mainSceneRawZoom, 0.01, 15.1);
 	}
 
 	if (selectedEntity != nullptr) {
@@ -780,9 +780,9 @@ void Editor::EntityPreviewWindow(Engine& engine) {
 			float off = input->GetScrollDelta();
 			previewSceneRawZoom += off * 0.02f;
 			previewSceneRawZoom = glm::clamp(previewSceneRawZoom, 0.0f, 1.0f);
-			previewCamera.zoom = exponentialScale(previewSceneRawZoom, 0.01, 15.1);
 		}
 	}
+	previewCamera.zoom = exponentialScale(previewSceneRawZoom, 0.01, 15.1);
 
 	// need to generalize to work with any scene and window
 	DrawPreviewSceneGrid(engine, windowDrawlist, entityPrviewFrameSize, previewSceneViewerScreenLocation);
