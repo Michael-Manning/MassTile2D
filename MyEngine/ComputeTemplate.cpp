@@ -51,6 +51,12 @@ void ComputeTemplate::CreateComputePipeline(const ShaderResourceConfig& resource
 
 void ComputeTemplate::recordCommandBuffer(vk::CommandBuffer& commandBuffer, glm::ivec3 workInstanceCounts, glm::ivec3 workGroupSizes, void* pushConstantData) {
 
+	bindPipelineResources(commandBuffer, pushConstantData);
+
+	Dispatch(commandBuffer, workInstanceCounts, workGroupSizes);
+}
+
+void ComputeTemplate::bindPipelineResources(vk::CommandBuffer& commandBuffer, void* pushConstantData) {
 	commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, compPipeline);
 
 	// handle potential global descriptor
@@ -70,10 +76,16 @@ void ComputeTemplate::recordCommandBuffer(vk::CommandBuffer& commandBuffer, glm:
 			nullptr);
 	}
 
-	if (pushInfo.pushConstantSize > 0) {
-		commandBuffer.pushConstants(pipelineLayout, pushInfo.pushConstantShaderStages, 0, pushInfo.pushConstantSize, pushConstantData);
+	if (pushInfo.pushConstantSize > 0 && pushConstantData != nullptr) {
+		updatePushConstant(commandBuffer, pushConstantData);
 	}
+}
 
+void ComputeTemplate::updatePushConstant(vk::CommandBuffer& commandBuffer, void* pushConstantData) {
+	commandBuffer.pushConstants(pipelineLayout, pushInfo.pushConstantShaderStages, 0, pushInfo.pushConstantSize, pushConstantData);
+}
+
+void ComputeTemplate::Dispatch(vk::CommandBuffer& commandBuffer, glm::ivec3 workInstanceCounts, glm::ivec3 workGroupSizes) {
 	commandBuffer.dispatch(
 		workInstanceCounts.x / workGroupSizes.x + (workInstanceCounts.x % workGroupSizes.x ? 1 : 0),
 		workInstanceCounts.y / workGroupSizes.y + (workInstanceCounts.y % workGroupSizes.y ? 1 : 0),

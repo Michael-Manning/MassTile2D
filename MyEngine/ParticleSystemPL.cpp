@@ -55,7 +55,6 @@ void ParticleSystemPL::recordCommandBuffer(vk::CommandBuffer commandBuffer, std:
 
 	TracyVkZone(engine->tracyGraphicsContexts[engine->currentFrame], commandBuffer, "particle system render");
 
-
 	pipeline.bindPipelineResources(commandBuffer);
 
 	assert(systemIndexes.size() == systemParticleCounts.size());

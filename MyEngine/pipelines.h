@@ -6,3 +6,4 @@
 #include "LightingComputePL.h"
 #include "TextPL.h"
 #include "ParticleSystemPL.h"
+#include "ParticleComputePL.h"

@@ -957,7 +957,7 @@ void Editor::Run(Engine& engine) {
 			}
 
 			if (gameScene->sceneData.particleSystemRenderers.contains(selectedEntity->ID)) {
-				drawInspector(gameScene->sceneData.particleSystemRenderers.find(selectedEntity->ID), engine);
+				drawInspector(gameScene->sceneData.particleSystemRenderers.find(selectedEntity->ID)->second, engine);
 			}
 
 			if (gameScene->sceneData.staticbodies.contains(selectedEntity->ID)) {

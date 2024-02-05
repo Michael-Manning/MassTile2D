@@ -18,6 +18,12 @@ public:
 
 	void CreateComputePipeline(const ShaderResourceConfig& resourceConfig);
 
+	void bindPipelineResources(vk::CommandBuffer& commandBuffer, void* pushConstantData = nullptr);
+
+	void updatePushConstant(vk::CommandBuffer& commandBuffer, void* pushConstantData);
+
+	void Dispatch(vk::CommandBuffer& commandBuffer, glm::ivec3 workInstanceCounts, glm::ivec3 workGroupSizes);
+
 	void recordCommandBuffer(vk::CommandBuffer& commandBuffer, glm::ivec3 workInstanceCounts, glm::ivec3 workGroupSizes, void* pushConstantData = nullptr);
 
 private:

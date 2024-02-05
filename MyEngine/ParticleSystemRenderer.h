@@ -29,6 +29,19 @@ public:
 		SetSystemSize(size);
 	};
 
+	// dont' now how to make this work with a map insertion in scene!
+	//~ParticleSystemRenderer() {
+	//	if (hostParticleBuffer != nullptr) {
+	//		hostParticleBuffer.reset();
+	//	}
+
+	//	// must indicate to engine that this particle system is no longer using it's associated
+	//	// device local particle buffer
+	//	if (token != nullptr) {
+	//		token->active = false;
+	//	}
+	//};
+
 	void SetSystemSize(ParticleSystemSize size) {
 		this->size = size;
 
@@ -49,11 +62,13 @@ public:
 					hostParticleBuffer->particles[i].velocity = glm::vec2(0);
 				}
 			}
+			computeContextDirty = false;
 		}
 		else if (size == ParticleSystemSize::Large) {
 			if (hostParticleBuffer != nullptr) {
 				hostParticleBuffer.reset();
 			}
+			computeContextDirty = true;
 		}
 		else {
 			assert(false);
@@ -70,6 +85,9 @@ public:
 	int particlesToSpawn = 0;
 	void runSimulation(float deltaTime, glm::vec2 spawnOrigin);
 
+	bool computeContextDirty = true;
+	ComponentResourceToken* token = nullptr;
+
 	//nlohmann::json serializeJson(entityID entId) override;
 	//static ColorRenderer deserializeJson(nlohmann::json);
 
@@ -85,6 +103,4 @@ public:
 		return r;
 	};*/
 
-	bool dirty = true;
-	ComponentResourceToken* token = nullptr;
 };

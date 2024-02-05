@@ -212,8 +212,17 @@ void Engine::Start(const VideoSettings& initialSettings, AssetManager::AssetPath
 		worldMap = make_shared<TileWorld>(rengine);
 		worldMap->AllocateVulkanResources();
 
-		// allocated deticated device memory for compute driven particle systems
-		//rengine->createBuffer(sizeof(ssboObjectData) * (mapCount), vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eStorageBuffer, VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT, _worldMapFGDeviceBuffer, worldMapFGDeviceBufferAllocation, true);
+		// allocated dedicated device memory for compute driven particle systems
+		{
+			computerParticleBuffer.size = sizeof(ParticleSystemPL::device_particle_ssbo);
+
+			rengine->createBuffer(
+				computerParticleBuffer.size,
+				vk::BufferUsageFlagBits::eStorageBuffer, VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT,
+				computerParticleBuffer.buffer,
+				computerParticleBuffer.allocation,
+				true);
+		}
 	}
 
 	// contruct pipelines
@@ -243,6 +252,11 @@ void Engine::Start(const VideoSettings& initialSettings, AssetManager::AssetPath
 			assetManager->LoadShaderFile("lighting_comp.spv", comp);
 			assetManager->LoadShaderFile("lightingBlur_comp.spv", blur);
 			lightingPipeline->CreateComputePipeline(comp, blur);
+		}
+		{
+			vector<uint8_t> comp;
+			assetManager->LoadShaderFile("particleSystem_comp.spv", comp);
+			particleComputePipeline->CreateComputePipeline(comp, &computerParticleBuffer);
 		}
 		{
 			vector<uint8_t> vert, frag;
@@ -398,31 +412,6 @@ void Engine::recordSceneContextGraphics(const ScenePipelineContext& ctx, framebu
 
 	// particles
 	{
-
-
-		for (auto& [entID, renderer] : scene->sceneData.particleSystemRenderers) {
-			if (renderer.dirty) {
-
-				if (renderer.size == ParticleSystemRenderer::ParticleSystemSize::Large && renderer.token == nullptr) {
-					int selectedIndex = -1;
-					for (size_t i = 0; i < particleSystemResourceTokens.size(); i++)
-					{
-						if (particleSystemResourceTokens[i].active == false) {
-							selectedIndex = false;
-							break;
-						}
-					}
-					assert(selectedIndex != -1);
-
-					renderer.token = &particleSystemResourceTokens[selectedIndex];
-				}
-
-				// must now copy configuration to permenant buffers at token index if storing persistently in device memory
-
-			}
-			renderer.dirty = false;
-		}
-
 		int systemIndex = 0;
 		std::vector<int> indexes;
 		std::vector<int> particleCounts;
@@ -436,7 +425,7 @@ void Engine::recordSceneContextGraphics(const ScenePipelineContext& ctx, framebu
 			ctx.particlePipeline->UploadInstanceData(*renderer.hostParticleBuffer.get(), systemIndex);
 
 			indexes.push_back(systemIndex);
-			indexes.push_back(renderer.configuration.particleCount);
+			particleCounts.push_back(renderer.configuration.particleCount);
 			systemIndex++;
 		}
 
@@ -512,6 +501,7 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 	//	deltaTime = 0.0;
 	//}
 
+	// compute buffers can be recoreded in parallel
 
 	// this can be simplified logically
 	{
@@ -535,6 +525,7 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 		}
 	}
 
+
 	// wait for the this frame's compute command buffer to become available
 	rengine->WaitForComputeSubmission();
 	rengine->WaitForComputeCompletion();
@@ -546,18 +537,63 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 
 		auto computeCmdBuffer = rengine->getNextComputeCommandBuffer();
 
-		// transfer tiles to read-only memory before starting renderpass
+		// lighting compute
 		{
-			ZoneScopedN("chunk updates");
-			worldMap->stageChunkUpdates(computeCmdBuffer);
+
+			// transfer tiles to read-only memory before starting renderpass
+			{
+				ZoneScopedN("chunk updates");
+				worldMap->stageChunkUpdates(computeCmdBuffer);
+			}
+
+			auto lightingData = worldMap->getLightingUpdateData();
+			lightingPipeline->stageLightingUpdate(lightingData);
+			lightingPipeline->recordCommandBuffer(computeCmdBuffer, lightingData.size());
+			worldMap->chunkLightingJobs.clear();
+
+			TracyVkCollect(rengine->tracyComputeContexts[rengine->currentFrame], rengine->computeCommandBuffers[rengine->currentFrame]);
+
 		}
 
-		auto lightingData = worldMap->getLightingUpdateData();
-		lightingPipeline->stageLightingUpdate(lightingData);
-		lightingPipeline->recordCommandBuffer(computeCmdBuffer, lightingData.size());
-		worldMap->chunkLightingJobs.clear();
+		// record particle compute for every particle system in every scene
+		{
+			for (auto& job : sceneRenderJobs)
+			{
+				for (auto& [entID, renderer] : job.scene->sceneData.particleSystemRenderers) {
+					if (renderer.computeContextDirty) {
 
-		TracyVkCollect(rengine->tracyComputeContexts[rengine->currentFrame], rengine->computeCommandBuffers[rengine->currentFrame]);
+						if (renderer.size == ParticleSystemRenderer::ParticleSystemSize::Large && renderer.token == nullptr) {
+							int selectedIndex = -1;
+							for (size_t i = 0; i < particleSystemResourceTokens.size(); i++)
+							{
+								if (particleSystemResourceTokens[i].active == false) {
+									selectedIndex = i;
+									break;
+								}
+							}
+							assert(selectedIndex != -1);
+
+							renderer.token = &particleSystemResourceTokens[selectedIndex];
+							renderer.token->index = selectedIndex;
+						}
+					}
+					renderer.computeContextDirty = false;
+
+					vector<int> indexes;
+					vector<int> particleCounts;
+					if (renderer.size == ParticleSystemRenderer::ParticleSystemSize::Large) {
+
+						assert(renderer.token != nullptr);
+
+						particleComputePipeline->UploadInstanceConfigurationData(renderer.configuration, renderer.token->index);
+						indexes.push_back(renderer.token->index);
+						particleCounts.push_back(renderer.configuration.particleCount);
+					}
+
+					particleComputePipeline->RecordCommandBuffer(computeCmdBuffer, indexes, particleCounts);
+				}
+			}
+		}
 
 		computeCmdBuffer.end();
 	}

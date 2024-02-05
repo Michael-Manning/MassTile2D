@@ -362,6 +362,7 @@ private:
 	texID texNotFoundID; // displayed when indexing incorrectly 
 
 	std::unique_ptr<LightingComputePL> lightingPipeline = nullptr;
+	std::unique_ptr<ParticleComputePL> particleComputePipeline = nullptr;
 
 	std::array<ComponentResourceToken, MAX_PARTICLE_SYSTEMS_LARGE> particleSystemResourceTokens;
 
@@ -398,6 +399,6 @@ private:
 
 	bool newVideoSettingsRequested = false;
 	VideoSettings requestedSettings;
-	
-	VmaAllocation deviceParticleBuffersAllocation;
+
+	DeviceBuffer computerParticleBuffer;
 };

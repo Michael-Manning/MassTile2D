@@ -77,6 +77,10 @@ public:
 		particleDB.buffersMapped[engine->currentFrame]->particleGroups_small[index] = psystem;
 	}
 
+	// device local particle data
+	struct device_particle_ssbo{
+		ParticleGroup_large particleGroups_large[MAX_PARTICLE_SYSTEMS_LARGE];
+	};
 
 private:
 
@@ -85,15 +89,6 @@ private:
 		ParticleGroup_small particleGroups_small[MAX_PARTICLE_SYSTEMS_SMALL];
 	};
 
-	// device local particle data
-	struct device_particle_ssbo{
-		ParticleGroup_large particleGroups_large[MAX_PARTICLE_SYSTEMS_LARGE];
-	};
-
-	// mapped configuration buffer
-	struct device_particleConfiguration_ssbo {
-		ParticleSystemConfiguration systemConfigurations[MAX_PARTICLE_SYSTEMS_LARGE];
-	};
 
 	GlobalImageDescriptor* textureDescriptor = nullptr;
 
@@ -102,12 +97,4 @@ private:
 	GraphicsTemplate pipeline;
 
 	std::shared_ptr<VKEngine> engine;
-};
-
-
-struct particle {
-	glm::vec2 position;
-	glm::vec2 velocity;
-	float scale;
-	float life;
 };

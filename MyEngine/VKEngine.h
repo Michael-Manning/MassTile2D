@@ -50,6 +50,16 @@ struct MappedDoubleBuffer {
 	vk::DeviceSize size;
 };
 
+struct DeviceBuffer {
+	VmaAllocation allocation;
+	vk::Buffer buffer;
+	vk::DeviceSize size;
+
+	std::array<vk::Buffer, FRAMES_IN_FLIGHT> GetDoubleBuffer() {
+		return { buffer, buffer };
+	}
+};
+
 struct VertexMeshBuffer {
 	vk::Buffer vertexBuffer;
 	VmaAllocation vertexBufferAllocation;
