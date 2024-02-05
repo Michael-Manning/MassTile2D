@@ -24,6 +24,10 @@ static constexpr glm::vec2 lerp(const glm::vec2 p0, const glm::vec2 p1, const fl
     return p0 + t * (p1 - p0);
 };
 
+static constexpr glm::vec4 lerp(const glm::vec4& p0, const glm::vec4& p1, const float t) {
+    return p0 + t * (p1 - p0);
+};
+
 static constexpr float lerp(const float p0, const float p1, const float t) {
     return p0 + t * (p1 - p0);
 };

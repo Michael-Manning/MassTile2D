@@ -6,32 +6,29 @@ layout(set = 0, binding = 1) uniform CamerUBO {
     float aspectRatio;
 } camera;
 
-#define MAX_PARTICLES_MEDIUM 1000
+#define MAX_PARTICLES_SMALL 400
+#define MAX_PARTICLES_LARGE 4000
+
+#define MAX_PARTICLE_SYSTEMS_SMALL 10
 
 struct particle {
    vec2 position;
    vec2 velocity;
    float scale;
    float life;
+   vec4 color;
 };
 
-struct ParticleSystemConfiguration {
-   int particleCount;
-   bool burstMode;
-   float spawnRate; 
-   float particleLifeSpan;
-   float gravity;
-   float startSize; 
-   float endSize;
+struct ParticleGroup_small {
+   particle particles[MAX_PARTICLES_SMALL];
 };
 
-struct particleSystem {
-   ParticleSystemConfiguration configuration;
-   particle particles[MAX_PARTICLES_MEDIUM];
+struct ParticleGroup_large{
+   particle particles[MAX_PARTICLES_LARGE];
 };
 
 layout(std430, set = 0, binding = 0) readonly buffer ObjectInstaceBuffer{
-	particleSystem ssboData[];
+	ParticleGroup_small particleGroups_small[MAX_PARTICLE_SYSTEMS_SMALL];
 };
 
 layout(push_constant) uniform constants{
@@ -80,9 +77,9 @@ void main() {
     view *= scale(vec2(1.0, -1.0));
 
     mat4 model = mat4(1.0);
-    model *= translate(ssboData[systemIndex].particles[gl_InstanceIndex].position);
+    model *= translate(particleGroups_small[systemIndex].particles[gl_InstanceIndex].position);
    //  model *= rotate(ssboData[systemIndex].rotation);
-    model *= scale(vec2(ssboData[systemIndex].particles[gl_InstanceIndex].scale) * step(0.0, ssboData[systemIndex].particles[gl_InstanceIndex].life)); // step SHOULD hide dead particles
+    model *= scale(vec2(particleGroups_small[systemIndex].particles[gl_InstanceIndex].scale) * step(0.0, particleGroups_small[systemIndex].particles[gl_InstanceIndex].life)); // step SHOULD hide dead particles
 
     gl_Position = view * model  * vec4(inPosition, 0.0, 1.0) * vec4(camera.aspectRatio, 1.0, 1.0, 1.0);
 

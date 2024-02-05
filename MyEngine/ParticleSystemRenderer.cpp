@@ -36,35 +36,41 @@ namespace {
 
 void ParticleSystemRenderer::runSimulation(float deltaTime, glm::vec2 spawnOrigin) {
 
+	// only small size system are for host simulation
+	assert(size == ParticleSystemSize::Small);
+
+	const auto& con = configuration;
+	auto& ps = hostParticleBuffer->particles;
+
 	spawntimer += deltaTime;
 
 	int particlesToSpawn = 0;
 
 	// math is hard
-	float step = (1.0f / particleSystem.configuration.particleCount);
+	float step = (1.0f / con.spawnRate);
 	while (spawntimer >= step) {
 		particlesToSpawn++;
 		spawntimer -= step;
 	}
 
-	const auto& con = particleSystem.configuration;
-	auto& ps = particleSystem.particles;
 
-	for (size_t i = 0; i < particleSystem.configuration.particleCount; i++)
+	for (size_t i = 0; i < con.particleCount; i++)
 	{
-		particleSystem.particles[i].life -= deltaTime;
+		ps[i].life -= deltaTime / con.particleLifeSpan;
 
-		particleSystem.particles[i].scale = lerp(con.startSize, con.endSize, 1.0 - ps[i].life);
+		ps[i].scale = lerp(con.startSize, con.endSize, 1.0 - ps[i].life);
+
+		ps[i].color = lerp(con.startColor, con.endColor, 1.0 - ps[i].life);
 
 		// technically incorrect way of applying changing velocity with deltatime
 		ps[i].velocity.y += con.gravity * deltaTime;
-		particleSystem.particles[i].position += particleSystem.particles[i].velocity * deltaTime;
+		ps[i].position += ps[i].velocity * deltaTime;
 
-		if (particlesToSpawn > 0 && particleSystem.particles[i].life <= 0.0f) {
+		if (particlesToSpawn > 0 && ps[i].life <= 0.0f) {
 			
-			particleSystem.particles[i].position = spawnOrigin;
-			particleSystem.particles[i].velocity = (randomNormal2() - 0.5f) * 4.0f;
-			particleSystem.particles[i].life = 1.0f;
+			ps[i].position = spawnOrigin;
+			ps[i].velocity = (randomNormal2() - 0.5f) * 4.0f;
+			ps[i].life = 1.0f;
 			particlesToSpawn--;
 		}
 	}

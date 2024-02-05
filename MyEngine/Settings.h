@@ -32,4 +32,6 @@ struct VideoSettings {
 	SwapChainSetting swapChainSetting;
 };
 
-
+struct MemoryAllocationConfiguration {
+	int LargeParticlesystemCount;
+};

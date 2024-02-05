@@ -62,6 +62,29 @@ namespace {
 		return false;
 	}
 
+	static bool InputFloatClamp(const char* label, float* value, float min, float max) {
+		bool b = InputFloat(label, value);
+		*value = glm::clamp(*value, min, max);
+		return b;
+	}
+
+	static bool InputFloatClamp(const char* label, float* value, float min) {
+		bool b = InputFloat(label, value);
+		*value = glm::max(*value, min);
+		return b;
+	}
+
+	static bool InputIntClamp(const char* label, int* value, int min, int max) {
+		bool b = InputInt(label, value);
+		*value = glm::clamp(*value, min, max);
+		return b;
+	}
+
+	static bool InputIntClamp(const char* label, int* value, int min) {
+		bool b = InputInt(label, value);
+		*value = glm::max(*value, min);
+		return b;
+	}
 
 	float GetWorldGridSize(float zoomLevel) {
 		if (zoomLevel < 0.02)
@@ -232,7 +255,7 @@ void Editor::DrawPreviewSceneGrid(Engine& engine, ImDrawList* drawlist, glm::vec
 void Editor::controlWindow(Engine& engine) {
 
 	const float margin = 10.0f;
-	auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoBringToFrontOnFocus;
+	auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar;
 	SetNextWindowPos(vec2(leftPanelWindowWidth + margin, margin + 30));
 	SetNextWindowSize(vec2(engine.getWindowSize().x - leftPanelWindowWidth - inspectorWindowWidth - (margin * 2.0f), 40));
 	Begin("control", nullptr, flags);
@@ -542,14 +565,13 @@ void Editor::Initialize(Engine& engine, std::shared_ptr<Scene> gameScene, sceneR
 	entityPreviewScene->name = "entity preview scene";
 	entityPrviewFrameSize = vec2(600);
 	entityPreviewsSeneRenderContextID = engine.CreateSceneRenderContext(entityPrviewFrameSize, glm::vec4(0.0), true);
-	//entityPreviewsSeneRenderContextID = engine.CreateSceneRenderContext(entityPrviewFrameSize, glm::vec4(0.06, 0.06, 0.06, 1.0), false);
 	entityPreviewFramebuffer = engine.GetSceneRenderContextFramebuffer(entityPreviewsSeneRenderContextID);
 
 	shared_ptr<Entity> teste = make_shared<Entity>("myEntity");
 	auto id = entityPreviewScene->RegisterEntity(teste);
 
-	ParticleSystemRenderer psr;
-	entityPreviewScene->registerComponent(id, psr);
+	//ParticleSystemRenderer psr = ParticleSystemRenderer(ParticleSystemRenderer::ParticleSystemSize::Small);
+	entityPreviewScene->registerComponent_ParticleSystem(id, ParticleSystemRenderer::ParticleSystemSize::Small);
 
 	//ColorRenderer r;
 	//r.color = vec4(1.0, 0, 0, 1.0);
@@ -850,7 +872,7 @@ void Editor::Run(Engine& engine) {
 
 	controlWindow(engine);
 
-
+	if(showingPreviewWindow)
 	{
 		EntityPreviewWindow(engine);
 
@@ -869,7 +891,7 @@ void Editor::Run(Engine& engine) {
 		// TODO: move gizmo logic outside of this window context
 		if (selectedEntity != nullptr) {
 
-			if (Combo("Create", &comboSelected, "Sprite Renderer\0Color Renderer\0Text Renderer\0Box Staticbody\0Circle Staticbody\0Box Rigidbody\0Circle Rigidbody")) {
+			if (Combo("Create", &comboSelected, "Sprite Renderer\0Color Renderer\0Text Renderer\0Particle System\0Box Staticbody\0Circle Staticbody\0Box Rigidbody\0Circle Rigidbody")) {
 				switch (comboSelected)
 				{
 				case 0:
@@ -886,18 +908,22 @@ void Editor::Run(Engine& engine) {
 							gameScene->registerComponent(selectedEntity->ID, TextRenderer(engine.assetManager->_getFontIterator().begin()->first));
 					break;
 				case 3:
-					if (!gameScene->sceneData.staticbodies.contains(selectedEntity->ID))
-						gameScene->registerComponent(selectedEntity->ID, Staticbody(make_shared<BoxCollider>(vec2(1.0f))));
+					if (!gameScene->sceneData.particleSystemRenderers.contains(selectedEntity->ID))
+						gameScene->registerComponent_ParticleSystem(selectedEntity->ID, ParticleSystemRenderer::ParticleSystemSize::Small);
 					break;
 				case 4:
 					if (!gameScene->sceneData.staticbodies.contains(selectedEntity->ID))
-						gameScene->registerComponent(selectedEntity->ID, Staticbody(make_shared<CircleCollider>(1.0f)));
+						gameScene->registerComponent(selectedEntity->ID, Staticbody(make_shared<BoxCollider>(vec2(1.0f))));
 					break;
 				case 5:
+					if (!gameScene->sceneData.staticbodies.contains(selectedEntity->ID))
+						gameScene->registerComponent(selectedEntity->ID, Staticbody(make_shared<CircleCollider>(1.0f)));
+					break;
+				case 6:
 					if (!gameScene->sceneData.rigidbodies.contains(selectedEntity->ID))
 						gameScene->registerComponent(selectedEntity->ID, Rigidbody(make_shared<BoxCollider>(vec2(1.0f))));
 					break;
-				case 6:
+				case 7:
 					if (!gameScene->sceneData.rigidbodies.contains(selectedEntity->ID))
 						gameScene->registerComponent(selectedEntity->ID, Rigidbody(make_shared<CircleCollider>(1.0f)));
 					break;
@@ -928,6 +954,10 @@ void Editor::Run(Engine& engine) {
 
 			if (gameScene->sceneData.textRenderers.contains(selectedEntity->ID)) {
 				drawInspector(gameScene->sceneData.textRenderers[selectedEntity->ID], engine);
+			}
+
+			if (gameScene->sceneData.particleSystemRenderers.contains(selectedEntity->ID)) {
+				drawInspector(gameScene->sceneData.particleSystemRenderers.find(selectedEntity->ID), engine);
 			}
 
 			if (gameScene->sceneData.staticbodies.contains(selectedEntity->ID)) {
@@ -1116,6 +1146,31 @@ bool Editor::drawInspector<TextRenderer>(TextRenderer& r, Engine& engine) {
 	return false;
 }
 
+
+//InputFloatRange
+
+bool Editor::drawInspector(ParticleSystemRenderer& r, Engine& engine) {
+	SeparatorText("Particle System");
+
+	
+	auto& ps = r.configuration;
+
+	InputInt("Particle count", &ps.particleCount);
+	ps.particleCount = glm::clamp(ps.particleCount, 0, MAX_PARTICLES_SMALL);
+
+
+	Checkbox("Burst mode", &ps.burstMode);
+	InputFloatClamp("Spawn rate", &ps.spawnRate, 0.001);
+	InputFloatClamp("Life span", &ps.particleLifeSpan, 0);
+	InputFloat("Gravity acceleration", &ps.gravity);
+	InputFloatClamp("Start size", &ps.startSize, 0);
+	InputFloatClamp("End size", &ps.endSize, 0);
+	ImGui::ColorEdit4("Start color", value_ptr(ps.startColor));
+	ImGui::ColorEdit4("End color", value_ptr(ps.endColor));
+
+	return false;
+}
+
 bool _drawInspector(shared_ptr<Collider> collider) {
 	int type = collider->_getType();
 
@@ -1175,7 +1230,6 @@ bool Editor::drawInspector<Rigidbody>(Rigidbody& r, Engine& engine) {
 
 		InputFloatGetSetClamp("density",
 			[&]() { return r.GetDensity(); }, [&](float f) { r.SetDensity(f); }, 0.0f, 10.0f);
-
 
 		InputFloatGetSetClamp("restitution",
 			[&]() { return r.GetRestitution(); }, [&](float f) { r.SetRestitution(f); }, 0.0f, 1.0f);

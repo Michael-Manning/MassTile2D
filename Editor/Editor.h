@@ -17,14 +17,18 @@ public:
 
 	std::vector<Engine::SceneRenderJob> GetAdditionalRenderJobs() {
 		std::vector<Engine::SceneRenderJob> jobs;
-		entityPreviewRenderJob.camera = previewCamera;
-		jobs.push_back(entityPreviewRenderJob);
+
+		if (showingPreviewWindow) {
+			entityPreviewRenderJob.camera = previewCamera;
+			jobs.push_back(entityPreviewRenderJob);
+		}
+
 		return jobs;
 	}
-	
+
 
 	bool showingCreateWindow = false;
-	
+
 	Camera editorCamera;
 
 private:
@@ -56,6 +60,8 @@ private:
 	template<>
 	bool drawInspector<TextRenderer>(TextRenderer& r, Engine& engine);
 
+	bool drawInspector(ParticleSystemRenderer& r, Engine& engine);
+
 	template<>
 	bool drawInspector<Rigidbody>(Rigidbody& r, Engine& engine);
 
@@ -77,6 +83,8 @@ private:
 	void debugDataWindow(Engine& engine);
 
 	bool behaviorModel = true;
+
+	bool showingPreviewWindow = false;
 
 	bool assetModel = true;
 	bool fontModel = false;

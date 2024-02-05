@@ -211,6 +211,9 @@ void Engine::Start(const VideoSettings& initialSettings, AssetManager::AssetPath
 		AllocateQuad(rengine, quadMeshBuffer);
 		worldMap = make_shared<TileWorld>(rengine);
 		worldMap->AllocateVulkanResources();
+
+		// allocated deticated device memory for compute driven particle systems
+		//rengine->createBuffer(sizeof(ssboObjectData) * (mapCount), vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eStorageBuffer, VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT, _worldMapFGDeviceBuffer, worldMapFGDeviceBufferAllocation, true);
 	}
 
 	// contruct pipelines
@@ -397,17 +400,32 @@ void Engine::recordSceneContextGraphics(const ScenePipelineContext& ctx, framebu
 	{
 
 
-		//ParticleSystem ps;// = assetManager->getp;
-		//// epic temp particle system
-		//{
-		//	ps.burstMode = false;
-		//	ps.particleCount = 200;
-		//	ps.particleLifeSpan = 2.0f;
-		//	ps.spawnRate = 10.0f;
-		//}
+		for (auto& [entID, renderer] : scene->sceneData.particleSystemRenderers) {
+			if (renderer.dirty) {
+
+				if (renderer.size == ParticleSystemRenderer::ParticleSystemSize::Large && renderer.token == nullptr) {
+					int selectedIndex = -1;
+					for (size_t i = 0; i < particleSystemResourceTokens.size(); i++)
+					{
+						if (particleSystemResourceTokens[i].active == false) {
+							selectedIndex = false;
+							break;
+						}
+					}
+					assert(selectedIndex != -1);
+
+					renderer.token = &particleSystemResourceTokens[selectedIndex];
+				}
+
+				// must now copy configuration to permenant buffers at token index if storing persistently in device memory
+
+			}
+			renderer.dirty = false;
+		}
 
 		int systemIndex = 0;
 		std::vector<int> indexes;
+		std::vector<int> particleCounts;
 		for (auto& [entID, renderer] : scene->sceneData.particleSystemRenderers)
 		{
 			const auto& entity = scene->sceneData.entities[entID];
@@ -415,31 +433,14 @@ void Engine::recordSceneContextGraphics(const ScenePipelineContext& ctx, framebu
 			//renderer.particleData.particleCount = ps.particleCount;
 
 			renderer.runSimulation(deltaTime, entity->transform.position);
-			ctx.particlePipeline->UploadInstanceData(renderer.particleSystem, systemIndex);
-			//ctx.particlePipeline->UploadInstanceData(renderer.particleData, systemIndex);
+			ctx.particlePipeline->UploadInstanceData(*renderer.hostParticleBuffer.get(), systemIndex);
 
 			indexes.push_back(systemIndex);
+			indexes.push_back(renderer.configuration.particleCount);
 			systemIndex++;
 		}
 
-
-		//ParticleSystemPL::particleSystem sys;
-		//sys.particleCount = 10;
-
-		//for (size_t i = 0; i < 10; i++)
-		//{
-		//	sys.particles[i] = ParticleSystemPL::particle{
-		//		.position = vec2(i) * 3.5f,
-		//		.scale = 0.5f,
-		//		.life = 1.0f
-		//	};
-		//}
-
-		//ctx.particlePipeline->UploadInstanceData(sys, 0);
-
-//		indexes.push_back(0);
-
-		ctx.particlePipeline->recordCommandBuffer(cmdBuffer, indexes);
+		ctx.particlePipeline->recordCommandBuffer(cmdBuffer, indexes, particleCounts);
 	}
 
 	// text

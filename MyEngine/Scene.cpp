@@ -195,6 +195,7 @@ void Scene::UnregisterEntity(entityID id) {
 	sceneData.entities.erase(id);
 	sceneData.colorRenderers.erase(id);
 	sceneData.spriteRenderers.erase(id);
+	sceneData.particleSystemRenderers.erase(id);
 	sceneData.textRenderers.erase(id);
 
 	if (sceneData.rigidbodies.contains(id))
@@ -333,10 +334,14 @@ void Scene::registerComponent<TextRenderer>(entityID id, TextRenderer t) {
 	sceneData.textRenderers[id] = t;
 }
 
-template <>
-void Scene::registerComponent<ParticleSystemRenderer>(entityID id, ParticleSystemRenderer component) {
-	sceneData.particleSystemRenderers[id] = component;
+void Scene::registerComponent_ParticleSystem(entityID id, ParticleSystemRenderer::ParticleSystemSize systemSize) {
+	sceneData.particleSystemRenderers.insert(std::pair<entityID, ParticleSystemRenderer>(id, ParticleSystemRenderer(systemSize)));
 }
+
+//template <>
+//void Scene::registerComponent<ParticleSystemRenderer>(entityID id, ParticleSystemRenderer component) {
+//	sceneData.particleSystemRenderers[id] = component;
+//}
 
 // Rigidbodoy
 template <>

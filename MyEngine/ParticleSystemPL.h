@@ -24,63 +24,80 @@
 #include "globalBufferDefinitions.h"
 #include "GraphicsTemplate.h"
 
-constexpr int MAX_PARTICLES_MEDIUM = 1000;
-constexpr int MAX_PARTICLE_SYSTEMS_MEDIUM = 10;
+constexpr int MAX_PARTICLES_SMALL = 400;
+constexpr int MAX_PARTICLE_SYSTEMS_SMALL = 10;
+constexpr int MAX_PARTICLES_LARGE = 4000;
+constexpr int MAX_PARTICLE_SYSTEMS_LARGE = 4;
 
 
 class ParticleSystemPL {
 public:
 
-	struct alignas(8) particle {
+	struct alignas(16) particle {
 		glm::vec2 position;
 		glm::vec2 velocity;
 		float scale;
 		float life;
+		alignas(16) glm::vec4 color;
 		//int32_t padding[2];
 	};
-	//static_assert(sizeof(particle) % 16 == 0);
 
 	struct ParticleSystemConfiguration {
 		int32_t particleCount = 200;
 		bool burstMode;
-		float spawnRate = 10.0f; // particles per second
-		float particleLifeSpan = 2.0f; // seconds
+		float spawnRate = 100.0f; // particles per second
+		float particleLifeSpan = 1.0f; // seconds
 		float gravity = -10.0f;
 		float startSize = 0.3; 
 		float endSize = 0.0;
+		alignas(16) glm::vec4 startColor = glm::vec4(1.0f, 1.0f, 0.0f, 1.0f);
+		alignas(16) glm::vec4 endColor = glm::vec4(1.0f, 1.0f, 0.0f, 1.0f);
 	};
 
-	// I have no idea how to actually align this
-	struct ParticleSystem {
-
-		ParticleSystemConfiguration configuration;
-		int32_t padding[1];
-		particle particles[MAX_PARTICLES_MEDIUM];
+	// for cpu driven particle systems
+	struct ParticleGroup_small {
+		particle particles[MAX_PARTICLES_SMALL];
 	};
-	//static_assert(sizeof(particleSystem) % 32 == 0);
+
+	// device/compute driven particle system
+	struct ParticleGroup_large{
+		particle particles[MAX_PARTICLES_LARGE];
+	};
+
 
 	ParticleSystemPL(std::shared_ptr<VKEngine>& engine) :
 		pipeline(engine), engine(engine) { }
 
 	void CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc, vk::RenderPass& renderTarget, MappedDoubleBuffer<cameraUBO_s>& cameradb, bool flipFaces = false, bool transparentFramebuffer = false);
 
-	void recordCommandBuffer(vk::CommandBuffer commandBuffer, std::vector<int>& systemIndexes);
+	void recordCommandBuffer(vk::CommandBuffer commandBuffer, std::vector<int>& systemIndexes, std::vector<int>& systemParticleCounts);
 
-	void UploadInstanceData(ParticleSystem& psystem, int index) {
-		assert(index < MAX_PARTICLE_SYSTEMS_MEDIUM);
-		particleDB.buffersMapped[engine->currentFrame]->systems[index] = psystem;
+	void UploadInstanceData(ParticleGroup_small& psystem, int index) {
+		assert(index < MAX_PARTICLE_SYSTEMS_SMALL);
+		particleDB.buffersMapped[engine->currentFrame]->particleGroups_small[index] = psystem;
 	}
+
 
 private:
 
-	struct particle_ssbo {
-		ParticleSystem systems[MAX_PARTICLE_SYSTEMS_MEDIUM];
+	// cpu driven mapped particle data
+	struct host_particle_ssbo {
+		ParticleGroup_small particleGroups_small[MAX_PARTICLE_SYSTEMS_SMALL];
 	};
-	static_assert(sizeof(particle_ssbo) % 16 == 00);
+
+	// device local particle data
+	struct device_particle_ssbo{
+		ParticleGroup_large particleGroups_large[MAX_PARTICLE_SYSTEMS_LARGE];
+	};
+
+	// mapped configuration buffer
+	struct device_particleConfiguration_ssbo {
+		ParticleSystemConfiguration systemConfigurations[MAX_PARTICLE_SYSTEMS_LARGE];
+	};
 
 	GlobalImageDescriptor* textureDescriptor = nullptr;
 
-	MappedDoubleBuffer<particle_ssbo> particleDB;
+	MappedDoubleBuffer<host_particle_ssbo> particleDB;
 
 	GraphicsTemplate pipeline;
 
@@ -93,13 +110,4 @@ struct particle {
 	glm::vec2 velocity;
 	float scale;
 	float life;
-};
-
-struct particleSystem {
-	int32_t particleCount;
-	particle particles[MAX_PARTICLES_MEDIUM];
-};
-
-struct particle_ssbo {
-	particleSystem systems[MAX_PARTICLE_SYSTEMS_MEDIUM];
 };

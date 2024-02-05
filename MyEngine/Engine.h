@@ -363,6 +363,8 @@ private:
 
 	std::unique_ptr<LightingComputePL> lightingPipeline = nullptr;
 
+	std::array<ComponentResourceToken, MAX_PARTICLE_SYSTEMS_LARGE> particleSystemResourceTokens;
+
 	void createScenePLContext(ScenePipelineContext* ctx, vk::RenderPass renderpass, bool transparentFramebufferBlending);
 
 	void recordSceneContextGraphics(const ScenePipelineContext& ctx, framebufferID framebuffer, std::shared_ptr<Scene> scene, const Camera& camera, vk::CommandBuffer& cmdBuffer);
@@ -396,4 +398,6 @@ private:
 
 	bool newVideoSettingsRequested = false;
 	VideoSettings requestedSettings;
+	
+	VmaAllocation deviceParticleBuffersAllocation;
 };

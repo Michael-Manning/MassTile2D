@@ -4,6 +4,7 @@
 #include <vector>
 #include <stdint.h>
 #include <glm/glm.hpp>
+#include <memory>
 
 #include "typedefs.h"
 #include "Component.h"
@@ -16,22 +17,54 @@
 class ParticleSystemRenderer { // : public Component {
 public:
 
-	ParticleSystemRenderer() {
-		for (size_t i = 0; i < MAX_PARTICLES_MEDIUM; i++)
-		{
-			particleSystem.particles[i].position = glm::vec2(0);
-			particleSystem.particles[i].life = 0.0f;
-			particleSystem.particles[i].velocity = glm::vec2(0);
-		}
+	enum class ParticleSystemSize {
+		Small,
+		Large
 	};
-	/*ParticleSystemRenderer() {
-	}*/
 
-	//particleSystemID particleSystemID;
+	ParticleSystemSize size = ParticleSystemSize::Small;
+
+	// TODO: maybe make try to remove this default argument to prevent unnecessary CPU allocation if immediately converting to compute driven system
+	ParticleSystemRenderer(ParticleSystemSize size){// = ParticleSystemSize::Small) {
+		SetSystemSize(size);
+	};
+
+	void SetSystemSize(ParticleSystemSize size) {
+		this->size = size;
+
+		float spawntimer = 0;
+		int particlesToSpawn = 0;
+
+		if (size == ParticleSystemSize::Small) {
+
+			// allocate host memory for particle data
+			if (hostParticleBuffer == nullptr) {
+				hostParticleBuffer = std::make_unique< ParticleSystemPL::ParticleGroup_small>();
+
+				// initialize all paritcles innactive
+				for (size_t i = 0; i < MAX_PARTICLES_SMALL; i++)
+				{
+					hostParticleBuffer->particles[i].position = glm::vec2(0);
+					hostParticleBuffer->particles[i].life = 0.0f;
+					hostParticleBuffer->particles[i].velocity = glm::vec2(0);
+				}
+			}
+		}
+		else if (size == ParticleSystemSize::Large) {
+			if (hostParticleBuffer != nullptr) {
+				hostParticleBuffer.reset();
+			}
+		}
+		else {
+			assert(false);
+		}
+	}
 
 	// for CPU simulation only
 	// change to smart pointer and dynamically allocate only if running simulation on CPU
-	ParticleSystemPL::ParticleSystem particleSystem;
+	std::unique_ptr<ParticleSystemPL::ParticleGroup_small> hostParticleBuffer = nullptr;
+
+	ParticleSystemPL::ParticleSystemConfiguration configuration;
 
 	float spawntimer = 0;
 	int particlesToSpawn = 0;
@@ -51,4 +84,7 @@ public:
 		r.shape = static_cast<Shape>(c->shape());
 		return r;
 	};*/
+
+	bool dirty = true;
+	ComponentResourceToken* token = nullptr;
 };
