@@ -35,7 +35,7 @@ public:
 
 	void CreateComputePipeline(const std::vector<uint8_t>& compSrc, DeviceBuffer* particleDataBuffer);
 
-	void RecordCommandBuffer(vk::CommandBuffer commandBuffer, std::vector<int>& systemIndexes, std::vector<int>& systemParticleCounts);
+	void RecordCommandBuffer(vk::CommandBuffer commandBuffer, float deltaTime, std::vector<int>& systemIndexes, std::vector<int>& systemParticleCounts);
 
 	void UploadInstanceConfigurationData(ParticleSystemPL::ParticleSystemConfiguration& psystem, int index) {
 		assert(index < MAX_PARTICLE_SYSTEMS_SMALL);
@@ -57,4 +57,6 @@ private:
 	std::shared_ptr<VKEngine> engine;
 
 	DeviceBuffer* particleDataBuffer;
+
+	DeviceBuffer atomicCounterBuffer;
 };

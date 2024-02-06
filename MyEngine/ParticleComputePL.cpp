@@ -15,6 +15,11 @@
 
 struct pushConstant_s {
 	int systemIndex;
+	float deltaTime;
+};
+
+struct atomicCounter_ssbo {
+	uint32_t activeCount;
 };
 
 void ParticleComputePL::CreateComputePipeline(const std::vector<uint8_t>& compSrc, DeviceBuffer* particleDataBuffer) {
@@ -23,22 +28,36 @@ void ParticleComputePL::CreateComputePipeline(const std::vector<uint8_t>& compSr
 
 	engine->createMappedBuffer(sizeof(device_particleConfiguration_ssbo), vk::BufferUsageFlagBits::eStorageBuffer, sysConfigDB);
 
+	atomicCounterBuffer.size = sizeof(atomicCounter_ssbo);
+
+	engine->createBuffer(
+		atomicCounterBuffer.size,
+		vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eTransferDst,
+		VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT,
+		atomicCounterBuffer.buffer,
+		atomicCounterBuffer.allocation,
+		true);
+
+
 	auto deviceDB = particleDataBuffer->GetDoubleBuffer();
+	auto atomicDB = atomicCounterBuffer.GetDoubleBuffer();
+
 
 	ShaderResourceConfig con;
 	con.computeSrc = compSrc;
 	con.descriptorInfos.push_back(DescriptorManager::descriptorSetInfo(0, 0, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eCompute, &sysConfigDB.buffers, sysConfigDB.size));
 	con.descriptorInfos.push_back(DescriptorManager::descriptorSetInfo(0, 1, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eCompute, &deviceDB, particleDataBuffer->size));
+	con.descriptorInfos.push_back(DescriptorManager::descriptorSetInfo(0, 2, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eCompute, &atomicDB, atomicCounterBuffer.size));
 
 	con.pushInfo = PushConstantInfo{
 		.pushConstantSize = sizeof(pushConstant_s),
-		.pushConstantShaderStages = vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment
+		.pushConstantShaderStages = vk::ShaderStageFlagBits::eCompute
 	};
 
 	pipeline.CreateComputePipeline(con);
 }
 
-void ParticleComputePL::RecordCommandBuffer(vk::CommandBuffer commandBuffer, std::vector<int>& systemIndexes, std::vector<int>& systemParticleCounts) {
+void ParticleComputePL::RecordCommandBuffer(vk::CommandBuffer commandBuffer, float deltaTime, std::vector<int>& systemIndexes, std::vector<int>& systemParticleCounts) {
 	TracyVkZone(engine->tracyGraphicsContexts[engine->currentFrame], commandBuffer, "particle system compute");
 
 	assert(systemIndexes.size() == systemParticleCounts.size());
@@ -46,9 +65,14 @@ void ParticleComputePL::RecordCommandBuffer(vk::CommandBuffer commandBuffer, std
 
 	pipeline.bindPipelineResources(commandBuffer);
 
+	commandBuffer.fillBuffer(atomicCounterBuffer.buffer, 0, VK_WHOLE_SIZE, 0);
+
 	for (size_t i = 0; i < systemIndexes.size(); i++)
 	{
-		pushConstant_s pc{ .systemIndex = systemIndexes[i] };
+		pushConstant_s pc{
+			.systemIndex = systemIndexes[i],
+			.deltaTime = deltaTime
+		};
 		pipeline.updatePushConstant(commandBuffer, &pc);
 
 		pipeline.Dispatch(commandBuffer, { systemParticleCounts[i], 1, 1 }, { 32, 1, 1 });

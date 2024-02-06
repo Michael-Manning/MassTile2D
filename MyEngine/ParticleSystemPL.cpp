@@ -27,11 +27,21 @@
 
 struct pushConstant_s {
 	int systemIndex;
+	int systemSize; // small = 0, large  = 1;
 };
 
-void ParticleSystemPL::CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc, vk::RenderPass& renderTarget, MappedDoubleBuffer<cameraUBO_s>& cameradb, bool flipFaces, bool transparentFramebuffer) {
+void ParticleSystemPL::CreateGraphicsPipeline(
+	const std::vector<uint8_t>& vertexSrc, 
+	const std::vector<uint8_t>& fragmentSrc, 
+	vk::RenderPass& renderTarget, 
+	MappedDoubleBuffer<cameraUBO_s>& cameradb, 
+	DeviceBuffer* deviceParticleDataBuffer,
+	bool flipFaces, 
+	bool transparentFramebuffer) {
 
 	engine->createMappedBuffer(sizeof(host_particle_ssbo), vk::BufferUsageFlagBits::eStorageBuffer, particleDB);
+
+	auto deviceDB = deviceParticleDataBuffer->GetDoubleBuffer();
 
 	ShaderResourceConfig con;
 	con.vertexSrc = vertexSrc;
@@ -42,6 +52,7 @@ void ParticleSystemPL::CreateGraphicsPipeline(const std::vector<uint8_t>& vertex
 
 	con.descriptorInfos.push_back(DescriptorManager::descriptorSetInfo(0, 1, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eVertex, &cameradb.buffers, cameradb.size));
 	con.descriptorInfos.push_back(DescriptorManager::descriptorSetInfo(0, 0, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, &particleDB.buffers, particleDB.size));
+	con.descriptorInfos.push_back(DescriptorManager::descriptorSetInfo(0, 2, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, &deviceDB, deviceParticleDataBuffer->size));
 
 	con.pushInfo = PushConstantInfo{
 		.pushConstantSize = sizeof(pushConstant_s),
@@ -51,7 +62,7 @@ void ParticleSystemPL::CreateGraphicsPipeline(const std::vector<uint8_t>& vertex
 	pipeline.CreateGraphicsPipeline(con);
 }
 
-void ParticleSystemPL::recordCommandBuffer(vk::CommandBuffer commandBuffer, std::vector<int>& systemIndexes, std::vector<int>& systemParticleCounts) {
+void ParticleSystemPL::recordCommandBuffer(vk::CommandBuffer commandBuffer, std::vector<int>& systemIndexes, std::vector<int>& systemSizes, std::vector<int>& systemParticleCounts) {
 
 	TracyVkZone(engine->tracyGraphicsContexts[engine->currentFrame], commandBuffer, "particle system render");
 
@@ -61,7 +72,10 @@ void ParticleSystemPL::recordCommandBuffer(vk::CommandBuffer commandBuffer, std:
 
 	for (size_t i = 0; i < systemIndexes.size(); i++)
 	{
-		pushConstant_s pc{ .systemIndex = systemIndexes[i]};
+		pushConstant_s pc{ 
+			.systemIndex = systemIndexes[i],
+			.systemSize = systemSizes[i]
+		};
 		pipeline.updatePushConstant(commandBuffer, &pc);
 		commandBuffer.drawIndexed(static_cast<int32_t>(QuadIndices.size()), systemParticleCounts[i], 0, 0, 0);
 	}

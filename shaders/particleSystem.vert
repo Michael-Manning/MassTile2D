@@ -10,6 +10,7 @@ layout(set = 0, binding = 1) uniform CamerUBO {
 #define MAX_PARTICLES_LARGE 4000
 
 #define MAX_PARTICLE_SYSTEMS_SMALL 10
+#define MAX_PARTICLE_SYSTEMS_LARGE 4
 
 struct particle {
    vec2 position;
@@ -27,12 +28,17 @@ struct ParticleGroup_large{
    particle particles[MAX_PARTICLES_LARGE];
 };
 
-layout(std430, set = 0, binding = 0) readonly buffer ObjectInstaceBuffer{
+layout(std430, set = 0, binding = 0) readonly buffer ObjectInstaceBuffer_small{
 	ParticleGroup_small particleGroups_small[MAX_PARTICLE_SYSTEMS_SMALL];
+};
+
+layout(std430, set = 0, binding = 2) buffer ObjectInstaceBuffer_large{
+	ParticleGroup_large particleGroups_large[MAX_PARTICLE_SYSTEMS_LARGE];
 };
 
 layout(push_constant) uniform constants{
    int systemIndex;
+   int systemSize; // small = 0, large  = 1;
 };
 
 layout(location = 0) in vec2 inPosition;
@@ -76,10 +82,19 @@ void main() {
     view *= translate(vec2(-camera.position.x, camera.position.y));
     view *= scale(vec2(1.0, -1.0));
 
+   particle p = systemSize == 0 ? particleGroups_small[systemIndex].particles[gl_InstanceIndex] : particleGroups_large[systemIndex].particles[gl_InstanceIndex];
+   // particle p;
+   // if(systemSize == 0){
+   //    p = particleGroups_small[systemIndex].particles[gl_InstanceIndex];
+   // }
+   // else{
+   //    p = particleGroups_large[systemIndex].particles[gl_InstanceIndex];
+   // }
+
     mat4 model = mat4(1.0);
-    model *= translate(particleGroups_small[systemIndex].particles[gl_InstanceIndex].position);
+    model *= translate(p.position);
    //  model *= rotate(ssboData[systemIndex].rotation);
-    model *= scale(vec2(particleGroups_small[systemIndex].particles[gl_InstanceIndex].scale) * step(0.0, particleGroups_small[systemIndex].particles[gl_InstanceIndex].life)); // step SHOULD hide dead particles
+    model *= scale(vec2(p.scale) * step(0.0, p.life)); // step SHOULD hide dead particles
 
     gl_Position = view * model  * vec4(inPosition, 0.0, 1.0) * vec4(camera.aspectRatio, 1.0, 1.0, 1.0);
 

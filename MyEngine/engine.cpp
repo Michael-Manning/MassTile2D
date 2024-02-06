@@ -156,7 +156,7 @@ void Engine::createScenePLContext(ScenePipelineContext* ctx, vk::RenderPass rend
 		vector<uint8_t> vert, frag;
 		assetManager->LoadShaderFile("particleSystem_vert.spv", vert);
 		assetManager->LoadShaderFile("particleSystem_frag.spv", frag);
-		ctx->particlePipeline->CreateGraphicsPipeline(vert, frag, renderpass, ctx->cameraBuffers, false, transparentFramebufferBlending);
+		ctx->particlePipeline->CreateGraphicsPipeline(vert, frag, renderpass, ctx->cameraBuffers, &computerParticleBuffer, false, transparentFramebufferBlending);
 	}
 }
 
@@ -231,6 +231,7 @@ void Engine::Start(const VideoSettings& initialSettings, AssetManager::AssetPath
 		lightingPipeline = make_unique<LightingComputePL>(rengine, worldMap);
 		screenSpaceTexturePipeline = make_unique<TexturedQuadPL>(rengine);
 		screenSpaceTextPipeline = make_unique<TextPL>(rengine);
+		particleComputePipeline = make_unique<ParticleComputePL>(rengine);
 	}
 
 	InitImgui(); // imgui needs to be initialized to register textures with it
@@ -412,24 +413,35 @@ void Engine::recordSceneContextGraphics(const ScenePipelineContext& ctx, framebu
 
 	// particles
 	{
-		int systemIndex = 0;
+		int smallSystemIndex = 0;
 		std::vector<int> indexes;
+		std::vector<int> systemSizes;
 		std::vector<int> particleCounts;
 		for (auto& [entID, renderer] : scene->sceneData.particleSystemRenderers)
 		{
 			const auto& entity = scene->sceneData.entities[entID];
 
-			//renderer.particleData.particleCount = ps.particleCount;
+			if (renderer.size == ParticleSystemRenderer::ParticleSystemSize::Small) {
+				renderer.runSimulation(deltaTime, entity->transform.position);
+				ctx.particlePipeline->UploadInstanceData(*renderer.hostParticleBuffer.get(), smallSystemIndex);
 
-			renderer.runSimulation(deltaTime, entity->transform.position);
-			ctx.particlePipeline->UploadInstanceData(*renderer.hostParticleBuffer.get(), systemIndex);
+				indexes.push_back(smallSystemIndex++);
+				systemSizes.push_back(0);
+				particleCounts.push_back(renderer.configuration.particleCount);
+			}
+			else if (renderer.size == ParticleSystemRenderer::ParticleSystemSize::Large) {
+				assert(renderer.token != nullptr);
+				indexes.push_back(renderer.token->index);
+				systemSizes.push_back(1);
+				particleCounts.push_back(renderer.configuration.particleCount);
+			}
+			else {
+				assert(false);
+			}
 
-			indexes.push_back(systemIndex);
-			particleCounts.push_back(renderer.configuration.particleCount);
-			systemIndex++;
 		}
 
-		ctx.particlePipeline->recordCommandBuffer(cmdBuffer, indexes, particleCounts);
+		ctx.particlePipeline->recordCommandBuffer(cmdBuffer, indexes, systemSizes, particleCounts);
 	}
 
 	// text
@@ -575,6 +587,7 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 
 							renderer.token = &particleSystemResourceTokens[selectedIndex];
 							renderer.token->index = selectedIndex;
+							renderer.token->active = true;
 						}
 					}
 					renderer.computeContextDirty = false;
@@ -590,7 +603,7 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 						particleCounts.push_back(renderer.configuration.particleCount);
 					}
 
-					particleComputePipeline->RecordCommandBuffer(computeCmdBuffer, indexes, particleCounts);
+					particleComputePipeline->RecordCommandBuffer(computeCmdBuffer, deltaTime, indexes, particleCounts);
 				}
 			}
 		}

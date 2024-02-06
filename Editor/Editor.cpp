@@ -1155,6 +1155,13 @@ bool Editor::drawInspector(ParticleSystemRenderer& r, Engine& engine) {
 	
 	auto& ps = r.configuration;
 
+
+	int tSize = static_cast<int>(r.size);
+	if (Combo("Size", &tSize, "Small\0Large")) {
+		assert(tSize == 0 || tSize == 1);
+		r.SetSystemSize(static_cast<ParticleSystemRenderer::ParticleSystemSize>(tSize));
+	}
+
 	InputInt("Particle count", &ps.particleCount);
 	ps.particleCount = glm::clamp(ps.particleCount, 0, MAX_PARTICLES_SMALL);
 

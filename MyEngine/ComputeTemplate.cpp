@@ -30,8 +30,8 @@ void ComputeTemplate::CreateComputePipeline(const ShaderResourceConfig& resource
 		setLayouts[globalDesc.setNumber] = globalDesc.descriptor->layout;
 
 
-	assert(false);
-	//buildPipelineLayout(setLayouts, pushInfo.pushConstantSize, pushInfo.pushConstantShaderStages);
+	//assert(false);
+	buildPipelineLayout(setLayouts, pushInfo.pushConstantSize, pushInfo.pushConstantShaderStages);
 
 	vk::ComputePipelineCreateInfo pipelineInfo;
 	pipelineInfo.layout = pipelineLayout;

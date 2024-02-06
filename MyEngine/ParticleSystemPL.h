@@ -68,9 +68,17 @@ public:
 	ParticleSystemPL(std::shared_ptr<VKEngine>& engine) :
 		pipeline(engine), engine(engine) { }
 
-	void CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc, vk::RenderPass& renderTarget, MappedDoubleBuffer<cameraUBO_s>& cameradb, bool flipFaces = false, bool transparentFramebuffer = false);
+	void CreateGraphicsPipeline(
+		const std::vector<uint8_t>& vertexSrc, 
+		const std::vector<uint8_t>& fragmentSrc, 
+		vk::RenderPass& renderTarget, 
+		MappedDoubleBuffer<cameraUBO_s>& cameradb,
+		DeviceBuffer* deviceParticleDataBuffer,
+		bool flipFaces = false, 
+		bool transparentFramebuffer = false);
 
-	void recordCommandBuffer(vk::CommandBuffer commandBuffer, std::vector<int>& systemIndexes, std::vector<int>& systemParticleCounts);
+	// indexes should be within particle size group
+	void recordCommandBuffer(vk::CommandBuffer commandBuffer, std::vector<int>& systemIndexes, std::vector<int>& systemSizes, std::vector<int>& systemParticleCounts);
 
 	void UploadInstanceData(ParticleGroup_small& psystem, int index) {
 		assert(index < MAX_PARTICLE_SYSTEMS_SMALL);
