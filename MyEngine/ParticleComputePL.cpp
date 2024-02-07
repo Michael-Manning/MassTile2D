@@ -13,14 +13,26 @@
 #include "ParticleSystemPL.h"
 #include "ParticleComputePL.h"
 
-struct pushConstant_s {
-	int systemIndex;
-	float deltaTime;
-};
+namespace {
 
-struct atomicCounter_ssbo {
-	uint32_t activeCount;
-};
+	inline float randomNormal() {
+		return static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+	}
+
+	struct pushConstant_s {
+		int32_t systemIndex;
+		int32_t particlesToSpawn;
+		float deltaTime;
+		float seedX;
+		float seedY;
+		int32_t init;
+		alignas(8)glm::vec2 spawnPosition;
+	};
+
+	struct atomicCounter_ssbo {
+		uint32_t activeCount;
+	};
+}
 
 void ParticleComputePL::CreateComputePipeline(const std::vector<uint8_t>& compSrc, DeviceBuffer* particleDataBuffer) {
 
@@ -57,24 +69,27 @@ void ParticleComputePL::CreateComputePipeline(const std::vector<uint8_t>& compSr
 	pipeline.CreateComputePipeline(con);
 }
 
-void ParticleComputePL::RecordCommandBuffer(vk::CommandBuffer commandBuffer, float deltaTime, std::vector<int>& systemIndexes, std::vector<int>& systemParticleCounts) {
+void ParticleComputePL::RecordCommandBuffer(vk::CommandBuffer commandBuffer, float deltaTime, std::vector<DispatchInfo>& dispatchInfo) {
 	TracyVkZone(engine->tracyGraphicsContexts[engine->currentFrame], commandBuffer, "particle system compute");
-
-	assert(systemIndexes.size() == systemParticleCounts.size());
-
 
 	pipeline.bindPipelineResources(commandBuffer);
 
+	// reset atomic counter device buffer
 	commandBuffer.fillBuffer(atomicCounterBuffer.buffer, 0, VK_WHOLE_SIZE, 0);
 
-	for (size_t i = 0; i < systemIndexes.size(); i++)
+	for (auto& info : dispatchInfo)
 	{
 		pushConstant_s pc{
-			.systemIndex = systemIndexes[i],
-			.deltaTime = deltaTime
+			.systemIndex = info.systemIndex,
+			.particlesToSpawn = info.particlesToSpawn,
+			.deltaTime = deltaTime,
+			.seedX = randomNormal(),
+			.seedY = randomNormal(),
+			.init = info.init ? 1 : 0,
+			.spawnPosition = info.spawnPosition
 		};
 		pipeline.updatePushConstant(commandBuffer, &pc);
 
-		pipeline.Dispatch(commandBuffer, { systemParticleCounts[i], 1, 1 }, { 32, 1, 1 });
+		pipeline.Dispatch(commandBuffer, { info.particleCount, 1, 1 }, { 32, 1, 1 });
 	}
 }

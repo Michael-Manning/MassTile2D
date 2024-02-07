@@ -7,7 +7,7 @@ layout(set = 0, binding = 1) uniform CamerUBO {
 } camera;
 
 #define MAX_PARTICLES_SMALL 400
-#define MAX_PARTICLES_LARGE 4000
+#define MAX_PARTICLES_LARGE 400000
 
 #define MAX_PARTICLE_SYSTEMS_SMALL 10
 #define MAX_PARTICLE_SYSTEMS_LARGE 4

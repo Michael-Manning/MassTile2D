@@ -569,6 +569,8 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 
 		// record particle compute for every particle system in every scene
 		{
+			vector<ParticleComputePL::DispatchInfo> dispachInfos;
+
 			for (auto& job : sceneRenderJobs)
 			{
 				for (auto& [entID, renderer] : job.scene->sceneData.particleSystemRenderers) {
@@ -590,22 +592,35 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 							renderer.token->active = true;
 						}
 					}
-					renderer.computeContextDirty = false;
 
-					vector<int> indexes;
-					vector<int> particleCounts;
 					if (renderer.size == ParticleSystemRenderer::ParticleSystemSize::Large) {
 
 						assert(renderer.token != nullptr);
 
+						const auto& entity = job.scene->sceneData.entities[entID];
+
+						renderer.spawntimer += deltaTime;
+						float step = 1.0f / renderer.configuration.spawnRate;
+						int particlesToSpawn = static_cast<int>(renderer.spawntimer / step);
+						renderer.spawntimer -= particlesToSpawn * step;
+
+						ParticleComputePL::DispatchInfo info{
+							.systemIndex = renderer.token->index,
+							.particleCount = renderer.configuration.particleCount,
+							.particlesToSpawn = particlesToSpawn,
+							.init = renderer.computeContextDirty,
+							.spawnPosition = entity->transform.position
+						};
+						dispachInfos.push_back(info);
+
+						// TODO: only update if dirty
 						particleComputePipeline->UploadInstanceConfigurationData(renderer.configuration, renderer.token->index);
-						indexes.push_back(renderer.token->index);
-						particleCounts.push_back(renderer.configuration.particleCount);
 					}
 
-					particleComputePipeline->RecordCommandBuffer(computeCmdBuffer, deltaTime, indexes, particleCounts);
+					renderer.computeContextDirty = false;
 				}
 			}
+			particleComputePipeline->RecordCommandBuffer(computeCmdBuffer, deltaTime, dispachInfos);
 		}
 
 		computeCmdBuffer.end();

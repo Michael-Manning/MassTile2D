@@ -26,7 +26,7 @@
 
 constexpr int MAX_PARTICLES_SMALL = 400;
 constexpr int MAX_PARTICLE_SYSTEMS_SMALL = 10;
-constexpr int MAX_PARTICLES_LARGE = 4000;
+constexpr int MAX_PARTICLES_LARGE = 400000;
 constexpr int MAX_PARTICLE_SYSTEMS_LARGE = 4;
 
 

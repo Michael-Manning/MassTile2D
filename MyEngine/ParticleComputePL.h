@@ -29,13 +29,20 @@
 class ParticleComputePL {
 public:
 
+	struct DispatchInfo{
+		int systemIndex;
+		int particleCount;
+		int particlesToSpawn;
+		bool init;
+		glm::vec2 spawnPosition;
+	};
 
 	ParticleComputePL(std::shared_ptr<VKEngine>& engine) :
 		pipeline(engine), engine(engine) { }
 
 	void CreateComputePipeline(const std::vector<uint8_t>& compSrc, DeviceBuffer* particleDataBuffer);
 
-	void RecordCommandBuffer(vk::CommandBuffer commandBuffer, float deltaTime, std::vector<int>& systemIndexes, std::vector<int>& systemParticleCounts);
+	void RecordCommandBuffer(vk::CommandBuffer commandBuffer, float deltaTime, std::vector<DispatchInfo>& dispatchInfo);
 
 	void UploadInstanceConfigurationData(ParticleSystemPL::ParticleSystemConfiguration& psystem, int index) {
 		assert(index < MAX_PARTICLE_SYSTEMS_SMALL);

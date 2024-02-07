@@ -44,34 +44,28 @@ void ParticleSystemRenderer::runSimulation(float deltaTime, glm::vec2 spawnOrigi
 
 	spawntimer += deltaTime;
 
-	int particlesToSpawn = 0;
 
 	// math is hard
 	float step = (1.0f / con.spawnRate);
-	while (spawntimer >= step) {
-		particlesToSpawn++;
-		spawntimer -= step;
-	}
+	int particlesToSpawn = static_cast<int>(spawntimer / step);
+	spawntimer -= particlesToSpawn * step;
 
 
-	for (size_t i = 0; i < con.particleCount; i++)
+	for (size_t id = 0; id < con.particleCount; id++)
 	{
-		ps[i].life -= deltaTime / con.particleLifeSpan;
-
-		ps[i].scale = lerp(con.startSize, con.endSize, 1.0 - ps[i].life);
-
-		ps[i].color = lerp(con.startColor, con.endColor, 1.0 - ps[i].life);
-
-		// technically incorrect way of applying changing velocity with deltatime
-		ps[i].velocity.y += con.gravity * deltaTime;
-		ps[i].position += ps[i].velocity * deltaTime;
-
-		if (particlesToSpawn > 0 && ps[i].life <= 0.0f) {
-			
-			ps[i].position = spawnOrigin;
-			ps[i].velocity = (randomNormal2() - 0.5f) * 4.0f;
-			ps[i].life = 1.0f;
+		if (particlesToSpawn > 0 && ps[id].life <= 0.0f) {
+			ps[id].life = 1.0f;
+			ps[id].position = spawnOrigin;
+			ps[id].velocity = (randomNormal2() - 0.5f) * 4.0f;
 			particlesToSpawn--;
+		}
+
+		else {
+			ps[id].life -= deltaTime / con.particleLifeSpan;
+			ps[id].scale = lerp(con.startSize, con.endSize, 1.0 - ps[id].life);
+			ps[id].color = lerp(con.startColor, con.endColor, 1.0 - ps[id].life);
+			ps[id].velocity.y += con.gravity * deltaTime;
+			ps[id].position += ps[id].velocity * deltaTime;
 		}
 	}
 }

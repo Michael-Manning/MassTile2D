@@ -1163,7 +1163,15 @@ bool Editor::drawInspector(ParticleSystemRenderer& r, Engine& engine) {
 	}
 
 	InputInt("Particle count", &ps.particleCount);
-	ps.particleCount = glm::clamp(ps.particleCount, 0, MAX_PARTICLES_SMALL);
+	if (r.size == ParticleSystemRenderer::ParticleSystemSize::Small) {
+		ps.particleCount = glm::clamp(ps.particleCount, 0, MAX_PARTICLES_SMALL);
+	}
+	else if (r.size == ParticleSystemRenderer::ParticleSystemSize::Large) {
+		ps.particleCount = glm::clamp(ps.particleCount, 0, MAX_PARTICLES_LARGE);
+	}
+	else {
+		assert(false);
+	}
 
 
 	Checkbox("Burst mode", &ps.burstMode);
