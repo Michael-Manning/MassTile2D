@@ -8,6 +8,10 @@
 #include <unordered_map>
 #include <random>
 
+#ifdef _DEBUG
+#include <Windows.h>
+#endif
+
 #include <vulkan/vulkan.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>

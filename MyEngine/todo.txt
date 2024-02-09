@@ -1,4 +1,18 @@
 
+Near roadmap:
+- add scene section to left editor panel
+- scene custody of entities and components using plain data and unique pointers
+- particle system serialization
+- scene serialization
+- finish support for arbitrary number of child entities
+- refactor prefab to contain scene data allowing entity hierarchies
+- add prefab preview/edit utility to editor
+- add deletion of components to editor
+- flatten assets in editor view into one list with drop down sorting
+
+
+- replace useage of unordered_map with a third party solution with better performance and memory garuentees when taking pointers
+
 - only enable used device features instead of enabling everything for the sake of bindless textures
 
 - move physics updates somwhere managed by scene. Will requried timing conciderations

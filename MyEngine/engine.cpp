@@ -110,24 +110,36 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 	app->GetInput()->_onScroll(xoffset, yoffset);
 }
 
-void Engine::createScenePLContext(ScenePipelineContext* ctx, vk::RenderPass renderpass, bool transparentFramebufferBlending) {
+void Engine::createScenePLContext(ScenePipelineContext* ctx, bool allocateTileWorld, vk::RenderPass renderpass, bool transparentFramebufferBlending) {
 
 	rengine->createMappedBuffer(sizeof(cameraUBO_s), vk::BufferUsageFlagBits::eUniformBuffer, ctx->cameraBuffers);
 
-	// section can be done in parrallel
+	if (allocateTileWorld) {
+		ctx->worldMap = make_unique<TileWorld>(rengine);
+		ctx->worldMap->AllocateVulkanResources();
+	}
 
+	// section can be done in parrallel
 	{
+		if (allocateTileWorld)
+			ctx->lightingPipeline = make_unique<LightingComputePL>(rengine, ctx->worldMap.get());
 		ctx->texturePipeline = make_unique<TexturedQuadPL>(rengine);
 		ctx->colorPipeline = make_unique<ColoredQuadPL>(rengine);
-		ctx->tilemapPipeline = make_unique<TilemapPL>(rengine, worldMap); // TODO: WOlrd map not per scene yet!
+		ctx->tilemapPipeline = make_unique<TilemapPL>(rengine, ctx->worldMap.get());
 		ctx->textPipeline = make_unique<TextPL>(rengine);
 		ctx->particlePipeline = make_unique<ParticleSystemPL>(rengine);
 	}
+
+	if (allocateTileWorld)
+		ctx->lightingPipeline->createStagingBuffers(); // TODO: move to createPipeline() function
 
 	ctx->colorPipeline->CreateInstancingBuffer();
 	ctx->texturePipeline->createSSBOBuffer();
 	ctx->textPipeline->createSSBOBuffer();
 
+	{
+
+	}
 	{
 		vector<uint8_t> vert, frag;
 		assetManager->LoadShaderFile("color_vert.spv", vert);
@@ -140,11 +152,19 @@ void Engine::createScenePLContext(ScenePipelineContext* ctx, vk::RenderPass rend
 		assetManager->LoadShaderFile("texture_frag.spv", frag);
 		ctx->texturePipeline->CreateGraphicsPipeline(vert, frag, renderpass, &GlobalTextureDesc, ctx->cameraBuffers);
 	}
-	{
-		vector<uint8_t> vert, frag;
-		assetManager->LoadShaderFile("tilemap_vert.spv", vert);
-		assetManager->LoadShaderFile("tilemap_frag.spv", frag);
-		ctx->tilemapPipeline->CreateGraphicsPipeline(vert, frag, renderpass, ctx->cameraBuffers);
+	if (allocateTileWorld) {
+		{
+			vector<uint8_t> comp, blur;
+			assetManager->LoadShaderFile("lighting_comp.spv", comp);
+			assetManager->LoadShaderFile("lightingBlur_comp.spv", blur);
+			ctx->lightingPipeline->CreateComputePipeline(comp, blur);
+		}
+		{
+			vector<uint8_t> vert, frag;
+			assetManager->LoadShaderFile("tilemap_vert.spv", vert);
+			assetManager->LoadShaderFile("tilemap_frag.spv", frag);
+			ctx->tilemapPipeline->CreateGraphicsPipeline(vert, frag, renderpass, &GlobalTextureDesc, ctx->cameraBuffers);
+		}
 	}
 	{
 		vector<uint8_t> vert, frag;
@@ -209,8 +229,7 @@ void Engine::Start(const VideoSettings& initialSettings, AssetManager::AssetPath
 		//cameraUploader.CreateBuffers(rengine);
 		screenSpaceTransformUploader.CreateBuffers(rengine);
 		AllocateQuad(rengine, quadMeshBuffer);
-		worldMap = make_shared<TileWorld>(rengine);
-		worldMap->AllocateVulkanResources();
+
 
 		// allocated dedicated device memory for compute driven particle systems
 		{
@@ -228,7 +247,7 @@ void Engine::Start(const VideoSettings& initialSettings, AssetManager::AssetPath
 	// contruct pipelines
 	{
 		screenSpaceColorPipeline = make_unique<ColoredQuadPL>(rengine);
-		lightingPipeline = make_unique<LightingComputePL>(rengine, worldMap);
+		/*lightingPipeline = make_unique<LightingComputePL>(rengine, worldMap);*/
 		screenSpaceTexturePipeline = make_unique<TexturedQuadPL>(rengine);
 		screenSpaceTextPipeline = make_unique<TextPL>(rengine);
 		particleComputePipeline = make_unique<ParticleComputePL>(rengine);
@@ -243,17 +262,17 @@ void Engine::Start(const VideoSettings& initialSettings, AssetManager::AssetPath
 
 	// section can be done in parrallel
 	{
-		lightingPipeline->createStagingBuffers();
+		/*lightingPipeline->createStagingBuffers();*/
 		screenSpaceColorPipeline->CreateInstancingBuffer();
 		screenSpaceTexturePipeline->createSSBOBuffer();
 		screenSpaceTextPipeline->createSSBOBuffer();
 
-		{
-			vector<uint8_t> comp, blur;
-			assetManager->LoadShaderFile("lighting_comp.spv", comp);
-			assetManager->LoadShaderFile("lightingBlur_comp.spv", blur);
-			lightingPipeline->CreateComputePipeline(comp, blur);
-		}
+		//{
+		//	vector<uint8_t> comp, blur;
+		//	assetManager->LoadShaderFile("lighting_comp.spv", comp);
+		//	assetManager->LoadShaderFile("lightingBlur_comp.spv", blur);
+		//	lightingPipeline->CreateComputePipeline(comp, blur);
+		//}
 		{
 			vector<uint8_t> comp;
 			assetManager->LoadShaderFile("particleSystem_comp.spv", comp);
@@ -365,12 +384,10 @@ void Engine::recordSceneContextGraphics(const ScenePipelineContext& ctx, framebu
 	}
 
 	// tilemap
+	if (ctx.tilemapPipeline != nullptr)
 	{
 		ZoneScopedN("tilemap PL");
-
-		if (ctx.tilemapPipeline->textureAtlas.has_value()) {
-			ctx.tilemapPipeline->recordCommandBuffer(cmdBuffer);
-		}
+		ctx.tilemapPipeline->recordCommandBuffer(cmdBuffer, globalTextureBindingManager.getIndexFromBinding(ctx.tilemapTextureAtlas));
 	}
 
 	// Textured quad
@@ -545,26 +562,25 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 
 	// record compute command buffer without submmiting it
 	{
-		ZoneScopedN("compute shaders");
-
+		ZoneScopedN("Record compute shaders");
 		auto computeCmdBuffer = rengine->getNextComputeCommandBuffer();
 
 		// lighting compute
-		{
+		for (auto& job : sceneRenderJobs) {
+			const auto& ctx = sceneRenderContextMap.find(job.sceneRenderCtxID)->second.pl;
+			if (ctx.worldMap == nullptr)
+				continue;
 
 			// transfer tiles to read-only memory before starting renderpass
 			{
 				ZoneScopedN("chunk updates");
-				worldMap->stageChunkUpdates(computeCmdBuffer);
+				ctx.worldMap->stageChunkUpdates(computeCmdBuffer);
 			}
 
-			auto lightingData = worldMap->getLightingUpdateData();
-			lightingPipeline->stageLightingUpdate(lightingData);
-			lightingPipeline->recordCommandBuffer(computeCmdBuffer, lightingData.size());
-			worldMap->chunkLightingJobs.clear();
-
-			TracyVkCollect(rengine->tracyComputeContexts[rengine->currentFrame], rengine->computeCommandBuffers[rengine->currentFrame]);
-
+			auto lightingData = ctx.worldMap->getLightingUpdateData();
+			ctx.lightingPipeline->stageLightingUpdate(lightingData);
+			ctx.lightingPipeline->recordCommandBuffer(computeCmdBuffer, lightingData.size());
+			ctx.worldMap->chunkLightingJobs.clear();
 		}
 
 		// record particle compute for every particle system in every scene
@@ -622,6 +638,8 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 			}
 			particleComputePipeline->RecordCommandBuffer(computeCmdBuffer, deltaTime, dispachInfos);
 		}
+
+		TracyVkCollect(rengine->tracyComputeContexts[rengine->currentFrame], rengine->computeCommandBuffers[rengine->currentFrame]);
 
 		computeCmdBuffer.end();
 	}

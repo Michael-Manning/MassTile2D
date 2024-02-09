@@ -7,7 +7,7 @@
 #include "typedefs.h"
 #include "TileWorld.h"
 
-extern std::shared_ptr<TileWorld> tileWolrdGlobalRef;
+extern TileWorld* tileWolrdGlobalRef;
 
 extern glm::vec2 GcameraPos;
 

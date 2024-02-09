@@ -27,36 +27,35 @@
 class TilemapPL :public  Pipeline {
 public:
 
-	TilemapPL(std::shared_ptr<VKEngine>& engine, std::shared_ptr<TileWorld> world) : Pipeline(engine), world(world) {
+	TilemapPL(std::shared_ptr<VKEngine>& engine, TileWorld* world) : Pipeline(engine), world(world) {
 	}
 
-	void CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc, vk::RenderPass& renderTarget, MappedDoubleBuffer<cameraUBO_s>& cameradb);
-	void recordCommandBuffer(vk::CommandBuffer commandBuffer);
+	void CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc, vk::RenderPass& renderTarget, GlobalImageDescriptor* textureDescriptor, MappedDoubleBuffer<cameraUBO_s>& cameradb);
+	void recordCommandBuffer(vk::CommandBuffer commandBuffer, int textureIndex);
 
-	void setTextureAtlas(Texture* textureAtlas) {
+	//void setTextureAtlas(Texture* textureAtlas) {
 
-		// fill in missing data of descriptor set builder before submitting
+	//	// fill in missing data of descriptor set builder before submitting
 
-		this->textureAtlas = textureAtlas;
-		descriptorManager.builderDescriptorSetsDetails[1].textures = this->textureAtlas.value();
+	//	this->textureAtlas = textureAtlas;
+	//	descriptorManager.builderDescriptorSetsDetails[1].textures = this->textureAtlas.value();
 
-		std::array<vk::Buffer, FRAMES_IN_FLIGHT> worldMapDeviceBuferRef = { world->_worldMapFGDeviceBuffer, world->_worldMapFGDeviceBuffer };
-		descriptorManager.builderDescriptorSetsDetails[2].doubleBuffer = &worldMapDeviceBuferRef;
+	//	std::array<vk::Buffer, FRAMES_IN_FLIGHT> worldMapDeviceBuferRef = { world->_worldMapFGDeviceBuffer, world->_worldMapFGDeviceBuffer };
+	//	descriptorManager.builderDescriptorSetsDetails[2].doubleBuffer = &worldMapDeviceBuferRef;
 
-		std::array<vk::Buffer, FRAMES_IN_FLIGHT> worldMapBGDeviceBuferRef = { world->_worldMapBGDeviceBuffer, world->_worldMapBGDeviceBuffer };
-		descriptorManager.builderDescriptorSetsDetails[3].doubleBuffer = &worldMapBGDeviceBuferRef;
+	//	std::array<vk::Buffer, FRAMES_IN_FLIGHT> worldMapBGDeviceBuferRef = { world->_worldMapBGDeviceBuffer, world->_worldMapBGDeviceBuffer };
+	//	descriptorManager.builderDescriptorSetsDetails[3].doubleBuffer = &worldMapBGDeviceBuferRef;
 
-		descriptorManager.buildDescriptorSets();
+	//	descriptorManager.buildDescriptorSets();
 
-	}
+	//}
 
-	std::optional<Texture*> textureAtlas;
+	//std::optional<Texture*> textureAtlas;
 private:
 
+	TileWorld* world = nullptr;
 
-	//VKUtil::BufferUploader<cameraUBO_s> cameraUploader;
-
-	std::shared_ptr<TileWorld> world = nullptr;
+	GlobalImageDescriptor* textureDescriptor;
 
 	std::array<vk::DescriptorSet, FRAMES_IN_FLIGHT> ssboDescriptorSets;
 

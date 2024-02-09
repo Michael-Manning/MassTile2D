@@ -56,14 +56,14 @@ struct WorldGenSettings {
 
 class WorldGenerator {
 public:
-	WorldGenerator(std::shared_ptr<TileWorld> worldMap) : world(worldMap) {
+	WorldGenerator(TileWorld* worldMap) : world(worldMap) {
 	}
 
 	void GenerateTiles(WorldGenSettings& settings);
 	void PostProcess();
 
 private:
-	std::shared_ptr<TileWorld> world;
+	TileWorld* world;
 };
 
 

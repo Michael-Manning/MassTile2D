@@ -11,9 +11,9 @@
 class Editor {
 public:
 
-	void Run(Engine& engine);
+	void Run();
 
-	void Initialize(Engine& engine, std::shared_ptr<Scene> gameScene, sceneRenderContextID sceneRenderContext);
+	void Initialize(Engine* engine, std::shared_ptr<Scene> gameScene, sceneRenderContextID sceneRenderContext);
 
 	std::vector<Engine::SceneRenderJob> GetAdditionalRenderJobs() {
 		std::vector<Engine::SceneRenderJob> jobs;
@@ -33,6 +33,8 @@ public:
 
 private:
 
+	Engine* engine;
+
 	Camera previewCamera;
 	std::shared_ptr<Scene> entityPreviewScene;
 	Engine::SceneRenderJob entityPreviewRenderJob;
@@ -46,41 +48,41 @@ private:
 	framebufferID sceneFramebuffer;
 
 	template<typename T>
-	bool drawInspector(T& comp, Engine& engine);
+	bool drawInspector(T& comp);
 
 	template<>
-	bool drawInspector<Transform>(Transform& t, Engine& engine);
+	bool drawInspector<Transform>(Transform& t);
 
 	template<>
-	bool drawInspector<ColorRenderer>(ColorRenderer& t, Engine& engine);
+	bool drawInspector<ColorRenderer>(ColorRenderer& t);
 
 	template<>
-	bool drawInspector<SpriteRenderer>(SpriteRenderer& r, Engine& engine);
+	bool drawInspector<SpriteRenderer>(SpriteRenderer& r);
 
 	template<>
-	bool drawInspector<TextRenderer>(TextRenderer& r, Engine& engine);
+	bool drawInspector<TextRenderer>(TextRenderer& r);
 
-	bool drawInspector(ParticleSystemRenderer& r, Engine& engine);
-
-	template<>
-	bool drawInspector<Rigidbody>(Rigidbody& r, Engine& engine);
+	bool drawInspector(ParticleSystemRenderer& r);
 
 	template<>
-	bool drawInspector<Staticbody>(Staticbody& r, Engine& engine);
+	bool drawInspector<Rigidbody>(Rigidbody& r);
 
-	void DrawGameSceneGrid(Engine& engine, ImDrawList* drawlist, glm::vec2 size, glm::vec2 offset);
-	void DrawPreviewSceneGrid(Engine& engine, ImDrawList* drawlist, glm::vec2 size, glm::vec2 offset);
-	void controlWindow(Engine& engine);
-	void entityWindow(Engine& engine);
-	void assetWindow(Engine& engine);
-	void mainSceneWindow(Engine& engine);
-	void EntityPreviewWindow(Engine& engine);
+	template<>
+	bool drawInspector<Staticbody>(Staticbody& r);
 
-	glm::vec2 DrawSpriteAtlas(Engine& engine, spriteID id, glm::vec2 maxSize, int atlasIndex);
-	glm::vec2 DrawSprite(Engine& engine, spriteID id, glm::vec2 maxSize);
+	void DrawGameSceneGrid(ImDrawList* drawlist, glm::vec2 size, glm::vec2 offset);
+	void DrawPreviewSceneGrid(ImDrawList* drawlist, glm::vec2 size, glm::vec2 offset);
+	void controlWindow();
+	void entityWindow();
+	void assetWindow();
+	void mainSceneWindow();
+	void EntityPreviewWindow();
+
+	glm::vec2 DrawSpriteAtlas(spriteID id, glm::vec2 maxSize, int atlasIndex);
+	glm::vec2 DrawSprite(spriteID id, glm::vec2 maxSize);
 
 	bool showingStats = false;
-	void debugDataWindow(Engine& engine);
+	void debugDataWindow();
 
 	bool behaviorModel = true;
 
@@ -93,14 +95,25 @@ private:
 	int comboSelected = -1;
 	int fontComboSelected = -1;
 
-	int selectedEntityIndex = 0;
+	int selectedEntityIndex = -1;
 	std::shared_ptr<Entity> selectedEntity = nullptr;
 
 	int selectedPrefabIndex = 0;
 
+	void clearInspectorSelection() {
+		selectedEntityIndex = -1;
+		selectedEntity = nullptr;
+
+		rendererSelectedSprite = 0;
+
+		sceneSelected = false;
+	}
+
 	int selectedSpriteIndex = -1;
 	int selectedSpriteAtlasIndex = 0;
 	std::shared_ptr<Sprite> selectedSprite = nullptr;
+
+	bool sceneSelected = false;
 
 	float updateTimer = 0.0f;
 	float frameRateStat;

@@ -18,7 +18,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <imgui.h>
 
-#include"Engine.h"
+#include"engine.h"
 #include "Physics.h"
 
 #include "Editor.h"
@@ -111,9 +111,9 @@ namespace {
 	const float inspectorWindowWidth = 300;
 }
 
-vec2 Editor::DrawSprite(Engine& engine, spriteID id, glm::vec2 maxSize) {
-	const auto& sprite = engine.assetManager->GetSprite(id);
-	const auto& imTexture = engine.assetManager->getSpriteImTextureID(sprite->ID);
+vec2 Editor::DrawSprite(spriteID id, glm::vec2 maxSize) {
+	const auto& sprite = engine->assetManager->GetSprite(id);
+	const auto& imTexture = engine->assetManager->getSpriteImTextureID(sprite->ID);
 
 	if (imTexture.has_value() == false) {
 		Text("Could not display texture in Editor");
@@ -138,9 +138,9 @@ vec2 Editor::DrawSprite(Engine& engine, spriteID id, glm::vec2 maxSize) {
 	Image((ImTextureID)imTexture.value(), dispSize);
 	return dispSize;
 }
-vec2 Editor::DrawSpriteAtlas(Engine& engine, spriteID id, glm::vec2 maxSize, int atlasIndex) {
-	const auto& sprite = engine.assetManager->GetSprite(id);
-	const auto& imTexture = engine.assetManager->getSpriteImTextureID(sprite->ID);
+vec2 Editor::DrawSpriteAtlas(spriteID id, glm::vec2 maxSize, int atlasIndex) {
+	const auto& sprite = engine->assetManager->GetSprite(id);
+	const auto& imTexture = engine->assetManager->getSpriteImTextureID(sprite->ID);
 
 	if (imTexture.has_value() == false) {
 		Text("Could not display texture in Editor");
@@ -173,7 +173,7 @@ vec2 Editor::DrawSpriteAtlas(Engine& engine, spriteID id, glm::vec2 maxSize, int
 
 
 
-void Editor::DrawGameSceneGrid(Engine& engine, ImDrawList* drawlist, glm::vec2 size, glm::vec2 offset) {
+void Editor::DrawGameSceneGrid(ImDrawList* drawlist, glm::vec2 size, glm::vec2 offset) {
 
 	float gridSize = GetWorldGridSize(editorCamera.zoom);
 	const int gridOpacity = (int)(0.2 * 255);
@@ -213,7 +213,7 @@ void Editor::DrawGameSceneGrid(Engine& engine, ImDrawList* drawlist, glm::vec2 s
 	}
 }
 
-void Editor::DrawPreviewSceneGrid(Engine& engine, ImDrawList* drawlist, glm::vec2 size, glm::vec2 offset) {
+void Editor::DrawPreviewSceneGrid(ImDrawList* drawlist, glm::vec2 size, glm::vec2 offset) {
 	float gridSize = GetWorldGridSize(previewCamera.zoom);
 	const int gridOpacity = (int)(0.2 * 255);
 
@@ -252,17 +252,17 @@ void Editor::DrawPreviewSceneGrid(Engine& engine, ImDrawList* drawlist, glm::vec
 	}
 }
 
-void Editor::controlWindow(Engine& engine) {
+void Editor::controlWindow() {
 
 	const float margin = 10.0f;
 	auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar;
 	SetNextWindowPos(vec2(leftPanelWindowWidth + margin, margin + 30));
-	SetNextWindowSize(vec2(engine.getWindowSize().x - leftPanelWindowWidth - inspectorWindowWidth - (margin * 2.0f), 40));
+	SetNextWindowSize(vec2(engine->getWindowSize().x - leftPanelWindowWidth - inspectorWindowWidth - (margin * 2.0f), 40));
 	Begin("control", nullptr, flags);
 
-	if (engine.time - updateTimer > 0.2f) {
-		frameRateStat = engine._getAverageFramerate();
-		updateTimer = engine.time;
+	if (engine->time - updateTimer > 0.2f) {
+		frameRateStat = engine->_getAverageFramerate();
+		updateTimer = engine->time;
 	}
 
 	if (Button("Save Scene")) {
@@ -270,7 +270,7 @@ void Editor::controlWindow(Engine& engine) {
 	}
 	SameLine();
 	if (Button("Load Scene")) {
-		//gameScene->LoadScene("gamescene", engine.bworld);
+		//gameScene->LoadScene("gamescene", engine->bworld);
 		//selectedEntity = nullptr;
 	}
 	SameLine();
@@ -292,12 +292,17 @@ void Editor::controlWindow(Engine& engine) {
 	End();
 }
 
-void Editor::entityWindow(Engine& engine) {
+void Editor::entityWindow() {
 
 	auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoBringToFrontOnFocus;
 	SetNextWindowPos(vec2(0.0f, 0.0f));
-	SetNextWindowSize(vec2(leftPanelWindowWidth, engine.getWindowSize().y / 2));
+	SetNextWindowSize(vec2(leftPanelWindowWidth, engine->getWindowSize().y / 2));
 	Begin("Entities", nullptr, flags);
+
+	if (Selectable("Main Scene", sceneSelected)) {
+		clearInspectorSelection();
+		sceneSelected = true;
+	}
 
 	if (Button("new")) {
 		gameScene->RegisterEntity(make_shared<Entity>("", true));
@@ -309,6 +314,7 @@ void Editor::entityWindow(Engine& engine) {
 		if (!entity->parent.has_value()) {
 
 			if (Selectable(entity->name.c_str(), selectedEntityIndex == i)) {
+				clearInspectorSelection();
 				selectedEntityIndex = i;
 
 				// already selected. deselect
@@ -349,10 +355,10 @@ void Editor::entityWindow(Engine& engine) {
 					if (saveFileDialog(filename, MAX_PATH, "prefab", "Prefab File\0*.prefab\0")) {
 						string fullPath = string(filename);
 						std::string endName = getFileName(fullPath);
-						engine.assetManager->ExportPrefab(p, fullPath);
+						engine->assetManager->ExportPrefab(p, fullPath);
 						// hope you put it in the right folder or it won't appear in the editor
-						if (std::filesystem::exists(std::filesystem::path(engine.assetManager->directories.prefabDir + endName)) == true) {
-							engine.assetManager->LoadPrefab(p.name, false);
+						if (std::filesystem::exists(std::filesystem::path(engine->assetManager->directories.prefabDir + endName)) == true) {
+							engine->assetManager->LoadPrefab(p.name, false);
 						}
 					}
 
@@ -385,17 +391,17 @@ void Editor::entityWindow(Engine& engine) {
 	End();
 }
 
-void Editor::assetWindow(Engine& engine) {
+void Editor::assetWindow() {
 	auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoBringToFrontOnFocus;
-	SetNextWindowPos(vec2(0.0f, engine.getWindowSize().y / 2.0f));
-	SetNextWindowSize(vec2(leftPanelWindowWidth, engine.getWindowSize().y / 2));
+	SetNextWindowPos(vec2(0.0f, engine->getWindowSize().y / 2.0f));
+	SetNextWindowSize(vec2(leftPanelWindowWidth, engine->getWindowSize().y / 2));
 	Begin("Assets", nullptr, flags);
 
 	if (BeginTabBar("assetCategories")) {
 
 		if (BeginTabItem("Prefabs")) {
 			int i = 0;
-			for (auto& p : engine.assetManager->_getPrefabIterator())
+			for (auto& p : engine->assetManager->_getPrefabIterator())
 			{
 				Selectable(p.first.c_str(), selectedPrefabIndex == i);
 
@@ -425,15 +431,15 @@ void Editor::assetWindow(Engine& engine) {
 
 					std::string name = getFileRawName(string(filename));
 					auto unidentified_sprite = generateSprite_unidentified(name, FilterMode::Linear);
-					spriteID sprID = engine.assetManager->ExportSprite(engine.assetManager->directories.assetDir + name, string(filename), unidentified_sprite);
-					engine.assetManager->LoadSprite(sprID);
+					spriteID sprID = engine->assetManager->ExportSprite(engine->assetManager->directories.assetDir + name, string(filename), unidentified_sprite);
+					engine->assetManager->LoadSprite(sprID);
 				}
 			}
 
 			int i = 0;
-			for (auto& p : engine.assetManager->_getSpriteIterator()) {
+			for (auto& p : engine->assetManager->_getSpriteIterator()) {
 
-				if (p.first == engine.assetManager->defaultSpriteID) {
+				if (p.first == engine->assetManager->defaultSpriteID) {
 					if (Selectable("default sprite", selectedSpriteIndex == i)) {
 						selectedSprite = p.second;
 						selectedSpriteIndex = i;
@@ -480,7 +486,7 @@ void Editor::assetWindow(Engine& engine) {
 
 				std::fill(availFontsString, availFontsString + 256, '\0');
 
-				vector<string> paths = getAllFilesInDirectory(engine.assetManager->directories.fontsDir);
+				vector<string> paths = getAllFilesInDirectory(engine->assetManager->directories.fontsDir);
 				int offset = 0;
 				for (auto& s : paths) {
 					availFontPaths.push_back(s);
@@ -493,7 +499,7 @@ void Editor::assetWindow(Engine& engine) {
 			auto modelFlags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
 			float modelWidth = 360;
 			if (fontModel) {
-				SetNextWindowPos(vec2(glm::clamp(engine.winW / 2 - (int)modelWidth / 2, 0, engine.winW), 50));
+				SetNextWindowPos(vec2(glm::clamp(engine->winW / 2 - (int)modelWidth / 2, 0, engine->winW), 50));
 				SetNextWindowSize(vec2(modelWidth, 300));
 			}
 			if (BeginPopupModal("Generate Font", &fontModel, modelFlags)) {
@@ -515,12 +521,12 @@ void Editor::assetWindow(Engine& engine) {
 					if (Button("Generate")) {
 
 						std::string name = string(fontName);
-						std::string atlasImageLocation = engine.assetManager->directories.assetDir + name + ".png";
+						std::string atlasImageLocation = engine->assetManager->directories.assetDir + name + ".png";
 						auto unidentified_font = GenerateFont_unidentified(availFontPaths[fontComboSelected], atlasImageLocation, fontConfig);
 						auto unidentified_sprite = generateSprite_unidentified(name, FilterMode::Linear);
-						auto fntID = engine.assetManager->ExportFont(engine.assetManager->directories.assetDir + name, engine.assetManager->directories.assetDir + name, atlasImageLocation, unidentified_font, unidentified_sprite);
+						auto fntID = engine->assetManager->ExportFont(engine->assetManager->directories.assetDir + name, engine->assetManager->directories.assetDir + name, atlasImageLocation, unidentified_font, unidentified_sprite);
 
-						engine.assetManager->LoadFont(fntID);
+						engine->assetManager->LoadFont(fntID);
 
 						fontModel = false;
 					}
@@ -530,7 +536,7 @@ void Editor::assetWindow(Engine& engine) {
 			}
 
 			int i = 0;
-			for (auto& f : engine.assetManager->_getFontIterator()) {
+			for (auto& f : engine->assetManager->_getFontIterator()) {
 				Selectable(f.second->name.c_str(), false);
 			}
 
@@ -541,14 +547,14 @@ void Editor::assetWindow(Engine& engine) {
 	End();
 }
 
-void Editor::debugDataWindow(Engine& engine) {
+void Editor::debugDataWindow() {
 	/*auto flags = ImGuiWindowFlags_NoResize;
-	SetNextWindowPos(vec2(0.0f, engine.getWindowSize().y / 2.0f));
-	SetNextWindowSize(vec2(entityWindowWidth, engine.getWindowSize().y / 2));*/
+	SetNextWindowPos(vec2(0.0f, engine->getWindowSize().y / 2.0f));
+	SetNextWindowSize(vec2(entityWindowWidth, engine->getWindowSize().y / 2));*/
 	//Begin("Stats", nullptr, flags);
 
 	if (showingStats && Begin("Stats", &showingStats)) {
-		auto& stats = engine._getDebugStats();
+		auto& stats = engine->_getDebugStats();
 
 		Text("Entity count: %d", stats.entity_count);
 		Text("Rendered sprited: %d", stats.sprite_render_count);
@@ -557,15 +563,16 @@ void Editor::debugDataWindow(Engine& engine) {
 	}
 }
 
-void Editor::Initialize(Engine& engine, std::shared_ptr<Scene> gameScene, sceneRenderContextID sceneRenderContext) {
+void Editor::Initialize(Engine* engine, std::shared_ptr<Scene> gameScene, sceneRenderContextID sceneRenderContext) {
+	this->engine = engine;
 	this->gameScene = gameScene;
 	this->sceneRenderContext = sceneRenderContext;
 
 	entityPreviewScene = make_shared<Scene>();
 	entityPreviewScene->name = "entity preview scene";
 	entityPrviewFrameSize = vec2(600);
-	entityPreviewsSeneRenderContextID = engine.CreateSceneRenderContext(entityPrviewFrameSize, glm::vec4(0.0), true);
-	entityPreviewFramebuffer = engine.GetSceneRenderContextFramebuffer(entityPreviewsSeneRenderContextID);
+	entityPreviewsSeneRenderContextID = engine->CreateSceneRenderContext(entityPrviewFrameSize, false, glm::vec4(0.0), true);
+	entityPreviewFramebuffer = engine->GetSceneRenderContextFramebuffer(entityPreviewsSeneRenderContextID);
 
 	shared_ptr<Entity> teste = make_shared<Entity>("myEntity");
 	auto id = entityPreviewScene->RegisterEntity(teste);
@@ -580,12 +587,12 @@ void Editor::Initialize(Engine& engine, std::shared_ptr<Scene> gameScene, sceneR
 };
 
 
-void Editor::mainSceneWindow(Engine& engine) {
+void Editor::mainSceneWindow() {
 
 	vec2 mpos = input->getMousePos();
 
 	if (cameraEntityFocus == true) {
-		float fracComplete = (engine.time - cameraSlepStartTime) / 0.8f;
+		float fracComplete = (engine->time - cameraSlepStartTime) / 0.8f;
 		editorCamera.position = smoothstep(camSlerpStart, camSlerpEnd, fracComplete);
 		if (fracComplete >= 1.0f)
 			cameraEntityFocus = false;
@@ -594,7 +601,7 @@ void Editor::mainSceneWindow(Engine& engine) {
 
 	auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoBringToFrontOnFocus;
 	vec2 sceneWinPos = vec2(leftPanelWindowWidth, 0.0f);
-	vec2 sceneWinSize = vec2(engine.getWindowSize().x - inspectorWindowWidth - leftPanelWindowWidth, engine.getWindowSize().y);
+	vec2 sceneWinSize = vec2(engine->getWindowSize().x - inspectorWindowWidth - leftPanelWindowWidth, engine->getWindowSize().y);
 	SetNextWindowPos(sceneWinPos);
 	SetNextWindowSize(sceneWinSize);
 	Begin("Game View", nullptr, flags);
@@ -607,17 +614,17 @@ void Editor::mainSceneWindow(Engine& engine) {
 	windowDrawlist->PushClipRect(mainSceneViewerScreenLocation, mainSceneViewerScreenLocation + avail);
 
 	if (mainSceneFrameSizeChanged)
-		engine.ResizeSceneRenderContext(sceneRenderContext, avail);
+		engine->ResizeSceneRenderContext(sceneRenderContext, avail);
 
 	//auto cursorPos = ImGui::GetCursorPos();
-	engine.ImGuiFramebufferImage(sceneFramebuffer, ivec2(avail.x, avail.y));
+	engine->ImGuiFramebufferImage(sceneFramebuffer, ivec2(avail.x, avail.y));
 	//SetCursorPos(cursorPos);
 	//InvisibleButton("gameInvisibleBtn", (vec2)POVViewWinSize); // only to prevent window dragging when clicked
 
 	if (ImGui::IsItemHovered()) {
 
 		if (input->getMouseBtn(MouseBtn::Right)) {
-			editorCamera.position -= ((mouseDelta * vec2(2.0, -2.0)) / engine.getWindowSize().y) / editorCamera.zoom;
+			editorCamera.position -= ((mouseDelta * vec2(2.0, -2.0)) / engine->getWindowSize().y) / editorCamera.zoom;
 			cameraEntityFocus = false;
 		}
 
@@ -755,7 +762,7 @@ void Editor::mainSceneWindow(Engine& engine) {
 	}
 
 	if (showGrid) {
-		DrawGameSceneGrid(engine, windowDrawlist, mainSceneFrameSize, mainSceneViewerScreenLocation);
+		DrawGameSceneGrid(windowDrawlist, mainSceneFrameSize, mainSceneViewerScreenLocation);
 	}
 
 	windowDrawlist->PopClipRect();
@@ -763,14 +770,14 @@ void Editor::mainSceneWindow(Engine& engine) {
 	End();
 }
 
-void Editor::EntityPreviewWindow(Engine& engine) {
+void Editor::EntityPreviewWindow() {
 	vec2 mpos = input->getMousePos();
 
 	auto flags = ImGuiWindowFlags_NoResize;
 
 
 	/*vec2 sceneWinPos = vec2(leftPanelWindowWidth, 0.0f);
-	vec2 sceneWinSize = vec2(engine.getWindowSize().x - inspectorWindowWidth - leftPanelWindowWidth, engine.getWindowSize().y);*/
+	vec2 sceneWinSize = vec2(engine->getWindowSize().x - inspectorWindowWidth - leftPanelWindowWidth, engine->getWindowSize().y);*/
 	/*SetNextWindowPos(sceneWinPos);
 	SetNextWindowSize(sceneWinSize);*/
 	Begin("Entity Preview", nullptr, flags);
@@ -784,17 +791,17 @@ void Editor::EntityPreviewWindow(Engine& engine) {
 	windowDrawlist->PushClipRect(previewSceneViewerScreenLocation, previewSceneViewerScreenLocation + avail);
 
 	/*if (mainSceneFrameSizeChanged)
-		engine.ResizeSceneRenderContext(sceneRenderContext, avail);*/
+		engine->ResizeSceneRenderContext(sceneRenderContext, avail);*/
 
 	previewSceneViewerScreenLocation = GetCursorScreenPos();
 
-	engine.ImGuiFramebufferImage(entityPreviewFramebuffer, entityPrviewFrameSize);
+	engine->ImGuiFramebufferImage(entityPreviewFramebuffer, entityPrviewFrameSize);
 
 
 	if (ImGui::IsItemHovered()) {
 
 		//if (input->getMouseBtn(MouseBtn::Right)) {
-		//	editorCamera.position -= ((mouseDelta * vec2(2.0, -2.0)) / engine.getWindowSize().y) / editorCamera.zoom;
+		//	editorCamera.position -= ((mouseDelta * vec2(2.0, -2.0)) / engine->getWindowSize().y) / editorCamera.zoom;
 		//	cameraEntityFocus = false;
 		//}
 
@@ -808,21 +815,21 @@ void Editor::EntityPreviewWindow(Engine& engine) {
 	previewCamera.zoom = exponentialScale(previewSceneRawZoom, 0.01, 15.1);
 
 	// need to generalize to work with any scene and window
-	DrawPreviewSceneGrid(engine, windowDrawlist, entityPrviewFrameSize, previewSceneViewerScreenLocation);
+	DrawPreviewSceneGrid(windowDrawlist, entityPrviewFrameSize, previewSceneViewerScreenLocation);
 
 	windowDrawlist->PopClipRect();
 
 	End();
 }
 
-void Editor::Run(Engine& engine) {
+void Editor::Run() {
 
-	input = engine.GetInput();
+	input = engine->GetInput();
 	vec2 mpos = input->getMousePos();
-	screenSize = engine.getWindowSize();
+	screenSize = engine->getWindowSize();
 
-	sceneFramebuffer = engine.GetSceneRenderContextFramebuffer(sceneRenderContext);
-	mainSceneFrameSize = engine.GetFramebufferSize(sceneFramebuffer);
+	sceneFramebuffer = engine->GetSceneRenderContextFramebuffer(sceneRenderContext);
+	mainSceneFrameSize = engine->GetFramebufferSize(sceneFramebuffer);
 	mainSceneFrameSizeChanged = lastMainSceneFrameSize != mainSceneFrameSize;
 	lastMainSceneFrameSize = mainSceneFrameSize;
 
@@ -839,7 +846,7 @@ void Editor::Run(Engine& engine) {
 			camSlerpStart = editorCamera.position;
 			camSlerpEnd = selectedEntity->transform.position;
 			cameraEntityFocus = true;
-			cameraSlepStartTime = engine.time;
+			cameraSlepStartTime = engine->time;
 		}
 	}
 
@@ -852,29 +859,29 @@ void Editor::Run(Engine& engine) {
 	//	lastMpos = mpos;
 
 	//	if (input->getMouseBtn(MouseBtn::Right)) {
-	//		editorCamera.position -= ((delta * vec2(2.0, -2.0)) / engine.getWindowSize().y) / editorCamera.zoom;
+	//		editorCamera.position -= ((delta * vec2(2.0, -2.0)) / engine->getWindowSize().y) / editorCamera.zoom;
 	//		cameraEntityFocus = false;
 	//	}
 	//}
 
 	//if (cameraEntityFocus == true) {
-	//	float fracComplete = (engine.time - cameraSlepStartTime) / 0.8f;
+	//	float fracComplete = (engine->time - cameraSlepStartTime) / 0.8f;
 	//	editorCamera.position = smoothstep(camSlerpStart, camSlerpEnd, fracComplete);
 	//	if (fracComplete >= 1.0f)
 	//		cameraEntityFocus = false;
 	//}
 
-	entityWindow(engine);
+	entityWindow();
 
-	assetWindow(engine);
+	assetWindow();
 
-	mainSceneWindow(engine);
+	mainSceneWindow();
 
-	controlWindow(engine);
+	controlWindow();
 
 	if(showingPreviewWindow)
 	{
-		EntityPreviewWindow(engine);
+		EntityPreviewWindow();
 
 		entityPreviewRenderJob.camera = previewCamera;
 		entityPreviewRenderJob.scene = entityPreviewScene;
@@ -884,8 +891,8 @@ void Editor::Run(Engine& engine) {
 
 	{
 		auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoBringToFrontOnFocus;
-		SetNextWindowPos(vec2(engine.getWindowSize().x - inspectorWindowWidth, 0.0f));
-		SetNextWindowSize(vec2(300, engine.getWindowSize().y));
+		SetNextWindowPos(vec2(engine->getWindowSize().x - inspectorWindowWidth, 0.0f));
+		SetNextWindowSize(vec2(300, engine->getWindowSize().y));
 		Begin("Inspector", nullptr, flags);
 
 		// TODO: move gizmo logic outside of this window context
@@ -896,7 +903,7 @@ void Editor::Run(Engine& engine) {
 				{
 				case 0:
 					if (!gameScene->sceneData.spriteRenderers.contains(selectedEntity->ID))
-						gameScene->registerComponent(selectedEntity->ID, SpriteRenderer(engine.assetManager->defaultSpriteID));
+						gameScene->registerComponent(selectedEntity->ID, SpriteRenderer(engine->assetManager->defaultSpriteID));
 					break;
 				case 1:
 					if (!gameScene->sceneData.colorRenderers.contains(selectedEntity->ID))
@@ -904,8 +911,8 @@ void Editor::Run(Engine& engine) {
 					break;
 				case 2:
 					if (!gameScene->sceneData.textRenderers.contains(selectedEntity->ID))
-						if (engine.assetManager->_fontAssetCount() != 0)
-							gameScene->registerComponent(selectedEntity->ID, TextRenderer(engine.assetManager->_getFontIterator().begin()->first));
+						if (engine->assetManager->_fontAssetCount() != 0)
+							gameScene->registerComponent(selectedEntity->ID, TextRenderer(engine->assetManager->_getFontIterator().begin()->first));
 					break;
 				case 3:
 					if (!gameScene->sceneData.particleSystemRenderers.contains(selectedEntity->ID))
@@ -936,7 +943,7 @@ void Editor::Run(Engine& engine) {
 			InputString("Name", selectedEntity->name);
 			Checkbox("Persistent", &selectedEntity->persistent);
 
-			if (drawInspector(selectedEntity->transform, engine)) {
+			if (drawInspector(selectedEntity->transform)) {
 				if (gameScene->sceneData.rigidbodies.contains(selectedEntity->ID)) {
 					gameScene->sceneData.rigidbodies[selectedEntity->ID].SetTransform(selectedEntity->transform.position, selectedEntity->transform.rotation);
 				}
@@ -944,28 +951,28 @@ void Editor::Run(Engine& engine) {
 
 
 			if (gameScene->sceneData.colorRenderers.contains(selectedEntity->ID)) {
-				drawInspector(gameScene->sceneData.colorRenderers[selectedEntity->ID], engine);
+				drawInspector(gameScene->sceneData.colorRenderers[selectedEntity->ID]);
 			}
 
 			if (gameScene->sceneData.spriteRenderers.contains(selectedEntity->ID)) {
 				rendererSelectedSprite = gameScene->sceneData.spriteRenderers[selectedEntity->ID].sprite;
-				drawInspector(gameScene->sceneData.spriteRenderers[selectedEntity->ID], engine);
+				drawInspector(gameScene->sceneData.spriteRenderers[selectedEntity->ID]);
 			}
 
 			if (gameScene->sceneData.textRenderers.contains(selectedEntity->ID)) {
-				drawInspector(gameScene->sceneData.textRenderers[selectedEntity->ID], engine);
+				drawInspector(gameScene->sceneData.textRenderers[selectedEntity->ID]);
 			}
 
 			if (gameScene->sceneData.particleSystemRenderers.contains(selectedEntity->ID)) {
-				drawInspector(gameScene->sceneData.particleSystemRenderers.find(selectedEntity->ID)->second, engine);
+				drawInspector(gameScene->sceneData.particleSystemRenderers.find(selectedEntity->ID)->second);
 			}
 
 			if (gameScene->sceneData.staticbodies.contains(selectedEntity->ID)) {
-				drawInspector(gameScene->sceneData.staticbodies[selectedEntity->ID], engine);
+				drawInspector(gameScene->sceneData.staticbodies[selectedEntity->ID]);
 			}
 
 			if (gameScene->sceneData.rigidbodies.contains(selectedEntity->ID)) {
-				drawInspector(gameScene->sceneData.rigidbodies[selectedEntity->ID], engine);
+				drawInspector(gameScene->sceneData.rigidbodies[selectedEntity->ID]);
 			}
 
 
@@ -1019,27 +1026,30 @@ void Editor::Run(Engine& engine) {
 			avail.y = 220;
 
 			if (Combo("Filter mode", (int*)(&selectedSprite->filterMode), "Nearest\0Linear")) {
-				engine.assetManager->UpdateSpritefilter(selectedSprite->ID);
+				engine->assetManager->UpdateSpritefilter(selectedSprite->ID);
 			}
 
 			if (selectedSprite->atlas.size() > 0) {
 				SliderInt("Atlas index", &selectedSpriteAtlasIndex, 0, selectedSprite->atlas.size() - 1);
-				DrawSpriteAtlas(engine, selectedSprite->ID, avail, selectedSpriteAtlasIndex);
+				DrawSpriteAtlas(selectedSprite->ID, avail, selectedSpriteAtlasIndex);
 			}
 			else {
-				DrawSprite(engine, selectedSprite->ID, avail);
+				DrawSprite(selectedSprite->ID, avail);
 			}
+		}
+		else if (sceneSelected) {
+			ColorPicker3("Background color", gameScene->)
 		}
 		End();
 	}
 
-	debugDataWindow(engine);
+	debugDataWindow();
 }
 
 
 
 template<>
-bool Editor::drawInspector<Transform>(Transform& t, Engine& engine) {
+bool Editor::drawInspector<Transform>(Transform& t) {
 	SeparatorText("Transform");
 	bool change = false;
 	change |= DragFloat2("position", value_ptr(t.position), 0.2f);
@@ -1049,7 +1059,7 @@ bool Editor::drawInspector<Transform>(Transform& t, Engine& engine) {
 }
 
 template<>
-bool Editor::drawInspector<ColorRenderer>(ColorRenderer& t, Engine& engine) {
+bool Editor::drawInspector<ColorRenderer>(ColorRenderer& t) {
 	SeparatorText("Color Renderer");
 	ColorPicker4("Color", value_ptr(t.color));
 	{
@@ -1063,7 +1073,7 @@ bool Editor::drawInspector<ColorRenderer>(ColorRenderer& t, Engine& engine) {
 }
 
 template<>
-bool Editor::drawInspector<SpriteRenderer>(SpriteRenderer& r, Engine& engine) {
+bool Editor::drawInspector<SpriteRenderer>(SpriteRenderer& r) {
 	SeparatorText("Sprite Renderer");
 
 	if (Button("choose asset")) {
@@ -1074,8 +1084,8 @@ bool Editor::drawInspector<SpriteRenderer>(SpriteRenderer& r, Engine& engine) {
 	auto modelFlags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBringToFrontOnFocus;
 	float modelWidth = 360;
 	if (assetModel) {
-		SetNextWindowPos(vec2(glm::clamp(engine.winW / 2 - (int)modelWidth / 2, 0, engine.winW), 50));
-		SetNextWindowSize(vec2(modelWidth, glm::max(400, engine.winH - 100)));
+		SetNextWindowPos(vec2(glm::clamp(engine->winW / 2 - (int)modelWidth / 2, 0, engine->winW), 50));
+		SetNextWindowSize(vec2(modelWidth, glm::max(400, engine->winH - 100)));
 	}
 	if (BeginPopupModal("Available Assets", &assetModel, modelFlags)) {
 
@@ -1083,10 +1093,10 @@ bool Editor::drawInspector<SpriteRenderer>(SpriteRenderer& r, Engine& engine) {
 		const vec2 displaySize = vec2(modelWidth - 20, modelWidth);
 
 		int i = 0;
-		for (auto& sprite : engine.assetManager->_getSpriteIterator())
+		for (auto& sprite : engine->assetManager->_getSpriteIterator())
 		{
 			auto pos = GetCursorPos();
-			vec2 dispSize = DrawSprite(engine, sprite.first, displaySize);
+			vec2 dispSize = DrawSprite(sprite.first, displaySize);
 			SetCursorPos(pos);
 			if (InvisibleButton((string("invbtn") + to_string(i)).c_str(), displaySize)) {
 				rendererSelectedSprite = sprite.first;
@@ -1103,7 +1113,7 @@ bool Editor::drawInspector<SpriteRenderer>(SpriteRenderer& r, Engine& engine) {
 
 	Text("Sprite ID: %d", r.sprite);
 
-	const auto& sprite = engine.assetManager->GetSprite(r.sprite);
+	const auto& sprite = engine->assetManager->GetSprite(r.sprite);
 
 	Text("%d x %d", (int)sprite->resolution.x, (int)sprite->resolution.y);
 
@@ -1113,22 +1123,22 @@ bool Editor::drawInspector<SpriteRenderer>(SpriteRenderer& r, Engine& engine) {
 
 	if (sprite->atlas.size() > 0) {
 		SliderInt("Atlas index", &r.atlasIndex, 0, sprite->atlas.size() - 1);
-		DrawSpriteAtlas(engine, sprite->ID, avail, r.atlasIndex);
+		DrawSpriteAtlas(sprite->ID, avail, r.atlasIndex);
 	}
 
-	DrawSprite(engine, r.sprite, avail);
+	DrawSprite(r.sprite, avail);
 	return false;
 }
 
 template<>
-bool Editor::drawInspector<TextRenderer>(TextRenderer& r, Engine& engine) {
+bool Editor::drawInspector<TextRenderer>(TextRenderer& r) {
 	SeparatorText("Text Renderer");
 
 
 	vector<fontID> ids;
 	vector<string> names;
 
-	for (auto& [id, font] : engine.assetManager->_getFontIterator()) {
+	for (auto& [id, font] : engine->assetManager->_getFontIterator()) {
 		ids.push_back(id);
 		names.push_back(font->name);
 	}
@@ -1149,7 +1159,7 @@ bool Editor::drawInspector<TextRenderer>(TextRenderer& r, Engine& engine) {
 
 //InputFloatRange
 
-bool Editor::drawInspector(ParticleSystemRenderer& r, Engine& engine) {
+bool Editor::drawInspector(ParticleSystemRenderer& r) {
 	SeparatorText("Particle System");
 
 	
@@ -1215,7 +1225,7 @@ bool _drawInspector(shared_ptr<Collider> collider) {
 }
 
 template<>
-bool Editor::drawInspector<Rigidbody>(Rigidbody& r, Engine& engine) {
+bool Editor::drawInspector<Rigidbody>(Rigidbody& r) {
 	SeparatorText("Rigidbody");
 
 	{
@@ -1259,7 +1269,7 @@ bool Editor::drawInspector<Rigidbody>(Rigidbody& r, Engine& engine) {
 }
 
 template<>
-bool Editor::drawInspector<Staticbody>(Staticbody& r, Engine& engine) {
+bool Editor::drawInspector<Staticbody>(Staticbody& r) {
 	SeparatorText("Staticbody");
 
 

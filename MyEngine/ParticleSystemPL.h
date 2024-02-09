@@ -49,7 +49,13 @@ public:
 		float particleLifeSpan = 1.0f; // seconds
 		float gravity = -10.0f;
 		float startSize = 0.3; 
+		//float spawnMinStartSize;
+		//float spawnMaxStartSize;
 		float endSize = 0.0;
+		//float spawnAngle;
+		//float spawnAngleRange;
+		//float spawnMinVelocity;
+		//float spawnMaxVelocity;
 		alignas(16) glm::vec4 startColor = glm::vec4(1.0f, 1.0f, 0.0f, 1.0f);
 		alignas(16) glm::vec4 endColor = glm::vec4(1.0f, 1.0f, 0.0f, 1.0f);
 	};

@@ -30,4 +30,4 @@ struct UIState {
 };
 
 // capable of changing and applying video/audio settings via engine
-void DoSettingsMenu(UIState& state, Engine& engine);
+void DoSettingsMenu(UIState& state, Engine* engine);

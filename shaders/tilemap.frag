@@ -1,16 +1,21 @@
 #version 460
+#extension GL_EXT_nonuniform_qualifier : enable
 precision highp float;
 
-layout(binding = 1) uniform sampler2D atlasTexture;
 #define atlasCount 32;
 
-layout(std430, set = 1, binding = 0) buffer mapFGObjectBuffer {
+layout(std430, set = 1, binding = 1) buffer mapFGObjectBuffer {
 	int tileMapFGData[];
 } ;
-layout(std430, set = 1, binding = 1) buffer mapBGObjectBuffer {
+layout(std430, set = 1, binding = 2) buffer mapBGObjectBuffer {
 	int tileMapBGData[];
 } ;
 
+layout(binding = 0) uniform sampler2D texSampler[];
+
+layout(push_constant) uniform constants{
+   int textureIndex;
+};
 
 #define mapw 2048
 #define maph 1024
@@ -72,7 +77,7 @@ void main() {
 
         vec2 umin = localUV * atlasUvSize + vec2(float(atlasX), float(atlasY)) * atlasUvSize;
 
-        fgCol = texture(atlasTexture, umin);
+        fgCol = texture(texSampler[textureIndex], umin);
     }
     {
         int bufferValue = getBGTile(xi, yi);
@@ -87,7 +92,7 @@ void main() {
 
         vec2 umin = localUV * atlasUvSize + vec2(float(atlasX), float(atlasY)) * atlasUvSize;
 
-        bgCol = texture(atlasTexture, umin);
+        bgCol = texture(texSampler[textureIndex], umin);
     }
 
 

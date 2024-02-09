@@ -68,7 +68,7 @@ std::unordered_map<uint32_t, std::pair<std::string, std::function<std::shared_pt
 
 
 static vec2 GcameraPos;
-std::shared_ptr<TileWorld> tileWolrdGlobalRef;
+TileWorld* tileWolrdGlobalRef = nullptr;
 
 #ifdef USING_EDITOR
 bool showingEditor = false;
@@ -147,7 +147,21 @@ void CalcTileVariation(uint32_t x, uint32_t y) {
 	}
 }
 
+
+// globals
+std::unique_ptr<Engine> engine = nullptr;
 std::shared_ptr<Input> input = nullptr;
+shared_ptr<Scene> scene = nullptr;
+sceneRenderContextID sceneRenderCtx = 0;
+AssetManager::AssetPaths AssetDirectories = {};
+TileWorld* worldMap;
+Camera mainCamera{
+	glm::vec2(0.0f),
+	1.0f
+};
+bool editorToggledThisFrame = false;
+
+
 const vec2 btnSize(60, 30);
 bool Button(vec2 pos, vec2 size = btnSize) {
 	if (input->getMouseBtnDown(MouseBtn::Left) == false)
@@ -159,12 +173,9 @@ bool Button(vec2 pos, vec2 size = btnSize) {
 Editor editor;
 #endif 
 
-#ifdef  PUBLISH
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
-#else
-int main() {
-#endif
+VideoSettings videoSettings = {};
 
+void initializeEngine(std::unique_ptr<Engine>& engine) {
 
 	void* resourcePtr = nullptr;
 #ifdef USE_EMBEDDED_ASSETS
@@ -195,7 +206,6 @@ int main() {
 #endif
 
 	auto exePath = get_executable_directory();
-	AssetManager::AssetPaths AssetDirectories;
 #ifndef USE_PACKED_ASSETS
 	AssetDirectories.prefabDir = makePathAbsolute(exePath, "../../data/Prefabs/") + "/";
 	AssetDirectories.assetDir = makePathAbsolute(exePath, "../../data/Assets/") + "/";
@@ -203,7 +213,6 @@ int main() {
 	AssetDirectories.shaderDir = makePathAbsolute(exePath, "../../shaders/compiled/") + "/";
 #endif
 	AssetDirectories.resourcePtr = resourcePtr;
-
 
 	WindowSetting windowSetting;
 	windowSetting.windowSizeX = 1400;
@@ -217,38 +226,20 @@ int main() {
 	swapchainSettings.vsync = true;
 	swapchainSettings.capFramerate = false;
 
-	VideoSettings videoSettings;
 	videoSettings.windowSetting = windowSetting;
 	videoSettings.swapChainSetting = swapchainSettings;
 
 	auto rengine = std::make_shared<VKEngine>();
-	Engine engine(rengine);
-	engine.Start(videoSettings, AssetDirectories);
+	engine = make_unique<Engine>(rengine);
+	engine->Start(videoSettings, AssetDirectories);
+	input = engine->GetInput();
+}
 
-	shared_ptr<Scene> scene = make_shared<Scene>(); ///engine.GetCurrentScene(); // quick reference
-	scene->name = "main scene";
-	sceneRenderContextID sceneRenderCtx = engine.CreateSceneRenderContext({ engine.winW , engine.winH }, { 0.2, 0.3, 1.0, 1 });
-	editor.Initialize(engine, scene, sceneRenderCtx);
-
-	input = engine.GetInput();
-
-
-	Camera mainCamera{
-		glm::vec2(0.0f),
-		1.0f
-	};
-
-	engine.assetManager->LoadAllSprites();
-	engine.assetManager->LoadAllFonts();
-	engine.assetManager->LoadAllPrefabs(false);
-
-	tileWolrdGlobalRef = engine.worldMap;
-
-
+void createTileWorld() {
 	{
 		// load this from packed resources. 
-
-		WorldGenerator generator(engine.worldMap);
+		worldMap = engine->GetSceneRenderContextTileWorld(sceneRenderCtx);
+		WorldGenerator generator(worldMap);
 #if NDEBUG
 		vector<uint8_t> worldGenData;
 		engine.assetManager->LoadResourceFile("worldgen.json", worldGenData);
@@ -261,297 +252,219 @@ int main() {
 
 		generator.GenerateTiles(settings);
 #else
-		//engine.worldMap->loadFromDisk(AssetDirectories.assetDir + "world.dat");
+		worldMap->loadFromDisk(AssetDirectories.assetDir + "world.dat");
 #endif
 		generator.PostProcess();
 
 	}
 
+	engine->setTilemapAtlasTexture(sceneRenderCtx, engine->assetManager->GetSprite("tilemapSprites")->textureID);
+
+	tileWolrdGlobalRef = worldMap;
+}
+
+void queueRenderTasks() {
+
+	if (engine->WindowResizedLastFrame() || (editorToggledThisFrame && showingEditor == false)) {
+		engine->ResizeSceneRenderContext(sceneRenderCtx, engine->getWindowSize());
+	}
+
+	// draw main scene full screen
+	if (showingEditor == false) {
+		framebufferID fb = engine->GetSceneRenderContextFramebuffer(sceneRenderCtx);
+		engine->addScreenCenteredSpaceFramebufferTexture(fb, engine->getWindowSize() / 2.0f, engine->winH, 0);
+	}
+
+	// render main scene no matter what as the editor will use it if active
+	Engine::SceneRenderJob mainSceneRender;
+	mainSceneRender.scene = scene;
+	mainSceneRender.camera = mainCamera;
+	mainSceneRender.sceneRenderCtxID = sceneRenderCtx;
+
+#ifdef USING_EDITOR
+	if (showingEditor)
+		mainSceneRender.camera = editor.editorCamera;
+#endif
 
 
-	//engine.setTilemapAtlasTexture(engine.assetManager->GetSprite("tilemapSprites")->textureID);
+	vector<Engine::SceneRenderJob> sceneRenderJobs;
+	sceneRenderJobs.push_back(mainSceneRender);
 
+	if (showingEditor) {
+		auto jobs = editor.GetAdditionalRenderJobs();
+		for (auto& job : jobs) {
+			sceneRenderJobs.push_back(job);
+		}
+	}
+	engine->QueueNextFrame(sceneRenderJobs, showingEditor);
+}
+
+void worldDebug() {
+
+#if 0
+
+	static int lastX = -1;
+	static int lastY = -1;
+
+	vec2 worldClick = engine->screenToWorldPos(input->getMousePos());
+	//cout << worldClick.x << " " << worldClick.y << endl;
+	int tileX = worldClick.x / tileWorldSize + mapW / 2;
+	int tileY = worldClick.y / tileWorldSize + mapH / 2;
+
+	if (tileX > 1 && tileX < mapW - 1 && tileY > 1 && tileY < mapH - 1) {
+		int x = tileX;
+		int y = mapH - tileY - 1;
+
+
+
+		if (input->getMouseBtn(MouseBtn::Left)) {
+
+
+
+			/*if (x != lastX || y != lastY) {
+
+				engine.worldMap->setTile(x, y, Tiles::Grass * tilesPerBlock);
+
+				for (int i = -1; i < 2; i++)
+					for (int j = -1; j < 2; j++)
+						CalcTileVariation(x + i, y + j);
+
+				lastX = x;
+				lastY = y;
+			}*/
+
+			//if (input->getMouseBtnDown(MouseBtn::Left)) {
+
+			float tileXf = worldClick.x / tileWorldSize + mapW / 2.0f;
+			float tileYf = mapH - (worldClick.y / tileWorldSize + mapH / 2.0f) - 1;
+
+			engine.worldMap->setMovingTorch(vec2(tileXf, tileYf), true);
+
+
+		}
+		else {
+			//
+		//	engine.worldMap->setMovingTorch(ivec2(x, y), false);
+		}
+
+		static bool lastState = true;
+
+		if (input->getMouseBtn(MouseBtn::Left) == false && lastState == true) {
+			//else if (input->getMouseBtnUp(MouseBtn::Left)) {
+
+		//	torchPositions.push_back(vec2(x, y));
+
+
+			engine.worldMap->setTorch(x, y);
+		}
+
+		lastState = input->getMouseBtn(MouseBtn::Left);
+
+		engine.worldMap->updateLighing();
+	}
+
+	if (showingEditor == false && input->getMouseBtn(MouseBtn::Right)) {
+		vec2 worldClick = engine.screenToWorldPos(input->getMousePos());
+
+		int tileX = worldClick.x / tileWorldSize + mapW / 2;
+		int tileY = worldClick.y / tileWorldSize + mapH / 2;
+
+		if (tileX > 1 && tileX < mapW - 1 && tileY > 1 && tileY < mapH - 1) {
+
+			int x = tileX;
+			int y = mapH - tileY - 1;
+
+			engine.worldMap->setTile(x, y, Tiles::Air);
+
+			for (int i = -1; i < 2; i++)
+				for (int j = -1; j < 2; j++)
+					CalcTileVariation(x + i, y + j);
+		}
+
+		/*if (input->getMouseBtnDown(MouseBtn::Right)) {
+			auto demon = scene->Instantiate(engine.assetManager.get[["Demon"], "Demon", worldClick, 0);
+			dynamic_pointer_cast<Demon>(demon)->setPlayerRef(player);
+		}*/
+	}
+
+#endif
+}
+
+constexpr bool useTileWorld = true;
+
+#ifdef  PUBLISH
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
+#else
+int main() {
+#endif
+
+	// start up engine
+	initializeEngine(engine);
+
+	// create or load main scene
+	scene = make_shared<Scene>();
+	scene->name = "main scene";
+	sceneRenderCtx = engine->CreateSceneRenderContext(engine->getWindowSize(), useTileWorld, { 0.2, 0.3, 1.0, 1 });
+#ifdef USING_EDITOR
+	editor.Initialize(engine.get(), scene, sceneRenderCtx);
+#endif
+
+	// load all resources 
+	engine->assetManager->LoadAllSprites();
+	engine->assetManager->LoadAllFonts();
+	engine->assetManager->LoadAllPrefabs(false);
+
+	if(useTileWorld)
+		createTileWorld();
 
 	vector<vec2> torchPositions;
 
 	//shared_ptr<Player> player = dynamic_pointer_cast<Player>(scene->Instantiate(engine.assetManager->GetPrefab("Player"), "Player", vec2(0, 106), 0));
 
 	UIState UI;
-	UI.bigfont = engine.assetManager->GetFontID("roboto-32");
-	UI.medfont = engine.assetManager->GetFontID("roboto-24");
-	UI.smallfont = engine.assetManager->GetFontID("roboto-16");
+	UI.bigfont = engine->assetManager->GetFontID("roboto-32");
+	UI.medfont = engine->assetManager->GetFontID("roboto-24");
+	UI.smallfont = engine->assetManager->GetFontID("roboto-16");
 	UI.input = input;
 	UI.currentPage = UIState::Page::VideoSettings;
 	UI.videoSettings = &videoSettings;
-	UI.selectedWindowOption = windowSetting.windowMode;
+	UI.selectedWindowOption = videoSettings.windowSetting.windowMode;
 
 	UI::State uiState;
-	uiState.engine = &engine;
+	uiState.engine = engine.get();
 	uiState.selectedHotBarSlot = 0;
 	uiState.showingInventory = true;
 
 
-
-	for (size_t i = 0; i < boidCount; i++)
-	{
-		boids[i].pos = vec2(i / 10, i % 10) * 40.0f + 50.0f;
-		float angle = ran(0, 1000);
-		boids[i].velocity = vec2(cosf(angle), sinf(angle)) * 500.0f;
-	}
-
-	bool recreateBoidCells = true;
-	int cellsX;
-	int cellsY;
-	int cellCount;
-	float cellSize;
-
-	while (!engine.ShouldClose())
+	while (!engine->ShouldClose())
 	{
 		ZoneScopedN("main application loop");
 
-		bool editorToggledThisFrame = false;
+		editorToggledThisFrame = false;
 
-		engine.clearScreenSpaceDrawlist();
+		engine->clearScreenSpaceDrawlist();
 
 		if (appState == AppState::MainMenu)
 		{
 			switch (UI.currentPage)
 			{
 			case UIState::Page::VideoSettings:
-				DoSettingsMenu(UI, engine);
+				DoSettingsMenu(UI, engine.get());
 				break;
 			default:
 				break;
 			}
 
-
-			{
-				for (size_t i = 0; i < 100; i++)
-				{
-					//engine.addScreenSpaceQuad(vec4(1, 1, 1, 1), vec2(i / 30, i % 30) * 15.0f, vec2(10), engine.time * 0.1f);
-					//engine.addScreenCenteredSpaceTexture("roboto-24", 0,  vec2(i / 30, i % 30) * 40.0f + 100.0f, 60, engine.time * 0.1f);
-
-				}
-			}
 		}
 
 		else if (appState == AppState::PlayingGame) {
 
-
-			/*engine.addScreenSpaceTexture("hotbar", 0, vec2(0, 0), 60);*/
-
+			//engine.addScreenSpaceTexture("hotbar", 0, vec2(0, 0), 60);
 			//UI::DoUI(uiState);
 
-			using namespace ImGui;
-
 			GcameraPos = mainCamera.position;
-
-
-#if false
-			// define cell layout
-			{
-				if (recreateBoidCells || engine.WindowResizedLastFrame()) {
-					float minCellSize = boidSettings.visualRange;
-					cellSize = minCellSize + 5;
-
-					cellsX = (engine.winW / cellSize + 1);
-					cellsY = (engine.winH / cellSize + 1);
-					cellCount = cellsX * cellsY;
-
-					boidCells.resize(cellCount);
-				}
-				recreateBoidCells = false;
-			}
-
-			{
-				for (auto& b : boids)
-				{
-					int currentCellX = (int)(b.pos.x / cellSize);
-					int currentCellY = (int)(b.pos.y / cellSize);
-
-					// only matters if boid goes out of bounds
-					currentCellX = glm::clamp(currentCellX, 0, cellsX - 1);
-					currentCellY = glm::clamp(currentCellY, 0, cellsY - 1);
-
-					b.cellIndex = currentCellX + currentCellY * cellsX;
-				}
-
-				std::sort(boids.begin(), boids.end(), [](const Boid& a, const Boid& b) {
-					return a.cellIndex < b.cellIndex;
-					});
-
-				for (auto& cell : boidCells)
-				{
-					cell.startIndex = 0;
-					cell.endIndex = 0;
-				}
-
-				int cellIndex = boids[0].cellIndex;
-				int lastBoidIndex = 0;
-				boidCells[cellIndex].startIndex = 0;
-				for (size_t i = 1; i < boids.size(); i++)
-				{
-					if (boids[i].cellIndex != cellIndex)
-					{
-						boidCells[cellIndex].endIndex = i;
-						boidCells[boids[i].cellIndex].startIndex = i;
-						cellIndex = boids[i].cellIndex;
-					}
-				}
-			}
-
-
-			//// bin boids into cells
-			//{
-			//	int indexInCell = 0;
-			//	for (size_t i = 0; i < boidCells.size(); i++)
-			//	{
-			//		float cellX1 = (i % cellsX) * cellSize;
-			//		float cellX2 = cellX1 + cellSize;
-			//		float cellY1 = (i / cellsX) * cellSize;
-			//		float cellY2 = cellY1 + cellSize;
-
-			//		BoidCell& cell = boidCells[i];
-
-			//		cell.startIndex = indexInCell;
-
-			//		for (size_t j = 0; j < boidCount; j++)
-			//		{
-			//			if (boids[j].pos.x >= cellX1 && boids[j].pos.x < cellX2 && boids[j].pos.y >= cellY1 && boids[j].pos.y < cellY2) {
-			//				boidBinIndexes[indexInCell] = j;
-			//				indexInCell++;
-			//			}
-			//		}
-
-			//		cell.endIndex = indexInCell;
-			//	}
-			//	//assert(indexInCell == boidCount);
-			//}
-
-			boidSettings.bounds = vec2(engine.winW, engine.winH);
-
-			std::for_each(std::execution::par_unseq, boids.begin(), boids.end(), [&engine, &cellSize, &cellsX, &cellsY](Boid& b) {
-
-				//for (auto& b : boids)
-				{
-
-					// inter bird behaviour
-					{
-						vec2 center = vec2(0);
-						vec2 avoidVector = vec2(0);
-						vec2 avgVelocity = vec2(0.0f);
-						int numNeighbors = 0;
-
-						int currentCellX = (int)(b.pos.x / cellSize);
-						int currentCellY = (int)(b.pos.y / cellSize);
-
-						// only matters if boid goes out of bounds
-						currentCellX = glm::clamp(currentCellX, 0, cellsX - 1);
-						currentCellY = glm::clamp(currentCellY, 0, cellsY - 1);
-
-						for (int cx = -1; cx < 2; cx++)
-						{
-							for (int cy = -1; cy < 2; cy++)
-							{
-								int cellx = (currentCellX + cx);
-								int celly = (currentCellY + cy);
-								if (cellx < 0 || cellx > cellsX - 1 || celly < 0 || celly > cellsY - 1)
-									continue;
-								int cellIndex = cellx + celly * cellsX;
-
-								BoidCell cell = boidCells[cellIndex];
-
-								for (size_t j = cell.startIndex; j < cell.endIndex; j++)
-								{
-									//Boid& ob = boids[boidBinIndexes[j]];
-									Boid& ob = boids[j];
-
-									float dist = glm::length(b.pos - ob.pos);
-									if (dist < boidSettings.visualRange) {
-										center += ob.pos;
-										avgVelocity += ob.velocity;
-										numNeighbors++;
-									}
-
-									if (&b != &ob)
-									{
-										if (dist < boidSettings.minDistance)
-											avoidVector += b.pos - ob.pos;
-									}
-								}
-							}
-						}
-
-						//for (auto& ob : boids)
-						//{
-						//	float dist = glm::length(b.pos - ob.pos);
-						//	if (dist < boidSettings.visualRange) {
-						//		center += ob.pos;
-						//		avgVelocity += ob.velocity;
-						//		numNeighbors++;
-						//	}
-
-						//	if (&b != &ob)
-						//	{
-						//		if (length(b.pos - ob.pos) < boidSettings.minDistance)
-						//			avoidVector += b.pos - ob.pos;
-						//	}
-						//}
-
-						if (numNeighbors > 0) {
-							center = center / (float)numNeighbors;
-							b.velocity += (center - b.pos) * boidSettings.centeringFactor * (float)engine.deltaTime;
-
-							avgVelocity = avgVelocity / (float)numNeighbors;
-							b.velocity += (avgVelocity - b.velocity) * boidSettings.matchingFactor * (float)engine.deltaTime;
-						}
-
-						b.velocity += avoidVector * boidSettings.avoidFactor * (float)engine.deltaTime;
-					}
-
-
-					// gentle acceleration
-					{
-						vec2 n = glm::normalize(b.velocity);
-						b.velocity += n * boidSettings.generalAccel * (float)engine.deltaTime;
-					}
-
-					// limit speed
-					{
-						float speed = magnitude(b.velocity);
-						if (speed > boidSettings.maxSpeed) {
-							float d = boidSettings.maxSpeed / speed;
-							b.velocity = (b.velocity / speed) * boidSettings.maxSpeed;
-						}
-					}
-
-					// keep within bounds
-					{
-						float delta = boidSettings.turnFactor * engine.deltaTime;
-						if (b.pos.x < boidSettings.margin) {
-							b.velocity.x += delta;
-						}
-						if (b.pos.x > boidSettings.bounds.x - boidSettings.margin) {
-							b.velocity.x -= delta;
-						}
-						if (b.pos.y < boidSettings.margin) {
-							b.velocity.y += delta;
-						}
-						if (b.pos.y > boidSettings.bounds.y - boidSettings.margin) {
-							b.velocity.y -= delta;
-						}
-					}
-				}
-				});
-
-
-			for (auto& b : boids) {
-				b.pos += b.velocity * (float)engine.deltaTime * 1.0f;
-				engine.addScreenSpaceQuad(vec4(1, 0, 0, 1), b.pos, vec2(10, 5), atan2f(b.velocity.y, b.velocity.x));
-			}
-#endif
-
-			engine.EntityStartUpdate(scene);
+			engine->EntityStartUpdate(scene);
+			mainCamera.position = GcameraPos;
 
 			if (ImGui::GetIO().WantTextInput == false) {
 #ifdef USING_EDITOR
@@ -564,7 +477,7 @@ int main() {
 					scene->paused = !scene->paused;
 				}
 				if (input->getKeyDown('l')) {
-					engine.worldMap->FullLightingUpdate();
+					worldMap->FullLightingUpdate();
 				}
 				if (input->getKeyDown('m')) {
 					break;
@@ -573,160 +486,21 @@ int main() {
 
 #ifdef USING_EDITOR
 			if (showingEditor) {
+				ZoneScopedN("Editor");
 				ImGui_ImplVulkan_NewFrame();
 				ImGui_ImplGlfw_NewFrame();
-
 				ImGui::NewFrame();
-
-				editor.editorCamera = mainCamera;
-				editor.Run(engine);
-				mainCamera = editor.editorCamera;
-
-
-				//ImGui::Begin("boids settings");
-				//ImGui::SliderFloat("centering", &boidSettings.centeringFactor, 0.001f, 1.0f);
-				//recreateBoidCells |= ImGui::SliderFloat("visual range", &boidSettings.visualRange, 0.0f, 1000.0f);
-				//ImGui::SliderFloat("min distance", &boidSettings.minDistance, 0.0f, boidSettings.visualRange);
-				//ImGui::SliderFloat("avoid factor", &boidSettings.avoidFactor, 0.0f, 10.0f);
-				//ImGui::SliderFloat("match factor", &boidSettings.matchingFactor, 0.0f, 10.0f);
-				//ImGui::SliderFloat("general acceleration", &boidSettings.generalAccel, 0.0f, 50.0f);
-				//ImGui::SliderFloat("max speed", &boidSettings.maxSpeed, 0.0f, 1000.0f);
-				//ImGui::SliderFloat("margin", &boidSettings.margin, 0.0f, 500.0f);
-				//ImGui::SliderFloat("turn factor", &boidSettings.turnFactor, 0.0f, 1400.0f);
-				//ImGui::End();
-
-
-			}
-			else {
-				mainCamera.position = GcameraPos;
-			}
-#else
-			mainCamera.position = GcameraPos;
-#endif
-#if 0
-			{
-
-				static int lastX = -1;
-				static int lastY = -1;
-
-				vec2 worldClick = engine.screenToWorldPos(input->getMousePos());
-				//cout << worldClick.x << " " << worldClick.y << endl;
-				int tileX = worldClick.x / tileWorldSize + mapW / 2;
-				int tileY = worldClick.y / tileWorldSize + mapH / 2;
-
-				if (tileX > 1 && tileX < mapW - 1 && tileY > 1 && tileY < mapH - 1) {
-					int x = tileX;
-					int y = mapH - tileY - 1;
-
-
-
-					if (input->getMouseBtn(MouseBtn::Left)) {
-
-
-
-						/*if (x != lastX || y != lastY) {
-
-							engine.worldMap->setTile(x, y, Tiles::Grass * tilesPerBlock);
-
-							for (int i = -1; i < 2; i++)
-								for (int j = -1; j < 2; j++)
-									CalcTileVariation(x + i, y + j);
-
-							lastX = x;
-							lastY = y;
-						}*/
-
-						//if (input->getMouseBtnDown(MouseBtn::Left)) {
-
-						float tileXf = worldClick.x / tileWorldSize + mapW / 2.0f;
-						float tileYf = mapH - (worldClick.y / tileWorldSize + mapH / 2.0f) - 1;
-
-						engine.worldMap->setMovingTorch(vec2(tileXf, tileYf), true);
-
-
-					}
-					else {
-						//
-					//	engine.worldMap->setMovingTorch(ivec2(x, y), false);
-					}
-
-					static bool lastState = true;
-
-					if (input->getMouseBtn(MouseBtn::Left) == false && lastState == true) {
-						//else if (input->getMouseBtnUp(MouseBtn::Left)) {
-
-					//	torchPositions.push_back(vec2(x, y));
-
-
-						engine.worldMap->setTorch(x, y);
-					}
-
-					lastState = input->getMouseBtn(MouseBtn::Left);
-
-					engine.worldMap->updateLighing();
-				}
-			}
-			if (showingEditor == false && input->getMouseBtn(MouseBtn::Right)) {
-				vec2 worldClick = engine.screenToWorldPos(input->getMousePos());
-
-				int tileX = worldClick.x / tileWorldSize + mapW / 2;
-				int tileY = worldClick.y / tileWorldSize + mapH / 2;
-
-				if (tileX > 1 && tileX < mapW - 1 && tileY > 1 && tileY < mapH - 1) {
-
-					int x = tileX;
-					int y = mapH - tileY - 1;
-
-					engine.worldMap->setTile(x, y, Tiles::Air);
-
-					for (int i = -1; i < 2; i++)
-						for (int j = -1; j < 2; j++)
-							CalcTileVariation(x + i, y + j);
-				}
-
-				/*if (input->getMouseBtnDown(MouseBtn::Right)) {
-					auto demon = scene->Instantiate(engine.assetManager.get[["Demon"], "Demon", worldClick, 0);
-					dynamic_pointer_cast<Demon>(demon)->setPlayerRef(player);
-				}*/
+				editor.Run();
 			}
 #endif
 
+			//worldDebug();
 		}
 
-
-
-		if (engine.WindowResizedLastFrame() || (editorToggledThisFrame && showingEditor == false)) {
-			engine.ResizeSceneRenderContext(sceneRenderCtx, engine.getWindowSize());
-		}
-
-		// draw main scene full screen
-		if (showingEditor == false) {
-			framebufferID fb = engine.GetSceneRenderContextFramebuffer(sceneRenderCtx);
-			engine.addScreenCenteredSpaceFramebufferTexture(fb, vec2(engine.winW, engine.winH) / 2.0f, engine.winH, 0);
-		}
-
-
-		// render main scene no matter what as the editor will use it if active
-
-		Engine::SceneRenderJob mainSceneRender;
-		mainSceneRender.scene = scene;
-		mainSceneRender.camera = mainCamera;
-		mainSceneRender.sceneRenderCtxID = sceneRenderCtx;
-
-		vector<Engine::SceneRenderJob> sceneRenderJobs;
-		sceneRenderJobs.push_back(mainSceneRender);
-
-		if (showingEditor) {
-			auto jobs = editor.GetAdditionalRenderJobs();
-			for (auto& job : jobs) {
-				sceneRenderJobs.push_back(job);
-			}
-		}
-
-		engine.QueueNextFrame(sceneRenderJobs, showingEditor);
+		queueRenderTasks();
 	}
 
-	engine.Close();
+	engine->Close();
 
 	return 0;
 }

@@ -30,7 +30,7 @@ class LightingComputePL :public  Pipeline {
 
 public:
 
-	LightingComputePL(std::shared_ptr<VKEngine>& engine, std::shared_ptr<TileWorld> world) : Pipeline(engine), world(world) {
+	LightingComputePL(std::shared_ptr<VKEngine>& engine, TileWorld* world) : Pipeline(engine), world(world) {
 	}
 
 	void createStagingBuffers();
@@ -54,5 +54,5 @@ private:
 
 	MappedDoubleBuffer<void> lightPositionsDB;
 
-	std::shared_ptr<TileWorld> world = nullptr;
+	TileWorld* world = nullptr;
 };

@@ -1,16 +1,11 @@
 #version 460
 precision highp float;
 
-layout(binding = 0) uniform CamerUBO {
+layout(set = 1, binding = 0) uniform CamerUBO {
     vec2 position;
     float zoom;
     float aspectRatio;
 } camera;
-
-
-layout(std430, set = 1, binding = 0) readonly buffer ObjectBuffer{
-	int ssboData[];
-};
 
 layout(location = 0) in vec2 inPosition;
 layout(location = 2) in vec2 inFragCoord;

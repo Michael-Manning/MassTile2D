@@ -57,11 +57,17 @@ struct debugStats {
 struct ScenePipelineContext {
 	MappedDoubleBuffer<cameraUBO_s> cameraBuffers;
 
+	std::unique_ptr<LightingComputePL> lightingPipeline = nullptr;
+
 	std::unique_ptr<TilemapPL> tilemapPipeline = nullptr;
 	std::unique_ptr<ColoredQuadPL> colorPipeline = nullptr;
 	std::unique_ptr<TexturedQuadPL> texturePipeline = nullptr;
 	std::unique_ptr<TextPL> textPipeline = nullptr;
 	std::unique_ptr<ParticleSystemPL> particlePipeline = nullptr;
+
+	std::unique_ptr<TileWorld> worldMap = nullptr;
+
+	texID tilemapTextureAtlas;
 };
 
 
@@ -169,10 +175,9 @@ public:
 		return sum / (float)frameTimeBufferCount;
 	}
 
-	void setTilemapAtlasTexture(texID texture) {
-		assert(false);
-		//assert(tilemapPipeline->textureAtlas.has_value() == false);
-		//tilemapPipeline->setTextureAtlas(resourceManager->GetTexture(texture));
+	void setTilemapAtlasTexture(sceneRenderContextID contextID, texID texture) {
+
+		sceneRenderContextMap.find(contextID)->second.pl.tilemapTextureAtlas = texture;
 	};
 
 	int winW = 0, winH = 0;
@@ -180,8 +185,6 @@ public:
 	void _onWindowResize() {
 		screenSpaceTransformUploader.Invalidate();
 	};
-
-	std::shared_ptr<TileWorld> worldMap = nullptr;
 
 	inline void addScreenSpaceQuad(glm::vec4 color, glm::vec2 pos, glm::vec2 scale, float rotation = 0.0f) {
 		ColoredQuadPL::InstanceBufferData item;
@@ -291,7 +294,7 @@ public:
 	//	return currentScene;
 	//}
 
-	sceneRenderContextID CreateSceneRenderContext(glm::ivec2 size, glm::vec4 clearColor = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f), bool transparentFramebufferBlending = false) {
+	sceneRenderContextID CreateSceneRenderContext(glm::ivec2 size, bool allocateTileWorld, glm::vec4 clearColor = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f), bool transparentFramebufferBlending = false) {
 
 		auto fbID = resourceManager->CreateFramebuffer(size, clearColor);
 		auto fb = resourceManager->GetFramebuffer(fbID);
@@ -301,7 +304,7 @@ public:
 		
 		sceneRenderContextMap.find(id)->second.fb = fbID;
 
-		createScenePLContext(&sceneRenderContextMap.find(id)->second.pl, fb->renderpass, transparentFramebufferBlending);
+		createScenePLContext(&sceneRenderContextMap.find(id)->second.pl, allocateTileWorld, fb->renderpass, transparentFramebufferBlending);
 
 		return id;
 	}
@@ -315,6 +318,18 @@ public:
 
 	glm::ivec2 GetFramebufferSize(framebufferID id) {
 		return resourceManager->GetFramebuffer(id)->targetSize;
+	}
+
+	TileWorld* GetSceneRenderContextTileWorld(sceneRenderContextID id) {
+		assert(sceneRenderContextMap.find(id)->second.pl.worldMap != nullptr);
+		return sceneRenderContextMap.find(id)->second.pl.worldMap.get();
+	}
+
+	glm::vec4 GetFramebufferClearColor(framebufferID id) {
+		return resourceManager->GetFramebuffer(id)->clearColor;
+	}
+	void SetFramebufferClearColor(framebufferID id, glm::vec4 color) {
+		resourceManager->GetFramebuffer(id)->clearColor = color;
 	}
 
 	void ImGuiFramebufferImage(framebufferID framebuffer, glm::ivec2 displaySize) {
@@ -361,12 +376,10 @@ private:
 
 	texID texNotFoundID; // displayed when indexing incorrectly 
 
-	std::unique_ptr<LightingComputePL> lightingPipeline = nullptr;
-	std::unique_ptr<ParticleComputePL> particleComputePipeline = nullptr;
 
 	std::array<ComponentResourceToken, MAX_PARTICLE_SYSTEMS_LARGE> particleSystemResourceTokens;
 
-	void createScenePLContext(ScenePipelineContext* ctx, vk::RenderPass renderpass, bool transparentFramebufferBlending);
+	void createScenePLContext(ScenePipelineContext* ctx, bool allocateTileWorld, vk::RenderPass renderpass, bool transparentFramebufferBlending);
 
 	void recordSceneContextGraphics(const ScenePipelineContext& ctx, framebufferID framebuffer, std::shared_ptr<Scene> scene, const Camera& camera, vk::CommandBuffer& cmdBuffer);
 
@@ -375,6 +388,7 @@ private:
 	std::unique_ptr<ColoredQuadPL> screenSpaceColorPipeline = nullptr;
 	std::unique_ptr<TexturedQuadPL> screenSpaceTexturePipeline = nullptr;
 	std::unique_ptr<TextPL> screenSpaceTextPipeline = nullptr;
+	std::unique_ptr<ParticleComputePL> particleComputePipeline = nullptr;
 
 	//VKUtil::BufferUploader<cameraUBO_s> cameraUploader;
 	VKUtil::BufferUploader<cameraUBO_s> screenSpaceTransformUploader;

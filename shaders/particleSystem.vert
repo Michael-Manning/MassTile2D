@@ -83,17 +83,9 @@ void main() {
     view *= scale(vec2(1.0, -1.0));
 
    particle p = systemSize == 0 ? particleGroups_small[systemIndex].particles[gl_InstanceIndex] : particleGroups_large[systemIndex].particles[gl_InstanceIndex];
-   // particle p;
-   // if(systemSize == 0){
-   //    p = particleGroups_small[systemIndex].particles[gl_InstanceIndex];
-   // }
-   // else{
-   //    p = particleGroups_large[systemIndex].particles[gl_InstanceIndex];
-   // }
 
     mat4 model = mat4(1.0);
     model *= translate(p.position);
-   //  model *= rotate(ssboData[systemIndex].rotation);
     model *= scale(vec2(p.scale) * step(0.0, p.life)); // step SHOULD hide dead particles
 
     gl_Position = view * model  * vec4(inPosition, 0.0, 1.0) * vec4(camera.aspectRatio, 1.0, 1.0, 1.0);

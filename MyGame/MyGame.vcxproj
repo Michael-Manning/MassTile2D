@@ -358,6 +358,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="benchmark.h" />
+    <ClInclude Include="boidTestes.h" />
     <ClInclude Include="demon.h" />
     <ClInclude Include="GameUI.h" />
     <ClInclude Include="global.h" />

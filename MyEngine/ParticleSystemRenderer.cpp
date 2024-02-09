@@ -56,6 +56,7 @@ void ParticleSystemRenderer::runSimulation(float deltaTime, glm::vec2 spawnOrigi
 		if (particlesToSpawn > 0 && ps[id].life <= 0.0f) {
 			ps[id].life = 1.0f;
 			ps[id].position = spawnOrigin;
+			//ps[id].velocity = (randomNormal2() - 0.5f) * lerp(con.spawnMinVelocity, con.spawnMaxVelocity, randomNormal());
 			ps[id].velocity = (randomNormal2() - 0.5f) * 4.0f;
 			particlesToSpawn--;
 		}
