@@ -328,6 +328,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Benchmarking.cpp" />
     <ClCompile Include="GameUI.cpp" />
     <ClCompile Include="Menus.cpp" />
     <ClCompile Include="MyGame.cpp" />
@@ -357,7 +358,7 @@
     </CopyFileToFolders>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="benchmark.h" />
+    <ClInclude Include="Benchmarking.h" />
     <ClInclude Include="boidTestes.h" />
     <ClInclude Include="demon.h" />
     <ClInclude Include="GameUI.h" />

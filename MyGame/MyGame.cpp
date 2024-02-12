@@ -37,7 +37,6 @@
 #include "player.h"
 #include "demon.h"
 #include "TileWorld.h"
-#include "benchmark.h"
 #include "profiling.h"
 #include "Utils.h"
 #include "MyMath.h"
@@ -47,6 +46,8 @@
 #include "worldGen.h"
 #include "Menus.h"
 #include "GameUI.h"
+
+#include "Benchmarking.h"
 
 #include <FastNoise/FastNoise.h>
 #include <FastNoise/SmartNode.h>
@@ -242,7 +243,7 @@ void createTileWorld() {
 		WorldGenerator generator(worldMap);
 #if NDEBUG
 		vector<uint8_t> worldGenData;
-		engine.assetManager->LoadResourceFile("worldgen.json", worldGenData);
+		engine->assetManager->LoadResourceFile("worldgen.json", worldGenData);
 		worldGenData.push_back('\0');
 		auto j = nlohmann::json::parse(worldGenData.data());
 
@@ -390,7 +391,7 @@ void worldDebug() {
 #endif
 }
 
-constexpr bool useTileWorld = true;
+constexpr bool useTileWorld = false;
 
 #ifdef  PUBLISH
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
@@ -435,6 +436,10 @@ int main() {
 	uiState.selectedHotBarSlot = 0;
 	uiState.showingInventory = true;
 
+	{
+		auto testSprite = engine->assetManager->GetSprite("test_cat");
+		Benchmark::BuildSpriteEntityStressTest(scene.get(), testSprite->ID); // 530fps avg
+	}
 
 	while (!engine->ShouldClose())
 	{

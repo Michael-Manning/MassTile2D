@@ -36,6 +36,9 @@
     <ClCompile Include="stdafx.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Benchmarking.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CopyFileToFolders Include="..\lib\FastNoise2\lib\FastNoiseD.dll">
@@ -58,9 +61,6 @@
     <ClInclude Include="worldGen.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="benchmark.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="demon.h">
       <Filter>Entities</Filter>
     </ClInclude>
@@ -80,6 +80,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="boidTestes.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Benchmarking.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
