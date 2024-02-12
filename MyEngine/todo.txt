@@ -1,6 +1,5 @@
 
 Near roadmap:
-- add scene section to left editor panel
 - scene custody of entities and components using plain data and unique pointers
 - particle system serialization
 - scene serialization

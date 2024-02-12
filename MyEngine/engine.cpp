@@ -121,11 +121,12 @@ void Engine::createScenePLContext(ScenePipelineContext* ctx, bool allocateTileWo
 
 	// section can be done in parrallel
 	{
-		if (allocateTileWorld)
+		if (allocateTileWorld) {
 			ctx->lightingPipeline = make_unique<LightingComputePL>(rengine, ctx->worldMap.get());
+			ctx->tilemapPipeline = make_unique<TilemapPL>(rengine, ctx->worldMap.get());
+		}
 		ctx->texturePipeline = make_unique<TexturedQuadPL>(rengine);
 		ctx->colorPipeline = make_unique<ColoredQuadPL>(rengine);
-		ctx->tilemapPipeline = make_unique<TilemapPL>(rengine, ctx->worldMap.get());
 		ctx->textPipeline = make_unique<TextPL>(rengine);
 		ctx->particlePipeline = make_unique<ParticleSystemPL>(rengine);
 	}

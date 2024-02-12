@@ -57,33 +57,33 @@ void Scene::serializeJson(std::string filename) {
 
 	j["name"] = name;
 
-	for (auto& e : sceneData.entities) {
-		if (e.second->persistent) {
-			j["entities"].push_back(e.second->serializeJson());
+	for (auto& [id, e] : sceneData.entities) {
+		if (e.persistent) {
+			j["entities"].push_back(e.serializeJson());
 		}
 	}
 	for (auto& s : sceneData.spriteRenderers) {
-		if (sceneData.entities[s.first]->persistent) {
+		if (sceneData.entities.at(s.first).persistent) {
 			j["spriteRenderers"].push_back(s.second.serializeJson(s.first));
 		}
 	}
 	for (auto& c : sceneData.colorRenderers) {
-		if (sceneData.entities[c.first]->persistent) {
+		if (sceneData.entities.at(c.first).persistent) {
 			j["colorRenderers"].push_back(c.second.serializeJson(c.first));
 		}
 	}
 	for (auto& c : sceneData.textRenderers) {
-		if (sceneData.entities[c.first]->persistent) {
+		if (sceneData.entities.at(c.first).persistent) {
 			j["textRenderers"].push_back(c.second.serializeJson(c.first));
 		}
 	}
 	for (auto& r : sceneData.rigidbodies) {
-		if (sceneData.entities[r.first]->persistent) {
+		if (sceneData.entities.at(r.first).persistent) {
 			j["rigidbodies"].push_back(r.second.serializeJson(r.first));
 		}
 	}
 	for (auto& s : sceneData.staticbodies) {
-		if (sceneData.entities[s.first]->persistent) {
+		if (sceneData.entities.at(s.first).persistent) {
 			j["staticbodies"].push_back(s.second.serializeJson(s.first));
 		}
 	}
@@ -207,16 +207,33 @@ void Scene::UnregisterEntity(entityID id) {
 	sceneData.staticbodies.erase(id);
 }
 
-entityID  Scene::RegisterEntity(std::shared_ptr<Entity> entity) {
+//entityID  Scene::RegisterEntity(std::shared_ptr<Entity> entity) {
+//	entityID id = EntityGenerator.GenerateID();
+//	entity->ID = id;
+//	if (entity->name.empty()) {
+//		entity->name = string("entity ") + to_string(id);
+//	}
+//	sceneData.entities[id] = entity;
+//	entity->_setComponentAccessor(componentAccessor);
+//	return id;
+//}
+
+Entity* Scene::CreateEntity(Transform transform, std::string name) {
 	entityID id = EntityGenerator.GenerateID();
+
+	sceneData.entities.insert(std::pair<entityID, Entity>(id, Entity(name)));
+	Entity* entity = &sceneData.entities.at(id);
+	
 	entity->ID = id;
+	entity->transform = transform;
+
 	if (entity->name.empty()) {
 		entity->name = string("entity ") + to_string(id);
 	}
-	sceneData.entities[id] = entity;
 	entity->_setComponentAccessor(componentAccessor);
-	return id;
+	return entity;
 }
+
 
 void Scene::OverwriteEntity(std::shared_ptr<Entity> entity, entityID ID) {
 	entity->ID = ID;
@@ -227,9 +244,10 @@ void Scene::OverwriteEntity(std::shared_ptr<Entity> entity, entityID ID) {
 	entity->_setComponentAccessor(componentAccessor);
 }
 void Scene::RegisterAsChild(std::shared_ptr<Entity> parent, std::shared_ptr<Entity> child) {
-	RegisterEntity(child);
-	parent->children.insert(child->ID);
-	child->parent = parent->ID;
+	assert(false);
+	//RegisterEntity(child);
+	//parent->children.insert(child->ID);
+	//child->parent = parent->ID;
 }
 
 entityID Scene::DuplicateEntity(std::shared_ptr<Entity> entity) {

@@ -149,7 +149,7 @@ public:
 	void LoadSprite(std::string name, bool loadResources = true);
 	void UnloadSprite(spriteID spriteID, bool freeResources = true);
 	std::shared_ptr<Sprite> GetSprite(spriteID id) { return spriteAssets[id]; };
-	std::shared_ptr<Sprite> GetSprite(std::string name) { return spriteAssets[loadedSpritesByName[name]]; };
+	std::shared_ptr<Sprite> GetSprite(std::string name) { return spriteAssets[loadedSpritesByName[name]]; }; // TODO: add debug assertiong 
 	std::optional<ImTextureID> getSpriteImTextureID(spriteID id) {
 		return resourceManager->GetTexture(spriteAssets[id]->textureID)->imTexture;
 	};

@@ -7,7 +7,7 @@
 #define _PROFILE_concat_impl(arg1, arg2) arg1 ## arg2
 #define _PROFILE_concat(arg1, arg2) _PROFILE_concat_impl(arg1, arg2)
 
-#ifdef DEBUG
+#ifdef _DEBUG
 
 #define PROFILE_START(s) auto s = std::chrono::high_resolution_clock::now()
 

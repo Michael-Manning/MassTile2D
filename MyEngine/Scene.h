@@ -12,7 +12,7 @@
 const auto Scene_extension = ".scene";
 
 struct SceneData {
-	std::unordered_map<entityID, std::shared_ptr<Entity>> entities;
+	std::unordered_map<entityID, Entity> entities;
 
 	// components
 	std::unordered_map<entityID, SpriteRenderer> spriteRenderers;
@@ -70,7 +70,10 @@ public:
 
 	void UnregisterEntity(entityID id);
 
-	entityID RegisterEntity(std::shared_ptr<Entity> entity);
+	//entityID RegisterEntity(std::shared_ptr<Entity> entity);
+
+	Entity* CreateEntity(Transform transform = {}, std::string name = "");
+
 	void OverwriteEntity(std::shared_ptr<Entity> entity, entityID ID);
 	void RegisterAsChild(std::shared_ptr<Entity> parent, std::shared_ptr<Entity> child);
 

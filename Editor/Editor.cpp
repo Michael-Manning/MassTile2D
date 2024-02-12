@@ -1038,7 +1038,10 @@ void Editor::Run() {
 			}
 		}
 		else if (sceneSelected) {
-			ColorPicker3("Background color", gameScene->)
+			vec4 col = engine->GetFramebufferClearColor(sceneFramebuffer);
+			if (ColorPicker3("Background color", value_ptr(col))) {
+				engine->SetFramebufferClearColor(sceneFramebuffer, col);
+			}
 		}
 		End();
 	}
