@@ -72,16 +72,17 @@ public:
 
 	//entityID RegisterEntity(std::shared_ptr<Entity> entity);
 
-	Entity* CreateEntity(Transform transform = {}, std::string name = "");
+	Entity* CreateEntity(Transform transform = {}, std::string name = "", bool persistent = false);
 
 	void OverwriteEntity(std::shared_ptr<Entity> entity, entityID ID);
 	void RegisterAsChild(std::shared_ptr<Entity> parent, std::shared_ptr<Entity> child);
 
-	entityID DuplicateEntity(std::shared_ptr<Entity> entity);
+	// returns ID of new duplicate
+	entityID DuplicateEntity(entityID original);
 
 	Prefab CreatePrefab(std::shared_ptr<Entity> entity);
 
-	std::shared_ptr<Entity> Instantiate(Prefab prefab, std::string name = "prefab", glm::vec2 position = glm::vec2(0.0f), float rotation = 0.0f);
+	Entity* Instantiate(Prefab prefab, std::string name = "prefab", glm::vec2 position = glm::vec2(0.0f), float rotation = 0.0f);
 
 	double physicsTimer = 0.0;
 	bool paused = true;

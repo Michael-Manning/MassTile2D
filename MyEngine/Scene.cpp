@@ -218,10 +218,10 @@ void Scene::UnregisterEntity(entityID id) {
 //	return id;
 //}
 
-Entity* Scene::CreateEntity(Transform transform, std::string name) {
+Entity* Scene::CreateEntity(Transform transform, std::string name, bool persistent) {
 	entityID id = EntityGenerator.GenerateID();
 
-	sceneData.entities.insert(std::pair<entityID, Entity>(id, Entity(name)));
+	sceneData.entities.insert(std::pair<entityID, Entity>(id, Entity(name, persistent)));
 	Entity* entity = &sceneData.entities.at(id);
 	
 	entity->ID = id;
@@ -236,12 +236,13 @@ Entity* Scene::CreateEntity(Transform transform, std::string name) {
 
 
 void Scene::OverwriteEntity(std::shared_ptr<Entity> entity, entityID ID) {
-	entity->ID = ID;
-	if (entity->name.empty()) {
-		entity->name = string("entity ") + to_string(ID);
-	}
-	sceneData.entities[ID] = entity;
-	entity->_setComponentAccessor(componentAccessor);
+	assert(false);
+	//entity->ID = ID;
+	//if (entity->name.empty()) {
+	//	entity->name = string("entity ") + to_string(ID);
+	//}
+	//sceneData.entities[ID] = entity;
+	//entity->_setComponentAccessor(componentAccessor);
 }
 void Scene::RegisterAsChild(std::shared_ptr<Entity> parent, std::shared_ptr<Entity> child) {
 	assert(false);
@@ -250,41 +251,44 @@ void Scene::RegisterAsChild(std::shared_ptr<Entity> parent, std::shared_ptr<Enti
 	//child->parent = parent->ID;
 }
 
-entityID Scene::DuplicateEntity(std::shared_ptr<Entity> entity) {
-	std::shared_ptr<Entity> copy;
-	if (entity->getBehaviorHash() == 0)
-		copy = std::make_shared<Entity>();
-	else
-		copy = BehaviorMap[entity->getBehaviorHash()].second();
+entityID Scene::DuplicateEntity(entityID original) {
+	assert(false);
+	return 0;
 
-	copy->name = entity->name + std::string("_copy");
-	copy->persistent = false;
-	copy->transform = entity->transform;
+	//std::shared_ptr<Entity> copy;
+	//if (entity->getBehaviorHash() == 0)
+	//	copy = std::make_shared<Entity>();
+	//else
+	//	copy = BehaviorMap[entity->getBehaviorHash()].second();
 
-	RegisterEntity(copy);
+	//copy->name = entity->name + std::string("_copy");
+	//copy->persistent = false;
+	//copy->transform = entity->transform;
 
-	if (sceneData.colorRenderers.contains(entity->ID)) {
-		auto c = sceneData.colorRenderers[entity->ID].duplicate();
-		registerComponent(copy, c);
-	}
-	if (sceneData.spriteRenderers.contains(entity->ID)) {
-		auto c = sceneData.spriteRenderers[entity->ID].duplicate();
-		registerComponent(copy, c);
-	}
-	if (sceneData.textRenderers.contains(entity->ID)) {
-		auto c = sceneData.textRenderers[entity->ID].duplicate();
-		registerComponent(copy, c);
-	}
-	if (sceneData.staticbodies.contains(entity->ID)) {
-		auto c = sceneData.staticbodies[entity->ID].duplicate();
-		registerComponent(copy, c);
-	}
-	if (sceneData.rigidbodies.contains(entity->ID)) {
-		auto c = sceneData.rigidbodies[entity->ID].duplicate();
-		registerComponent(copy, c);
-	}
+	//RegisterEntity(copy);
 
-	return copy->ID;
+	//if (sceneData.colorRenderers.contains(entity->ID)) {
+	//	auto c = sceneData.colorRenderers[entity->ID].duplicate();
+	//	registerComponent(copy, c);
+	//}
+	//if (sceneData.spriteRenderers.contains(entity->ID)) {
+	//	auto c = sceneData.spriteRenderers[entity->ID].duplicate();
+	//	registerComponent(copy, c);
+	//}
+	//if (sceneData.textRenderers.contains(entity->ID)) {
+	//	auto c = sceneData.textRenderers[entity->ID].duplicate();
+	//	registerComponent(copy, c);
+	//}
+	//if (sceneData.staticbodies.contains(entity->ID)) {
+	//	auto c = sceneData.staticbodies[entity->ID].duplicate();
+	//	registerComponent(copy, c);
+	//}
+	//if (sceneData.rigidbodies.contains(entity->ID)) {
+	//	auto c = sceneData.rigidbodies[entity->ID].duplicate();
+	//	registerComponent(copy, c);
+	//}
+
+	//return copy->ID;
 }
 
 Prefab Scene::CreatePrefab(std::shared_ptr<Entity> entity) {
@@ -303,33 +307,39 @@ Prefab Scene::CreatePrefab(std::shared_ptr<Entity> entity) {
 	return p;
 }
 
-std::shared_ptr<Entity> Scene::Instantiate(Prefab prefab, std::string name, glm::vec2 position, float rotation) {
-	std::shared_ptr<Entity> copy;
-	if (prefab.behaviorHash == 0)
-		copy = std::make_shared<Entity>();
-	else
-		copy = BehaviorMap[prefab.behaviorHash].second();
+Entity* Scene::Instantiate(Prefab prefab, std::string name, glm::vec2 position, float rotation) {
+	//std::shared_ptr<Entity> copy;
+	//if (prefab.behaviorHash == 0)
+	//	copy = std::make_shared<Entity>();
+	//else
+	//	copy = BehaviorMap[prefab.behaviorHash].second();
 
-	copy->name = name;
+	if (prefab.behaviorHash != 0) {
+		assert(false);
+	}
+
+	Entity* copy = CreateEntity(
+		Transform(position, prefab.transform.scale, rotation),
+		name
+	);
+
 	copy->persistent = false;
-	copy->transform = Transform(position, prefab.transform.scale, rotation);
-
-	RegisterEntity(copy);
+	entityID id = copy->ID;
 
 	if (prefab.colorRenderer.has_value()) {
-		registerComponent(copy, prefab.colorRenderer.value());
+		registerComponent(id, prefab.colorRenderer.value());
 	}
 	if (prefab.spriteRenderer.has_value()) {
-		registerComponent(copy, prefab.spriteRenderer.value());
+		registerComponent(id, prefab.spriteRenderer.value());
 	}
 	if (prefab.textRenderer.has_value()) {
-		registerComponent(copy, prefab.textRenderer.value());
+		registerComponent(id, prefab.textRenderer.value());
 	}
 	if (prefab.staticbody.has_value()) {
-		registerComponent(copy, prefab.staticbody.value());
+		registerComponent(id, prefab.staticbody.value());
 	}
 	if (prefab.rigidbody.has_value()) {
-		registerComponent(copy, prefab.rigidbody.value());
+		registerComponent(id, prefab.rigidbody.value());
 	}
 
 	return copy;
@@ -364,7 +374,7 @@ void Scene::registerComponent_ParticleSystem(entityID id, ParticleSystemRenderer
 // Rigidbodoy
 template <>
 void Scene::registerComponent(entityID id, Rigidbody r) {
-	const auto& t = sceneData.entities[id]->transform;
+	const auto& t = sceneData.entities.at(id).transform;
 	if (r._bodyGenerated() == false) {
 		r._generateBody(&bworld, t.position, t.rotation);
 	}
@@ -377,7 +387,7 @@ void Scene::registerComponent(entityID id, Rigidbody r) {
 // Staticbody
 template <>
 void Scene::registerComponent(entityID id, Staticbody s) {
-	const auto& t = sceneData.entities[id]->transform;
+	const auto& t = sceneData.entities.at(id).transform;
 	//s.body->SetTransform(gtb(t.position), t.rotation);
 	s._generateBody(&bworld, t.position, t.rotation);
 	sceneData.staticbodies[id] = s;

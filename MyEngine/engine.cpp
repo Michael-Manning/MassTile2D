@@ -367,15 +367,15 @@ void Engine::recordSceneContextGraphics(const ScenePipelineContext& ctx, framebu
 
 		for (auto& renderer : scene->sceneData.colorRenderers)
 		{
-			const auto& entity = scene->sceneData.entities[renderer.first];
+			const auto& entity = scene->sceneData.entities.at(renderer.first);
 
 			ColoredQuadPL::InstanceBufferData instanceData;
 
 			instanceData.color = renderer.second.color;
-			instanceData.position = entity->transform.position;
-			instanceData.scale = entity->transform.scale;
+			instanceData.position = entity.transform.position;
+			instanceData.scale = entity.transform.scale;
 			instanceData.circle = renderer.second.shape == ColorRenderer::Shape::Circle;
-			instanceData.rotation = entity->transform.rotation;
+			instanceData.rotation = entity.transform.rotation;
 
 			drawlist.push_back(instanceData);
 		}
@@ -401,16 +401,16 @@ void Engine::recordSceneContextGraphics(const ScenePipelineContext& ctx, framebu
 
 			for (auto& [entID, renderer] : scene->sceneData.spriteRenderers)
 			{
-				const auto& entity = scene->sceneData.entities[entID];
+				const auto& entity = scene->sceneData.entities.at(entID);
 
 				auto s = assetManager->GetSprite(renderer.sprite);
 
 				TexturedQuadPL::ssboObjectInstanceData drawObject;
 				drawObject.uvMin = vec2(0.0f);
 				drawObject.uvMax = vec2(1.0f);
-				drawObject.translation = entity->transform.position;
-				drawObject.scale = entity->transform.scale;
-				drawObject.rotation = entity->transform.rotation;
+				drawObject.translation = entity.transform.position;
+				drawObject.scale = entity.transform.scale;
+				drawObject.rotation = entity.transform.rotation;
 				drawObject.tex = globalTextureBindingManager.getIndexFromBinding(s->textureID);
 
 				if (s->atlas.size() > 0) {
@@ -437,10 +437,10 @@ void Engine::recordSceneContextGraphics(const ScenePipelineContext& ctx, framebu
 		std::vector<int> particleCounts;
 		for (auto& [entID, renderer] : scene->sceneData.particleSystemRenderers)
 		{
-			const auto& entity = scene->sceneData.entities[entID];
+			const auto& entity = scene->sceneData.entities.at(entID);
 
 			if (renderer.size == ParticleSystemRenderer::ParticleSystemSize::Small) {
-				renderer.runSimulation(deltaTime, entity->transform.position);
+				renderer.runSimulation(deltaTime, entity.transform.position);
 				ctx.particlePipeline->UploadInstanceData(*renderer.hostParticleBuffer.get(), smallSystemIndex);
 
 				indexes.push_back(smallSystemIndex++);
@@ -472,7 +472,7 @@ void Engine::recordSceneContextGraphics(const ScenePipelineContext& ctx, framebu
 			int i = 0;
 			for (auto& [entID, r] : scene->sceneData.textRenderers) {
 
-				const auto& entity = scene->sceneData.entities[entID];
+				const auto& entity = scene->sceneData.entities.at(entID);
 
 				shared_ptr<Font> f = assetManager->GetFont(r.font);
 				auto sprite = assetManager->GetSprite(f->atlas);
@@ -486,9 +486,9 @@ void Engine::recordSceneContextGraphics(const ScenePipelineContext& ctx, framebu
 
 				TextPL::textHeader header;
 				header.color = r.color;
-				header.position = entity->transform.position;
-				header.rotation = entity->transform.rotation;
-				header.scale = entity->transform.scale;
+				header.position = entity.transform.position;
+				header.rotation = entity.transform.rotation;
+				header.scale = entity.transform.scale;
 				header.textLength = glm::min(TEXTPL_maxTextLength, (int)r.quads.size());
 				header._textureIndex = globalTextureBindingManager.getIndexFromBinding(sprite->textureID);
 
@@ -549,8 +549,8 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 
 			for (auto& body : ctx.scene->sceneData.rigidbodies)
 			{
-				ctx.scene->sceneData.entities[body.first]->transform.position = body.second._getPosition();
-				ctx.scene->sceneData.entities[body.first]->transform.rotation = body.second._getRotation();
+				ctx.scene->sceneData.entities.at(body.first).transform.position = body.second._getPosition();
+				ctx.scene->sceneData.entities.at(body.first).transform.rotation = body.second._getRotation();
 			}
 		}
 	}
@@ -614,7 +614,7 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 
 						assert(renderer.token != nullptr);
 
-						const auto& entity = job.scene->sceneData.entities[entID];
+						const auto& entity = job.scene->sceneData.entities.at(entID);
 
 						renderer.spawntimer += deltaTime;
 						float step = 1.0f / renderer.configuration.spawnRate;
@@ -626,7 +626,7 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 							.particleCount = renderer.configuration.particleCount,
 							.particlesToSpawn = particlesToSpawn,
 							.init = renderer.computeContextDirty,
-							.spawnPosition = entity->transform.position
+							.spawnPosition = entity.transform.position
 						};
 						dispachInfos.push_back(info);
 

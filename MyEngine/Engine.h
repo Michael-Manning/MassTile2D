@@ -109,8 +109,8 @@ public:
 			return;
 
 		Entity::DeltaTime = deltaTime;
-		for (auto& i : scene->sceneData.entities) {
-			i.second->_runStartUpdate();
+		for (auto& [id, entity] : scene->sceneData.entities) {
+			entity._runStartUpdate();
 		}
 	};
 

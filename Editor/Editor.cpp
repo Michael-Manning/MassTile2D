@@ -305,26 +305,26 @@ void Editor::entityWindow() {
 	}
 
 	if (Button("new")) {
-		gameScene->RegisterEntity(make_shared<Entity>("", true));
+		gameScene->CreateEntity({}, "", true);
 	}
 
 	int i = 0;
 	for (auto& [entID, entity] : gameScene->sceneData.entities)
 	{
-		if (!entity->parent.has_value()) {
+		if (!entity.parent.has_value()) {
 
-			if (Selectable(entity->name.c_str(), selectedEntityIndex == i)) {
+			if (Selectable(entity.name.c_str(), selectedEntityIndex == i)) {
 				clearInspectorSelection();
 				selectedEntityIndex = i;
 
 				// already selected. deselect
-				if (selectedEntity == entity) {
+				if (selectedEntity == &entity) {
 					selectedEntity = nullptr;
 					selectedEntityIndex = -1;
 				}
 				// select new
 				else {
-					selectedEntity = entity;
+					selectedEntity = &entity;
 				}
 			}
 
@@ -339,14 +339,14 @@ void Editor::entityWindow() {
 					break;
 				}
 				if (ImGui::MenuItem("Duplicate")) {
-					gameScene->DuplicateEntity(entity);
+					gameScene->DuplicateEntity(entity.ID);
 					selectedEntity = nullptr;
 					selectedEntityIndex = -1;
 					ImGui::EndPopup();
 					break;
 				}
 				if (ImGui::MenuItem("Save as prefab")) {
-					Prefab p = GeneratePrefab(entity, gameScene->sceneData);
+					Prefab p = GeneratePrefab(&entity, gameScene->sceneData);
 					selectedEntity = nullptr;
 					selectedEntityIndex = -1;
 					ImGui::EndPopup();
@@ -369,17 +369,18 @@ void Editor::entityWindow() {
 			else {
 				i++;
 			}
-			if (entity->children.size() > 0)
+			if (entity.children.size() > 0)
 			{
 				if (TreeNode("children")) {
 
 
-					for (auto& child : entity->children)
+					for (auto& child : entity.children)
 					{
-						if (Selectable(gameScene->sceneData.entities[child]->name.c_str(), selectedEntityIndex == i)) {
+						assert(false);
+						/*if (Selectable(gameScene->sceneData.entities[child]->name.c_str(), selectedEntityIndex == i)) {
 							selectedEntityIndex = i;
 							selectedEntity = gameScene->sceneData.entities[child];
-						}
+						}*/
 
 						i++;
 					}
@@ -574,11 +575,12 @@ void Editor::Initialize(Engine* engine, std::shared_ptr<Scene> gameScene, sceneR
 	entityPreviewsSeneRenderContextID = engine->CreateSceneRenderContext(entityPrviewFrameSize, false, glm::vec4(0.0), true);
 	entityPreviewFramebuffer = engine->GetSceneRenderContextFramebuffer(entityPreviewsSeneRenderContextID);
 
-	shared_ptr<Entity> teste = make_shared<Entity>("myEntity");
-	auto id = entityPreviewScene->RegisterEntity(teste);
+	const auto& pSys = entityPreviewScene->CreateEntity({}, "myEntity");
+	/*shared_ptr<Entity> teste = make_shared<Entity>("myEntity");
+	auto id = entityPreviewScene->RegisterEntity(teste);*/
 
 	//ParticleSystemRenderer psr = ParticleSystemRenderer(ParticleSystemRenderer::ParticleSystemSize::Small);
-	entityPreviewScene->registerComponent_ParticleSystem(id, ParticleSystemRenderer::ParticleSystemSize::Small);
+	entityPreviewScene->registerComponent_ParticleSystem(pSys->ID, ParticleSystemRenderer::ParticleSystemSize::Small);
 
 	//ColorRenderer r;
 	//r.color = vec4(1.0, 0, 0, 1.0);
@@ -1011,10 +1013,14 @@ void Editor::Run() {
 
 					if (selectedBehavior != 0) {
 						//gameScene->OverwriteEntity(BehaviorMap[selectedBehavior].second(), selectedEntity->ID);
-						auto behaviorEntity = BehaviorMap[selectedBehavior].second();
+
+
+
+						assert(false);
+						/*auto behaviorEntity = BehaviorMap[selectedBehavior].second();
 						behaviorEntity->transform = selectedEntity->transform;
 						gameScene->OverwriteEntity(behaviorEntity, selectedEntity->ID);
-						selectedEntity = behaviorEntity;
+						selectedEntity = behaviorEntity;*/
 					}
 				}
 			}

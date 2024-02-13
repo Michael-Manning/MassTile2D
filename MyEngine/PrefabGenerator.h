@@ -4,7 +4,7 @@
 #include "ECS.h"
 #include "Prefab.h"
 
-Prefab GeneratePrefab(std::shared_ptr<Entity> entity, SceneData& sceneData) {
+Prefab GeneratePrefab(Entity* entity, SceneData& sceneData) {
 	Prefab p;
 	p.behaviorHash = entity->getBehaviorHash();
 

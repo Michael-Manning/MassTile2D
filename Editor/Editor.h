@@ -96,7 +96,7 @@ private:
 	int fontComboSelected = -1;
 
 	int selectedEntityIndex = -1;
-	std::shared_ptr<Entity> selectedEntity = nullptr;
+	Entity* selectedEntity = nullptr;
 
 	int selectedPrefabIndex = 0;
 
