@@ -317,7 +317,6 @@ void Engine::ApplyNewVideoSettings(const VideoSettings settings) {
 	requestedSettings = settings;
 }
 
-
 void Engine::recordSceneContextGraphics(const ScenePipelineContext& ctx, framebufferID framebuffer, std::shared_ptr<Scene> scene, const Camera& camera, vk::CommandBuffer& cmdBuffer) {
 
 	auto fb = resourceManager->GetFramebuffer(framebuffer);
@@ -354,9 +353,7 @@ void Engine::recordSceneContextGraphics(const ScenePipelineContext& ctx, framebu
 		cmdBuffer.bindIndexBuffer(quadMeshBuffer.indexBuffer, 0, vk::IndexType::eUint16);
 	}
 
-
 	rengine->beginRenderpass(fb, cmdBuffer);
-
 
 	// colored quad
 	{
@@ -370,12 +367,20 @@ void Engine::recordSceneContextGraphics(const ScenePipelineContext& ctx, framebu
 			const auto& entity = scene->sceneData.entities.at(renderer.first);
 
 			ColoredQuadPL::InstanceBufferData instanceData;
-
 			instanceData.color = renderer.second.color;
-			instanceData.position = entity.transform.position;
-			instanceData.scale = entity.transform.scale;
 			instanceData.circle = renderer.second.shape == ColorRenderer::Shape::Circle;
-			instanceData.rotation = entity.transform.rotation;
+
+			if (entity.HasParent()) {
+				mat4 m = entity.GetLocalToGlobalMatrix();
+				instanceData.position = extractPosition(m);
+				instanceData.scale = entity.transform.scale;
+				instanceData.rotation = extractRotation(m);
+			}
+			else {
+				instanceData.position = entity.transform.position;
+				instanceData.scale = entity.transform.scale;
+				instanceData.rotation = entity.transform.rotation;
+			}
 
 			drawlist.push_back(instanceData);
 		}
@@ -403,9 +408,9 @@ void Engine::recordSceneContextGraphics(const ScenePipelineContext& ctx, framebu
 			{
 				const auto& entity = scene->sceneData.entities.at(entID);
 
-				auto s = assetManager->GetSprite(renderer.sprite);
+				Sprite* s = assetManager->GetSprite(renderer.sprite);
 
-				TexturedQuadPL::ssboObjectInstanceData drawObject;
+				TexturedQuadPL::ssboObjectInstanceData& drawObject = drawlist.emplace_back();
 				drawObject.uvMin = vec2(0.0f);
 				drawObject.uvMax = vec2(1.0f);
 				drawObject.translation = entity.transform.position;
@@ -419,7 +424,6 @@ void Engine::recordSceneContextGraphics(const ScenePipelineContext& ctx, framebu
 					drawObject.uvMax = atEntry.uv_max;
 				}
 
-				drawlist.push_back(drawObject);
 			}
 
 			ctx.texturePipeline->UploadInstanceData(drawlist);
@@ -474,8 +478,8 @@ void Engine::recordSceneContextGraphics(const ScenePipelineContext& ctx, framebu
 
 				const auto& entity = scene->sceneData.entities.at(entID);
 
-				shared_ptr<Font> f = assetManager->GetFont(r.font);
-				auto sprite = assetManager->GetSprite(f->atlas);
+				Font* f = assetManager->GetFont(r.font);
+				Sprite* sprite = assetManager->GetSprite(f->atlas);
 
 				if (r.dirty) {
 					r.quads.clear();
@@ -815,7 +819,7 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 
 			for (auto& i : screenSpaceTextDrawlist)
 			{
-				shared_ptr<Font> f = assetManager->GetFont(i.font);
+				Font* f = assetManager->GetFont(i.font);
 				auto sprite = assetManager->GetSprite(f->atlas);
 
 				TextPL::textObject textData;

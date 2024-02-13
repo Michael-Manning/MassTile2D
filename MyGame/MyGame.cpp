@@ -437,8 +437,8 @@ int main() {
 	uiState.showingInventory = true;
 
 	{
-		auto testSprite = engine->assetManager->GetSprite("test_cat");
-		Benchmark::BuildSpriteEntityStressTest(scene.get(), testSprite->ID); // 530fps avg
+		//auto testSprite = engine->assetManager->GetSprite("test_cat");
+		//Benchmark::BuildSpriteEntityStressTest(scene.get(), testSprite->ID); // 530fps avg
 	}
 
 	while (!engine->ShouldClose())
@@ -463,6 +463,8 @@ int main() {
 		}
 
 		else if (appState == AppState::PlayingGame) {
+
+			engine->addScreenSpaceText(UI.smallfont, { 0, 0 }, vec4(1.0), "fps: %d", (int)engine->_getAverageFramerate());
 
 			//engine.addScreenSpaceTexture("hotbar", 0, vec2(0, 0), 60);
 			//UI::DoUI(uiState);

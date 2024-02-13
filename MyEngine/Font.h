@@ -136,8 +136,7 @@ public:
 		writer << packedChars;
 		writer << kerningTable;
 	}
-	static std::shared_ptr<Font> deserializeBinary(std::string filepath) {
-		auto font = std::make_shared<Font>();
+	static void deserializeBinary(std::string filepath, Font* font) {
 
 		BinaryReader reader(filepath);
 		reader >> font->name;
@@ -151,10 +150,9 @@ public:
 		reader >> font->packedChars;
 		reader >> font->kerningTable;
 
-		return font;
+		return;
 	}
-	static std::shared_ptr<Font> deserializeFlatbuffer(const AssetPack::Font* f) {
-		auto font = std::make_shared<Font>();
+	static void deserializeFlatbuffer(const AssetPack::Font* f, Font* font) {
 
 		font->name = f->name()->str();
 		font->firstChar = f->firstChar();
@@ -173,11 +171,11 @@ public:
 		for (size_t i = 0; i < font->kerningTable.size(); i++)
 			font->kerningTable[i] = f->kerningTable()->Get(i);
 
-		return font;
+		return;
 	}
 };
 
-static void CalculateQuads(std::shared_ptr<Font> f, std::string& text, charQuad* quads) {
+static void CalculateQuads(Font* f, std::string& text, charQuad* quads) {
 
 	glm::vec2 cursor = glm::vec2(0.0f);
 	for (int i = 0; i < text.length(); i++) {

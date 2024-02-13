@@ -78,3 +78,6 @@ things to abstract:
 - partical system
 
 - more physics features. raycast, collision detection, layers, user entity variable in body
+
+- could look into cachine pointers in components, such as caching the texture index binding directly to the sprite or sprite renderer to skip map lookups
+on entities which are drawn for multiple frames(basically all of them)

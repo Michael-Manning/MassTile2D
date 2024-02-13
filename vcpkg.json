@@ -48,6 +48,11 @@
 	   "name": "openal-soft",
 	   "platform": "x64"
 	   
+	},
+	{
+	   "name": "robin-hood-hashing",
+	   "platform": "x64"
+	   
 	}
   ]
 }

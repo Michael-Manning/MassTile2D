@@ -55,7 +55,9 @@ public:
 
 	FilterMode filterMode;
 
-	void serializeJson(std::string filepath) {
+	Sprite() {};
+
+	void serializeJson(std::string filepath) const {
 		nlohmann::json j;
 
 		j["ID"] = ID;
@@ -71,13 +73,12 @@ public:
 		output.close();
 	}
 
-	static std::shared_ptr<Sprite> deserializeJson(std::string filepath) {
+	static void deserializeJson(std::string filepath, Sprite* sprite) {
+
 		std::ifstream input(filepath);
 
 		nlohmann::json j;
 		input >> j;
-
-		auto sprite = std::make_shared<Sprite>();
 
 		sprite->ID = j["ID"];
 		sprite->name = j["name"];
@@ -112,11 +113,11 @@ public:
 			}
 		}
 
-		return sprite;
+		return;
 	}
 
-	static std::shared_ptr<Sprite> deserializeFlatbuffer(const AssetPack::Sprite* s) {
-		auto sprite = std::make_shared<Sprite>();
+	static void deserializeFlatbuffer(const AssetPack::Sprite* s, Sprite* sprite) {
+
 		sprite->ID = s->ID();
 		sprite->name = s->name()->str();
 		sprite->textureID = s->textureID();
@@ -131,7 +132,7 @@ public:
 		}
 
 		if (sprite->atlas.size() > 0)
-			return sprite;
+			return;
 
 		auto gridLayout = s->atlasLayout();
 		if (gridLayout != nullptr) {
@@ -150,7 +151,7 @@ public:
 				}
 			}
 		}
-		return sprite;
+		return;
 	}
 };
 

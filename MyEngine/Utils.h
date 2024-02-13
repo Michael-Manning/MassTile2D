@@ -15,8 +15,10 @@
 #include <memory>
 #include <filesystem>
 #include <Windows.h>
+#include <math.h>
 
 #include <glm/glm.hpp>
+#include <glm/gtx/transform.hpp>
 
 #include "typedefs.h"
 
@@ -190,4 +192,10 @@ static inline glm::vec2 screenToWorldPos(glm::vec2 pos, const Camera camera, con
 }
 
 
+static glm::vec2 extractPosition(const glm::mat4& m) {
+    return glm::vec2(m[3][0], m[3][1]); 
+}
 
+static float extractRotation(const glm::mat4& m) {
+    return -std::atan2f(m[1][0], m[0][0]); 
+}

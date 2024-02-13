@@ -100,8 +100,15 @@ public:
 
 	bool persistent = false;
 
-	std::set<entityID> children;
-	std::optional<entityID> parent;
+	bool HasParent() const {
+		return parent != nullptr;
+	};
+	bool HasChildren() const {
+		return children.size() > 0;
+	};
+
+	std::set<Entity*> children;
+	Entity* parent = nullptr;
 
 	virtual void Start() {};
 	virtual void Update() {};
@@ -113,6 +120,8 @@ public:
 		}
 		Update();
 	}
+
+	glm::mat4 GetLocalToGlobalMatrix() const;
 
 	nlohmann::json serializeJson();
 	static std::shared_ptr<Entity> deserializeJson(const nlohmann::json& j);
@@ -131,4 +140,6 @@ protected:
 private:
 	bool startRan = false;
 	std::shared_ptr<ComponentAccessor> accessor = nullptr;
+
+	void localTransformRecursive(glm::mat4* m) const;
 };

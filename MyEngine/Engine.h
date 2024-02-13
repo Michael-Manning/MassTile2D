@@ -196,7 +196,7 @@ public:
 		screenSpaceColorDrawlist.push_back(item);
 	}
 
-	inline void addScreenCenteredSpaceTexture(std::shared_ptr<Sprite> sprite, int atlasIndex, glm::vec2 pos, float height, float rotation = 0.0f) {
+	inline void addScreenCenteredSpaceTexture(Sprite* sprite, int atlasIndex, glm::vec2 pos, float height, float rotation = 0.0f) {
 		TexturedQuadPL::ssboObjectInstanceData item;
 		item.uvMin = glm::vec2(0.0f);
 		item.uvMax = glm::vec2(1.0f);

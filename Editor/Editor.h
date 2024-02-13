@@ -111,7 +111,7 @@ private:
 
 	int selectedSpriteIndex = -1;
 	int selectedSpriteAtlasIndex = 0;
-	std::shared_ptr<Sprite> selectedSprite = nullptr;
+	Sprite* selectedSprite = nullptr;
 
 	bool sceneSelected = false;
 

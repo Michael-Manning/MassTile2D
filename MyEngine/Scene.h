@@ -3,6 +3,9 @@
 #include <unordered_map>
 #include <string>
 #include <set>
+
+#include <robin_hood.h>
+
 #include "ECS.h"
 #include "Physics.h"
 #include "IDGenerator.h"
@@ -12,15 +15,15 @@
 const auto Scene_extension = ".scene";
 
 struct SceneData {
-	std::unordered_map<entityID, Entity> entities;
+	robin_hood::unordered_node_map<entityID, Entity> entities;
 
 	// components
-	std::unordered_map<entityID, SpriteRenderer> spriteRenderers;
-	std::unordered_map<entityID, ColorRenderer> colorRenderers;
-	std::unordered_map<entityID, Rigidbody> rigidbodies;
-	std::unordered_map<entityID, Staticbody> staticbodies;
-	std::unordered_map<entityID, TextRenderer> textRenderers;
-	std::unordered_map<entityID, ParticleSystemRenderer> particleSystemRenderers;
+	robin_hood::unordered_node_map<entityID, SpriteRenderer> spriteRenderers;
+	robin_hood::unordered_node_map<entityID, ColorRenderer> colorRenderers;
+	robin_hood::unordered_node_map<entityID, Rigidbody> rigidbodies;
+	robin_hood::unordered_node_map<entityID, Staticbody> staticbodies;
+	robin_hood::unordered_node_map<entityID, TextRenderer> textRenderers;
+	robin_hood::unordered_node_map<entityID, ParticleSystemRenderer> particleSystemRenderers;
 
 
 	std::vector<spriteID> getUsedSprites() {
@@ -72,10 +75,15 @@ public:
 
 	//entityID RegisterEntity(std::shared_ptr<Entity> entity);
 
+	Entity* GetEntity(entityID ID) {
+		return &sceneData.entities.at(ID);
+	};
+
 	Entity* CreateEntity(Transform transform = {}, std::string name = "", bool persistent = false);
 
 	void OverwriteEntity(std::shared_ptr<Entity> entity, entityID ID);
-	void RegisterAsChild(std::shared_ptr<Entity> parent, std::shared_ptr<Entity> child);
+	//void RegisterAsChild(std::shared_ptr<Entity> parent, std::shared_ptr<Entity> child);
+	void SetEntityAsChild(Entity* parent, Entity* child);
 
 	// returns ID of new duplicate
 	entityID DuplicateEntity(entityID original);

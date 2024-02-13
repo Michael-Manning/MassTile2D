@@ -11,6 +11,8 @@
 #include <optional>
 #include <fstream>
 
+#include <robin_hood.h>
+
 #ifdef USE_PACKED_ASSETS
 #define USE_EMBEDDED_ASSETS
 #endif
@@ -148,10 +150,10 @@ public:
 	void LoadSprite(spriteID spriteID, bool loadResources = true);
 	void LoadSprite(std::string name, bool loadResources = true);
 	void UnloadSprite(spriteID spriteID, bool freeResources = true);
-	std::shared_ptr<Sprite> GetSprite(spriteID id) { return spriteAssets[id]; };
-	std::shared_ptr<Sprite> GetSprite(std::string name) { return spriteAssets[loadedSpritesByName[name]]; }; // TODO: add debug assertiong 
+	Sprite* GetSprite(spriteID id) { return &spriteAssets.at(id); };
+	Sprite* GetSprite(std::string name) { return &spriteAssets[loadedSpritesByName[name]]; }; // TODO: add debug assertiong 
 	std::optional<ImTextureID> getSpriteImTextureID(spriteID id) {
-		return resourceManager->GetTexture(spriteAssets[id]->textureID)->imTexture;
+		return resourceManager->GetTexture(spriteAssets[id].textureID)->imTexture;
 	};
 
 	/// <summary>
@@ -162,7 +164,7 @@ public:
 	void LoadFont(fontID fontID, bool loadResources = true);
 	void LoadFont(std::string name, bool loadResources = true);
 	void UnloadFont(fontID fontID, bool freeResources = true);
-	std::shared_ptr<Font> GetFont(fontID id) { return fontAssets[id]; };
+	Font* GetFont(fontID id) { return &fontAssets[id]; };
 	fontID GetFontID(std::string name) {
 		assert(loadedFontsByName.contains(name));
 		return loadedFontsByName[name];
@@ -185,10 +187,10 @@ public:
 
 #ifndef  USE_PACKED_ASSETS
 		const auto& sprite = spriteAssets[id];
-		resourceManager->UpdateTexture(sprite->textureID, sprite->filterMode);
+		resourceManager->UpdateTexture(sprite.textureID, sprite.filterMode);
 
 		// update file on disk (used by editor only)
-		sprite->serializeJson(spritePathsByID[id]);
+		sprite.serializeJson(spritePathsByID[id]);
 #endif
 };
 
@@ -230,16 +232,16 @@ public:
 	void ExportPrefab(Prefab& prefab, std::string prefabAssetExportPath);
 #endif
 
-	auto _getSpriteIterator() { return MapProxy<spriteID, std::shared_ptr<Sprite>>(spriteAssets.begin(), spriteAssets.end()); };
-	auto _getFontIterator() { return MapProxy<fontID, std::shared_ptr<Font>>(fontAssets.begin(), fontAssets.end()); };
+	auto _getSpriteIterator() { return MapProxy<spriteID, Sprite>(spriteAssets.begin(), spriteAssets.end()); };
+	auto _getFontIterator() { return MapProxy<fontID, Font>(fontAssets.begin(), fontAssets.end()); };
 	auto _getPrefabIterator() { return MapProxy<std::string, Prefab>(prefabAssets.begin(), prefabAssets.end()); };
 	size_t _spriteAssetCount() { return spriteAssets.size(); }
 	size_t _fontAssetCount() { return fontAssets.size(); }
 
 private:
 
-	std::unordered_map<spriteID, std::shared_ptr<Sprite>>  spriteAssets;
-	std::unordered_map<fontID, std::shared_ptr<Font>> fontAssets;
+	std::unordered_map<spriteID, Sprite>  spriteAssets;
+	std::unordered_map<fontID, Font> fontAssets;
 	std::unordered_map<std::string, Prefab> prefabAssets;
 	std::unordered_map<std::string, std::shared_ptr<Scene>> sceneAssets;
 
@@ -354,19 +356,21 @@ private:
 
 			if (extension == Sprite_extension) {
 
-				auto sprite = Sprite::deserializeJson(f);
+				Sprite tmpSprite;
+				Sprite::deserializeJson(f, &tmpSprite);
 
 				// responsibility of engine to create the default sprite
-				if (sprite->ID == defaultSpriteID)
+				if (tmpSprite.ID == defaultSpriteID)
 					continue;
 
-				spritePathsByID[sprite->ID] = f;
-				spritePathsByName[sprite->name] = f;
+				spritePathsByID[tmpSprite.ID] = f;
+				spritePathsByName[tmpSprite.name] = f;
 			}
 			else if (extension == Font_extension) {
-				auto font = Font::deserializeBinary(f);
-				fontPathsByID[font->ID] = f;
-				fontPathsByName[font->name] = f;
+				Font tempFont;
+				Font::deserializeBinary(f, &tempFont);
+				fontPathsByID[tempFont.ID] = f;
+				fontPathsByName[tempFont.name] = f;
 			}
 			else if (extension == Prefab_extension) {
 				auto name = Prefab::peakJsonName(f);

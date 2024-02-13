@@ -10,6 +10,7 @@
 #include <cassert>
 
 #include <nlohmann/json.hpp>
+#include <robin_hood.h>
 
 #include "ECS.h"
 #include "Physics.h"
@@ -221,7 +222,7 @@ void Scene::UnregisterEntity(entityID id) {
 Entity* Scene::CreateEntity(Transform transform, std::string name, bool persistent) {
 	entityID id = EntityGenerator.GenerateID();
 
-	sceneData.entities.insert(std::pair<entityID, Entity>(id, Entity(name, persistent)));
+	sceneData.entities.insert(robin_hood::pair<const entityID, Entity>(id, Entity(name, persistent)));
 	Entity* entity = &sceneData.entities.at(id);
 	
 	entity->ID = id;
@@ -244,11 +245,16 @@ void Scene::OverwriteEntity(std::shared_ptr<Entity> entity, entityID ID) {
 	//sceneData.entities[ID] = entity;
 	//entity->_setComponentAccessor(componentAccessor);
 }
-void Scene::RegisterAsChild(std::shared_ptr<Entity> parent, std::shared_ptr<Entity> child) {
-	assert(false);
-	//RegisterEntity(child);
-	//parent->children.insert(child->ID);
-	//child->parent = parent->ID;
+//void Scene::RegisterAsChild(std::shared_ptr<Entity> parent, std::shared_ptr<Entity> child) {
+//	//RegisterEntity(child);
+//	//parent->children.insert(child->ID);
+//	//child->parent = parent->ID;
+//}
+
+void Scene::SetEntityAsChild(Entity* parent, Entity* child) {
+	assert(child->HasParent() == false);
+	parent->children.insert(child);
+	child->parent = parent;
 }
 
 entityID Scene::DuplicateEntity(entityID original) {
@@ -363,7 +369,7 @@ void Scene::registerComponent<TextRenderer>(entityID id, TextRenderer t) {
 }
 
 void Scene::registerComponent_ParticleSystem(entityID id, ParticleSystemRenderer::ParticleSystemSize systemSize) {
-	sceneData.particleSystemRenderers.insert(std::pair<entityID, ParticleSystemRenderer>(id, ParticleSystemRenderer(systemSize)));
+	sceneData.particleSystemRenderers.insert(robin_hood::pair<const entityID, ParticleSystemRenderer>(id, ParticleSystemRenderer(systemSize)));
 }
 
 //template <>

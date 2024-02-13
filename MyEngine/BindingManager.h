@@ -4,6 +4,8 @@
 #include <unordered_map>
 #include <utility>
 
+#include <robin_hood.h>
+
 #include "Constants.h"
 
 template <typename...> class BindingManager;
@@ -29,7 +31,7 @@ public:
 
 		// attempting to bind duplicate ID is acceptable, but redundant
 		if (boundIDs.contains(ID)) {
-			return bindIndexes[ID];
+			return bindIndexes.at(ID);
 		}
 
 		assert(bindingCount < maxEntries);
@@ -92,8 +94,9 @@ public:
 	T getValueFromIndex(int index) {
 		return values[index].second;
 	};
+
 	int getIndexFromBinding(I key) {
-		return bindIndexes[key];
+		return bindIndexes.at(key);
 	};
 
 	T getValueFromBinding(I key) {
@@ -116,7 +119,7 @@ public:
 
 private:
 
-	std::unordered_map<texID, int> bindIndexes;
+	robin_hood::unordered_flat_map<texID, int> bindIndexes;
 	std::array<bool, FRAMES_IN_FLIGHT> descriptorDirtyFlags = { true, true };
 	std::vector<bool> slotAvailable;
 	std::vector<std::pair<I, T>> values;

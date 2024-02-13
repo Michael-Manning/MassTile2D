@@ -311,7 +311,7 @@ void Editor::entityWindow() {
 	int i = 0;
 	for (auto& [entID, entity] : gameScene->sceneData.entities)
 	{
-		if (!entity.parent.has_value()) {
+		if (!entity.HasParent()) {
 
 			if (Selectable(entity.name.c_str(), selectedEntityIndex == i)) {
 				clearInspectorSelection();
@@ -331,6 +331,14 @@ void Editor::entityWindow() {
 			if (ImGui::BeginPopupContextItem()) {
 				selectedEntityIndex = i;
 				i++;
+				if (ImGui::MenuItem("Create child")) {
+					auto child = gameScene->CreateEntity({}, "", true);
+					gameScene->SetEntityAsChild(selectedEntity, child);
+					selectedEntity = nullptr;
+					selectedEntityIndex = -1;
+					ImGui::EndPopup();
+					break;
+				}
 				if (ImGui::MenuItem("Delete")) {
 					gameScene->UnregisterEntity(entID);
 					selectedEntity = nullptr;
@@ -376,11 +384,10 @@ void Editor::entityWindow() {
 
 					for (auto& child : entity.children)
 					{
-						assert(false);
-						/*if (Selectable(gameScene->sceneData.entities[child]->name.c_str(), selectedEntityIndex == i)) {
+						if (Selectable(gameScene->sceneData.entities.at(child->ID).name.c_str(), selectedEntityIndex == i)) {
 							selectedEntityIndex = i;
-							selectedEntity = gameScene->sceneData.entities[child];
-						}*/
+							selectedEntity = &gameScene->sceneData.entities.at(child->ID);
+						}
 
 						i++;
 					}
@@ -442,17 +449,17 @@ void Editor::assetWindow() {
 
 				if (p.first == engine->assetManager->defaultSpriteID) {
 					if (Selectable("default sprite", selectedSpriteIndex == i)) {
-						selectedSprite = p.second;
+						selectedSprite = &p.second;
 						selectedSpriteIndex = i;
 						selectedSpriteAtlasIndex = 0;
 						selectedEntity = nullptr;
 					}
 				}
 				else {
-					size_t lastindex = p.second->imageFileName.find_last_of(".");
-					std::string rawname = p.second->imageFileName.substr(0, lastindex);
+					size_t lastindex = p.second.imageFileName.find_last_of(".");
+					std::string rawname = p.second.imageFileName.substr(0, lastindex);
 					if (Selectable(rawname.c_str(), selectedSpriteIndex == i)) {
-						selectedSprite = p.second;
+						selectedSprite = &p.second;
 						selectedSpriteIndex = i;
 						selectedSpriteAtlasIndex = 0;
 						selectedEntity = nullptr;
@@ -538,7 +545,7 @@ void Editor::assetWindow() {
 
 			int i = 0;
 			for (auto& f : engine->assetManager->_getFontIterator()) {
-				Selectable(f.second->name.c_str(), false);
+				Selectable(f.second.name.c_str(), false);
 			}
 
 			EndTabItem();
@@ -881,7 +888,7 @@ void Editor::Run() {
 
 	controlWindow();
 
-	if(showingPreviewWindow)
+	if (showingPreviewWindow)
 	{
 		EntityPreviewWindow();
 
@@ -1149,7 +1156,7 @@ bool Editor::drawInspector<TextRenderer>(TextRenderer& r) {
 
 	for (auto& [id, font] : engine->assetManager->_getFontIterator()) {
 		ids.push_back(id);
-		names.push_back(font->name);
+		names.push_back(font.name);
 	}
 
 	int selected = indexOf(ids, r.font);
@@ -1171,7 +1178,7 @@ bool Editor::drawInspector<TextRenderer>(TextRenderer& r) {
 bool Editor::drawInspector(ParticleSystemRenderer& r) {
 	SeparatorText("Particle System");
 
-	
+
 	auto& ps = r.configuration;
 
 

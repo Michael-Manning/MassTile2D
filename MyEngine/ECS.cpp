@@ -48,8 +48,9 @@ json Entity::serializeJson() {
 	nlohmann::json j;
 	j["id"] = ID;
 	j["name"] = name;
-	if (parent.has_value()) {
-		j["parent"] = parent.value();
+	if (HasParent()) {
+		assert(false);
+		//j["parent"] = parent.value();
 	}
 	if (children.size() > 0) {
 		for (auto& c : children) {
@@ -74,12 +75,14 @@ std::shared_ptr<Entity> Entity::deserializeJson(const nlohmann::json& j) {
 	e->name = j["name"].get<string>();
 	e->transform = Transform::deserializeJson(j["transform"]);
 	if (j.contains("parent")) {
-		e->parent = j["parent"];
+		assert(false);
+		//e->parent = j["parent"];
 	}
 	if (j.contains("children")) {
-		for (auto& c : j["children"]) {
+		assert(false);
+		/*for (auto& c : j["children"]) {
 			e->children.insert(static_cast<entityID>(c));
-		}
+		}*/
 	}
 	return e;
 }
