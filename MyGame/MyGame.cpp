@@ -208,6 +208,7 @@ void initializeEngine(std::unique_ptr<Engine>& engine) {
 
 	auto exePath = get_executable_directory();
 #ifndef USE_PACKED_ASSETS
+	AssetDirectories.sceneDir = makePathAbsolute(exePath, "../../data/Assets/") + "/";
 	AssetDirectories.prefabDir = makePathAbsolute(exePath, "../../data/Prefabs/") + "/";
 	AssetDirectories.assetDir = makePathAbsolute(exePath, "../../data/Assets/") + "/";
 	AssetDirectories.fontsDir = makePathAbsolute(exePath, "../../data/Fonts/") + "/";
@@ -405,9 +406,18 @@ int main() {
 	// create or load main scene
 	scene = make_shared<Scene>();
 	scene->name = "main scene";
-	sceneRenderCtx = engine->CreateSceneRenderContext(engine->getWindowSize(), useTileWorld, { 0.2, 0.3, 1.0, 1 });
+	sceneRenderCtx = engine->CreateSceneRenderContext(engine->getWindowSize(), useTileWorld, vec4(0, 0, 0, 1));
+	//sceneRenderCtx = engine->CreateSceneRenderContext(engine->getWindowSize(), useTileWorld, { 0.2, 0.3, 1.0, 1 });
 #ifdef USING_EDITOR
-	editor.Initialize(engine.get(), scene, sceneRenderCtx);
+	editor.Initialize(
+		engine.get(), 
+		scene, 
+		sceneRenderCtx,
+		[&](std::shared_ptr<Scene> newScene) {
+			scene = newScene; // releases old scene memory
+			editor.SetGameScene(newScene);
+		}
+	);
 #endif
 
 	// load all resources 

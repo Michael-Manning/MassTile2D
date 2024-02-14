@@ -17,18 +17,18 @@ using namespace glm;
 // TODO create own transform functions for 2D (for performance)
 
 void Entity::localTransformRecursive(glm::mat4* m) const {
-	if (parent != nullptr)
-		parent->localTransformRecursive(m);
+	if (parent_cachePtr != nullptr)
+		parent_cachePtr->localTransformRecursive(m);
 
 	*m = translate(*m, vec3(transform.position, 0.0f));
 	*m = rotate(*m, transform.rotation, vec3(0.0f, 0.0f, 1.0f));
 }
 
 glm::mat4 Entity::GetLocalToGlobalMatrix() const {
-	assert(HasParent()); // speeddddd
+	assert(HasParent()); // speeeeed. Just check before calling
 
 	mat4 m(1.0f);
-	parent->localTransformRecursive(&m);
+	parent_cachePtr->localTransformRecursive(&m);
 	return m;
 }
 
@@ -55,15 +55,15 @@ void Entity::globalTransformRecursive(glm::mat4* m) const {
 	*m = rotate(*m, -transform.rotation, vec3(0.0f, 0.0f, 1.0f));
 	*m = translate(*m, vec3(-transform.position, 0.0f));
 
-	if (parent != nullptr)
-		parent->localTransformRecursive(m);
+	if (parent_cachePtr != nullptr)
+		parent_cachePtr->globalTransformRecursive(m);
 }
 
 glm::mat4 Entity::GetGlobalToLocalMatrix() const {
-	assert(HasParent()); // speeddddd
+	assert(HasParent()); // speeeeed. Just check before calling
 
 	mat4 m(1.0f);
-	parent->globalTransformRecursive(&m);
+	parent_cachePtr->globalTransformRecursive(&m);
 	return m;
 }
 

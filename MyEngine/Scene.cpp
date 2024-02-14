@@ -28,22 +28,22 @@ void Scene::CreateComponentAccessor() {
 	auto getColorRenderer = [this](entityID id) {
 		assert(sceneData.colorRenderers.contains(id));
 		return &sceneData.colorRenderers[id];
-	};
+		};
 
 	auto getSpriteRenderer = [this](entityID id) {
 		assert(sceneData.spriteRenderers.contains(id));
 		return &sceneData.spriteRenderers[id];
-	};
+		};
 
 	auto getStaticbody = [this](entityID id) {
 		assert(sceneData.staticbodies.contains(id));
 		return &sceneData.staticbodies[id];
-	};
+		};
 
 	auto getRigidbody = [this](entityID id) {
 		assert(sceneData.rigidbodies.contains(id));
 		return &sceneData.rigidbodies[id];
-	};
+		};
 
 	componentAccessor = make_shared<ComponentAccessor>(
 		getColorRenderer,
@@ -104,6 +104,28 @@ void Scene::serializeJson(std::string filename) {
 	output.close();
 }
 
+void Scene::LinkEntityRelationshipsRecurse(Entity* entity) {
+	auto children_ptr = entity->_GetChildCache_ptr();
+	auto children = entity->_GetChildSet();
+
+	for (entityID& childID : *children)
+	{
+		Entity* child = &sceneData.entities.at(childID);
+		*child->_GetParentCache_ptr() = entity;
+		children_ptr->insert(child);
+		LinkEntityRelationshipsRecurse(child);
+	}
+}
+
+void Scene::LinkEntityRelationships() {
+	for (auto& [id, entity] : sceneData.entities)
+	{
+		if (entity.HasParent() == false && entity.HasChildren() == true) {
+			LinkEntityRelationshipsRecurse(&entity);
+		}
+	}
+}
+
 std::shared_ptr<Scene> Scene::deserializeJson(std::string filename) {
 
 	checkAppend(filename, ".scene");
@@ -115,52 +137,57 @@ std::shared_ptr<Scene> Scene::deserializeJson(std::string filename) {
 
 	scene->name = j["name"];
 
-	for (auto& i : j["entities"]) {
-		shared_ptr<Entity> e = Entity::deserializeJson(i);
-		e->persistent = true;
-		scene->OverwriteEntity(e, e->ID);
-		scene->EntityGenerator.Input(e->ID);
+	for (auto& e : j["entities"]) {
+		entityID id = Entity::PeakID(e);
+		// must have been persitent to have been serialized in the first place
+		Entity* entity = scene->EmplaceEntity(id);
+		Entity::deserializeJson(e, entity);
+		entity->persistent = true;
 	}
-	for (auto& i : j["colorRenderers"]) {
-		entityID entID = i["entityID"];
-		ColorRenderer r = ColorRenderer::deserializeJson(i);
+	for (auto& e : j["colorRenderers"]) {
+		entityID entID = e["entityID"];
+		ColorRenderer r = ColorRenderer::deserializeJson(e);
 		scene->registerComponent(entID, r);
 	}
-	for (auto& i : j["spriteRenderers"]) {
-		entityID entID = i["entityID"];
-		SpriteRenderer r = SpriteRenderer::deserializeJson(i);
+	for (auto& e : j["spriteRenderers"]) {
+		entityID entID = e["entityID"];
+		SpriteRenderer r = SpriteRenderer::deserializeJson(e);
 		scene->registerComponent(entID, r);
 	}
-	for (auto& i : j["textRenderers"]) {
-		entityID entID = i["entityID"];
-		TextRenderer r = TextRenderer::deserializeJson(i);
+	for (auto& e : j["textRenderers"]) {
+		entityID entID = e["entityID"];
+		TextRenderer r = TextRenderer::deserializeJson(e);
 		scene->registerComponent(entID, r);
 	}
-	for (auto& i : j["rigidbodies"]) {
-		entityID entID = i["entityID"];
-		Rigidbody r = Rigidbody::deserializeJson(i);
+	for (auto& e : j["rigidbodies"]) {
+		entityID entID = e["entityID"];
+		Rigidbody r = Rigidbody::deserializeJson(e);
 		scene->registerComponent(entID, r);
 	}
-	for (auto& i : j["staticbodies"]) {
-		entityID entID = i["entityID"];
-		Staticbody r = Staticbody::deserializeJson(i);
+	for (auto& e : j["staticbodies"]) {
+		entityID entID = e["entityID"];
+		Staticbody r = Staticbody::deserializeJson(e);
 		scene->registerComponent(entID, r);
 	}
 
+	scene->LinkEntityRelationships();
 	return scene;
 }
 
 
-std::shared_ptr<Scene> Scene::deserializeFlatbuffers(const AssetPack::Scene * s) {
+std::shared_ptr<Scene> Scene::deserializeFlatbuffers(const AssetPack::Scene* s) {
 	auto scene = std::make_shared<Scene>();
 
 	scene->name = s->name()->str();
 
 	for (size_t i = 0; i < s->entities()->size(); i++) {
-		shared_ptr<Entity> e = Entity::deserializeFlatbuffers(s->entities()->Get(i));
-		e->persistent = true;
-		scene->OverwriteEntity(e, e->ID);
-		scene->EntityGenerator.Input(e->ID);
+
+		const auto& fb = s->entities()->Get(i);
+		entityID id = Entity::PeakID(fb);
+		// must have been persitent to have been serialized in the first place
+		Entity* entity = scene->EmplaceEntity(id);
+		Entity::deserializeFlatbuffers(fb, entity);
+		entity->persistent = true;
 	}
 	for (size_t i = 0; i < s->colorRenderers()->size(); i++) {
 		ColorRenderer r = ColorRenderer::deserializeFlatbuffers(s->colorRenderers()->Get(i));
@@ -188,11 +215,15 @@ std::shared_ptr<Scene> Scene::deserializeFlatbuffers(const AssetPack::Scene * s)
 		scene->registerComponent(entID, r);
 	}
 
+	scene->LinkEntityRelationships();
 	return scene;
 }
 
 
 void Scene::UnregisterEntity(entityID id) {
+
+	assert(false); // Must clean up parent/child relationships
+
 	sceneData.entities.erase(id);
 	sceneData.colorRenderers.erase(id);
 	sceneData.spriteRenderers.erase(id);
@@ -224,7 +255,7 @@ Entity* Scene::CreateEntity(Transform transform, std::string name, bool persiste
 
 	sceneData.entities.insert(robin_hood::pair<const entityID, Entity>(id, Entity(name, persistent)));
 	Entity* entity = &sceneData.entities.at(id);
-	
+
 	entity->ID = id;
 	entity->transform = transform;
 
@@ -235,16 +266,30 @@ Entity* Scene::CreateEntity(Transform transform, std::string name, bool persiste
 	return entity;
 }
 
-
-void Scene::OverwriteEntity(std::shared_ptr<Entity> entity, entityID ID) {
-	assert(false);
-	//entity->ID = ID;
-	//if (entity->name.empty()) {
-	//	entity->name = string("entity ") + to_string(ID);
-	//}
-	//sceneData.entities[ID] = entity;
-	//entity->_setComponentAccessor(componentAccessor);
+Entity* Scene::EmplaceEntity(entityID ID) {
+	if (EntityGenerator.Contains(ID) == false) {
+		// new entity
+		EntityGenerator.Input(ID);
+		auto [iterator, inserted] = sceneData.entities.emplace(std::piecewise_construct, std::forward_as_tuple(ID), std::tuple<>());
+		return &iterator->second;
+	}
+	else {
+		// overwrite entity
+		sceneData.entities.insert_or_assign(ID, Entity());
+		return GetEntity(ID);
+	}
 }
+
+
+//void Scene::OverwriteEntity(std::shared_ptr<Entity> entity, entityID ID) {
+//	assert(false);
+//	entity->ID = ID;
+//	if (entity->name.empty()) {
+//		entity->name = string("entity ") + to_string(ID);
+//	}
+//	sceneData.entities[ID] = entity;
+//	entity->_setComponentAccessor(componentAccessor);
+//}
 //void Scene::RegisterAsChild(std::shared_ptr<Entity> parent, std::shared_ptr<Entity> child) {
 //	//RegisterEntity(child);
 //	//parent->children.insert(child->ID);
@@ -253,8 +298,8 @@ void Scene::OverwriteEntity(std::shared_ptr<Entity> entity, entityID ID) {
 
 void Scene::SetEntityAsChild(Entity* parent, Entity* child) {
 	assert(child->HasParent() == false);
-	parent->children.insert(child);
-	child->parent = parent;
+	parent->AddChild(child);
+	child->SetParent(parent);
 }
 
 entityID Scene::DuplicateEntity(entityID original) {

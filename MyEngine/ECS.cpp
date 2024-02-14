@@ -49,12 +49,11 @@ json Entity::serializeJson() {
 	j["id"] = ID;
 	j["name"] = name;
 	if (HasParent()) {
-		assert(false);
-		//j["parent"] = parent.value();
+		j["parent"] = parent;
 	}
 	if (children.size() > 0) {
 		for (auto& c : children) {
-			j["parent"].push_back((entityID)c);
+			j["children"].push_back((entityID)c);
 		}
 	}
 	j["transform"] = transform.serializeJson();
@@ -63,44 +62,40 @@ json Entity::serializeJson() {
 
 	return j;
 }
-std::shared_ptr<Entity> Entity::deserializeJson(const nlohmann::json& j) {
-	std::shared_ptr<Entity> e;
+void Entity::deserializeJson(const nlohmann::json& j, Entity* e) {
+
 	uint32_t hash = j["behaviorHash"];
 	if (hash != 0)
-		e = BehaviorMap[hash].second();
-	else
-		e = make_shared<Entity>();
+		assert(false);
+	//	e = BehaviorMap[hash].second();
+	//else
+	//	e = make_shared<Entity>();
 
 	e->ID = j["id"].get<int>();
 	e->name = j["name"].get<string>();
 	e->transform = Transform::deserializeJson(j["transform"]);
 	if (j.contains("parent")) {
-		assert(false);
-		//e->parent = j["parent"];
+		e->parent = j["parent"];
 	}
 	if (j.contains("children")) {
-		assert(false);
-		/*for (auto& c : j["children"]) {
+		for (auto& c : j["children"]) {
 			e->children.insert(static_cast<entityID>(c));
-		}*/
+		}
 	}
-	return e;
 }
 
-std::shared_ptr<Entity> Entity::deserializeFlatbuffers(const AssetPack::Entity* e) {
-	std::shared_ptr<Entity> entity;
+void Entity::deserializeFlatbuffers(const AssetPack::Entity* packEntity, Entity* entity) {
 
-	uint32_t hash = e->behaviorHash();
+	uint32_t hash = packEntity->behaviorHash();
 	if (hash != 0)
-		entity = BehaviorMap[hash].second();
-	else
-		entity = make_shared<Entity>();
+		assert(false);
+	//	entity = BehaviorMap[hash].second();
+	//else
+	//	entity = make_shared<Entity>();
 
-	entity->ID = e->id();
-	entity->name = e->name()->str();
-	entity->transform = Transform::deserializeFlatbuffers(e->transform());
-
-	return entity;
+	entity->ID = packEntity->id();
+	entity->name = packEntity->name()->str();
+	entity->transform = Transform::deserializeFlatbuffers(packEntity->transform());
 }
 
 

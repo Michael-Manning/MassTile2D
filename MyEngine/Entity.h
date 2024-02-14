@@ -8,6 +8,7 @@
 #include <optional>
 #include <memory>
 #include <typeinfo>
+#include <robin_hood.h>
 
 #include "typedefs.h"
 //#include "ECS.h"
@@ -92,6 +93,28 @@ public:
 		return 0;
 	}
 
+	int ChildCount() const {
+		return children.size();
+	};
+	inline void AddChild(Entity* entity) {
+		children.insert(entity->ID);
+		children_cachePtr.insert(entity);
+
+	};
+	inline void SetParent(Entity* entity) {
+		parent = entity->ID;
+		parent_cachePtr = entity;
+	}
+	robin_hood::unordered_flat_set<entityID>* _GetChildSet() {
+		return &children;
+	}
+	robin_hood::unordered_flat_set<Entity*>* _GetChildCache_ptr() {
+		return &children_cachePtr;
+	};
+	Entity** _GetParentCache_ptr() {
+		return &parent_cachePtr;
+	}
+
 	entityID ID;
 
 	Transform transform;
@@ -101,14 +124,11 @@ public:
 	bool persistent = false;
 
 	bool HasParent() const {
-		return parent != nullptr;
+		return parent_cachePtr != nullptr;
 	};
 	bool HasChildren() const {
 		return children.size() > 0;
 	};
-
-	std::set<Entity*> children;
-	Entity* parent = nullptr;
 
 	virtual void Start() {};
 	virtual void Update() {};
@@ -127,9 +147,10 @@ public:
 	glm::mat4 GetGlobalToLocalMatrix() const;
 
 	nlohmann::json serializeJson();
-	static std::shared_ptr<Entity> deserializeJson(const nlohmann::json& j);
-
-	static std::shared_ptr<Entity> deserializeFlatbuffers(const AssetPack::Entity* e);
+	static void deserializeJson(const nlohmann::json& j, Entity* entity);
+	static void deserializeFlatbuffers(const AssetPack::Entity* packEntity, Entity* entity);
+	static entityID PeakID(const nlohmann::json& j) {return j["id"].get<int>();}
+	static entityID PeakID(const AssetPack::Entity* packEntity) {return packEntity->id();}
 
 	static std::shared_ptr<Input> input;
 	static float DeltaTime;
@@ -141,6 +162,13 @@ protected:
 	T* getComponent();
 
 private:
+
+	// keeping child/parent cache in sync is none optional
+	robin_hood::unordered_flat_set<entityID> children;
+	entityID parent = 0;
+	robin_hood::unordered_flat_set<Entity*> children_cachePtr;
+	Entity* parent_cachePtr = nullptr;
+
 	bool startRan = false;
 	std::shared_ptr<ComponentAccessor> accessor = nullptr;
 

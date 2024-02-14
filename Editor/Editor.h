@@ -13,7 +13,11 @@ public:
 
 	void Run();
 
-	void Initialize(Engine* engine, std::shared_ptr<Scene> gameScene, sceneRenderContextID sceneRenderContext);
+	void Initialize(
+		Engine* engine, 
+		std::shared_ptr<Scene> gameScene, 
+		sceneRenderContextID sceneRenderContext, 
+		std::function<void(std::shared_ptr<Scene>)> onMainSceneLoad);
 
 	std::vector<Engine::SceneRenderJob> GetAdditionalRenderJobs() {
 		std::vector<Engine::SceneRenderJob> jobs;
@@ -26,6 +30,9 @@ public:
 		return jobs;
 	}
 
+	void SetGameScene(std::shared_ptr<Scene> scene) {
+		this->gameScene = scene;
+	};
 
 	bool showingCreateWindow = false;
 
@@ -34,6 +41,8 @@ public:
 private:
 
 	Engine* engine;
+
+	std::function<void(std::shared_ptr<Scene>)> setSceneCallback;
 
 	Camera previewCamera;
 	std::shared_ptr<Scene> entityPreviewScene;
@@ -84,6 +93,8 @@ private:
 	bool showingStats = false;
 	void debugDataWindow();
 
+	void EntitySelectableTree(int& index, Entity* entity);
+
 	bool behaviorModel = true;
 
 	bool showingPreviewWindow = false;
@@ -99,6 +110,7 @@ private:
 	Entity* selectedEntity = nullptr;
 
 	int selectedPrefabIndex = 0;
+	int selectedSceneIndex = 0;
 
 	void clearInspectorSelection() {
 		selectedEntityIndex = -1;

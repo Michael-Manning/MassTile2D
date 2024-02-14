@@ -1,38 +1,42 @@
 
 Near roadmap:
 - particle system serialization
-- scene serialization
 - finish support for arbitrary number of child entities
+- new behaviour system
 - refactor prefab to contain scene data allowing entity hierarchies
+- prefab serialization
 - add prefab preview/edit utility to editor
 - add deletion of components to editor
 - flatten assets in editor view into one list with drop down sorting
+- remove shared ptr use from: scene, Input manager, vulkan engine, asset manager, resource manager
+- finish scene desctructor
+- update serialization to not use shared_ptr
+
+---- Test:
+- entity deleation
+- nested prefab with all component types
+
+Major optimization:
+Sprites store their image file name, and texture IDs are hashed from the same filename. Could stop serializing the textureID
+in the sprite (and remove the requirement they be consistent and persistent), then use texture IDs directly in the bindless
+texture manager, removing one of the 3 layers of inderection required to link a sprite renderer to the actual GPU image
 
 
-- replace useage of unordered_map with a third party solution with better performance and memory garuentees when taking pointers
+- component deletion from editor
+
+- drag prefab to instantiate
 
 - only enable used device features instead of enabling everything for the sake of bindless textures
 
-- move physics updates somwhere managed by scene. Will requried timing conciderations
-
-- removeTextureBinding on pipelines isn't actually called after freeing a texture resource. Need to queue resource deletion in case it's being used due to multiple
-frames in flight
-
 - text render spaces don't work with kerning hash lookup
 
-- integrate vk-bootstrap 
-- support downscaled resolution (run full screen at lower resolution the monitor resolution)
-
- - screen space textures (or all in one pipeline)
+- support downscaled resolution (run full screen at lower resolution than monitor resolution)
 
 - fix getkeyup
 
 - allow mapped buffer creation with explicit flushing of memory ranges
 
-- convert entity transform into component, store in contiguous memory, or use faster map. Then use compute shader to calculate
-entity transform matrices for color/texture pipeline instead of per vertex calculation - profile first
-
-- replace file path string concatenation with filesystem api (to elemenate having to check for trailing slahes on directory paths)
+- replace file path string concatenation all over engine with filesystem api (to elemenate having to check for trailing slahes on directory paths)
 
 - Inter-bahaviour entity accessor
 
@@ -44,12 +48,9 @@ delete large chunk transfer buffer after world is loaded in. Create functions to
 
 could have some sort of optional set on an entity listing what components it's using to make it faster to delete them
 
-reserve scene component maps with max count to prevenent rehashing which would break getComponent pointers. GPT told me this, is it even real?
-- same with pipiline texture references which use raw pointers
-
 - replace upload text data function with zero copy method for uploading data
 
-- shader auto workflow with sprv reflect
+- sprv reflect
 
 - create default font
 
@@ -58,27 +59,27 @@ be displayed which should reduce latency
 
 - create bulk generate texture function to avoid having to recreate staging buffers and synchronize the graphics queue for every single texture creation
 
-things to abstract:
-
-- could add scene settings accessibel to editor such as clear color 
-
-- buffer management (group allocation and buffer, see vkguide)
-
-- descriptor pool sizes
-
 - query maxComputeWorkGroupCount, maxComputeWorkGroupInvocations, and maxComputeWorkGroupSize to determine max work group size
 
 - for mapped double buffers (instancing, lighting), populate data directly into void pointer instead constructing an array and calling memcpy
-
----- features:
-
-- texture animator
-
-- partical system
-
-- more physics features. raycast, collision detection, layers, user entity variable in body
 
 - could look into cachine pointers in components, such as caching the texture index binding directly to the sprite or sprite renderer to skip map lookups
 on entities which are drawn for multiple frames(basically all of them)
 
 - disallow rigidbodies on child entities
+
+
+
+
+---- things to abstract:
+
+- buffer management (group allocation and buffer, see vkguide)
+
+- descriptor pool sizes
+
+
+---- features:
+
+- texture animator
+
+- more physics features. raycast, collision detection, layers, user entity variable in body

@@ -13,6 +13,7 @@
 #include <unordered_map>
 #include <memory>
 #include <functional>
+#include <filesystem>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -265,15 +266,6 @@ void Editor::controlWindow() {
 		updateTimer = engine->time;
 	}
 
-	if (Button("Save Scene")) {
-		//gameScene->SaveScene("gamescene");
-	}
-	SameLine();
-	if (Button("Load Scene")) {
-		//gameScene->LoadScene("gamescene", engine->bworld);
-		//selectedEntity = nullptr;
-	}
-	SameLine();
 	if (Button("Show Stats")) {
 		showingStats = true;
 	}
@@ -292,6 +284,85 @@ void Editor::controlWindow() {
 	End();
 }
 
+void Editor::EntitySelectableTree(int& index, Entity* entity) {
+
+	if (Selectable(entity->name.c_str(), selectedEntityIndex == index)) {
+		clearInspectorSelection();
+		selectedEntityIndex = index;
+
+		// already selected. deselect
+		if (selectedEntity == entity) {
+			selectedEntity = nullptr;
+			selectedEntityIndex = -1;
+		}
+		// select new
+		else {
+			selectedEntity = entity;
+		}
+	}
+
+	if (ImGui::BeginPopupContextItem()) {
+		selectedEntityIndex = index;
+		index++;
+		if (ImGui::MenuItem("Create child")) {
+			auto child = gameScene->CreateEntity({}, "", true);
+			gameScene->SetEntityAsChild(entity, child);
+			selectedEntity = nullptr;
+			selectedEntityIndex = -1;
+			ImGui::EndPopup();
+			return;
+		}
+		if (ImGui::MenuItem("Delete")) {
+			gameScene->UnregisterEntity(entity->ID);
+			selectedEntity = nullptr;
+			selectedEntityIndex = -1;
+			ImGui::EndPopup();
+			return;
+		}
+		if (ImGui::MenuItem("Duplicate")) {
+			gameScene->DuplicateEntity(entity->ID);
+			selectedEntity = nullptr;
+			selectedEntityIndex = -1;
+			ImGui::EndPopup();
+			return;
+		}
+		if (ImGui::MenuItem("Save as prefab")) {
+			Prefab p = GeneratePrefab(entity, gameScene->sceneData);
+			selectedEntity = nullptr;
+			selectedEntityIndex = -1;
+			ImGui::EndPopup();
+
+			char filename[MAX_PATH];
+			if (saveFileDialog(filename, MAX_PATH, "prefab", "Prefab File\0*.prefab\0")) {
+				string fullPath = string(filename);
+				std::string endName = getFileName(fullPath);
+				engine->assetManager->ExportPrefab(p, fullPath);
+				// hope you put it in the right folder or it won't appear in the editor
+				if (std::filesystem::exists(std::filesystem::path(engine->assetManager->directories.prefabDir + endName)) == true) {
+					engine->assetManager->LoadPrefab(p.name, false);
+				}
+			}
+			return;
+		}
+		ImGui::EndPopup();
+	}
+	else {
+		index++;
+	}
+
+	if (entity->ChildCount() > 0)
+	{
+		if (TreeNode("children")) {
+			auto children = entity->_GetChildCache_ptr();
+			for (auto& child : *children)
+			{
+				EntitySelectableTree(index, child);
+			}
+			ImGui::TreePop();
+		}
+	}
+}
+
 void Editor::entityWindow() {
 
 	auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoBringToFrontOnFocus;
@@ -299,7 +370,7 @@ void Editor::entityWindow() {
 	SetNextWindowSize(vec2(leftPanelWindowWidth, engine->getWindowSize().y / 2));
 	Begin("Entities", nullptr, flags);
 
-	if (Selectable("Main Scene", sceneSelected)) {
+	if (Selectable(gameScene->name.c_str(), sceneSelected)) {
 		clearInspectorSelection();
 		sceneSelected = true;
 	}
@@ -311,6 +382,12 @@ void Editor::entityWindow() {
 	int i = 0;
 	for (auto& [entID, entity] : gameScene->sceneData.entities)
 	{
+		// start with top level entities
+		if (!entity.HasParent()) {
+			EntitySelectableTree(i, &entity);
+		}
+
+#if false
 		if (!entity.HasParent()) {
 
 			if (Selectable(entity.name.c_str(), selectedEntityIndex == i)) {
@@ -396,6 +473,7 @@ void Editor::entityWindow() {
 				}
 			}
 		}
+#endif
 	}
 	End();
 }
@@ -407,6 +485,32 @@ void Editor::assetWindow() {
 	Begin("Assets", nullptr, flags);
 
 	if (BeginTabBar("assetCategories")) {
+
+		if (BeginTabItem("Scenes")) {
+			int i = 0;
+			for (auto& p : engine->assetManager->_getLoadedAndUnloadedSceneNames())
+			{
+				Selectable(p.c_str(), selectedSceneIndex == i);
+
+				if (ImGui::BeginPopupContextItem()) {
+					selectedEntityIndex = i;
+					i++;
+					if (ImGui::MenuItem("Load")) {
+						if (!engine->assetManager->IsSceneLoaded(p)) {
+							engine->assetManager->LoadScene(p);
+						}
+						setSceneCallback(engine->assetManager->GetScene(p));
+						ImGui::EndPopup();
+						break;
+					}
+					ImGui::EndPopup();
+				}
+				else {
+					i++;
+				}
+			}
+			EndTabItem();
+		}
 
 		if (BeginTabItem("Prefabs")) {
 			int i = 0;
@@ -466,20 +570,6 @@ void Editor::assetWindow() {
 						selectedEntity = nullptr;
 					}
 				}
-
-				/*if (ImGui::BeginPopupContextItem()) {
-					selectedEntityIndex = i;
-					i++;
-					if (ImGui::MenuItem("Instantiate")) {
-						gameScene->Instantiate(p.second, p.first);
-						ImGui::EndPopup();
-						break;
-					}
-					ImGui::EndPopup();
-				}
-				else {
-					i++;
-				}*/
 				i++;
 			}
 			EndTabItem();
@@ -572,10 +662,11 @@ void Editor::debugDataWindow() {
 	}
 }
 
-void Editor::Initialize(Engine* engine, std::shared_ptr<Scene> gameScene, sceneRenderContextID sceneRenderContext) {
+void Editor::Initialize(Engine* engine, std::shared_ptr<Scene> gameScene, sceneRenderContextID sceneRenderContext, std::function<void(std::shared_ptr<Scene>)> onMainSceneLoad) {
 	this->engine = engine;
 	this->gameScene = gameScene;
 	this->sceneRenderContext = sceneRenderContext;
+	this->setSceneCallback = onMainSceneLoad;
 
 	entityPreviewScene = make_shared<Scene>();
 	entityPreviewScene->name = "entity preview scene";
@@ -1059,10 +1150,35 @@ void Editor::Run() {
 			}
 		}
 		else if (sceneSelected) {
+			InputString("Name", gameScene->name);
 			vec4 col = engine->GetFramebufferClearColor(sceneFramebuffer);
 			if (ColorPicker3("Background color", value_ptr(col))) {
 				engine->SetFramebufferClearColor(sceneFramebuffer, col);
 			}
+
+			auto sceneNames = engine->assetManager->_getLoadedAndUnloadedSceneNames();
+			bool sceneNameInUse = false;
+			for (auto& s : sceneNames)
+			{
+				if (s == gameScene->name) {
+					sceneNameInUse = true;
+					break;
+				}
+			}
+
+			bool save;
+			if (sceneNameInUse)
+				save = Button("Overwrite Save");
+			else
+				save = Button("Save");
+
+			if (save) {
+				
+				std::filesystem::path dir(engine->assetManager->directories.sceneDir);
+				std::filesystem::path fullPath = dir / std::filesystem::path(gameScene->name);
+				gameScene->serializeJson(fullPath.string());
+			}
+
 		}
 		End();
 	}

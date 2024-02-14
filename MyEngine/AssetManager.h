@@ -59,6 +59,7 @@ class AssetManager {
 public:
 
 	struct AssetPaths {
+		std::string sceneDir;
 		std::string prefabDir;
 		std::string assetDir;
 		std::string fontsDir;
@@ -178,9 +179,11 @@ public:
 	// void UnloadPrefab(std::string name, bool unloadResources); TODO: should impliment but probably won't ever need
 	Prefab GetPrefab(std::string name) { return prefabAssets[name]; };
 
+	bool IsSceneLoaded(std::string sceneName) { return sceneAssets.contains(sceneName); };
 	void LoadScene(std::string sceneName, bool loadResources = true);
 	void UnloadScene(std::string sceneName, bool unloadResources);
 	std::shared_ptr<Scene> GetScene(std::string name) { return sceneAssets.find(name)->second; };
+	bool HasScene(std::string name) { return sceneAssets.contains(name); }
 
 	void CreateDefaultSprite(int w, int h, std::vector<uint8_t>& data);
 	void UpdateSpritefilter(spriteID id) {
@@ -192,7 +195,7 @@ public:
 		// update file on disk (used by editor only)
 		sprite.serializeJson(spritePathsByID[id]);
 #endif
-};
+	};
 
 #ifdef USE_PACKED_ASSETS
 #ifdef USE_EMBEDDED_ASSETS
@@ -220,7 +223,7 @@ public:
 		data = readFile(directories.shaderDir + name);
 	};
 	void LoadResourceFile(std::string name, std::vector<uint8_t>& data) {
-	data = readFile(directories.assetDir + name);
+		data = readFile(directories.assetDir + name);
 	};
 #endif
 
@@ -237,6 +240,16 @@ public:
 	auto _getPrefabIterator() { return MapProxy<std::string, Prefab>(prefabAssets.begin(), prefabAssets.end()); };
 	size_t _spriteAssetCount() { return spriteAssets.size(); }
 	size_t _fontAssetCount() { return fontAssets.size(); }
+
+	std::vector<std::string> _getLoadedAndUnloadedSceneNames() {
+		std::vector<std::string> vec;
+		vec.reserve(scenePathsByName.size());
+		for (auto& [name, file] : scenePathsByName)
+		{
+			vec.push_back(name);
+		}
+		return vec;
+	};
 
 private:
 
@@ -342,11 +355,11 @@ private:
 
 		std::vector<std::string> assetFiles = getAllFilesInDirectory(directories.assetDir);
 		std::vector<std::string> prefabFiles = getAllFilesInDirectory(directories.prefabDir);
-	//	std::vector<std::string> imageFiles = getAllFilesInDirectory(directories.textureSrcDir);
+		//	std::vector<std::string> imageFiles = getAllFilesInDirectory(directories.textureSrcDir);
 
-		// combine all three vectors into one
+			// combine all three vectors into one
 		assetFiles.insert(assetFiles.end(), prefabFiles.begin(), prefabFiles.end());
-//		assetFiles.insert(assetFiles.end(), imageFiles.begin(), imageFiles.end());
+		//		assetFiles.insert(assetFiles.end(), imageFiles.begin(), imageFiles.end());
 
 		for (auto& f : assetFiles) {
 
@@ -388,8 +401,8 @@ private:
 			//		}
 			//	}
 			//}
-	}
-};
+		}
+	};
 #endif
 
 	void loadPrefabResources(Prefab& prefab);

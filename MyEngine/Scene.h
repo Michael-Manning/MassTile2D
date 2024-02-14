@@ -55,7 +55,7 @@ public:
 
 		// must destroy all registrered physics objects and world.
 		// either do it here, or have explicit unload function and then verify desctruction here
-		assert(false);
+		//assert(false);
 	}
 
 	SceneData sceneData;	
@@ -81,7 +81,9 @@ public:
 
 	Entity* CreateEntity(Transform transform = {}, std::string name = "", bool persistent = false);
 
-	void OverwriteEntity(std::shared_ptr<Entity> entity, entityID ID);
+	// inserts of overwrites an entity at the specified ID with blank entity without affecting components
+	Entity* EmplaceEntity(entityID ID);
+	//void OverwriteEntity(std::shared_ptr<Entity> entity, entityID ID);
 	//void RegisterAsChild(std::shared_ptr<Entity> parent, std::shared_ptr<Entity> child);
 	void SetEntityAsChild(Entity* parent, Entity* child);
 
@@ -136,6 +138,10 @@ public:
 	b2World bworld;
 
 private:
+
+	// fills in entity cache pointers after deserializing a scene
+	void LinkEntityRelationships();
+	void LinkEntityRelationshipsRecurse(Entity* entity);
 
 	IDGenerator<entityID> EntityGenerator;
 
