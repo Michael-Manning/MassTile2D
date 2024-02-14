@@ -52,7 +52,7 @@ public:
 		//float spawnMinStartSize;
 		//float spawnMaxStartSize;
 		float endSize = 0.0;
-		//float spawnAngle;
+		//float spawnAngle; // When adding this, make sure to incorporate parent transformations/rotation angle
 		//float spawnAngleRange;
 		//float spawnMinVelocity;
 		//float spawnMaxVelocity;

@@ -25,11 +25,47 @@ void Entity::localTransformRecursive(glm::mat4* m) const {
 }
 
 glm::mat4 Entity::GetLocalToGlobalMatrix() const {
+	assert(HasParent()); // speeddddd
+
 	mat4 m(1.0f);
-	localTransformRecursive(&m);
+	parent->localTransformRecursive(&m);
 	return m;
 }
 
+Transform Entity::GetGlobalTransform() const {
+
+	if (HasParent() == false)
+		return transform;
+
+	mat4 m = GetLocalToGlobalMatrix();
+	m = translate(m, vec3(transform.position, 0.0f));
+	m = rotate(m, transform.rotation, vec3(0.0f, 0.0f, 1.0f));
+
+	Transform t(
+		extractPosition(m),
+		transform.scale,
+		extractRotation(m)
+	);
+
+	return t;
+}
+
+void Entity::globalTransformRecursive(glm::mat4* m) const {
+
+	*m = rotate(*m, -transform.rotation, vec3(0.0f, 0.0f, 1.0f));
+	*m = translate(*m, vec3(-transform.position, 0.0f));
+
+	if (parent != nullptr)
+		parent->localTransformRecursive(m);
+}
+
+glm::mat4 Entity::GetGlobalToLocalMatrix() const {
+	assert(HasParent()); // speeddddd
+
+	mat4 m(1.0f);
+	parent->globalTransformRecursive(&m);
+	return m;
+}
 
 // Color Renderer
 template <>

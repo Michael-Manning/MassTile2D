@@ -379,6 +379,7 @@ void Editor::entityWindow() {
 			}
 			if (entity.children.size() > 0)
 			{
+				// move to function, make recursive
 				if (TreeNode("children")) {
 
 
@@ -654,7 +655,7 @@ void Editor::mainSceneWindow() {
 			float lineLen = 120; // translate gizmo arm length
 			float wheelRad = 140; // rotate gizmo radius
 
-			vec2 objScreenPos = gameSceneWorldToScreenPos(selectedEntity->transform.position);
+			vec2 objScreenPos = gameSceneWorldToScreenPos(selectedEntity->GetGlobalTransform().position);
 			vec2 yHandlePos = objScreenPos + vec2(0, -lineLen);
 			vec2 xHandlePos = objScreenPos + vec2(lineLen, 0);
 
@@ -684,8 +685,6 @@ void Editor::mainSceneWindow() {
 				draggingX &= mDown;
 				draggingAngle &= mDown & (!draggingX) & (!draggingY);
 			}
-
-
 
 			if (draggingY) {
 
@@ -717,11 +716,20 @@ void Editor::mainSceneWindow() {
 
 			if (draggingX || draggingY) {
 				vec2 objPos = gameSceneSreenToWorldPos(objScreenPos);
+				if (selectedEntity->HasParent()) {
+					mat4 m = selectedEntity->GetGlobalToLocalMatrix();
+					vec4 tvec(objPos, 0, 1);
+					vec4 res = m * tvec;
+					objPos = vec2(res);
+				}
+
 				selectedEntity->transform.position = objPos;
 				if (gameScene->sceneData.rigidbodies.contains(selectedEntity->ID)) {
+					assert(selectedEntity->HasParent() == false);
 					gameScene->sceneData.rigidbodies[selectedEntity->ID].SetPosition(objPos);
 				}
 				if (gameScene->sceneData.staticbodies.contains(selectedEntity->ID)) {
+					assert(selectedEntity->HasParent() == false);
 					gameScene->sceneData.staticbodies[selectedEntity->ID].SetPosition(objPos);
 				}
 			}
@@ -1097,7 +1105,7 @@ bool Editor::drawInspector<SpriteRenderer>(SpriteRenderer& r) {
 		OpenPopup("Available Assets");
 	}
 
-	auto modelFlags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBringToFrontOnFocus;
+	auto modelFlags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
 	float modelWidth = 360;
 	if (assetModel) {
 		SetNextWindowPos(vec2(glm::clamp(engine->winW / 2 - (int)modelWidth / 2, 0, engine->winW), 50));

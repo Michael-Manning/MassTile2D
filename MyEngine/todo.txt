@@ -1,6 +1,5 @@
 
 Near roadmap:
-- scene custody of entities and components using plain data and unique pointers
 - particle system serialization
 - scene serialization
 - finish support for arbitrary number of child entities
@@ -81,3 +80,5 @@ things to abstract:
 
 - could look into cachine pointers in components, such as caching the texture index binding directly to the sprite or sprite renderer to skip map lookups
 on entities which are drawn for multiple frames(basically all of them)
+
+- disallow rigidbodies on child entities

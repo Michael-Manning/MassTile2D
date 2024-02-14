@@ -371,10 +371,10 @@ void Engine::recordSceneContextGraphics(const ScenePipelineContext& ctx, framebu
 			instanceData.circle = renderer.second.shape == ColorRenderer::Shape::Circle;
 
 			if (entity.HasParent()) {
-				mat4 m = entity.GetLocalToGlobalMatrix();
-				instanceData.position = extractPosition(m);
-				instanceData.scale = entity.transform.scale;
-				instanceData.rotation = extractRotation(m);
+				Transform global = entity.GetGlobalTransform();
+				instanceData.position = global.position;
+				instanceData.scale = global.scale;
+				instanceData.rotation = global.rotation;
 			}
 			else {
 				instanceData.position = entity.transform.position;
@@ -413,10 +413,20 @@ void Engine::recordSceneContextGraphics(const ScenePipelineContext& ctx, framebu
 				TexturedQuadPL::ssboObjectInstanceData& drawObject = drawlist.emplace_back();
 				drawObject.uvMin = vec2(0.0f);
 				drawObject.uvMax = vec2(1.0f);
-				drawObject.translation = entity.transform.position;
-				drawObject.scale = entity.transform.scale;
-				drawObject.rotation = entity.transform.rotation;
 				drawObject.tex = globalTextureBindingManager.getIndexFromBinding(s->textureID);
+
+
+				if (entity.HasParent()) {
+					Transform global = entity.GetGlobalTransform();
+					drawObject.translation = global.position;
+					drawObject.scale = global.scale;
+					drawObject.rotation = global.rotation;
+				}
+				else {
+					drawObject.translation = entity.transform.position;
+					drawObject.scale = entity.transform.scale;
+					drawObject.rotation = entity.transform.rotation;
+				}
 
 				if (s->atlas.size() > 0) {
 					auto atEntry = s->atlas[renderer.atlasIndex];
@@ -444,7 +454,15 @@ void Engine::recordSceneContextGraphics(const ScenePipelineContext& ctx, framebu
 			const auto& entity = scene->sceneData.entities.at(entID);
 
 			if (renderer.size == ParticleSystemRenderer::ParticleSystemSize::Small) {
-				renderer.runSimulation(deltaTime, entity.transform.position);
+
+				if (entity.HasParent()) {
+					Transform global = entity.GetGlobalTransform();
+					renderer.runSimulation(deltaTime, global.position);
+				}
+				else {
+					renderer.runSimulation(deltaTime, entity.transform.position);
+				}
+
 				ctx.particlePipeline->UploadInstanceData(*renderer.hostParticleBuffer.get(), smallSystemIndex);
 
 				indexes.push_back(smallSystemIndex++);
@@ -490,11 +508,20 @@ void Engine::recordSceneContextGraphics(const ScenePipelineContext& ctx, framebu
 
 				TextPL::textHeader header;
 				header.color = r.color;
-				header.position = entity.transform.position;
-				header.rotation = entity.transform.rotation;
-				header.scale = entity.transform.scale;
 				header.textLength = glm::min(TEXTPL_maxTextLength, (int)r.quads.size());
 				header._textureIndex = globalTextureBindingManager.getIndexFromBinding(sprite->textureID);
+
+				if (entity.HasParent()) {
+					Transform global = entity.GetGlobalTransform();
+					header.position = global.position;
+					header.scale = global.scale;
+					header.rotation = global.rotation;
+				}
+				else {
+					header.position = entity.transform.position;
+					header.scale = entity.transform.scale;
+					header.rotation = entity.transform.rotation;
+				}
 
 				//TODO: could potentially assume this data is already here if the renderer is not dirty ?
 				TextPL::textObject textData;
@@ -630,11 +657,20 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 							.particleCount = renderer.configuration.particleCount,
 							.particlesToSpawn = particlesToSpawn,
 							.init = renderer.computeContextDirty,
-							.spawnPosition = entity.transform.position
+							//.spawnPosition = entity.transform.position
 						};
+
+						if (entity.HasParent()) {
+							mat4 m = entity.GetLocalToGlobalMatrix();
+							info.spawnPosition = extractPosition(m);
+						}
+						else {
+							info.spawnPosition = entity.transform.position;
+						}
+
 						dispachInfos.push_back(info);
 
-						// TODO: only update if dirty
+						// TODO: only update if dirty?
 						particleComputePipeline->UploadInstanceConfigurationData(renderer.configuration, renderer.token->index);
 					}
 

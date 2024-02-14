@@ -121,7 +121,10 @@ public:
 		Update();
 	}
 
-	glm::mat4 GetLocalToGlobalMatrix() const;
+	Transform GetGlobalTransform() const;
+
+	glm::mat4 GetLocalToGlobalMatrix() const; // TODO: not actually a transform matrix. just get parent matrix and apply to current transofm and extract components if global position needed
+	glm::mat4 GetGlobalToLocalMatrix() const;
 
 	nlohmann::json serializeJson();
 	static std::shared_ptr<Entity> deserializeJson(const nlohmann::json& j);
@@ -142,4 +145,5 @@ private:
 	std::shared_ptr<ComponentAccessor> accessor = nullptr;
 
 	void localTransformRecursive(glm::mat4* m) const;
+	void globalTransformRecursive(glm::mat4* m) const;
 };
