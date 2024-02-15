@@ -1,7 +1,6 @@
 
 Near roadmap:
 - particle system serialization
-- finish support for arbitrary number of child entities
 - new behaviour system
 - refactor prefab to contain scene data allowing entity hierarchies
 - prefab serialization

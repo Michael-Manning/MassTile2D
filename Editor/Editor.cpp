@@ -499,6 +499,7 @@ void Editor::assetWindow() {
 						if (!engine->assetManager->IsSceneLoaded(p)) {
 							engine->assetManager->LoadScene(p);
 						}
+						clearInspectorSelection();
 						setSceneCallback(engine->assetManager->GetScene(p));
 						ImGui::EndPopup();
 						break;
