@@ -7,13 +7,14 @@ Near roadmap:
 - add prefab preview/edit utility to editor
 - add deletion of components to editor
 - flatten assets in editor view into one list with drop down sorting
-- remove shared ptr use from: scene, Input manager, vulkan engine, asset manager, resource manager
+- remove shared ptr use from: scene, Input manager, vulkan engine, asset manager, resource manager, componentAccessor
 - finish scene desctructor
 - update serialization to not use shared_ptr
 
 ---- Test:
 - entity deleation
 - nested prefab with all component types
+- full serialization setup and publish build
 
 Major optimization:
 Sprites store their image file name, and texture IDs are hashed from the same filename. Could stop serializing the textureID

@@ -178,7 +178,7 @@ public:
 
 
 
-	nlohmann::json serializeJson(entityID entId) override;
+	nlohmann::json serializeJson(entityID entId) const override;
 	static Staticbody deserializeJson(const nlohmann::json& j);
 
 	static Staticbody deserializeFlatbuffers(const AssetPack::Staticbody* b) {
@@ -324,56 +324,56 @@ public:
 	void SetLinearDamping(float damping) {
 		body->SetLinearDamping(damping);
 	};
-	float GetLinearDamping() {
+	float GetLinearDamping() const {
 		return body->GetLinearDamping();
 	};
 
-	void SetAngularDamping(float damping) {
+	void SetAngularDamping(float damping) const {
 		body->SetAngularDamping(damping);
 	};
-	float GetAngularDamping() {
+	float GetAngularDamping() const {
 		return body->GetAngularDamping();
 	};
 
-	void SetFixedRotation(bool fixed) {
+	void SetFixedRotation(bool fixed) const {
 		body->SetFixedRotation(fixed);
 	};
-	bool GetFixedRotation() {
+	bool GetFixedRotation() const {
 		return body->IsFixedRotation();
 	};
 
-	void SetBullet(bool bullet) {
+	void SetBullet(bool bullet) const {
 		body->SetBullet(bullet);
 	};
-	bool GetBullet() {
+	bool GetBullet() const {
 		return body->IsBullet();
 	};
 
-	void SetGravityScale(float scale) {
+	void SetGravityScale(float scale) const {
 		body->SetGravityScale(scale);
 	};
-	float GetGravityScale() {
+	float GetGravityScale() const {
 		return body->GetGravityScale();
 	};
 
-	void SetFriction(float friction) {
+	void SetFriction(float friction) const {
 		fixture->SetFriction(friction);
 	};
-	float GetFriction() {
+	float GetFriction() const {
 		return fixture->GetFriction();
 	};
 
-	void SetDensity(float density) {
+	void SetDensity(float density) const {
 		fixture->SetDensity(density);
 	};
-	float GetDensity() {
+	float GetDensity() const {
 		return fixture->GetDensity();
 	};
 	
-	void SetRestitution(float restitution) {
+	void SetRestitution(float restitution) const {
 		fixture->SetRestitution(restitution);
 	};
-	float GetRestitution() {
+	float GetRestitution() const {
 		return fixture->GetRestitution();
 	};
 
@@ -392,7 +392,7 @@ public:
 
 
 
-	nlohmann::json serializeJson(entityID entId) override;
+	nlohmann::json serializeJson(entityID entId) const override;
 	static Rigidbody deserializeJson(const nlohmann::json& j);
 
 	static Rigidbody deserializeFlatbuffers(const AssetPack::Rigidbody* b) {

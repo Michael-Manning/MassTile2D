@@ -24,7 +24,8 @@ public:
 		this->shape = shape;
 	}
 
-	nlohmann::json serializeJson(entityID entId) override;
+	nlohmann::json serializeJson(entityID entId) const override;
+
 	static ColorRenderer deserializeJson(nlohmann::json);
 
 	glm::vec4 color = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);

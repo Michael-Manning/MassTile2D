@@ -52,7 +52,7 @@ public:
 		return "Player";
 	};
 
-	uint32_t getBehaviorHash() override {
+	uint32_t getBehaviorHash() const override {
 		return cHash("Player");
 	};
 

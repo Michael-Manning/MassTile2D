@@ -350,6 +350,7 @@
     <ClCompile Include="ParticleSystemRenderer.cpp" />
     <ClCompile Include="quadComputePL.cpp" />
     <ClCompile Include="ResourceManager.cpp" />
+    <ClCompile Include="SceneData.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug-Tracy|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
@@ -409,6 +410,7 @@
     <ClInclude Include="PrefabGenerator.h" />
     <ClInclude Include="quadComputePL.h" />
     <ClInclude Include="ResourceManager.h" />
+    <ClInclude Include="SceneData.h" />
     <ClInclude Include="Settings.h" />
     <ClInclude Include="SpriteGenerator.h" />
     <ClInclude Include="stdafx.h" />

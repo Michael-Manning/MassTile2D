@@ -5,8 +5,7 @@
 
 class Component {
 public:
-
-	virtual nlohmann::json serializeJson(entityID entId) = 0;
+	virtual nlohmann::json serializeJson(entityID entId) const = 0;
 };
 
 // could move this somewhere else

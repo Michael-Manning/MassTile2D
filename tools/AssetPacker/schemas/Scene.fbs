@@ -1,15 +1,11 @@
 include "common.fbs";
+include "SceneData.fbs";
 
 namespace AssetPack;
 
 table Scene{
     name:string;
-    entities:[Entity];
-    colorRenderers:[ColorRenderer];
-    spriteRenderers:[SpriteRenderer];
-    textRenderers:[TextRenderer];
-    rigidbodies:[Rigidbody];
-    staticbodies:[Staticbody];
+    sceneData:SceneData;
 }
 
 root_type Scene;

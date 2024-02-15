@@ -19,7 +19,7 @@ public:
 		sprite = spr;
 	};
 
-	nlohmann::json serializeJson(entityID entId) override;
+	nlohmann::json serializeJson(entityID entId) const override;
 
 	static SpriteRenderer deserializeJson(nlohmann::json j);
 

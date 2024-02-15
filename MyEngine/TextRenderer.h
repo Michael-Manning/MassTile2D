@@ -22,7 +22,7 @@ public:
 		this->font = font;
 	};
 
-	nlohmann::json serializeJson(entityID entId) override;
+	nlohmann::json serializeJson(entityID entId) const override;
 
 	static TextRenderer deserializeJson(nlohmann::json j);
 

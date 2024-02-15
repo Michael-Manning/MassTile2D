@@ -30,7 +30,7 @@ struct Transform {
 		this->rotation = rotation;
 	}
 
-	nlohmann::json serializeJson();
+	nlohmann::json serializeJson() const;
 	static Transform deserializeJson(const nlohmann::json& j);
 
 	static Transform deserializeFlatbuffers(const AssetPack::Transform* t) {
@@ -89,7 +89,7 @@ public:
 	};
 
 	virtual std::string GetEditorName() { return ""; }
-	virtual uint32_t getBehaviorHash() {
+	virtual uint32_t getBehaviorHash() const {
 		return 0;
 	}
 
@@ -146,7 +146,7 @@ public:
 	glm::mat4 GetLocalToGlobalMatrix() const; // TODO: not actually a transform matrix. just get parent matrix and apply to current transofm and extract components if global position needed
 	glm::mat4 GetGlobalToLocalMatrix() const;
 
-	nlohmann::json serializeJson();
+	nlohmann::json serializeJson() const;
 	static void deserializeJson(const nlohmann::json& j, Entity* entity);
 	static void deserializeFlatbuffers(const AssetPack::Entity* packEntity, Entity* entity);
 	static entityID PeakID(const nlohmann::json& j) {return j["id"].get<int>();}

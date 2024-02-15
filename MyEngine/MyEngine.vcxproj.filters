@@ -135,6 +135,9 @@
     <ClCompile Include="ParticleComputePL.cpp">
       <Filter>Source Files\vulkan\piplines</Filter>
     </ClCompile>
+    <ClCompile Include="SceneData.cpp">
+      <Filter>Source Files\Engine\ECS\Assets</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pipeline.h">
@@ -295,6 +298,9 @@
     </ClInclude>
     <ClInclude Include="ParticleComputePL.h">
       <Filter>Source Files\vulkan\piplines</Filter>
+    </ClInclude>
+    <ClInclude Include="SceneData.h">
+      <Filter>Source Files\Engine\ECS\Assets</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

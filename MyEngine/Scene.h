@@ -9,38 +9,11 @@
 #include "ECS.h"
 #include "Physics.h"
 #include "IDGenerator.h"
+#include "SceneData.h"
 
 #include <assetPack/Scene_generated.h>
 
 const auto Scene_extension = ".scene";
-
-struct SceneData {
-	robin_hood::unordered_node_map<entityID, Entity> entities;
-
-	// components
-	robin_hood::unordered_node_map<entityID, SpriteRenderer> spriteRenderers;
-	robin_hood::unordered_node_map<entityID, ColorRenderer> colorRenderers;
-	robin_hood::unordered_node_map<entityID, Rigidbody> rigidbodies;
-	robin_hood::unordered_node_map<entityID, Staticbody> staticbodies;
-	robin_hood::unordered_node_map<entityID, TextRenderer> textRenderers;
-	robin_hood::unordered_node_map<entityID, ParticleSystemRenderer> particleSystemRenderers;
-
-
-	std::vector<spriteID> getUsedSprites() {
-		std::vector<spriteID> ids;
-		for (auto& i : spriteRenderers) {
-			ids.push_back(i.second.sprite);
-		}
-		return ids;
-	};
-	std::vector<fontID> getUsedFonts() {
-		std::vector<fontID> ids;
-		for (auto& i : textRenderers) {
-			ids.push_back(i.second.font);
-		}
-		return ids;
-	};
-};
 
 class Scene {
 public:
@@ -81,8 +54,9 @@ public:
 
 	Entity* CreateEntity(Transform transform = {}, std::string name = "", bool persistent = false);
 
-	// inserts of overwrites an entity at the specified ID with blank entity without affecting components
-	Entity* EmplaceEntity(entityID ID);
+	//// inserts of overwrites an entity at the specified ID with blank entity without affecting components
+	//Entity* EmplaceEntity(entityID ID);
+
 	//void OverwriteEntity(std::shared_ptr<Entity> entity, entityID ID);
 	//void RegisterAsChild(std::shared_ptr<Entity> parent, std::shared_ptr<Entity> child);
 	void SetEntityAsChild(Entity* parent, Entity* child);
@@ -142,8 +116,6 @@ private:
 	// fills in entity cache pointers after deserializing a scene
 	void LinkEntityRelationships();
 	void LinkEntityRelationshipsRecurse(Entity* entity);
-
-	IDGenerator<entityID> EntityGenerator;
 
 	std::shared_ptr<ComponentAccessor>	componentAccessor;
 

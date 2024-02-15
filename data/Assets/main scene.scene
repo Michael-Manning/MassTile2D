@@ -1,93 +1,35 @@
 {
-    "colorRenderers": [
-        {
-            "color": [
-                0.43274855613708496,
-                0.20498615503311157,
-                0.20498615503311157,
-                1.0
-            ],
-            "entityID": 1,
-            "shape": 0
-        },
-        {
-            "color": [
-                0.4629116654396057,
-                0.500980019569397,
-                0.8245614171028137,
-                1.0
-            ],
-            "entityID": 3,
-            "shape": 0
-        },
-        {
-            "color": [
-                0.7076023817062378,
-                0.020690133795142174,
-                0.020690133795142174,
-                1.0
-            ],
-            "entityID": 2,
-            "shape": 0
-        }
-    ],
-    "entities": [
-        {
-            "behaviorHash": 0,
-            "children": [
-                2
-            ],
-            "id": 1,
-            "name": "entity 1",
-            "transform": {
-                "position": [
-                    0.0,
-                    0.0
-                ],
-                "rotation": 0.6198889017105103,
-                "scale": [
-                    1.0,
+    "name": "main scene",
+    "sceneData": {
+        "colorRenderers": [
+            {
+                "color": [
+                    0.6842105388641357,
+                    0.2320714294910431,
+                    0.2320714294910431,
                     1.0
-                ]
-            }
-        },
-        {
-            "behaviorHash": 0,
-            "id": 3,
-            "name": "entity 3",
-            "parent": 2,
-            "transform": {
-                "position": [
-                    1.776566505432129,
-                    1.496792197227478
                 ],
-                "rotation": -1.58833909034729,
-                "scale": [
-                    1.0,
-                    1.0
-                ]
+                "entityID": 1,
+                "shape": 0
             }
-        },
-        {
-            "behaviorHash": 0,
-            "children": [
-                3
-            ],
-            "id": 2,
-            "name": "entity 2",
-            "parent": 1,
-            "transform": {
-                "position": [
-                    2.2801599502563477,
-                    -1.8395159244537354
-                ],
-                "rotation": -0.2852995991706848,
-                "scale": [
-                    1.0,
-                    1.0
-                ]
+        ],
+        "entities": [
+            {
+                "behaviorHash": 0,
+                "id": 1,
+                "name": "entity 1",
+                "transform": {
+                    "position": [
+                        0.0,
+                        0.0
+                    ],
+                    "rotation": 0.0,
+                    "scale": [
+                        1.0,
+                        1.0
+                    ]
+                }
             }
-        }
-    ],
-    "name": "main scene"
+        ]
+    }
 }

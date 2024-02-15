@@ -13,6 +13,7 @@ static_assert(FLATBUFFERS_VERSION_MAJOR == 23 &&
               FLATBUFFERS_VERSION_REVISION == 26,
              "Non-compatible flatbuffers version included");
 
+#include "SceneData_generated.h"
 #include "common_generated.h"
 
 namespace AssetPack {
@@ -24,52 +25,20 @@ struct Scene FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   typedef SceneBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_NAME = 4,
-    VT_ENTITIES = 6,
-    VT_COLORRENDERERS = 8,
-    VT_SPRITERENDERERS = 10,
-    VT_TEXTRENDERERS = 12,
-    VT_RIGIDBODIES = 14,
-    VT_STATICBODIES = 16
+    VT_SCENEDATA = 6
   };
   const ::flatbuffers::String *name() const {
     return GetPointer<const ::flatbuffers::String *>(VT_NAME);
   }
-  const ::flatbuffers::Vector<::flatbuffers::Offset<AssetPack::Entity>> *entities() const {
-    return GetPointer<const ::flatbuffers::Vector<::flatbuffers::Offset<AssetPack::Entity>> *>(VT_ENTITIES);
-  }
-  const ::flatbuffers::Vector<const AssetPack::ColorRenderer *> *colorRenderers() const {
-    return GetPointer<const ::flatbuffers::Vector<const AssetPack::ColorRenderer *> *>(VT_COLORRENDERERS);
-  }
-  const ::flatbuffers::Vector<const AssetPack::SpriteRenderer *> *spriteRenderers() const {
-    return GetPointer<const ::flatbuffers::Vector<const AssetPack::SpriteRenderer *> *>(VT_SPRITERENDERERS);
-  }
-  const ::flatbuffers::Vector<::flatbuffers::Offset<AssetPack::TextRenderer>> *textRenderers() const {
-    return GetPointer<const ::flatbuffers::Vector<::flatbuffers::Offset<AssetPack::TextRenderer>> *>(VT_TEXTRENDERERS);
-  }
-  const ::flatbuffers::Vector<const AssetPack::Rigidbody *> *rigidbodies() const {
-    return GetPointer<const ::flatbuffers::Vector<const AssetPack::Rigidbody *> *>(VT_RIGIDBODIES);
-  }
-  const ::flatbuffers::Vector<const AssetPack::Staticbody *> *staticbodies() const {
-    return GetPointer<const ::flatbuffers::Vector<const AssetPack::Staticbody *> *>(VT_STATICBODIES);
+  const AssetPack::SceneData *sceneData() const {
+    return GetPointer<const AssetPack::SceneData *>(VT_SCENEDATA);
   }
   bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_NAME) &&
            verifier.VerifyString(name()) &&
-           VerifyOffset(verifier, VT_ENTITIES) &&
-           verifier.VerifyVector(entities()) &&
-           verifier.VerifyVectorOfTables(entities()) &&
-           VerifyOffset(verifier, VT_COLORRENDERERS) &&
-           verifier.VerifyVector(colorRenderers()) &&
-           VerifyOffset(verifier, VT_SPRITERENDERERS) &&
-           verifier.VerifyVector(spriteRenderers()) &&
-           VerifyOffset(verifier, VT_TEXTRENDERERS) &&
-           verifier.VerifyVector(textRenderers()) &&
-           verifier.VerifyVectorOfTables(textRenderers()) &&
-           VerifyOffset(verifier, VT_RIGIDBODIES) &&
-           verifier.VerifyVector(rigidbodies()) &&
-           VerifyOffset(verifier, VT_STATICBODIES) &&
-           verifier.VerifyVector(staticbodies()) &&
+           VerifyOffset(verifier, VT_SCENEDATA) &&
+           verifier.VerifyTable(sceneData()) &&
            verifier.EndTable();
   }
 };
@@ -81,23 +50,8 @@ struct SceneBuilder {
   void add_name(::flatbuffers::Offset<::flatbuffers::String> name) {
     fbb_.AddOffset(Scene::VT_NAME, name);
   }
-  void add_entities(::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<AssetPack::Entity>>> entities) {
-    fbb_.AddOffset(Scene::VT_ENTITIES, entities);
-  }
-  void add_colorRenderers(::flatbuffers::Offset<::flatbuffers::Vector<const AssetPack::ColorRenderer *>> colorRenderers) {
-    fbb_.AddOffset(Scene::VT_COLORRENDERERS, colorRenderers);
-  }
-  void add_spriteRenderers(::flatbuffers::Offset<::flatbuffers::Vector<const AssetPack::SpriteRenderer *>> spriteRenderers) {
-    fbb_.AddOffset(Scene::VT_SPRITERENDERERS, spriteRenderers);
-  }
-  void add_textRenderers(::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<AssetPack::TextRenderer>>> textRenderers) {
-    fbb_.AddOffset(Scene::VT_TEXTRENDERERS, textRenderers);
-  }
-  void add_rigidbodies(::flatbuffers::Offset<::flatbuffers::Vector<const AssetPack::Rigidbody *>> rigidbodies) {
-    fbb_.AddOffset(Scene::VT_RIGIDBODIES, rigidbodies);
-  }
-  void add_staticbodies(::flatbuffers::Offset<::flatbuffers::Vector<const AssetPack::Staticbody *>> staticbodies) {
-    fbb_.AddOffset(Scene::VT_STATICBODIES, staticbodies);
+  void add_sceneData(::flatbuffers::Offset<AssetPack::SceneData> sceneData) {
+    fbb_.AddOffset(Scene::VT_SCENEDATA, sceneData);
   }
   explicit SceneBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -113,19 +67,9 @@ struct SceneBuilder {
 inline ::flatbuffers::Offset<Scene> CreateScene(
     ::flatbuffers::FlatBufferBuilder &_fbb,
     ::flatbuffers::Offset<::flatbuffers::String> name = 0,
-    ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<AssetPack::Entity>>> entities = 0,
-    ::flatbuffers::Offset<::flatbuffers::Vector<const AssetPack::ColorRenderer *>> colorRenderers = 0,
-    ::flatbuffers::Offset<::flatbuffers::Vector<const AssetPack::SpriteRenderer *>> spriteRenderers = 0,
-    ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<AssetPack::TextRenderer>>> textRenderers = 0,
-    ::flatbuffers::Offset<::flatbuffers::Vector<const AssetPack::Rigidbody *>> rigidbodies = 0,
-    ::flatbuffers::Offset<::flatbuffers::Vector<const AssetPack::Staticbody *>> staticbodies = 0) {
+    ::flatbuffers::Offset<AssetPack::SceneData> sceneData = 0) {
   SceneBuilder builder_(_fbb);
-  builder_.add_staticbodies(staticbodies);
-  builder_.add_rigidbodies(rigidbodies);
-  builder_.add_textRenderers(textRenderers);
-  builder_.add_spriteRenderers(spriteRenderers);
-  builder_.add_colorRenderers(colorRenderers);
-  builder_.add_entities(entities);
+  builder_.add_sceneData(sceneData);
   builder_.add_name(name);
   return builder_.Finish();
 }
@@ -133,28 +77,12 @@ inline ::flatbuffers::Offset<Scene> CreateScene(
 inline ::flatbuffers::Offset<Scene> CreateSceneDirect(
     ::flatbuffers::FlatBufferBuilder &_fbb,
     const char *name = nullptr,
-    const std::vector<::flatbuffers::Offset<AssetPack::Entity>> *entities = nullptr,
-    const std::vector<AssetPack::ColorRenderer> *colorRenderers = nullptr,
-    const std::vector<AssetPack::SpriteRenderer> *spriteRenderers = nullptr,
-    const std::vector<::flatbuffers::Offset<AssetPack::TextRenderer>> *textRenderers = nullptr,
-    const std::vector<AssetPack::Rigidbody> *rigidbodies = nullptr,
-    const std::vector<AssetPack::Staticbody> *staticbodies = nullptr) {
+    ::flatbuffers::Offset<AssetPack::SceneData> sceneData = 0) {
   auto name__ = name ? _fbb.CreateString(name) : 0;
-  auto entities__ = entities ? _fbb.CreateVector<::flatbuffers::Offset<AssetPack::Entity>>(*entities) : 0;
-  auto colorRenderers__ = colorRenderers ? _fbb.CreateVectorOfStructs<AssetPack::ColorRenderer>(*colorRenderers) : 0;
-  auto spriteRenderers__ = spriteRenderers ? _fbb.CreateVectorOfStructs<AssetPack::SpriteRenderer>(*spriteRenderers) : 0;
-  auto textRenderers__ = textRenderers ? _fbb.CreateVector<::flatbuffers::Offset<AssetPack::TextRenderer>>(*textRenderers) : 0;
-  auto rigidbodies__ = rigidbodies ? _fbb.CreateVectorOfStructs<AssetPack::Rigidbody>(*rigidbodies) : 0;
-  auto staticbodies__ = staticbodies ? _fbb.CreateVectorOfStructs<AssetPack::Staticbody>(*staticbodies) : 0;
   return AssetPack::CreateScene(
       _fbb,
       name__,
-      entities__,
-      colorRenderers__,
-      spriteRenderers__,
-      textRenderers__,
-      rigidbodies__,
-      staticbodies__);
+      sceneData);
 }
 
 inline const AssetPack::Scene *GetScene(const void *buf) {

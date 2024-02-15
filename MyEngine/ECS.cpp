@@ -28,7 +28,7 @@ using namespace std;
 
 using namespace nlohmann;
 
-json Transform::serializeJson() {
+json Transform::serializeJson() const {
 	json j;
 	j["position"] = { position.x, position.y };
 	j["scale"] = { scale.x, scale.y };
@@ -43,7 +43,7 @@ Transform Transform::deserializeJson(const nlohmann::json& j) {
 	return t;
 }
 
-json Entity::serializeJson() {
+json Entity::serializeJson() const {
 
 	nlohmann::json j;
 	j["id"] = ID;
@@ -99,7 +99,7 @@ void Entity::deserializeFlatbuffers(const AssetPack::Entity* packEntity, Entity*
 }
 
 
-nlohmann::json ColorRenderer::serializeJson(entityID entId) {
+nlohmann::json ColorRenderer::serializeJson(entityID entId) const {
 	nlohmann::json j;
 	j["entityID"] = entId;
 	j["color"] = toJson(color); //{color.r, color.g, color.b, color.a};
@@ -116,35 +116,35 @@ ColorRenderer ColorRenderer::deserializeJson(nlohmann::json j) {
 	return s;
 }
 
-nlohmann::json SpriteRenderer::serializeJson(entityID entId) {
+nlohmann::json SpriteRenderer::serializeJson(entityID entId) const {
 	nlohmann::json j;
 	j["entityID"] = entId;
 	j["spriteID"] = sprite;
 	j["atlasIndex"] = atlasIndex;
 	return j;
 }
-SpriteRenderer SpriteRenderer::deserializeJson(nlohmann::json j) {
+SpriteRenderer SpriteRenderer::deserializeJson(nlohmann::json j){
 	spriteID id = j["spriteID"].get<uint32_t>();
 	SpriteRenderer s(id);
 	s.atlasIndex = j["atlasIndex"];
 	return s;
 }
 
-nlohmann::json TextRenderer::serializeJson(entityID entId) {
+nlohmann::json TextRenderer::serializeJson(entityID entId) const {
 	nlohmann::json j;
 	j["entityID"] = entId;
 	j["fontID"] = font;
 	j["text"] = text;
 	return j;
 }
-TextRenderer TextRenderer::deserializeJson(nlohmann::json j) {
+TextRenderer TextRenderer::deserializeJson(nlohmann::json j){
 	fontID id = j["fontID"].get<uint32_t>();
 	TextRenderer t(id);
 	t.text = j["text"];
 	return t;
 }
 
-nlohmann::json Rigidbody::serializeJson(entityID entId) {
+nlohmann::json Rigidbody::serializeJson(entityID entId) const {
 	nlohmann::json j;
 	j["entityID"] = entId;
 
@@ -193,7 +193,7 @@ Rigidbody Rigidbody::deserializeJson(const nlohmann::json& j) {
 	return r;
 }
 
-nlohmann::json Staticbody::serializeJson(entityID entId) {
+nlohmann::json Staticbody::serializeJson(entityID entId) const {
 	nlohmann::json j;
 	j["entityID"] = entId;
 
