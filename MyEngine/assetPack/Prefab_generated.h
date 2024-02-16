@@ -13,6 +13,7 @@ static_assert(FLATBUFFERS_VERSION_MAJOR == 23 &&
               FLATBUFFERS_VERSION_REVISION == 26,
              "Non-compatible flatbuffers version included");
 
+#include "SceneData_generated.h"
 #include "common_generated.h"
 
 namespace AssetPack {
@@ -24,50 +25,20 @@ struct Prefab FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   typedef PrefabBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_NAME = 4,
-    VT_BEHAVIORHASH = 6,
-    VT_TRANSFORM = 8,
-    VT_COLORRENDERER = 10,
-    VT_SPRITERENDERER = 12,
-    VT_TEXTRENDERER = 14,
-    VT_RIGIDBODY = 16,
-    VT_STATICBODY = 18
+    VT_SCENEDATA = 6
   };
   const ::flatbuffers::String *name() const {
     return GetPointer<const ::flatbuffers::String *>(VT_NAME);
   }
-  uint32_t behaviorHash() const {
-    return GetField<uint32_t>(VT_BEHAVIORHASH, 0);
-  }
-  const AssetPack::Transform *transform() const {
-    return GetStruct<const AssetPack::Transform *>(VT_TRANSFORM);
-  }
-  const AssetPack::ColorRenderer *colorRenderer() const {
-    return GetStruct<const AssetPack::ColorRenderer *>(VT_COLORRENDERER);
-  }
-  const AssetPack::SpriteRenderer *spriteRenderer() const {
-    return GetStruct<const AssetPack::SpriteRenderer *>(VT_SPRITERENDERER);
-  }
-  const AssetPack::TextRenderer *textRenderer() const {
-    return GetPointer<const AssetPack::TextRenderer *>(VT_TEXTRENDERER);
-  }
-  const AssetPack::Rigidbody *rigidbody() const {
-    return GetStruct<const AssetPack::Rigidbody *>(VT_RIGIDBODY);
-  }
-  const AssetPack::Staticbody *staticbody() const {
-    return GetStruct<const AssetPack::Staticbody *>(VT_STATICBODY);
+  const AssetPack::SceneData *sceneData() const {
+    return GetPointer<const AssetPack::SceneData *>(VT_SCENEDATA);
   }
   bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_NAME) &&
            verifier.VerifyString(name()) &&
-           VerifyField<uint32_t>(verifier, VT_BEHAVIORHASH, 4) &&
-           VerifyField<AssetPack::Transform>(verifier, VT_TRANSFORM, 4) &&
-           VerifyField<AssetPack::ColorRenderer>(verifier, VT_COLORRENDERER, 4) &&
-           VerifyField<AssetPack::SpriteRenderer>(verifier, VT_SPRITERENDERER, 4) &&
-           VerifyOffset(verifier, VT_TEXTRENDERER) &&
-           verifier.VerifyTable(textRenderer()) &&
-           VerifyField<AssetPack::Rigidbody>(verifier, VT_RIGIDBODY, 4) &&
-           VerifyField<AssetPack::Staticbody>(verifier, VT_STATICBODY, 4) &&
+           VerifyOffset(verifier, VT_SCENEDATA) &&
+           verifier.VerifyTable(sceneData()) &&
            verifier.EndTable();
   }
 };
@@ -79,26 +50,8 @@ struct PrefabBuilder {
   void add_name(::flatbuffers::Offset<::flatbuffers::String> name) {
     fbb_.AddOffset(Prefab::VT_NAME, name);
   }
-  void add_behaviorHash(uint32_t behaviorHash) {
-    fbb_.AddElement<uint32_t>(Prefab::VT_BEHAVIORHASH, behaviorHash, 0);
-  }
-  void add_transform(const AssetPack::Transform *transform) {
-    fbb_.AddStruct(Prefab::VT_TRANSFORM, transform);
-  }
-  void add_colorRenderer(const AssetPack::ColorRenderer *colorRenderer) {
-    fbb_.AddStruct(Prefab::VT_COLORRENDERER, colorRenderer);
-  }
-  void add_spriteRenderer(const AssetPack::SpriteRenderer *spriteRenderer) {
-    fbb_.AddStruct(Prefab::VT_SPRITERENDERER, spriteRenderer);
-  }
-  void add_textRenderer(::flatbuffers::Offset<AssetPack::TextRenderer> textRenderer) {
-    fbb_.AddOffset(Prefab::VT_TEXTRENDERER, textRenderer);
-  }
-  void add_rigidbody(const AssetPack::Rigidbody *rigidbody) {
-    fbb_.AddStruct(Prefab::VT_RIGIDBODY, rigidbody);
-  }
-  void add_staticbody(const AssetPack::Staticbody *staticbody) {
-    fbb_.AddStruct(Prefab::VT_STATICBODY, staticbody);
+  void add_sceneData(::flatbuffers::Offset<AssetPack::SceneData> sceneData) {
+    fbb_.AddOffset(Prefab::VT_SCENEDATA, sceneData);
   }
   explicit PrefabBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -114,21 +67,9 @@ struct PrefabBuilder {
 inline ::flatbuffers::Offset<Prefab> CreatePrefab(
     ::flatbuffers::FlatBufferBuilder &_fbb,
     ::flatbuffers::Offset<::flatbuffers::String> name = 0,
-    uint32_t behaviorHash = 0,
-    const AssetPack::Transform *transform = nullptr,
-    const AssetPack::ColorRenderer *colorRenderer = nullptr,
-    const AssetPack::SpriteRenderer *spriteRenderer = nullptr,
-    ::flatbuffers::Offset<AssetPack::TextRenderer> textRenderer = 0,
-    const AssetPack::Rigidbody *rigidbody = nullptr,
-    const AssetPack::Staticbody *staticbody = nullptr) {
+    ::flatbuffers::Offset<AssetPack::SceneData> sceneData = 0) {
   PrefabBuilder builder_(_fbb);
-  builder_.add_staticbody(staticbody);
-  builder_.add_rigidbody(rigidbody);
-  builder_.add_textRenderer(textRenderer);
-  builder_.add_spriteRenderer(spriteRenderer);
-  builder_.add_colorRenderer(colorRenderer);
-  builder_.add_transform(transform);
-  builder_.add_behaviorHash(behaviorHash);
+  builder_.add_sceneData(sceneData);
   builder_.add_name(name);
   return builder_.Finish();
 }
@@ -136,24 +77,12 @@ inline ::flatbuffers::Offset<Prefab> CreatePrefab(
 inline ::flatbuffers::Offset<Prefab> CreatePrefabDirect(
     ::flatbuffers::FlatBufferBuilder &_fbb,
     const char *name = nullptr,
-    uint32_t behaviorHash = 0,
-    const AssetPack::Transform *transform = nullptr,
-    const AssetPack::ColorRenderer *colorRenderer = nullptr,
-    const AssetPack::SpriteRenderer *spriteRenderer = nullptr,
-    ::flatbuffers::Offset<AssetPack::TextRenderer> textRenderer = 0,
-    const AssetPack::Rigidbody *rigidbody = nullptr,
-    const AssetPack::Staticbody *staticbody = nullptr) {
+    ::flatbuffers::Offset<AssetPack::SceneData> sceneData = 0) {
   auto name__ = name ? _fbb.CreateString(name) : 0;
   return AssetPack::CreatePrefab(
       _fbb,
       name__,
-      behaviorHash,
-      transform,
-      colorRenderer,
-      spriteRenderer,
-      textRenderer,
-      rigidbody,
-      staticbody);
+      sceneData);
 }
 
 inline const AssetPack::Prefab *GetPrefab(const void *buf) {

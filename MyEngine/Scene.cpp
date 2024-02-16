@@ -24,6 +24,16 @@
 using namespace nlohmann;
 using namespace std;
 
+void Scene::linkRigidbodyB2D(entityID id, Rigidbody* r) {
+	const auto& t = sceneData.entities.at(id).transform;
+	r->_generateBody(&bworld, t.position, t.rotation);
+}
+
+void Scene::linkStaticbodyB2D(entityID id, Staticbody* s) {
+	const auto& t = sceneData.entities.at(id).transform;
+	s->_generateBody(&bworld, t.position, t.rotation);
+}
+
 void Scene::CreateComponentAccessor() {
 	auto getColorRenderer = [this](entityID id) {
 		assert(sceneData.colorRenderers.contains(id));
@@ -60,16 +70,7 @@ void Scene::serializeJson(std::string filename) {
 
 	j["sceneData"] = sceneData.serializeJson();
 
-	// assets
-	auto usedSprites = sceneData.getUsedSprites();
-	for (auto& s : usedSprites) {
-		j["usedSprites"].push_back(s);
-	}
-	auto usedFonts = sceneData.getUsedFonts();
-	for (auto& f : usedFonts) {
-		j["usedFonts"].push_back(f);
-	}
-	checkAppend(filename, ".scene");
+	checkAppend(filename, Scene_extension);
 	std::ofstream output(filename);
 	output << j.dump(4) << std::endl;
 	output.close();
@@ -110,6 +111,11 @@ std::shared_ptr<Scene> Scene::deserializeJson(std::string filename) {
 
 	SceneData::deserializeJson(j["sceneData"], &scene->sceneData);
 
+	for (auto& [id, r] : scene->sceneData.rigidbodies)
+		scene->linkRigidbodyB2D(id, &r);
+	for (auto& [id, r] : scene->sceneData.staticbodies)
+		scene->linkStaticbodyB2D(id, &r);
+
 	scene->LinkEntityRelationships();
 	return scene;
 }
@@ -122,6 +128,11 @@ std::shared_ptr<Scene> Scene::deserializeFlatbuffers(const AssetPack::Scene* s) 
 
 	SceneData::deserializeFlatbuffers(s->sceneData(), &scene->sceneData);
 
+	for (auto& [id, r] : scene->sceneData.rigidbodies)
+		scene->linkRigidbodyB2D(id, &r);
+	for (auto& [id, r] : scene->sceneData.staticbodies)
+		scene->linkStaticbodyB2D(id, &r);
+
 	scene->LinkEntityRelationships();
 	return scene;
 }
@@ -129,7 +140,18 @@ std::shared_ptr<Scene> Scene::deserializeFlatbuffers(const AssetPack::Scene* s) 
 
 void Scene::UnregisterEntity(entityID id) {
 
-	assert(false); // Must clean up parent/child relationships
+	// NOTE: technically don't have to delete all the components right away.
+	// Could clean up all the components at the end of each frame or n frames if it ends up being faster.
+
+	auto entity = GetEntity(id);
+	if (entity->HasParent())
+		(*entity->_GetParentCache_ptr())->RemoveChild(entity);
+	if (entity->HasChildren()) {
+		auto cache = entity->_GetChildCache_ptr();
+		for (auto& child : *cache) {
+			child->ClearParent();
+		}
+	}
 
 	sceneData.entities.erase(id);
 	sceneData.colorRenderers.erase(id);
@@ -224,23 +246,23 @@ entityID Scene::DuplicateEntity(entityID original) {
 	//return copy->ID;
 }
 
-Prefab Scene::CreatePrefab(std::shared_ptr<Entity> entity) {
-	Prefab p;
-	p.behaviorHash = entity->getBehaviorHash();
+//Prefab Scene::CreatePrefab(std::shared_ptr<Entity> entity) {
+//	Prefab p;
+//	p.behaviorHash = entity->getBehaviorHash();
+//
+//	if (sceneData.colorRenderers.contains(entity->ID))
+//		p.colorRenderer = sceneData.colorRenderers[entity->ID];
+//	if (sceneData.spriteRenderers.contains(entity->ID))
+//		p.spriteRenderer = sceneData.spriteRenderers[entity->ID];
+//	if (sceneData.staticbodies.contains(entity->ID))
+//		p.staticbody = sceneData.staticbodies[entity->ID];
+//	if (sceneData.rigidbodies.contains(entity->ID))
+//		p.rigidbody = sceneData.rigidbodies[entity->ID];
+//
+//	return p;
+//}
 
-	if (sceneData.colorRenderers.contains(entity->ID))
-		p.colorRenderer = sceneData.colorRenderers[entity->ID];
-	if (sceneData.spriteRenderers.contains(entity->ID))
-		p.spriteRenderer = sceneData.spriteRenderers[entity->ID];
-	if (sceneData.staticbodies.contains(entity->ID))
-		p.staticbody = sceneData.staticbodies[entity->ID];
-	if (sceneData.rigidbodies.contains(entity->ID))
-		p.rigidbody = sceneData.rigidbodies[entity->ID];
-
-	return p;
-}
-
-Entity* Scene::Instantiate(Prefab prefab, std::string name, glm::vec2 position, float rotation) {
+Entity* Scene::Instantiate(Prefab& prefab, std::string name, glm::vec2 position, float rotation) {
 	//std::shared_ptr<Entity> copy;
 	//if (prefab.behaviorHash == 0)
 	//	copy = std::make_shared<Entity>();
@@ -251,31 +273,48 @@ Entity* Scene::Instantiate(Prefab prefab, std::string name, glm::vec2 position, 
 		assert(false);
 	}
 
-	Entity* copy = CreateEntity(
-		Transform(position, prefab.transform.scale, rotation),
-		name
-	);
-
-	copy->persistent = false;
-	entityID id = copy->ID;
-
-	if (prefab.colorRenderer.has_value()) {
-		registerComponent(id, prefab.colorRenderer.value());
-	}
-	if (prefab.spriteRenderer.has_value()) {
-		registerComponent(id, prefab.spriteRenderer.value());
-	}
-	if (prefab.textRenderer.has_value()) {
-		registerComponent(id, prefab.textRenderer.value());
-	}
-	if (prefab.staticbody.has_value()) {
-		registerComponent(id, prefab.staticbody.value());
-	}
-	if (prefab.rigidbody.has_value()) {
-		registerComponent(id, prefab.rigidbody.value());
+	std::unordered_map<entityID, entityID> IDRemap;
+	for (auto& [ID, e] : prefab.sceneData.entities)
+	{
+		IDRemap.insert({ ID, sceneData.EntityGenerator.GenerateID() });
 	}
 
-	return copy;
+
+	// set relationship IDs in new entities with mapped values from the originals
+	for (auto& [ID, e] : prefab.sceneData.entities) {
+		Entity* copy = sceneData.EmplaceEntity(IDRemap.at(ID));
+		e.CloneInto(copy);
+
+		copy->persistent = false;
+
+		if (e.HasParent())
+			*copy->_GetParent() = IDRemap.at(e.GetParent());
+
+
+		auto origChildSet = e._GetChildSet();
+		auto copyChildSet = copy->_GetChildSet();
+		for (auto& child : *origChildSet) {
+			copyChildSet->insert(IDRemap.at(child));
+		}
+	}
+
+	for (auto& [ID, r] : prefab.sceneData.colorRenderers)
+		registerComponent(IDRemap.at(ID), r);
+	for (auto& [ID, r] : prefab.sceneData.spriteRenderers)
+		registerComponent(IDRemap.at(ID), r);
+	for (auto& [ID, r] : prefab.sceneData.rigidbodies)
+		registerComponent(IDRemap.at(ID), r);
+	for (auto& [ID, r] : prefab.sceneData.staticbodies)
+		registerComponent(IDRemap.at(ID), r);
+
+	assert(prefab.TopLevelEntity != NULL_Entity);
+
+	Entity* topLevelEntity = &sceneData.entities.at(IDRemap.at(prefab.TopLevelEntity));
+	topLevelEntity->transform = Transform(position, prefab.transform.scale, rotation);
+
+	LinkEntityRelationshipsRecurse(topLevelEntity);
+
+	return topLevelEntity;
 }
 
 // I don't think these need to be templates
@@ -296,7 +335,7 @@ void Scene::registerComponent<TextRenderer>(entityID id, TextRenderer t) {
 }
 
 void Scene::registerComponent_ParticleSystem(entityID id, ParticleSystemRenderer::ParticleSystemSize systemSize) {
-	sceneData.particleSystemRenderers.insert(robin_hood::pair<const entityID, ParticleSystemRenderer>(id, ParticleSystemRenderer(systemSize)));
+	sceneData.particleSystemRenderers.emplace(id, systemSize);
 }
 
 //template <>
@@ -307,22 +346,14 @@ void Scene::registerComponent_ParticleSystem(entityID id, ParticleSystemRenderer
 // Rigidbodoy
 template <>
 void Scene::registerComponent(entityID id, Rigidbody r) {
-	const auto& t = sceneData.entities.at(id).transform;
-	if (r._bodyGenerated() == false) {
-		r._generateBody(&bworld, t.position, t.rotation);
-	}
-	else {
-		r.SetTransform(t.position, t.rotation);
-	}
-	sceneData.rigidbodies.emplace(id, r);
+	auto [iter, inserted] = sceneData.rigidbodies.emplace(id, r);
+	linkRigidbodyB2D(id, &iter->second);
 };
 
 // Staticbody
 template <>
 void Scene::registerComponent(entityID id, Staticbody s) {
-	const auto& t = sceneData.entities.at(id).transform;
-	//s.body->SetTransform(gtb(t.position), t.rotation);
-	s._generateBody(&bworld, t.position, t.rotation);
-	sceneData.staticbodies[id] = s;
+	auto [iter, inserted] = sceneData.staticbodies.emplace(id, s);
+	linkStaticbodyB2D(id, &iter->second);
 };
 

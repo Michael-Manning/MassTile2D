@@ -31,13 +31,13 @@ public:
 		//assert(false);
 	}
 
-	SceneData sceneData;	
+	SceneData sceneData;
 
 	void serializeJson(std::string filename);
-	static std::shared_ptr<Scene> deserializeJson (std::string filename);
-	static std::shared_ptr<Scene> deserializeFlatbuffers(const AssetPack::Scene * scene);
+	static std::shared_ptr<Scene> deserializeJson(std::string filename);
+	static std::shared_ptr<Scene> deserializeFlatbuffers(const AssetPack::Scene* scene);
 	static std::string peakJsonName(std::string filename) {
-		checkAppend(filename, ".scene");
+		checkAppend(filename, Scene_extension);
 		std::ifstream input(filename);
 		nlohmann::json j;
 		input >> j;
@@ -66,7 +66,7 @@ public:
 
 	Prefab CreatePrefab(std::shared_ptr<Entity> entity);
 
-	Entity* Instantiate(Prefab prefab, std::string name = "prefab", glm::vec2 position = glm::vec2(0.0f), float rotation = 0.0f);
+	Entity* Instantiate(Prefab& prefab, std::string name = "prefab", glm::vec2 position = glm::vec2(0.0f), float rotation = 0.0f);
 
 	double physicsTimer = 0.0;
 	bool paused = true;
@@ -93,13 +93,13 @@ public:
 
 	template <>
 	void registerComponent<ColorRenderer>(entityID id, ColorRenderer component);
-	
+
 	template <>
 	void registerComponent<SpriteRenderer>(entityID id, SpriteRenderer component);
 
 	template <>
-	void registerComponent<TextRenderer>(entityID id, TextRenderer component);	
-	
+	void registerComponent<TextRenderer>(entityID id, TextRenderer component);
+
 	void registerComponent_ParticleSystem(entityID id, ParticleSystemRenderer::ParticleSystemSize systemSize);
 
 	template <>
@@ -120,4 +120,7 @@ private:
 	std::shared_ptr<ComponentAccessor>	componentAccessor;
 
 	void CreateComponentAccessor();
+
+	void linkRigidbodyB2D(entityID id, Rigidbody* r);
+	void linkStaticbodyB2D(entityID id, Staticbody* r);
 };

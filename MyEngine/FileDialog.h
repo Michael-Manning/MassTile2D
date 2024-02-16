@@ -70,7 +70,7 @@ static bool FileDialog(char* buffer, int bufflen, const char* extention, const c
 		return true;
 	}
 	else {
-		GetSaveFileName(&ofn) == TRUE;
+		return GetSaveFileName(&ofn) == TRUE;
 	}
 }
 

@@ -18,6 +18,8 @@ typedef uint32_t tileID; // specific tile in the texture atlas
 
 #include "typedefs.h"
 
+constexpr entityID NULL_Entity = 0;
+
 struct Camera {
 	glm::vec2 position = glm::vec2(0.0f);
 	float zoom = 1.0f;

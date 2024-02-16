@@ -30,17 +30,17 @@ public:
 	};
 
 	// dont' now how to make this work with a map insertion in scene!
-	//~ParticleSystemRenderer() {
-	//	if (hostParticleBuffer != nullptr) {
-	//		hostParticleBuffer.reset();
-	//	}
+	~ParticleSystemRenderer() {
+		if (hostParticleBuffer != nullptr) {
+			hostParticleBuffer.reset();
+		}
 
-	//	// must indicate to engine that this particle system is no longer using it's associated
-	//	// device local particle buffer
-	//	if (token != nullptr) {
-	//		token->active = false;
-	//	}
-	//};
+		// must indicate to engine that this particle system is no longer using it's associated
+		// device local particle buffer
+		if (token != nullptr) {
+			token->active = false;
+		}
+	};
 
 	void SetSystemSize(ParticleSystemSize size) {
 		this->size = size;

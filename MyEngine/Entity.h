@@ -70,7 +70,6 @@ public:
 	{};
 };
 
-
 class Entity {
 
 public:
@@ -101,9 +100,27 @@ public:
 		children_cachePtr.insert(entity);
 
 	};
+	inline void RemoveChild(Entity* entity) {
+		assert(children_cachePtr.contains(entity));
+		children_cachePtr.erase(entity);
+		children.erase(entity->ID);
+	};
 	inline void SetParent(Entity* entity) {
 		parent = entity->ID;
 		parent_cachePtr = entity;
+	}
+	inline void ClearParent() {
+		parent = NULL_Entity;
+		parent_cachePtr = nullptr;
+	};
+
+
+	entityID GetParent() {
+		return parent;
+	}
+
+	entityID* _GetParent() {
+		return &parent;
 	}
 	robin_hood::unordered_flat_set<entityID>* _GetChildSet() {
 		return &children;
@@ -115,6 +132,12 @@ public:
 		return &parent_cachePtr;
 	}
 
+	// copy any memberwise values 
+	void CloneInto(Entity* entity) {
+		entity->name = name;
+		entity->transform = transform;
+	}
+
 	entityID ID;
 
 	Transform transform;
@@ -124,7 +147,7 @@ public:
 	bool persistent = false;
 
 	bool HasParent() const {
-		return parent_cachePtr != nullptr;
+		return parent != NULL_Entity;
 	};
 	bool HasChildren() const {
 		return children.size() > 0;
@@ -165,7 +188,7 @@ private:
 
 	// keeping child/parent cache in sync is none optional
 	robin_hood::unordered_flat_set<entityID> children;
-	entityID parent = 0;
+	entityID parent = NULL_Entity;
 	robin_hood::unordered_flat_set<Entity*> children_cachePtr;
 	Entity* parent_cachePtr = nullptr;
 

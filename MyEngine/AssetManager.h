@@ -177,7 +177,7 @@ public:
 	void LoadAllPrefabs(bool loadResources);
 	void LoadPrefab(std::string name, bool loadResources);
 	// void UnloadPrefab(std::string name, bool unloadResources); TODO: should impliment but probably won't ever need
-	Prefab GetPrefab(std::string name) { return prefabAssets[name]; };
+	Prefab* GetPrefab(std::string name) { return &prefabAssets.at(name); };
 
 	bool IsSceneLoaded(std::string sceneName) { return sceneAssets.contains(sceneName); };
 	void LoadScene(std::string sceneName, bool loadResources = true);

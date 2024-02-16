@@ -241,6 +241,7 @@
       <DisableSpecificWarnings>26495; 26813</DisableSpecificWarnings>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <UseStandardPreprocessor>true</UseStandardPreprocessor>
+      <AdditionalOptions>/we4716 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -348,6 +349,8 @@
     <ClCompile Include="ParticleComputePL.cpp" />
     <ClCompile Include="ParticleSystemPL.cpp" />
     <ClCompile Include="ParticleSystemRenderer.cpp" />
+    <ClCompile Include="Prefab.cpp" />
+    <ClCompile Include="PrefabGenerator.cpp" />
     <ClCompile Include="quadComputePL.cpp" />
     <ClCompile Include="ResourceManager.cpp" />
     <ClCompile Include="SceneData.cpp" />

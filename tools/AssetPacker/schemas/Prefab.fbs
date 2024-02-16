@@ -1,16 +1,11 @@
 include "common.fbs";
+include "SceneData.fbs";
 
 namespace AssetPack;
 
 table Prefab{
     name:string;
-    behaviorHash:uint;
-    transform:Transform;
-    colorRenderer:ColorRenderer;
-    spriteRenderer:SpriteRenderer;
-    textRenderer:TextRenderer;
-    rigidbody:Rigidbody;
-    staticbody:Staticbody;
+    sceneData:SceneData;
 }
 
 root_type Prefab;

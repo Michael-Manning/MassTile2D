@@ -138,6 +138,12 @@
     <ClCompile Include="SceneData.cpp">
       <Filter>Source Files\Engine\ECS\Assets</Filter>
     </ClCompile>
+    <ClCompile Include="Prefab.cpp">
+      <Filter>Source Files\Engine\ECS\Assets</Filter>
+    </ClCompile>
+    <ClCompile Include="PrefabGenerator.cpp">
+      <Filter>Source Files\Editor</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pipeline.h">

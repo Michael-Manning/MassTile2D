@@ -142,12 +142,15 @@ Entity* SceneData::EmplaceEntity(entityID ID) {
 		// new entity
 		EntityGenerator.Input(ID);
 		auto [iterator, inserted] = entities.emplace(std::piecewise_construct, std::forward_as_tuple(ID), std::tuple<>());
+		iterator->second.ID = ID;
 		return &iterator->second;
 	}
 	else {
 		// overwrite entity
 		entities.insert_or_assign(ID, Entity());
-		return &entities.at(ID);
+		Entity* e = &entities.at(ID);
+		e->ID = ID;
+		return e;
 	}
 }
 

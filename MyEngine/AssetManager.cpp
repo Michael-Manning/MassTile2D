@@ -5,6 +5,7 @@
 #include <imgui_impl_vulkan.h>
 #include <filesystem>
 #include <vector>
+#include "ECS.h";
 
 #include "Utils.h"
 #include "Prefab.h"
@@ -219,7 +220,9 @@ void AssetManager::LoadAllPrefabs(bool loadResources) {
 		prefabAssets[prefab.name] = prefab;
 #else
 	for (auto& [name, path] : prefabPathsByName) {
-		prefabAssets[name] = Prefab::deserializeJson(path);
+
+		auto [iter, inserted] = prefabAssets.emplace(std::piecewise_construct, std::forward_as_tuple(name), std::tuple<>());
+		Prefab::deserializeJson(path, &iter->second);
 #endif
 	}
 }
@@ -230,7 +233,8 @@ void AssetManager::LoadPrefab(std::string name, bool loadResources) {
 	prefabAssets[name] = Prefab::deserializeFlatbuffer(packageAssets->prefabs()->Get(prefabIndexesByName[name]));
 #else
 	assert(prefabPathsByName.contains(name));
-	prefabAssets[name] = Prefab::deserializeJson(prefabPathsByName[name]);
+	auto [iter, inserted] = prefabAssets.emplace(std::piecewise_construct, std::forward_as_tuple(name), std::tuple<>());
+	Prefab::deserializeJson(prefabPathsByName.at(name), &iter->second);
 #endif
 	if (loadResources)
 		loadPrefabResources(prefabAssets[name]);
@@ -266,12 +270,7 @@ void AssetManager::UnloadScene(std::string sceneName, bool unloadResources) {
 void AssetManager::loadPrefabResources(Prefab & prefab) {
 
 	// assuming already loaded resources containing assets have already loaded in their respective resources
-
-	if (prefab.spriteRenderer.has_value() && spriteAssets.contains(prefab.spriteRenderer.value().sprite == false))
-		LoadSprite(prefab.spriteRenderer.value().sprite, true);
-
-	if (prefab.textRenderer.has_value() && fontAssets.contains(prefab.textRenderer.value().font) == false)
-		LoadFont(prefab.textRenderer.value().font, true);
+	loadSceneResources(prefab.sceneData);
 }
 
 void AssetManager::loadSceneResources(SceneData & sceneData) {

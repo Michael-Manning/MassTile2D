@@ -327,13 +327,14 @@ void Editor::EntitySelectableTree(int& index, Entity* entity) {
 			return;
 		}
 		if (ImGui::MenuItem("Save as prefab")) {
-			Prefab p = GeneratePrefab(entity, gameScene->sceneData);
 			selectedEntity = nullptr;
 			selectedEntityIndex = -1;
 			ImGui::EndPopup();
 
 			char filename[MAX_PATH];
 			if (saveFileDialog(filename, MAX_PATH, "prefab", "Prefab File\0*.prefab\0")) {
+				Prefab p;
+				GeneratePrefab(entity, gameScene->sceneData, &p);
 				string fullPath = string(filename);
 				std::string endName = getFileName(fullPath);
 				engine->assetManager->ExportPrefab(p, fullPath);
@@ -386,94 +387,6 @@ void Editor::entityWindow() {
 		if (!entity.HasParent()) {
 			EntitySelectableTree(i, &entity);
 		}
-
-#if false
-		if (!entity.HasParent()) {
-
-			if (Selectable(entity.name.c_str(), selectedEntityIndex == i)) {
-				clearInspectorSelection();
-				selectedEntityIndex = i;
-
-				// already selected. deselect
-				if (selectedEntity == &entity) {
-					selectedEntity = nullptr;
-					selectedEntityIndex = -1;
-				}
-				// select new
-				else {
-					selectedEntity = &entity;
-				}
-			}
-
-			if (ImGui::BeginPopupContextItem()) {
-				selectedEntityIndex = i;
-				i++;
-				if (ImGui::MenuItem("Create child")) {
-					auto child = gameScene->CreateEntity({}, "", true);
-					gameScene->SetEntityAsChild(selectedEntity, child);
-					selectedEntity = nullptr;
-					selectedEntityIndex = -1;
-					ImGui::EndPopup();
-					break;
-				}
-				if (ImGui::MenuItem("Delete")) {
-					gameScene->UnregisterEntity(entID);
-					selectedEntity = nullptr;
-					selectedEntityIndex = -1;
-					ImGui::EndPopup();
-					break;
-				}
-				if (ImGui::MenuItem("Duplicate")) {
-					gameScene->DuplicateEntity(entity.ID);
-					selectedEntity = nullptr;
-					selectedEntityIndex = -1;
-					ImGui::EndPopup();
-					break;
-				}
-				if (ImGui::MenuItem("Save as prefab")) {
-					Prefab p = GeneratePrefab(&entity, gameScene->sceneData);
-					selectedEntity = nullptr;
-					selectedEntityIndex = -1;
-					ImGui::EndPopup();
-
-					char filename[MAX_PATH];
-					if (saveFileDialog(filename, MAX_PATH, "prefab", "Prefab File\0*.prefab\0")) {
-						string fullPath = string(filename);
-						std::string endName = getFileName(fullPath);
-						engine->assetManager->ExportPrefab(p, fullPath);
-						// hope you put it in the right folder or it won't appear in the editor
-						if (std::filesystem::exists(std::filesystem::path(engine->assetManager->directories.prefabDir + endName)) == true) {
-							engine->assetManager->LoadPrefab(p.name, false);
-						}
-					}
-
-					break;
-				}
-				ImGui::EndPopup();
-			}
-			else {
-				i++;
-			}
-			if (entity.children.size() > 0)
-			{
-				// move to function, make recursive
-				if (TreeNode("children")) {
-
-
-					for (auto& child : entity.children)
-					{
-						if (Selectable(gameScene->sceneData.entities.at(child->ID).name.c_str(), selectedEntityIndex == i)) {
-							selectedEntityIndex = i;
-							selectedEntity = &gameScene->sceneData.entities.at(child->ID);
-						}
-
-						i++;
-					}
-					ImGui::TreePop();
-				}
-			}
-		}
-#endif
 	}
 	End();
 }

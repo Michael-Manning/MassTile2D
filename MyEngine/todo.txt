@@ -3,7 +3,6 @@ Near roadmap:
 - particle system serialization
 - new behaviour system
 - refactor prefab to contain scene data allowing entity hierarchies
-- prefab serialization
 - add prefab preview/edit utility to editor
 - add deletion of components to editor
 - flatten assets in editor view into one list with drop down sorting
@@ -21,6 +20,7 @@ Sprites store their image file name, and texture IDs are hashed from the same fi
 in the sprite (and remove the requirement they be consistent and persistent), then use texture IDs directly in the bindless
 texture manager, removing one of the 3 layers of inderection required to link a sprite renderer to the actual GPU image
 
+- editor issue with selectables when entities have the same name. Problem when instantiating prefabs with same name as existing entity
 
 - component deletion from editor
 

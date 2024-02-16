@@ -10,3 +10,4 @@
 #include "TextRenderer.h"
 #include "Physics.h"
 #include "Prefab.h"
+#include "SceneData.h"
