@@ -296,9 +296,6 @@
     <ClInclude Include="pipelines.h">
       <Filter>Source Files\vulkan\piplines</Filter>
     </ClInclude>
-    <ClInclude Include="ParticleSystem.h">
-      <Filter>Source Files\Engine\ECS\Assets</Filter>
-    </ClInclude>
     <ClInclude Include="ParticleSystemRenderer.h">
       <Filter>Source Files\Engine\ECS\Components</Filter>
     </ClInclude>

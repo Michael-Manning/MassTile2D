@@ -1,0 +1,50 @@
+{
+    "name": "ptest",
+    "sceneData": {
+        "entities": [
+            {
+                "behaviorHash": 0,
+                "id": 1,
+                "name": "ptest",
+                "transform": {
+                    "position": [
+                        -1.9073486328125e-06,
+                        -2.384185791015625e-07
+                    ],
+                    "rotation": 0.0,
+                    "scale": [
+                        1.0,
+                        1.0
+                    ]
+                }
+            }
+        ],
+        "particleSystemRenderers": [
+            {
+                "configuration": {
+                    "burstMode": true,
+                    "endColor": [
+                        1.0,
+                        1.0,
+                        0.0,
+                        1.0
+                    ],
+                    "endSize": 0.0,
+                    "gravity": -10.0,
+                    "particleCount": 200,
+                    "particleLifeSpan": 1.0,
+                    "spawnRate": 100.0,
+                    "startColor": [
+                        0.08823490142822266,
+                        0.0,
+                        1.0,
+                        1.0
+                    ],
+                    "startSize": 0.30000001192092896
+                },
+                "entityID": 1,
+                "size": 0
+            }
+        ]
+    }
+}

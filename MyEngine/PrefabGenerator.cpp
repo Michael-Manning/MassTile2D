@@ -2,6 +2,8 @@
 
 #include <vector>
 
+#include <robin_hood.h>
+
 #include "Scene.h"
 #include "ECS.h"
 #include "Prefab.h"
@@ -42,6 +44,16 @@ void GeneratePrefab(Entity* entity, const SceneData& sceneData, Prefab* p) {
 			p->sceneData.colorRenderers.insert({ e->ID, sceneData.colorRenderers.at(e->ID)});
 		if (sceneData.spriteRenderers.contains(e->ID))
 			p->sceneData.spriteRenderers.insert({ e->ID, sceneData.spriteRenderers.at(e->ID) });
+		if(sceneData.textRenderers.contains(e->ID))
+			p->sceneData.textRenderers.insert({ e->ID, sceneData.textRenderers.at(e->ID) });
+		if (sceneData.particleSystemRenderers.contains(e->ID)) {
+			auto pr = &sceneData.particleSystemRenderers.at(e->ID);
+
+			p->sceneData.particleSystemRenderers.emplace(
+				std::piecewise_construct,
+				std::forward_as_tuple(e->ID),
+				std::forward_as_tuple(pr->size, pr->configuration));
+		}
 		if (sceneData.staticbodies.contains(e->ID))
 			p->sceneData.staticbodies.insert({ e->ID, sceneData.staticbodies.at(e->ID) });
 		if (sceneData.rigidbodies.contains(e->ID))

@@ -11,8 +11,10 @@
 
 #include <vulkan/vulkan.hpp>
 #include <glm/glm.hpp>
-
 #include <vk_mem_alloc.h>
+#include <nlohmann/json.hpp>
+
+#include <assetPack/common_generated.h>
 
 #include "texture.h"
 #include "VKEngine.h"
@@ -58,6 +60,10 @@ public:
 		//float spawnMaxVelocity;
 		alignas(16) glm::vec4 startColor = glm::vec4(1.0f, 1.0f, 0.0f, 1.0f);
 		alignas(16) glm::vec4 endColor = glm::vec4(1.0f, 1.0f, 0.0f, 1.0f);
+
+		nlohmann::json serializeJson() const;
+		static void deserializeJson(nlohmann::json j, ParticleSystemConfiguration* config);
+		static void deserializeFlatbuffers(const AssetPack::ParticleSystemConfiguration* p, ParticleSystemConfiguration* config);
 	};
 
 	// for cpu driven particle systems

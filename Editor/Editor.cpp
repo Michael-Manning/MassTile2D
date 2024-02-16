@@ -593,7 +593,7 @@ void Editor::Initialize(Engine* engine, std::shared_ptr<Scene> gameScene, sceneR
 	auto id = entityPreviewScene->RegisterEntity(teste);*/
 
 	//ParticleSystemRenderer psr = ParticleSystemRenderer(ParticleSystemRenderer::ParticleSystemSize::Small);
-	entityPreviewScene->registerComponent_ParticleSystem(pSys->ID, ParticleSystemRenderer::ParticleSystemSize::Small);
+	entityPreviewScene->registerComponent(pSys->ID, ParticleSystemRenderer::ParticleSystemSize::Small);
 
 	//ColorRenderer r;
 	//r.color = vec4(1.0, 0, 0, 1.0);
@@ -938,7 +938,7 @@ void Editor::Run() {
 					break;
 				case 3:
 					if (!gameScene->sceneData.particleSystemRenderers.contains(selectedEntity->ID))
-						gameScene->registerComponent_ParticleSystem(selectedEntity->ID, ParticleSystemRenderer::ParticleSystemSize::Small);
+						gameScene->registerComponent(selectedEntity->ID, ParticleSystemRenderer::ParticleSystemSize::Small);
 					break;
 				case 4:
 					if (!gameScene->sceneData.staticbodies.contains(selectedEntity->ID))

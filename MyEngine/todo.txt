@@ -1,6 +1,7 @@
 
 Near roadmap:
 - particle system serialization
+- auto save prefabs to folder instead of openging save file dialog
 - new behaviour system
 - refactor prefab to contain scene data allowing entity hierarchies
 - add prefab preview/edit utility to editor
@@ -23,6 +24,9 @@ texture manager, removing one of the 3 layers of inderection required to link a 
 - editor issue with selectables when entities have the same name. Problem when instantiating prefabs with same name as existing entity
 
 - component deletion from editor
+
+- switch all deserialization functions to constructors for uniformity, simplicity, as well as slight performance boost as components could all
+be emplaced into maps instead of constructed, coppied, and destructed;
 
 - drag prefab to instantiate
 
@@ -68,7 +72,9 @@ on entities which are drawn for multiple frames(basically all of them)
 
 - disallow rigidbodies on child entities
 
-
+- change particle system rendere host allocation logic to delay actual creation of the particle buffer until/if the particle data is actually accessed.
+There are instances such as with prefab loading that a particle system renderer allocates a large host buffer, but the data is never actually used
+for anything, and the class is just used as a clone template
 
 
 ---- things to abstract:

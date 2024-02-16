@@ -100,7 +100,8 @@ public:
 	template <>
 	void registerComponent<TextRenderer>(entityID id, TextRenderer component);
 
-	void registerComponent_ParticleSystem(entityID id, ParticleSystemRenderer::ParticleSystemSize systemSize);
+	void registerComponent(entityID id, ParticleSystemRenderer::ParticleSystemSize systemSize);
+	void registerComponent(entityID id, ParticleSystemRenderer::ParticleSystemSize systemSize, ParticleSystemPL::ParticleSystemConfiguration& configuration);
 
 	template <>
 	void registerComponent<Rigidbody>(entityID id, Rigidbody component);

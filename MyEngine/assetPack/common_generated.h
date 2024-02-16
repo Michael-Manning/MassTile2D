@@ -34,6 +34,10 @@ struct Rigidbody;
 
 struct Staticbody;
 
+struct ParticleSystemConfiguration;
+
+struct ParticleSystemRenderer;
+
 struct Entity;
 struct EntityBuilder;
 
@@ -95,6 +99,36 @@ inline const char *EnumNameShape(Shape e) {
   if (::flatbuffers::IsOutRange(e, Shape_Rectangle, Shape_Circle)) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesShape()[index];
+}
+
+enum ParticleSystemSize : int32_t {
+  ParticleSystemSize_Small = 0,
+  ParticleSystemSize_Large = 1,
+  ParticleSystemSize_MIN = ParticleSystemSize_Small,
+  ParticleSystemSize_MAX = ParticleSystemSize_Large
+};
+
+inline const ParticleSystemSize (&EnumValuesParticleSystemSize())[2] {
+  static const ParticleSystemSize values[] = {
+    ParticleSystemSize_Small,
+    ParticleSystemSize_Large
+  };
+  return values;
+}
+
+inline const char * const *EnumNamesParticleSystemSize() {
+  static const char * const names[3] = {
+    "Small",
+    "Large",
+    nullptr
+  };
+  return names;
+}
+
+inline const char *EnumNameParticleSystemSize(ParticleSystemSize e) {
+  if (::flatbuffers::IsOutRange(e, ParticleSystemSize_Small, ParticleSystemSize_Large)) return "";
+  const size_t index = static_cast<size_t>(e);
+  return EnumNamesParticleSystemSize()[index];
 }
 
 FLATBUFFERS_MANUALLY_ALIGNED_STRUCT(4) vec2 FLATBUFFERS_FINAL_CLASS {
@@ -374,32 +408,135 @@ FLATBUFFERS_MANUALLY_ALIGNED_STRUCT(4) Staticbody FLATBUFFERS_FINAL_CLASS {
 };
 FLATBUFFERS_STRUCT_END(Staticbody, 20);
 
+FLATBUFFERS_MANUALLY_ALIGNED_STRUCT(4) ParticleSystemConfiguration FLATBUFFERS_FINAL_CLASS {
+ private:
+  int32_t particleCount_;
+  uint8_t burstMode_;
+  int8_t padding0__;  int16_t padding1__;
+  float spawnRate_;
+  float particleLifeSpan_;
+  float gravity_;
+  float startSize_;
+  float endSize_;
+  AssetPack::vec4 startColor_;
+  AssetPack::vec4 endColor_;
+
+ public:
+  ParticleSystemConfiguration()
+      : particleCount_(0),
+        burstMode_(0),
+        padding0__(0),
+        padding1__(0),
+        spawnRate_(0),
+        particleLifeSpan_(0),
+        gravity_(0),
+        startSize_(0),
+        endSize_(0),
+        startColor_(),
+        endColor_() {
+    (void)padding0__;
+    (void)padding1__;
+  }
+  ParticleSystemConfiguration(int32_t _particleCount, bool _burstMode, float _spawnRate, float _particleLifeSpan, float _gravity, float _startSize, float _endSize, const AssetPack::vec4 &_startColor, const AssetPack::vec4 &_endColor)
+      : particleCount_(::flatbuffers::EndianScalar(_particleCount)),
+        burstMode_(::flatbuffers::EndianScalar(static_cast<uint8_t>(_burstMode))),
+        padding0__(0),
+        padding1__(0),
+        spawnRate_(::flatbuffers::EndianScalar(_spawnRate)),
+        particleLifeSpan_(::flatbuffers::EndianScalar(_particleLifeSpan)),
+        gravity_(::flatbuffers::EndianScalar(_gravity)),
+        startSize_(::flatbuffers::EndianScalar(_startSize)),
+        endSize_(::flatbuffers::EndianScalar(_endSize)),
+        startColor_(_startColor),
+        endColor_(_endColor) {
+    (void)padding0__;
+    (void)padding1__;
+  }
+  int32_t particleCount() const {
+    return ::flatbuffers::EndianScalar(particleCount_);
+  }
+  bool burstMode() const {
+    return ::flatbuffers::EndianScalar(burstMode_) != 0;
+  }
+  float spawnRate() const {
+    return ::flatbuffers::EndianScalar(spawnRate_);
+  }
+  float particleLifeSpan() const {
+    return ::flatbuffers::EndianScalar(particleLifeSpan_);
+  }
+  float gravity() const {
+    return ::flatbuffers::EndianScalar(gravity_);
+  }
+  float startSize() const {
+    return ::flatbuffers::EndianScalar(startSize_);
+  }
+  float endSize() const {
+    return ::flatbuffers::EndianScalar(endSize_);
+  }
+  const AssetPack::vec4 &startColor() const {
+    return startColor_;
+  }
+  const AssetPack::vec4 &endColor() const {
+    return endColor_;
+  }
+};
+FLATBUFFERS_STRUCT_END(ParticleSystemConfiguration, 60);
+
+FLATBUFFERS_MANUALLY_ALIGNED_STRUCT(4) ParticleSystemRenderer FLATBUFFERS_FINAL_CLASS {
+ private:
+  uint32_t entityID_;
+  int32_t size_;
+  AssetPack::ParticleSystemConfiguration configuration_;
+
+ public:
+  ParticleSystemRenderer()
+      : entityID_(0),
+        size_(0),
+        configuration_() {
+  }
+  ParticleSystemRenderer(uint32_t _entityID, AssetPack::ParticleSystemSize _size, const AssetPack::ParticleSystemConfiguration &_configuration)
+      : entityID_(::flatbuffers::EndianScalar(_entityID)),
+        size_(::flatbuffers::EndianScalar(static_cast<int32_t>(_size))),
+        configuration_(_configuration) {
+  }
+  uint32_t entityID() const {
+    return ::flatbuffers::EndianScalar(entityID_);
+  }
+  AssetPack::ParticleSystemSize size() const {
+    return static_cast<AssetPack::ParticleSystemSize>(::flatbuffers::EndianScalar(size_));
+  }
+  const AssetPack::ParticleSystemConfiguration &configuration() const {
+    return configuration_;
+  }
+};
+FLATBUFFERS_STRUCT_END(ParticleSystemRenderer, 68);
+
 struct TextRenderer FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   typedef TextRendererBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
-    VT_TEXT = 4,
-    VT_FONTID = 6,
-    VT_ENTITYID = 8,
+    VT_ENTITYID = 4,
+    VT_TEXT = 6,
+    VT_FONTID = 8,
     VT_COLOR = 10
   };
+  uint32_t entityID() const {
+    return GetField<uint32_t>(VT_ENTITYID, 0);
+  }
   const ::flatbuffers::String *text() const {
     return GetPointer<const ::flatbuffers::String *>(VT_TEXT);
   }
   uint32_t fontID() const {
     return GetField<uint32_t>(VT_FONTID, 0);
   }
-  uint32_t entityID() const {
-    return GetField<uint32_t>(VT_ENTITYID, 0);
-  }
   const AssetPack::vec4 *color() const {
     return GetStruct<const AssetPack::vec4 *>(VT_COLOR);
   }
   bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
+           VerifyField<uint32_t>(verifier, VT_ENTITYID, 4) &&
            VerifyOffset(verifier, VT_TEXT) &&
            verifier.VerifyString(text()) &&
            VerifyField<uint32_t>(verifier, VT_FONTID, 4) &&
-           VerifyField<uint32_t>(verifier, VT_ENTITYID, 4) &&
            VerifyField<AssetPack::vec4>(verifier, VT_COLOR, 4) &&
            verifier.EndTable();
   }
@@ -409,14 +546,14 @@ struct TextRendererBuilder {
   typedef TextRenderer Table;
   ::flatbuffers::FlatBufferBuilder &fbb_;
   ::flatbuffers::uoffset_t start_;
+  void add_entityID(uint32_t entityID) {
+    fbb_.AddElement<uint32_t>(TextRenderer::VT_ENTITYID, entityID, 0);
+  }
   void add_text(::flatbuffers::Offset<::flatbuffers::String> text) {
     fbb_.AddOffset(TextRenderer::VT_TEXT, text);
   }
   void add_fontID(uint32_t fontID) {
     fbb_.AddElement<uint32_t>(TextRenderer::VT_FONTID, fontID, 0);
-  }
-  void add_entityID(uint32_t entityID) {
-    fbb_.AddElement<uint32_t>(TextRenderer::VT_ENTITYID, entityID, 0);
   }
   void add_color(const AssetPack::vec4 *color) {
     fbb_.AddStruct(TextRenderer::VT_COLOR, color);
@@ -434,30 +571,30 @@ struct TextRendererBuilder {
 
 inline ::flatbuffers::Offset<TextRenderer> CreateTextRenderer(
     ::flatbuffers::FlatBufferBuilder &_fbb,
+    uint32_t entityID = 0,
     ::flatbuffers::Offset<::flatbuffers::String> text = 0,
     uint32_t fontID = 0,
-    uint32_t entityID = 0,
     const AssetPack::vec4 *color = nullptr) {
   TextRendererBuilder builder_(_fbb);
   builder_.add_color(color);
-  builder_.add_entityID(entityID);
   builder_.add_fontID(fontID);
   builder_.add_text(text);
+  builder_.add_entityID(entityID);
   return builder_.Finish();
 }
 
 inline ::flatbuffers::Offset<TextRenderer> CreateTextRendererDirect(
     ::flatbuffers::FlatBufferBuilder &_fbb,
+    uint32_t entityID = 0,
     const char *text = nullptr,
     uint32_t fontID = 0,
-    uint32_t entityID = 0,
     const AssetPack::vec4 *color = nullptr) {
   auto text__ = text ? _fbb.CreateString(text) : 0;
   return AssetPack::CreateTextRenderer(
       _fbb,
+      entityID,
       text__,
       fontID,
-      entityID,
       color);
 }
 

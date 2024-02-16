@@ -38,6 +38,11 @@ nlohmann::json SceneData::serializeJson() const {
 			j["textRenderers"].push_back(c.second.serializeJson(c.first));
 		}
 	}
+	for (auto& c : particleSystemRenderers) {
+		if (entities.at(c.first).persistent) {
+			j["particleSystemRenderers"].push_back(c.second.serializeJson(c.first));
+		}
+	}
 	for (auto& r : rigidbodies) {
 		if (entities.at(r.first).persistent) {
 			j["rigidbodies"].push_back(r.second.serializeJson(r.first));
@@ -86,6 +91,10 @@ void SceneData::deserializeJson(nlohmann::json& j, SceneData* sceneData) {
 		TextRenderer r = TextRenderer::deserializeJson(e);
 		sceneData->textRenderers.insert({ entID, r });
 	}
+	for (auto& e : j["particleSystemRenderers"]) {
+		entityID entID = e["entityID"];
+		sceneData->particleSystemRenderers.emplace(entID, e);
+	}
 	for (auto& e : j["rigidbodies"]) {
 		entityID entID = e["entityID"];
 		Rigidbody r = Rigidbody::deserializeJson(e);
@@ -123,6 +132,10 @@ void SceneData::deserializeFlatbuffers(const AssetPack::SceneData* s, SceneData*
 		TextRenderer r = TextRenderer::deserializeFlatbuffers(s->textRenderers()->Get(i));
 		entityID entID = s->textRenderers()->Get(i)->entityID();
 		sceneData->textRenderers.insert({ entID, r });
+	}
+	for (size_t i = 0; i < s->particleSystemRenderers()->size(); i++) {
+		entityID entID = s->particleSystemRenderers()->Get(i)->entityID();
+		sceneData->particleSystemRenderers.emplace(entID, s->particleSystemRenderers()->Get(i));
 	}
 	for (size_t i = 0; i < s->rigidbodies()->size(); i++) {
 		Rigidbody r = Rigidbody::deserializeFlatbuffers(s->rigidbodies()->Get(i));

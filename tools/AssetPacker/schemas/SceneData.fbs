@@ -8,6 +8,7 @@ table SceneData{
     colorRenderers:[ColorRenderer];
     spriteRenderers:[SpriteRenderer];
     textRenderers:[TextRenderer];
+    particleSystemRenderers:[ParticleSystemRenderer];
     rigidbodies:[Rigidbody];
     staticbodies:[Staticbody];
 }

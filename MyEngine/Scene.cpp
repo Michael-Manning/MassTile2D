@@ -246,21 +246,6 @@ entityID Scene::DuplicateEntity(entityID original) {
 	//return copy->ID;
 }
 
-//Prefab Scene::CreatePrefab(std::shared_ptr<Entity> entity) {
-//	Prefab p;
-//	p.behaviorHash = entity->getBehaviorHash();
-//
-//	if (sceneData.colorRenderers.contains(entity->ID))
-//		p.colorRenderer = sceneData.colorRenderers[entity->ID];
-//	if (sceneData.spriteRenderers.contains(entity->ID))
-//		p.spriteRenderer = sceneData.spriteRenderers[entity->ID];
-//	if (sceneData.staticbodies.contains(entity->ID))
-//		p.staticbody = sceneData.staticbodies[entity->ID];
-//	if (sceneData.rigidbodies.contains(entity->ID))
-//		p.rigidbody = sceneData.rigidbodies[entity->ID];
-//
-//	return p;
-//}
 
 Entity* Scene::Instantiate(Prefab& prefab, std::string name, glm::vec2 position, float rotation) {
 	//std::shared_ptr<Entity> copy;
@@ -302,6 +287,10 @@ Entity* Scene::Instantiate(Prefab& prefab, std::string name, glm::vec2 position,
 		registerComponent(IDRemap.at(ID), r);
 	for (auto& [ID, r] : prefab.sceneData.spriteRenderers)
 		registerComponent(IDRemap.at(ID), r);
+	for (auto& [ID, r] : prefab.sceneData.textRenderers)
+		registerComponent(IDRemap.at(ID), r);
+	for (auto& [ID, r] : prefab.sceneData.particleSystemRenderers)
+		registerComponent(IDRemap.at(ID), r.size, r.configuration);
 	for (auto& [ID, r] : prefab.sceneData.rigidbodies)
 		registerComponent(IDRemap.at(ID), r);
 	for (auto& [ID, r] : prefab.sceneData.staticbodies)
@@ -334,14 +323,17 @@ void Scene::registerComponent<TextRenderer>(entityID id, TextRenderer t) {
 	sceneData.textRenderers.insert({ id, t });
 }
 
-void Scene::registerComponent_ParticleSystem(entityID id, ParticleSystemRenderer::ParticleSystemSize systemSize) {
+void Scene::registerComponent(entityID id, ParticleSystemRenderer::ParticleSystemSize systemSize) {
 	sceneData.particleSystemRenderers.emplace(id, systemSize);
 }
+void Scene::registerComponent(entityID id, ParticleSystemRenderer::ParticleSystemSize systemSize, ParticleSystemPL::ParticleSystemConfiguration& configuration) {
+	sceneData.particleSystemRenderers.emplace(
+		std::piecewise_construct,
+		std::forward_as_tuple(id), 
+		std::forward_as_tuple(systemSize, configuration));
+}
 
-//template <>
-//void Scene::registerComponent<ParticleSystemRenderer>(entityID id, ParticleSystemRenderer component) {
-//	sceneData.particleSystemRenderers[id] = component;
-//}
+
 
 // Rigidbodoy
 template <>

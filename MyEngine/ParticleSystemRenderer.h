@@ -9,7 +9,6 @@
 #include "typedefs.h"
 #include "Component.h"
 #include "serialization.h"
-//#include "ParticleSystem.h"
 #include "ParticleSystemPL.h"
 
 #include <assetPack/common_generated.h>
@@ -18,16 +17,25 @@ class ParticleSystemRenderer { // : public Component {
 public:
 
 	enum class ParticleSystemSize {
-		Small,
+		Small = 0,
 		Large
 	};
 
 	ParticleSystemSize size = ParticleSystemSize::Small;
 
 	// TODO: maybe make try to remove this default argument to prevent unnecessary CPU allocation if immediately converting to compute driven system
-	ParticleSystemRenderer(ParticleSystemSize size){// = ParticleSystemSize::Small) {
+	ParticleSystemRenderer(ParticleSystemSize size){
 		SetSystemSize(size);
 	};
+
+	// used for copying
+	ParticleSystemRenderer(ParticleSystemSize size, const ParticleSystemPL::ParticleSystemConfiguration& config) {
+		configuration = config;
+		SetSystemSize(size);
+	};
+
+	ParticleSystemRenderer(nlohmann::json& j);
+	ParticleSystemRenderer(const AssetPack::ParticleSystemRenderer* p);
 
 	// dont' now how to make this work with a map insertion in scene!
 	~ParticleSystemRenderer() {
@@ -88,19 +96,5 @@ public:
 	bool computeContextDirty = true;
 	ComponentResourceToken* token = nullptr;
 
-	//nlohmann::json serializeJson(entityID entId) override;
-	//static ColorRenderer deserializeJson(nlohmann::json);
-
-	/*ColorRenderer duplicate() const {
-		ColorRenderer r(color, shape);
-		return r;
-	};
-
-	static ColorRenderer deserializeFlatbuffers(const AssetPack::ColorRenderer* c) {
-		ColorRenderer r;
-		r.color = fromAP(c->color());
-		r.shape = static_cast<Shape>(c->shape());
-		return r;
-	};*/
-
+	nlohmann::json serializeJson(entityID ID) const;
 };

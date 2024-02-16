@@ -3,7 +3,6 @@
 #include <random>
 #include <glm/glm.hpp>
 
-#include "ParticleSystem.h"
 #include "ParticleSystemPL.h"
 #include "ParticleSystemRenderer.h"
 #include "MyMath.h"
@@ -69,4 +68,25 @@ void ParticleSystemRenderer::runSimulation(float deltaTime, glm::vec2 spawnOrigi
 			ps[id].position += ps[id].velocity * deltaTime;
 		}
 	}
+}
+
+nlohmann::json ParticleSystemRenderer::serializeJson(entityID ID) const {
+	nlohmann::json j;
+
+	j["entityID"] = ID;
+	j["size"] = size;
+	j["configuration"] = configuration.serializeJson();
+
+	return j;
+}
+
+ParticleSystemRenderer::ParticleSystemRenderer(nlohmann::json& j) {
+	size = j["size"];
+	ParticleSystemPL::ParticleSystemConfiguration::deserializeJson(j["configuration"], &configuration);
+	SetSystemSize(size);
+}
+ParticleSystemRenderer::ParticleSystemRenderer(const AssetPack::ParticleSystemRenderer* p) {
+	size = static_cast<ParticleSystemSize>(p->size());
+	ParticleSystemPL::ParticleSystemConfiguration::deserializeFlatbuffers(&p->configuration(), &configuration);
+	SetSystemSize(size);
 }

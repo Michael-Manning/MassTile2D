@@ -41,9 +41,9 @@ struct ColorRenderer{
 }
 
 table TextRenderer{
+    entityID:uint;
     text:string;
     fontID:uint;
-    entityID:uint;
     color:vec4;
 }
 
@@ -69,6 +69,29 @@ struct Rigidbody{
 struct Staticbody{
     entityID:uint;
     collider:Collider;
+}
+
+enum ParticleSystemSize : int {
+    Small = 0,
+    Large
+}
+
+struct ParticleSystemConfiguration{
+   particleCount:int;
+   burstMode:bool;
+   spawnRate:float;
+   particleLifeSpan:float;
+   gravity:float;
+   startSize:float; 
+   endSize:float;
+   startColor:vec4;
+   endColor:vec4;
+}
+
+struct ParticleSystemRenderer{
+   entityID:uint;
+   size:ParticleSystemSize;
+   configuration:ParticleSystemConfiguration;
 }
 
 table Entity{

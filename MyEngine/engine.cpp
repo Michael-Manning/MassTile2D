@@ -34,7 +34,7 @@
 #include "profiling.h"
 #include "Settings.h"
 #include "GlobalImageDescriptor.h"
-#include "ParticleSystem.h"
+
 
 using namespace glm;
 using namespace std;

@@ -28,8 +28,9 @@ struct SceneData FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
     VT_COLORRENDERERS = 8,
     VT_SPRITERENDERERS = 10,
     VT_TEXTRENDERERS = 12,
-    VT_RIGIDBODIES = 14,
-    VT_STATICBODIES = 16
+    VT_PARTICLESYSTEMRENDERERS = 14,
+    VT_RIGIDBODIES = 16,
+    VT_STATICBODIES = 18
   };
   const ::flatbuffers::String *name() const {
     return GetPointer<const ::flatbuffers::String *>(VT_NAME);
@@ -45,6 +46,9 @@ struct SceneData FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   }
   const ::flatbuffers::Vector<::flatbuffers::Offset<AssetPack::TextRenderer>> *textRenderers() const {
     return GetPointer<const ::flatbuffers::Vector<::flatbuffers::Offset<AssetPack::TextRenderer>> *>(VT_TEXTRENDERERS);
+  }
+  const ::flatbuffers::Vector<const AssetPack::ParticleSystemRenderer *> *particleSystemRenderers() const {
+    return GetPointer<const ::flatbuffers::Vector<const AssetPack::ParticleSystemRenderer *> *>(VT_PARTICLESYSTEMRENDERERS);
   }
   const ::flatbuffers::Vector<const AssetPack::Rigidbody *> *rigidbodies() const {
     return GetPointer<const ::flatbuffers::Vector<const AssetPack::Rigidbody *> *>(VT_RIGIDBODIES);
@@ -66,6 +70,8 @@ struct SceneData FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
            VerifyOffset(verifier, VT_TEXTRENDERERS) &&
            verifier.VerifyVector(textRenderers()) &&
            verifier.VerifyVectorOfTables(textRenderers()) &&
+           VerifyOffset(verifier, VT_PARTICLESYSTEMRENDERERS) &&
+           verifier.VerifyVector(particleSystemRenderers()) &&
            VerifyOffset(verifier, VT_RIGIDBODIES) &&
            verifier.VerifyVector(rigidbodies()) &&
            VerifyOffset(verifier, VT_STATICBODIES) &&
@@ -93,6 +99,9 @@ struct SceneDataBuilder {
   void add_textRenderers(::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<AssetPack::TextRenderer>>> textRenderers) {
     fbb_.AddOffset(SceneData::VT_TEXTRENDERERS, textRenderers);
   }
+  void add_particleSystemRenderers(::flatbuffers::Offset<::flatbuffers::Vector<const AssetPack::ParticleSystemRenderer *>> particleSystemRenderers) {
+    fbb_.AddOffset(SceneData::VT_PARTICLESYSTEMRENDERERS, particleSystemRenderers);
+  }
   void add_rigidbodies(::flatbuffers::Offset<::flatbuffers::Vector<const AssetPack::Rigidbody *>> rigidbodies) {
     fbb_.AddOffset(SceneData::VT_RIGIDBODIES, rigidbodies);
   }
@@ -117,11 +126,13 @@ inline ::flatbuffers::Offset<SceneData> CreateSceneData(
     ::flatbuffers::Offset<::flatbuffers::Vector<const AssetPack::ColorRenderer *>> colorRenderers = 0,
     ::flatbuffers::Offset<::flatbuffers::Vector<const AssetPack::SpriteRenderer *>> spriteRenderers = 0,
     ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<AssetPack::TextRenderer>>> textRenderers = 0,
+    ::flatbuffers::Offset<::flatbuffers::Vector<const AssetPack::ParticleSystemRenderer *>> particleSystemRenderers = 0,
     ::flatbuffers::Offset<::flatbuffers::Vector<const AssetPack::Rigidbody *>> rigidbodies = 0,
     ::flatbuffers::Offset<::flatbuffers::Vector<const AssetPack::Staticbody *>> staticbodies = 0) {
   SceneDataBuilder builder_(_fbb);
   builder_.add_staticbodies(staticbodies);
   builder_.add_rigidbodies(rigidbodies);
+  builder_.add_particleSystemRenderers(particleSystemRenderers);
   builder_.add_textRenderers(textRenderers);
   builder_.add_spriteRenderers(spriteRenderers);
   builder_.add_colorRenderers(colorRenderers);
@@ -137,6 +148,7 @@ inline ::flatbuffers::Offset<SceneData> CreateSceneDataDirect(
     const std::vector<AssetPack::ColorRenderer> *colorRenderers = nullptr,
     const std::vector<AssetPack::SpriteRenderer> *spriteRenderers = nullptr,
     const std::vector<::flatbuffers::Offset<AssetPack::TextRenderer>> *textRenderers = nullptr,
+    const std::vector<AssetPack::ParticleSystemRenderer> *particleSystemRenderers = nullptr,
     const std::vector<AssetPack::Rigidbody> *rigidbodies = nullptr,
     const std::vector<AssetPack::Staticbody> *staticbodies = nullptr) {
   auto name__ = name ? _fbb.CreateString(name) : 0;
@@ -144,6 +156,7 @@ inline ::flatbuffers::Offset<SceneData> CreateSceneDataDirect(
   auto colorRenderers__ = colorRenderers ? _fbb.CreateVectorOfStructs<AssetPack::ColorRenderer>(*colorRenderers) : 0;
   auto spriteRenderers__ = spriteRenderers ? _fbb.CreateVectorOfStructs<AssetPack::SpriteRenderer>(*spriteRenderers) : 0;
   auto textRenderers__ = textRenderers ? _fbb.CreateVector<::flatbuffers::Offset<AssetPack::TextRenderer>>(*textRenderers) : 0;
+  auto particleSystemRenderers__ = particleSystemRenderers ? _fbb.CreateVectorOfStructs<AssetPack::ParticleSystemRenderer>(*particleSystemRenderers) : 0;
   auto rigidbodies__ = rigidbodies ? _fbb.CreateVectorOfStructs<AssetPack::Rigidbody>(*rigidbodies) : 0;
   auto staticbodies__ = staticbodies ? _fbb.CreateVectorOfStructs<AssetPack::Staticbody>(*staticbodies) : 0;
   return AssetPack::CreateSceneData(
@@ -153,6 +166,7 @@ inline ::flatbuffers::Offset<SceneData> CreateSceneDataDirect(
       colorRenderers__,
       spriteRenderers__,
       textRenderers__,
+      particleSystemRenderers__,
       rigidbodies__,
       staticbodies__);
 }
