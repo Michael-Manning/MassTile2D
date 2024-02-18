@@ -368,6 +368,7 @@
     <ClInclude Include="Player.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="stdafx.h" />
+    <ClInclude Include="TestScript.h" />
     <ClInclude Include="worldGen.h" />
   </ItemGroup>
   <ItemGroup>

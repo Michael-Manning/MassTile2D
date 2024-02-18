@@ -95,8 +95,44 @@ struct ParticleSystemRenderer{
 }
 
 table Entity{
-    behaviorHash:uint = 0;
-    id:uint;
-    name:string;
-    transform:Transform;
+   id:uint;
+   name:string;
+   transform:Transform;
+}
+
+enum SerializableType : int{
+   INT = 0,
+   FLOAT,
+   VEC2
+}
+
+table U_int{
+   value:int;
+}
+table U_float{
+   value:float;
+}
+table U_vec2{
+   value:vec2;
+}
+
+union SerializableValue{
+   U_int,
+   U_float,
+   U_vec2
+}
+
+table SerializableProperty{
+   type:SerializableType;
+   name:string;
+   value:SerializableValue;
+}
+
+table PropertyGroup{
+   properties:[SerializableProperty];
+}
+
+table Behaviour{
+   entityID:uint;
+   propertyGroup:PropertyGroup;
 }

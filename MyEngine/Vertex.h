@@ -71,7 +71,7 @@ static const std::vector<uint16_t> QuadIndices = {
 	0, 1, 2, 2, 3, 0
 };
 
-static void AllocateQuad(std::shared_ptr<VKEngine> engine, VertexMeshBuffer& vertexBuf) {
+static void AllocateQuad(VKEngine* engine, VertexMeshBuffer& vertexBuf) {
 	{
 		vk::DeviceSize bufferSize = sizeof(quadVertices[0]) * quadVertices.size();
 

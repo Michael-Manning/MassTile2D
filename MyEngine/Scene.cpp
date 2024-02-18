@@ -24,6 +24,27 @@
 using namespace nlohmann;
 using namespace std;
 
+
+Scene::Scene() : bworld(gravity) {
+
+
+	for (auto& [hash, stringPair] : BehaviorMap)
+	{
+
+		stringBehaviourMap.insert({ stringPair.first, std::pair<behavioiurHash, BehaviourFactoryFunc> (hash, stringPair.second)});
+		//stringBehaviourMap.insert({ stringPair.first, stringPair.second });
+	}
+
+	componentAccessor = make_unique<ComponentAccessor>();
+	componentAccessor->entities = &sceneData.entities;
+	componentAccessor->colorRenderers = &sceneData.colorRenderers;
+	componentAccessor->spriteRenderers = &sceneData.spriteRenderers;
+	componentAccessor->textRenderers = &sceneData.textRenderers;
+	componentAccessor->particleSystemRenderers = &sceneData.particleSystemRenderers;
+	componentAccessor->rigidbodies = &sceneData.rigidbodies;
+	componentAccessor->staticbodies = &sceneData.staticbodies;
+}
+
 void Scene::linkRigidbodyB2D(entityID id, Rigidbody* r) {
 	const auto& t = sceneData.entities.at(id).transform;
 	r->_generateBody(&bworld, t.position, t.rotation);
@@ -32,35 +53,6 @@ void Scene::linkRigidbodyB2D(entityID id, Rigidbody* r) {
 void Scene::linkStaticbodyB2D(entityID id, Staticbody* s) {
 	const auto& t = sceneData.entities.at(id).transform;
 	s->_generateBody(&bworld, t.position, t.rotation);
-}
-
-void Scene::CreateComponentAccessor() {
-	auto getColorRenderer = [this](entityID id) {
-		assert(sceneData.colorRenderers.contains(id));
-		return &sceneData.colorRenderers[id];
-		};
-
-	auto getSpriteRenderer = [this](entityID id) {
-		assert(sceneData.spriteRenderers.contains(id));
-		return &sceneData.spriteRenderers[id];
-		};
-
-	auto getStaticbody = [this](entityID id) {
-		assert(sceneData.staticbodies.contains(id));
-		return &sceneData.staticbodies[id];
-		};
-
-	auto getRigidbody = [this](entityID id) {
-		assert(sceneData.rigidbodies.contains(id));
-		return &sceneData.rigidbodies[id];
-		};
-
-	componentAccessor = make_shared<ComponentAccessor>(
-		getColorRenderer,
-		getSpriteRenderer,
-		getStaticbody,
-		getRigidbody
-	);
 }
 
 void Scene::serializeJson(std::string filename) {
@@ -181,24 +173,20 @@ Entity* Scene::CreateEntity(Transform transform, std::string name, bool persiste
 	if (entity->name.empty()) {
 		entity->name = string("entity ") + to_string(id);
 	}
-	entity->_setComponentAccessor(componentAccessor);
+
 	return entity;
 }
 
-//Entity* Scene::EmplaceEntity(entityID ID) {
-//	if (EntityGenerator.Contains(ID) == false) {
-//		// new entity
-//		EntityGenerator.Input(ID);
-//		auto [iterator, inserted] = sceneData.entities.emplace(std::piecewise_construct, std::forward_as_tuple(ID), std::tuple<>());
-//		return &iterator->second;
-//	}
-//	else {
-//		// overwrite entity
-//		sceneData.entities.insert_or_assign(ID, Entity());
-//		return GetEntity(ID);
-//	}
-//}
-
+Behaviour* Scene::AddBehaviour(Entity* entity, std::string behaviourName) {
+	const auto& hashPtrPair = stringBehaviourMap.at(behaviourName);
+	auto [iter, inserted] = sceneData.behaviours.emplace( entity->ID, hashPtrPair.second(hashPtrPair.first, componentAccessor.get(), entity));
+	return iter->second.get();
+}
+Behaviour* Scene::AddBehaviour(Entity* entity, behavioiurHash hash) {
+	assert(BehaviorMap.contains(hash));
+	auto [iter, inserted] = sceneData.behaviours.emplace(entity->ID, BehaviorMap.at(hash).second(hash, componentAccessor.get(), entity));
+	return iter->second.get();
+}
 
 void Scene::SetEntityAsChild(Entity* parent, Entity* child) {
 	assert(child->HasParent() == false);
@@ -248,11 +236,6 @@ entityID Scene::DuplicateEntity(entityID original) {
 
 
 Entity* Scene::Instantiate(Prefab& prefab, std::string name, glm::vec2 position, float rotation) {
-	//std::shared_ptr<Entity> copy;
-	//if (prefab.behaviorHash == 0)
-	//	copy = std::make_shared<Entity>();
-	//else
-	//	copy = BehaviorMap[prefab.behaviorHash].second();
 
 	if (prefab.behaviorHash != 0) {
 		assert(false);
@@ -349,3 +332,17 @@ void Scene::registerComponent(entityID id, Staticbody s) {
 	linkStaticbodyB2D(id, &iter->second);
 };
 
+void Scene::cleanup() {
+	for (b2Body* body = bworld.GetBodyList(); body != nullptr; ) {
+		b2Body* nextBody = body->GetNext();
+
+		// Destroy joints attached to the body
+		for (b2JointEdge* j = body->GetJointList(); j; j = j->next) {
+			bworld.DestroyJoint(j->joint);
+		}
+
+		// Now destroy the body
+		bworld.DestroyBody(body);
+		body = nextBody; // Move to the next body in the list
+	}
+}

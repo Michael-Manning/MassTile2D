@@ -13,7 +13,7 @@
 class ComputeTemplate : public Pipeline {
 public:
 
-	ComputeTemplate(std::shared_ptr<VKEngine>& engine) : Pipeline(engine), descriptorManager(engine)
+	ComputeTemplate(VKEngine* engine) : Pipeline(engine), descriptorManager(engine)
 	{};
 
 	void CreateComputePipeline(const ShaderResourceConfig& resourceConfig);

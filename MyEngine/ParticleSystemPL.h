@@ -77,7 +77,7 @@ public:
 	};
 
 
-	ParticleSystemPL(std::shared_ptr<VKEngine>& engine) :
+	ParticleSystemPL(VKEngine* engine) :
 		pipeline(engine), engine(engine) { }
 
 	void CreateGraphicsPipeline(

@@ -27,6 +27,7 @@
 #include "imgui_impl_vulkan.h"
 
 #include "ECS.h"
+#include "BehaviorRegistry.h"
 #include "Input.h"
 #include "Scene.h"
 #include "vulkan_util.h"
@@ -73,6 +74,9 @@ struct ScenePipelineContext {
 
 class Engine {
 
+private:
+	std::unique_ptr<VKEngine> rengine = nullptr;
+
 public:
 
 	struct SceneRenderJob{
@@ -82,12 +86,10 @@ public:
 	};
 
 
-	Engine(
-		std::shared_ptr<VKEngine> rengine)
-		:
-		rengine(rengine),
-		resourceChangeFlags(std::make_shared<ResourceManager::ChangeFlags>()),
-		GlobalTextureDesc(rengine),
+	Engine() :
+		rengine(std::make_unique<VKEngine>()),
+		resourceChangeFlags(std::make_unique<ResourceManager::ChangeFlags>()),
+		GlobalTextureDesc(rengine.get()),
 		globalTextureBindingManager(MAX_TEXTURE_RESOURCES)
 	{
 		//bworld = std::make_shared<b2World>(gravity);
@@ -108,14 +110,18 @@ public:
 		if (scene->paused)
 			return;
 
-		Entity::DeltaTime = deltaTime;
-		for (auto& [id, entity] : scene->sceneData.entities) {
-			entity._runStartUpdate();
+		if (scene->paused)
+			Behaviour::deltaTime = 0.0f;
+		else
+			Behaviour::deltaTime = deltaTime;
+
+		for (auto& [id, behaviour] : scene->sceneData.behaviours) {
+			behaviour->_runStartUpdate();
 		}
 	};
 
-	std::shared_ptr<Input> GetInput() {
-		return input;
+	Input* GetInput() {
+		return input.get();
 	}
 
 	void hintWindowResize() {
@@ -139,7 +145,7 @@ public:
 	double framerate;
 	float time = 0.0f;
 
-	std::shared_ptr<AssetManager> assetManager;
+	std::unique_ptr<AssetManager> assetManager;
 
 	//Camera tmp_camera;
 
@@ -345,8 +351,8 @@ private:
 
 	//std::shared_ptr<Scene> currentScene = nullptr;
 	std::queue<texID> textureBindingDeletionQueue;
-	std::shared_ptr<ResourceManager::ChangeFlags> resourceChangeFlags;
-	std::shared_ptr<ResourceManager> resourceManager = nullptr;
+	std::unique_ptr<ResourceManager::ChangeFlags> resourceChangeFlags;
+	std::unique_ptr<ResourceManager> resourceManager = nullptr;
 	std::vector<ColoredQuadPL::InstanceBufferData> screenSpaceColorDrawlist;
 	std::vector<TexturedQuadPL::ssboObjectInstanceData> screenSpaceTextureDrawlist;
 
@@ -372,8 +378,6 @@ private:
 	int lastwinW, lastwinH;
 	bool windowResizedLastFrame = false;
 
-	std::shared_ptr<VKEngine> rengine = nullptr;
-
 	texID texNotFoundID; // displayed when indexing incorrectly 
 
 
@@ -396,7 +400,7 @@ private:
 	uint32_t frameCounter = 0;
 	bool firstFrame = true;
 
-	std::shared_ptr<Input> input;
+	std::unique_ptr<Input> input;
 
 	debugStats runningStats = { 0 };
 

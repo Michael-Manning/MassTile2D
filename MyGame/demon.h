@@ -18,18 +18,19 @@ using namespace glm;
 using namespace std;
 
 
-class Demon : public Entity {
+class Demon : public Behaviour {
 
 
 public:
-	std::string GetEditorName() override { // deprecate
-		return "Demon";
-	};
+	//std::string GetEditorName() override { // deprecate
+	//	return "Demon";
+	//};
 
-	uint32_t getBehaviorHash() const override {
-		return cHash("Demon");
-	};
+	//uint32_t getBehaviorHash() const override {
+	//	return cHash("Demon");
+	//};
 
+	BEHAVIOUR_CONSTUCTOR(Demon);
 
 	// settings
 	const float groundAccel = 10.0f;
@@ -91,8 +92,8 @@ public:
 		//renderer->atlasIndex = 5;
 
 		tpoints.resize(10);
-		float sx = transform.scale.x / 2.0;
-		float sy = transform.scale.y / 2.0;
+		float sx = transform->scale.x / 2.0;
+		float sy = transform->scale.y / 2.0;
 		tpoints[0] = vec2(sx, sy);
 		tpoints[1] = vec2(-sx, sy);
 		tpoints[2] = vec2(sx, -sy);
@@ -114,31 +115,31 @@ public:
 		bool topCast = false;
 		bool bottomCast = false;
 
-		leftCast |= queryTile(transform.position + tpoints[1] + vec2(-skin * 2, 0));
-		leftCast |= queryTile(transform.position + tpoints[3] + vec2(-skin * 2, 0));
-		leftCast |= queryTile(transform.position + tpoints[4] + vec2(-skin * 2, 0));
-		leftCast |= queryTile(transform.position + tpoints[8] + vec2(-skin * 2, 0));
+		leftCast |= queryTile(transform->position + tpoints[1] + vec2(-skin * 2, 0));
+		leftCast |= queryTile(transform->position + tpoints[3] + vec2(-skin * 2, 0));
+		leftCast |= queryTile(transform->position + tpoints[4] + vec2(-skin * 2, 0));
+		leftCast |= queryTile(transform->position + tpoints[8] + vec2(-skin * 2, 0));
 
-		rightCast |= queryTile(transform.position + tpoints[0] + vec2(skin * 2, 0));
-		rightCast |= queryTile(transform.position + tpoints[2] + vec2(skin * 2, 0));
-		rightCast |= queryTile(transform.position + tpoints[5] + vec2(skin * 2, 0));
-		rightCast |= queryTile(transform.position + tpoints[9] + vec2(skin * 2, 0));
+		rightCast |= queryTile(transform->position + tpoints[0] + vec2(skin * 2, 0));
+		rightCast |= queryTile(transform->position + tpoints[2] + vec2(skin * 2, 0));
+		rightCast |= queryTile(transform->position + tpoints[5] + vec2(skin * 2, 0));
+		rightCast |= queryTile(transform->position + tpoints[9] + vec2(skin * 2, 0));
 
-		topCast |= queryTile(transform.position + tpoints[0] + vec2(0, skin * 2));
-		topCast |= queryTile(transform.position + tpoints[1] + vec2(0, skin * 2));
-		topCast |= queryTile(transform.position + tpoints[7] + vec2(0, skin * 2));
+		topCast |= queryTile(transform->position + tpoints[0] + vec2(0, skin * 2));
+		topCast |= queryTile(transform->position + tpoints[1] + vec2(0, skin * 2));
+		topCast |= queryTile(transform->position + tpoints[7] + vec2(0, skin * 2));
 
-		bottomCast |= queryTile(transform.position + tpoints[2] + vec2(0, -skin * 2));
-		bottomCast |= queryTile(transform.position + tpoints[3] + vec2(0, -skin * 2));
-		bottomCast |= queryTile(transform.position + tpoints[6] + vec2(0, -skin * 2));
+		bottomCast |= queryTile(transform->position + tpoints[2] + vec2(0, -skin * 2));
+		bottomCast |= queryTile(transform->position + tpoints[3] + vec2(0, -skin * 2));
+		bottomCast |= queryTile(transform->position + tpoints[6] + vec2(0, -skin * 2));
 
-		animationTimer += DeltaTime;
+		animationTimer += deltaTime;
 		if (animationTimer > 0.1f)
 			animationTimer = 0.0f;
 
 		//left and right movement
 		bool left, right;
-		if (transform.position.x < playerRef->transform.position.x) {
+		if (transform->position.x < playerRef->GetEntity()->transform.position.x) {
 			right = true;
 			left = false;
 		}
@@ -150,15 +151,15 @@ public:
 
 
 		if (left && !right && !leftCast) {
-			velocity += vec2(grounded ? -groundAccel : -airAccel, 0.0f) * DeltaTime;
+			velocity += vec2(grounded ? -groundAccel : -airAccel, 0.0f) * deltaTime;
 		}
 		else if (!left && right && !rightCast) {
-			velocity += vec2(grounded ? groundAccel : airAccel, 0.0f) * DeltaTime;
+			velocity += vec2(grounded ? groundAccel : airAccel, 0.0f) * deltaTime;
 		}
 		else if (!left && !right) {
 			if (grounded) {
 				if (velocity.x)
-					velocity = decellerate(velocity, vec2(idleDecelleratiom * DeltaTime, 0.0f));
+					velocity = decellerate(velocity, vec2(idleDecelleratiom * deltaTime, 0.0f));
 			}
 		}
 
@@ -168,11 +169,11 @@ public:
 
 		}
 		else if (!bottomCast) {
-			velocity.y -= gravityAccel * DeltaTime;
+			velocity.y -= gravityAccel * deltaTime;
 		}
 
 		//if (!bottomCast) {
-		//	velocity.y -= gravityAccel * DeltaTime;
+		//	velocity.y -= gravityAccel * deltaTime;
 		//}
 
 		//if (grounded) {
@@ -196,7 +197,7 @@ public:
 		velocity.y = glm::clamp(velocity.y, -terminalVelocity, terminalVelocity);
 
 
-		vec2 npos = transform.position + velocity * DeltaTime;
+		vec2 npos = transform->position + velocity * deltaTime;
 
 		float resolvedXAvg = 0.0f;
 		int avgSamplesX = 0;
@@ -207,8 +208,8 @@ public:
 
 		float slope = 0;
 
-		float x1 = transform.position.x;
-		float y1 = transform.position.y;
+		float x1 = transform->position.x;
+		float y1 = transform->position.y;
 		float x2 = npos.x;
 		float y2 = npos.y;
 
@@ -227,7 +228,7 @@ public:
 			bool resolveUp = false;
 			bool resolveDown = false;
 
-			volatile ivec2 prevTile = getTileXY(transform.position + tpoints[i]);
+			volatile ivec2 prevTile = getTileXY(transform->position + tpoints[i]);
 			volatile ivec2 curTile = getTileXY(npos + tpoints[i]);
 
 			int dx = curTile.x - prevTile.x;
@@ -351,12 +352,12 @@ public:
 		if (avgSamplesY > 0)
 			npos.y = resolvedYAvg / (float)avgSamplesY;
 
-		transform.position = npos;
+		transform->position = npos;
 
-		if (transform.position != GcameraPos) {
-			vec2 npos = GcameraPos + (transform.position - GcameraPos) * 4.0f * DeltaTime;
-			if (glm::distance(npos, transform.position) > glm::distance(GcameraPos, transform.position)) {
-				GcameraPos = transform.position;
+		if (transform->position != GcameraPos) {
+			vec2 npos = GcameraPos + (transform->position - GcameraPos) * 4.0f * deltaTime;
+			if (glm::distance(npos, transform->position) > glm::distance(GcameraPos, transform->position)) {
+				GcameraPos = transform->position;
 			}
 			else {
 				GcameraPos = npos;

@@ -39,7 +39,7 @@ using descriptorLayoutMap = std::unordered_map<int, vk::DescriptorSetLayout>;
 class Pipeline {
 public:
 
-	Pipeline(std::shared_ptr<VKEngine> engine) : engine(engine), descriptorManager(engine) {
+	Pipeline(VKEngine* engine) : engine(engine), descriptorManager(engine) {
 	}
 
 protected:
@@ -49,7 +49,7 @@ protected:
 	// for each frame in flight
 	std::array<vk::DescriptorSet, FRAMES_IN_FLIGHT> generalDescriptorSets;
 
-	std::shared_ptr<VKEngine> engine = nullptr;
+	VKEngine* engine = nullptr;
 
 	vk::Pipeline _pipeline;
 	vk::PipelineLayout pipelineLayout;

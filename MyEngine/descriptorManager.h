@@ -22,7 +22,7 @@
 class DescriptorManager {
 public:
 
-	DescriptorManager(std::shared_ptr<VKEngine> engine) : engine(engine) {
+	DescriptorManager(VKEngine* engine) : engine(engine) {
 	}
 
 	struct descriptorSetInfo {
@@ -66,5 +66,5 @@ private:
 
 	void buidDBDescriptorSet(vk::DescriptorSetLayout& layout, std::array<vk::DescriptorSet, FRAMES_IN_FLIGHT>& sets);
 
-	std::shared_ptr<VKEngine> engine = nullptr;
+	VKEngine* engine = nullptr;
 };

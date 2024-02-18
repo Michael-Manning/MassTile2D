@@ -34,7 +34,7 @@ public:
 	};
 	static_assert(sizeof(InstanceBufferData) % 16 == 0);
 
-	ColoredQuadPL(std::shared_ptr<VKEngine>& engine) : Pipeline(engine) {
+	ColoredQuadPL(VKEngine* engine) : Pipeline(engine) {
 	}
 
 	void CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc, vk::RenderPass& renderTarget, MappedDoubleBuffer<cameraUBO_s>& cameradb, bool flipFaces = false);

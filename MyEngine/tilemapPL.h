@@ -27,7 +27,7 @@
 class TilemapPL :public  Pipeline {
 public:
 
-	TilemapPL(std::shared_ptr<VKEngine>& engine, TileWorld* world) : Pipeline(engine), world(world) {
+	TilemapPL(VKEngine* engine, TileWorld* world) : Pipeline(engine), world(world) {
 	}
 
 	void CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc, vk::RenderPass& renderTarget, GlobalImageDescriptor* textureDescriptor, MappedDoubleBuffer<cameraUBO_s>& cameradb);

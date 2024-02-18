@@ -14,7 +14,7 @@ static constexpr uint32_t max_bindless_resources = 16536;
 
 class GlobalImageDescriptor {
 public:
-	GlobalImageDescriptor(std::shared_ptr<VKEngine> engine) : engine(engine) {
+	GlobalImageDescriptor(VKEngine* engine) : engine(engine) {
 	}
 
 	void CreateLayout(uint32_t binding, uint32_t descriptorCount, vk::Sampler* immutableSamplers = nullptr) {
@@ -105,7 +105,7 @@ public:
 private:
 	uint32_t binding = 0;
 	uint32_t descriptorCount = 0;
-	std::shared_ptr<VKEngine> engine = nullptr;
+	VKEngine* engine = nullptr;
 };
 
 struct GlobalDescriptorBinding {

@@ -144,6 +144,12 @@
     <ClCompile Include="PrefabGenerator.cpp">
       <Filter>Source Files\Editor</Filter>
     </ClCompile>
+    <ClCompile Include="Font.cpp">
+      <Filter>Source Files\Engine\ECS\Assets</Filter>
+    </ClCompile>
+    <ClCompile Include="Behaviour.cpp">
+      <Filter>Source Files\Engine\ECS</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pipeline.h">
@@ -304,6 +310,9 @@
     </ClInclude>
     <ClInclude Include="SceneData.h">
       <Filter>Source Files\Engine\ECS\Assets</Filter>
+    </ClInclude>
+    <ClInclude Include="Behaviour.h">
+      <Filter>Source Files\Engine\ECS</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

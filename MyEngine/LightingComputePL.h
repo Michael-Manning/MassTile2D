@@ -30,7 +30,7 @@ class LightingComputePL :public  Pipeline {
 
 public:
 
-	LightingComputePL(std::shared_ptr<VKEngine>& engine, TileWorld* world) : Pipeline(engine), world(world) {
+	LightingComputePL(VKEngine* engine, TileWorld* world) : Pipeline(engine), world(world) {
 	}
 
 	void createStagingBuffers();

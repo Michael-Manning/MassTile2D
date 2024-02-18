@@ -2,6 +2,8 @@
 
 #include <stdint.h>
 
+typedef uint32_t behavioiurHash;
+
 typedef int32_t framebufferID;
 typedef int32_t sceneRenderContextID;
 typedef int32_t texID;
@@ -15,8 +17,6 @@ typedef uint32_t blockID; // type of block
 typedef uint32_t tileID; // specific tile in the texture atlas
 
 #include <glm/glm.hpp>
-
-#include "typedefs.h"
 
 constexpr entityID NULL_Entity = 0;
 

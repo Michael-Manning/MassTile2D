@@ -38,7 +38,7 @@ public:
 	};
 	static_assert(sizeof(InstanceBufferData) % 16 == 0);
 
-	QuadComputePL(std::shared_ptr<VKEngine>& engine, int maxInstanceCount) : Pipeline(engine), maxInstanceCount(maxInstanceCount) {
+	QuadComputePL(VKEngine* engine, int maxInstanceCount) : Pipeline(engine), maxInstanceCount(maxInstanceCount) {
 	}
 
 	void allocateTransformBuffer(VkBuffer& buffer, VmaAllocation& allocation);

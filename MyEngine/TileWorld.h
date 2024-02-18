@@ -69,7 +69,7 @@ public:
 	std::vector<bool> chunkDirtyFlags;
 	std::vector<bool> chunkLightingDirtyFlags;
 
-	TileWorld(std::shared_ptr<VKEngine> engine) : engine(engine) {
+	TileWorld(VKEngine* engine) : engine(engine) {
 		mapData = std::vector<blockID>(mapCount, 0 | ((int)(ambiantLight * 255) << 16));
 		bgMapData = std::vector<blockID>(mapCount, 0);
 		chunkDirtyFlags = std::vector<bool>(chunkCount, false);
@@ -408,7 +408,7 @@ private:
 		engine->createMappedBuffer(sizeof(ssboObjectData) * chunkCount, vk::BufferUsageFlagBits::eTransferSrc, chunkTransferBuffers);
 	};
 
-	std::shared_ptr<VKEngine> engine;
+	VKEngine* engine;
 
 	vk::Buffer largeChunkBuffer;
 	VmaAllocation largeChunkAllocation;

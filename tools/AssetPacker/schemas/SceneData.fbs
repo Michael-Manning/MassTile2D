@@ -3,14 +3,17 @@ include "common.fbs";
 namespace AssetPack;
 
 table SceneData{
-    name:string;
-    entities:[Entity];
-    colorRenderers:[ColorRenderer];
-    spriteRenderers:[SpriteRenderer];
-    textRenderers:[TextRenderer];
-    particleSystemRenderers:[ParticleSystemRenderer];
-    rigidbodies:[Rigidbody];
-    staticbodies:[Staticbody];
+   name:string;
+
+   entities:[Entity];
+   behaviors:[Behaviour];
+
+   colorRenderers:[ColorRenderer];
+   spriteRenderers:[SpriteRenderer];
+   textRenderers:[TextRenderer];
+   particleSystemRenderers:[ParticleSystemRenderer];
+   rigidbodies:[Rigidbody];
+   staticbodies:[Staticbody];
 }
 
 root_type SceneData;

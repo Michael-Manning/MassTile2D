@@ -37,7 +37,7 @@ public:
 		glm::vec2 spawnPosition;
 	};
 
-	ParticleComputePL(std::shared_ptr<VKEngine>& engine) :
+	ParticleComputePL(VKEngine* engine) :
 		pipeline(engine), engine(engine) { }
 
 	void CreateComputePipeline(const std::vector<uint8_t>& compSrc, DeviceBuffer* particleDataBuffer);

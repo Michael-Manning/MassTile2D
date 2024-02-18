@@ -29,7 +29,6 @@ namespace {
 
 
 void GeneratePrefab(Entity* entity, const SceneData& sceneData, Prefab* p) {
-	p->behaviorHash = entity->getBehaviorHash();
 
 	vector<Entity*> entityList;
 	recurseChildren(entityList, entity);

@@ -19,6 +19,7 @@
 #include <omp.h>
 #include <glm/glm.hpp>
 #include <nlohmann/json.hpp>
+#include <robin_hood.h>
 #include <imgui.h>
 #include <Windows.h>
 
@@ -34,8 +35,6 @@
 #include "Physics.h"
 #include "Input.h"
 #include "BehaviorRegistry.h"
-#include "player.h"
-#include "demon.h"
 #include "TileWorld.h"
 #include "profiling.h"
 #include "Utils.h"
@@ -46,8 +45,12 @@
 #include "worldGen.h"
 #include "Menus.h"
 #include "GameUI.h"
-
+#include "Behaviour.h"
 #include "Benchmarking.h"
+
+#include "player.h"
+#include "demon.h"
+#include "TestScript.h"
 
 #include <FastNoise/FastNoise.h>
 #include <FastNoise/SmartNode.h>
@@ -61,9 +64,11 @@ using namespace glm;
 using namespace nlohmann;
 
 
-std::unordered_map<uint32_t, std::pair<std::string, std::function<std::shared_ptr<Entity>()>>> BehaviorMap = {
+const robin_hood::unordered_flat_map<behavioiurHash, std::pair<std::string, BehaviourFactoryFunc>> BehaviorMap = {
+	//{1234,  std::pair < std::string, std::function<Behaviour(ComponentAccessor *, Entity *)>>("player", [](ComponentAccessor* a, Entity* e)->Behaviour {return Player(1234, a, e); })},
 	REG_BEHAVIOR(Player),
-	REG_BEHAVIOR(Demon)
+	REG_BEHAVIOR(Demon),
+	REG_BEHAVIOR(TestScript)
 };
 
 
@@ -151,7 +156,7 @@ void CalcTileVariation(uint32_t x, uint32_t y) {
 
 // globals
 std::unique_ptr<Engine> engine = nullptr;
-std::shared_ptr<Input> input = nullptr;
+Input* input = nullptr;
 shared_ptr<Scene> scene = nullptr;
 sceneRenderContextID sceneRenderCtx = 0;
 AssetManager::AssetPaths AssetDirectories = {};
@@ -231,8 +236,6 @@ void initializeEngine(std::unique_ptr<Engine>& engine) {
 	videoSettings.windowSetting = windowSetting;
 	videoSettings.swapChainSetting = swapchainSettings;
 
-	auto rengine = std::make_shared<VKEngine>();
-	engine = make_unique<Engine>(rengine);
 	engine->Start(videoSettings, AssetDirectories);
 	input = engine->GetInput();
 }
@@ -401,13 +404,14 @@ int main() {
 #endif
 
 	// start up engine
+	engine = make_unique<Engine>();
 	initializeEngine(engine);
 
 	// create or load main scene
 	scene = make_shared<Scene>();
 	scene->name = "main scene";
-	sceneRenderCtx = engine->CreateSceneRenderContext(engine->getWindowSize(), useTileWorld, vec4(0, 0, 0, 1));
-	//sceneRenderCtx = engine->CreateSceneRenderContext(engine->getWindowSize(), useTileWorld, { 0.2, 0.3, 1.0, 1 });
+	//sceneRenderCtx = engine->CreateSceneRenderContext(engine->getWindowSize(), useTileWorld, vec4(0, 0, 0, 1));
+	sceneRenderCtx = engine->CreateSceneRenderContext(engine->getWindowSize(), useTileWorld, { 0.2, 0.3, 1.0, 1 });
 #ifdef USING_EDITOR
 	editor.Initialize(
 		engine.get(), 

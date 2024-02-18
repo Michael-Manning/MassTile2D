@@ -12,7 +12,7 @@ using namespace glm;
 
 namespace {
 	const vec2 btnSize(60, 30);
-	bool Button(vec2 pos, std::shared_ptr<Input> input, vec2 size = btnSize ) {
+	bool Button(vec2 pos, Input* input, vec2 size = btnSize ) {
 		if (input->getMouseBtnDown(MouseBtn::Left) == false)
 			return false;
 		return within(pos, pos + size, input->getMousePos());

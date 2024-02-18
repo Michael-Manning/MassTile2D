@@ -23,6 +23,28 @@ nlohmann::json SceneData::serializeJson() const {
 			j["entities"].push_back(e.serializeJson());
 		}
 	}
+
+	for (auto& [id, b] : behaviours)
+	{
+		if (entities.at(id).persistent) {
+
+			nlohmann::json j2;
+			{
+				j2["entityID"] = id;
+				j2["hash"] = b->Hash;
+
+				auto props = b->getProperties();
+
+				for (auto& prop : props)
+				{
+					j2["properties"].push_back(prop.serializeJson());
+				}
+			}
+
+			j["behaviours"].push_back(j2);
+		}
+	}
+
 	for (auto& s : spriteRenderers) {
 		if (entities.at(s.first).persistent) {
 			j["spriteRenderers"].push_back(s.second.serializeJson(s.first));
@@ -54,16 +76,6 @@ nlohmann::json SceneData::serializeJson() const {
 		}
 	}
 
-	//// assets
-	//auto usedSprites = getUsedSprites();
-	//for (auto& s : usedSprites) {
-	//	j["usedSprites"].push_back(s);
-	//}
-	//auto usedFonts = getUsedFonts();
-	//for (auto& f : usedFonts) {
-	//	j["usedFonts"].push_back(f);
-	//}
-
 	return j;
 }
 
@@ -76,6 +88,15 @@ void SceneData::deserializeJson(nlohmann::json& j, SceneData* sceneData) {
 		Entity::deserializeJson(e, entity);
 		entity->persistent = true;
 	}
+
+	for (auto& e : j["behaviours"]) {
+		entityID entID = e["entityID"];
+
+		/*BehaviorMap.at
+		sceneData->behaviours.in*/
+	}
+
+
 	for (auto& e : j["colorRenderers"]) {
 		entityID entID = e["entityID"];
 		ColorRenderer r = ColorRenderer::deserializeJson(e);

@@ -41,6 +41,24 @@ struct ParticleSystemRenderer;
 struct Entity;
 struct EntityBuilder;
 
+struct U_int;
+struct U_intBuilder;
+
+struct U_float;
+struct U_floatBuilder;
+
+struct U_vec2;
+struct U_vec2Builder;
+
+struct SerializableProperty;
+struct SerializablePropertyBuilder;
+
+struct PropertyGroup;
+struct PropertyGroupBuilder;
+
+struct Behaviour;
+struct BehaviourBuilder;
+
 enum FilterMode : int32_t {
   FilterMode_Nearest = 0,
   FilterMode_Linear = 1,
@@ -130,6 +148,94 @@ inline const char *EnumNameParticleSystemSize(ParticleSystemSize e) {
   const size_t index = static_cast<size_t>(e);
   return EnumNamesParticleSystemSize()[index];
 }
+
+enum SerializableType : int32_t {
+  SerializableType_INT = 0,
+  SerializableType_FLOAT = 1,
+  SerializableType_VEC2 = 2,
+  SerializableType_MIN = SerializableType_INT,
+  SerializableType_MAX = SerializableType_VEC2
+};
+
+inline const SerializableType (&EnumValuesSerializableType())[3] {
+  static const SerializableType values[] = {
+    SerializableType_INT,
+    SerializableType_FLOAT,
+    SerializableType_VEC2
+  };
+  return values;
+}
+
+inline const char * const *EnumNamesSerializableType() {
+  static const char * const names[4] = {
+    "INT",
+    "FLOAT",
+    "VEC2",
+    nullptr
+  };
+  return names;
+}
+
+inline const char *EnumNameSerializableType(SerializableType e) {
+  if (::flatbuffers::IsOutRange(e, SerializableType_INT, SerializableType_VEC2)) return "";
+  const size_t index = static_cast<size_t>(e);
+  return EnumNamesSerializableType()[index];
+}
+
+enum SerializableValue : uint8_t {
+  SerializableValue_NONE = 0,
+  SerializableValue_U_int = 1,
+  SerializableValue_U_float = 2,
+  SerializableValue_U_vec2 = 3,
+  SerializableValue_MIN = SerializableValue_NONE,
+  SerializableValue_MAX = SerializableValue_U_vec2
+};
+
+inline const SerializableValue (&EnumValuesSerializableValue())[4] {
+  static const SerializableValue values[] = {
+    SerializableValue_NONE,
+    SerializableValue_U_int,
+    SerializableValue_U_float,
+    SerializableValue_U_vec2
+  };
+  return values;
+}
+
+inline const char * const *EnumNamesSerializableValue() {
+  static const char * const names[5] = {
+    "NONE",
+    "U_int",
+    "U_float",
+    "U_vec2",
+    nullptr
+  };
+  return names;
+}
+
+inline const char *EnumNameSerializableValue(SerializableValue e) {
+  if (::flatbuffers::IsOutRange(e, SerializableValue_NONE, SerializableValue_U_vec2)) return "";
+  const size_t index = static_cast<size_t>(e);
+  return EnumNamesSerializableValue()[index];
+}
+
+template<typename T> struct SerializableValueTraits {
+  static const SerializableValue enum_value = SerializableValue_NONE;
+};
+
+template<> struct SerializableValueTraits<AssetPack::U_int> {
+  static const SerializableValue enum_value = SerializableValue_U_int;
+};
+
+template<> struct SerializableValueTraits<AssetPack::U_float> {
+  static const SerializableValue enum_value = SerializableValue_U_float;
+};
+
+template<> struct SerializableValueTraits<AssetPack::U_vec2> {
+  static const SerializableValue enum_value = SerializableValue_U_vec2;
+};
+
+bool VerifySerializableValue(::flatbuffers::Verifier &verifier, const void *obj, SerializableValue type);
+bool VerifySerializableValueVector(::flatbuffers::Verifier &verifier, const ::flatbuffers::Vector<::flatbuffers::Offset<void>> *values, const ::flatbuffers::Vector<uint8_t> *types);
 
 FLATBUFFERS_MANUALLY_ALIGNED_STRUCT(4) vec2 FLATBUFFERS_FINAL_CLASS {
  private:
@@ -601,14 +707,10 @@ inline ::flatbuffers::Offset<TextRenderer> CreateTextRendererDirect(
 struct Entity FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   typedef EntityBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
-    VT_BEHAVIORHASH = 4,
-    VT_ID = 6,
-    VT_NAME = 8,
-    VT_TRANSFORM = 10
+    VT_ID = 4,
+    VT_NAME = 6,
+    VT_TRANSFORM = 8
   };
-  uint32_t behaviorHash() const {
-    return GetField<uint32_t>(VT_BEHAVIORHASH, 0);
-  }
   uint32_t id() const {
     return GetField<uint32_t>(VT_ID, 0);
   }
@@ -620,7 +722,6 @@ struct Entity FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   }
   bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
-           VerifyField<uint32_t>(verifier, VT_BEHAVIORHASH, 4) &&
            VerifyField<uint32_t>(verifier, VT_ID, 4) &&
            VerifyOffset(verifier, VT_NAME) &&
            verifier.VerifyString(name()) &&
@@ -633,9 +734,6 @@ struct EntityBuilder {
   typedef Entity Table;
   ::flatbuffers::FlatBufferBuilder &fbb_;
   ::flatbuffers::uoffset_t start_;
-  void add_behaviorHash(uint32_t behaviorHash) {
-    fbb_.AddElement<uint32_t>(Entity::VT_BEHAVIORHASH, behaviorHash, 0);
-  }
   void add_id(uint32_t id) {
     fbb_.AddElement<uint32_t>(Entity::VT_ID, id, 0);
   }
@@ -658,7 +756,6 @@ struct EntityBuilder {
 
 inline ::flatbuffers::Offset<Entity> CreateEntity(
     ::flatbuffers::FlatBufferBuilder &_fbb,
-    uint32_t behaviorHash = 0,
     uint32_t id = 0,
     ::flatbuffers::Offset<::flatbuffers::String> name = 0,
     const AssetPack::Transform *transform = nullptr) {
@@ -666,23 +763,390 @@ inline ::flatbuffers::Offset<Entity> CreateEntity(
   builder_.add_transform(transform);
   builder_.add_name(name);
   builder_.add_id(id);
-  builder_.add_behaviorHash(behaviorHash);
   return builder_.Finish();
 }
 
 inline ::flatbuffers::Offset<Entity> CreateEntityDirect(
     ::flatbuffers::FlatBufferBuilder &_fbb,
-    uint32_t behaviorHash = 0,
     uint32_t id = 0,
     const char *name = nullptr,
     const AssetPack::Transform *transform = nullptr) {
   auto name__ = name ? _fbb.CreateString(name) : 0;
   return AssetPack::CreateEntity(
       _fbb,
-      behaviorHash,
       id,
       name__,
       transform);
+}
+
+struct U_int FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
+  typedef U_intBuilder Builder;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_VALUE = 4
+  };
+  int32_t value() const {
+    return GetField<int32_t>(VT_VALUE, 0);
+  }
+  bool Verify(::flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<int32_t>(verifier, VT_VALUE, 4) &&
+           verifier.EndTable();
+  }
+};
+
+struct U_intBuilder {
+  typedef U_int Table;
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
+  void add_value(int32_t value) {
+    fbb_.AddElement<int32_t>(U_int::VT_VALUE, value, 0);
+  }
+  explicit U_intBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  ::flatbuffers::Offset<U_int> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = ::flatbuffers::Offset<U_int>(end);
+    return o;
+  }
+};
+
+inline ::flatbuffers::Offset<U_int> CreateU_int(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    int32_t value = 0) {
+  U_intBuilder builder_(_fbb);
+  builder_.add_value(value);
+  return builder_.Finish();
+}
+
+struct U_float FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
+  typedef U_floatBuilder Builder;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_VALUE = 4
+  };
+  float value() const {
+    return GetField<float>(VT_VALUE, 0.0f);
+  }
+  bool Verify(::flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<float>(verifier, VT_VALUE, 4) &&
+           verifier.EndTable();
+  }
+};
+
+struct U_floatBuilder {
+  typedef U_float Table;
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
+  void add_value(float value) {
+    fbb_.AddElement<float>(U_float::VT_VALUE, value, 0.0f);
+  }
+  explicit U_floatBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  ::flatbuffers::Offset<U_float> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = ::flatbuffers::Offset<U_float>(end);
+    return o;
+  }
+};
+
+inline ::flatbuffers::Offset<U_float> CreateU_float(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    float value = 0.0f) {
+  U_floatBuilder builder_(_fbb);
+  builder_.add_value(value);
+  return builder_.Finish();
+}
+
+struct U_vec2 FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
+  typedef U_vec2Builder Builder;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_VALUE = 4
+  };
+  const AssetPack::vec2 *value() const {
+    return GetStruct<const AssetPack::vec2 *>(VT_VALUE);
+  }
+  bool Verify(::flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<AssetPack::vec2>(verifier, VT_VALUE, 4) &&
+           verifier.EndTable();
+  }
+};
+
+struct U_vec2Builder {
+  typedef U_vec2 Table;
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
+  void add_value(const AssetPack::vec2 *value) {
+    fbb_.AddStruct(U_vec2::VT_VALUE, value);
+  }
+  explicit U_vec2Builder(::flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  ::flatbuffers::Offset<U_vec2> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = ::flatbuffers::Offset<U_vec2>(end);
+    return o;
+  }
+};
+
+inline ::flatbuffers::Offset<U_vec2> CreateU_vec2(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    const AssetPack::vec2 *value = nullptr) {
+  U_vec2Builder builder_(_fbb);
+  builder_.add_value(value);
+  return builder_.Finish();
+}
+
+struct SerializableProperty FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
+  typedef SerializablePropertyBuilder Builder;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_TYPE = 4,
+    VT_NAME = 6,
+    VT_VALUE_TYPE = 8,
+    VT_VALUE = 10
+  };
+  AssetPack::SerializableType type() const {
+    return static_cast<AssetPack::SerializableType>(GetField<int32_t>(VT_TYPE, 0));
+  }
+  const ::flatbuffers::String *name() const {
+    return GetPointer<const ::flatbuffers::String *>(VT_NAME);
+  }
+  AssetPack::SerializableValue value_type() const {
+    return static_cast<AssetPack::SerializableValue>(GetField<uint8_t>(VT_VALUE_TYPE, 0));
+  }
+  const void *value() const {
+    return GetPointer<const void *>(VT_VALUE);
+  }
+  template<typename T> const T *value_as() const;
+  const AssetPack::U_int *value_as_U_int() const {
+    return value_type() == AssetPack::SerializableValue_U_int ? static_cast<const AssetPack::U_int *>(value()) : nullptr;
+  }
+  const AssetPack::U_float *value_as_U_float() const {
+    return value_type() == AssetPack::SerializableValue_U_float ? static_cast<const AssetPack::U_float *>(value()) : nullptr;
+  }
+  const AssetPack::U_vec2 *value_as_U_vec2() const {
+    return value_type() == AssetPack::SerializableValue_U_vec2 ? static_cast<const AssetPack::U_vec2 *>(value()) : nullptr;
+  }
+  bool Verify(::flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<int32_t>(verifier, VT_TYPE, 4) &&
+           VerifyOffset(verifier, VT_NAME) &&
+           verifier.VerifyString(name()) &&
+           VerifyField<uint8_t>(verifier, VT_VALUE_TYPE, 1) &&
+           VerifyOffset(verifier, VT_VALUE) &&
+           VerifySerializableValue(verifier, value(), value_type()) &&
+           verifier.EndTable();
+  }
+};
+
+template<> inline const AssetPack::U_int *SerializableProperty::value_as<AssetPack::U_int>() const {
+  return value_as_U_int();
+}
+
+template<> inline const AssetPack::U_float *SerializableProperty::value_as<AssetPack::U_float>() const {
+  return value_as_U_float();
+}
+
+template<> inline const AssetPack::U_vec2 *SerializableProperty::value_as<AssetPack::U_vec2>() const {
+  return value_as_U_vec2();
+}
+
+struct SerializablePropertyBuilder {
+  typedef SerializableProperty Table;
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
+  void add_type(AssetPack::SerializableType type) {
+    fbb_.AddElement<int32_t>(SerializableProperty::VT_TYPE, static_cast<int32_t>(type), 0);
+  }
+  void add_name(::flatbuffers::Offset<::flatbuffers::String> name) {
+    fbb_.AddOffset(SerializableProperty::VT_NAME, name);
+  }
+  void add_value_type(AssetPack::SerializableValue value_type) {
+    fbb_.AddElement<uint8_t>(SerializableProperty::VT_VALUE_TYPE, static_cast<uint8_t>(value_type), 0);
+  }
+  void add_value(::flatbuffers::Offset<void> value) {
+    fbb_.AddOffset(SerializableProperty::VT_VALUE, value);
+  }
+  explicit SerializablePropertyBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  ::flatbuffers::Offset<SerializableProperty> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = ::flatbuffers::Offset<SerializableProperty>(end);
+    return o;
+  }
+};
+
+inline ::flatbuffers::Offset<SerializableProperty> CreateSerializableProperty(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    AssetPack::SerializableType type = AssetPack::SerializableType_INT,
+    ::flatbuffers::Offset<::flatbuffers::String> name = 0,
+    AssetPack::SerializableValue value_type = AssetPack::SerializableValue_NONE,
+    ::flatbuffers::Offset<void> value = 0) {
+  SerializablePropertyBuilder builder_(_fbb);
+  builder_.add_value(value);
+  builder_.add_name(name);
+  builder_.add_type(type);
+  builder_.add_value_type(value_type);
+  return builder_.Finish();
+}
+
+inline ::flatbuffers::Offset<SerializableProperty> CreateSerializablePropertyDirect(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    AssetPack::SerializableType type = AssetPack::SerializableType_INT,
+    const char *name = nullptr,
+    AssetPack::SerializableValue value_type = AssetPack::SerializableValue_NONE,
+    ::flatbuffers::Offset<void> value = 0) {
+  auto name__ = name ? _fbb.CreateString(name) : 0;
+  return AssetPack::CreateSerializableProperty(
+      _fbb,
+      type,
+      name__,
+      value_type,
+      value);
+}
+
+struct PropertyGroup FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
+  typedef PropertyGroupBuilder Builder;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_PROPERTIES = 4
+  };
+  const ::flatbuffers::Vector<::flatbuffers::Offset<AssetPack::SerializableProperty>> *properties() const {
+    return GetPointer<const ::flatbuffers::Vector<::flatbuffers::Offset<AssetPack::SerializableProperty>> *>(VT_PROPERTIES);
+  }
+  bool Verify(::flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyOffset(verifier, VT_PROPERTIES) &&
+           verifier.VerifyVector(properties()) &&
+           verifier.VerifyVectorOfTables(properties()) &&
+           verifier.EndTable();
+  }
+};
+
+struct PropertyGroupBuilder {
+  typedef PropertyGroup Table;
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
+  void add_properties(::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<AssetPack::SerializableProperty>>> properties) {
+    fbb_.AddOffset(PropertyGroup::VT_PROPERTIES, properties);
+  }
+  explicit PropertyGroupBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  ::flatbuffers::Offset<PropertyGroup> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = ::flatbuffers::Offset<PropertyGroup>(end);
+    return o;
+  }
+};
+
+inline ::flatbuffers::Offset<PropertyGroup> CreatePropertyGroup(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<AssetPack::SerializableProperty>>> properties = 0) {
+  PropertyGroupBuilder builder_(_fbb);
+  builder_.add_properties(properties);
+  return builder_.Finish();
+}
+
+inline ::flatbuffers::Offset<PropertyGroup> CreatePropertyGroupDirect(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    const std::vector<::flatbuffers::Offset<AssetPack::SerializableProperty>> *properties = nullptr) {
+  auto properties__ = properties ? _fbb.CreateVector<::flatbuffers::Offset<AssetPack::SerializableProperty>>(*properties) : 0;
+  return AssetPack::CreatePropertyGroup(
+      _fbb,
+      properties__);
+}
+
+struct Behaviour FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
+  typedef BehaviourBuilder Builder;
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_ENTITYID = 4,
+    VT_PROPERTYGROUP = 6
+  };
+  uint32_t entityID() const {
+    return GetField<uint32_t>(VT_ENTITYID, 0);
+  }
+  const AssetPack::PropertyGroup *propertyGroup() const {
+    return GetPointer<const AssetPack::PropertyGroup *>(VT_PROPERTYGROUP);
+  }
+  bool Verify(::flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<uint32_t>(verifier, VT_ENTITYID, 4) &&
+           VerifyOffset(verifier, VT_PROPERTYGROUP) &&
+           verifier.VerifyTable(propertyGroup()) &&
+           verifier.EndTable();
+  }
+};
+
+struct BehaviourBuilder {
+  typedef Behaviour Table;
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
+  void add_entityID(uint32_t entityID) {
+    fbb_.AddElement<uint32_t>(Behaviour::VT_ENTITYID, entityID, 0);
+  }
+  void add_propertyGroup(::flatbuffers::Offset<AssetPack::PropertyGroup> propertyGroup) {
+    fbb_.AddOffset(Behaviour::VT_PROPERTYGROUP, propertyGroup);
+  }
+  explicit BehaviourBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  ::flatbuffers::Offset<Behaviour> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = ::flatbuffers::Offset<Behaviour>(end);
+    return o;
+  }
+};
+
+inline ::flatbuffers::Offset<Behaviour> CreateBehaviour(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    uint32_t entityID = 0,
+    ::flatbuffers::Offset<AssetPack::PropertyGroup> propertyGroup = 0) {
+  BehaviourBuilder builder_(_fbb);
+  builder_.add_propertyGroup(propertyGroup);
+  builder_.add_entityID(entityID);
+  return builder_.Finish();
+}
+
+inline bool VerifySerializableValue(::flatbuffers::Verifier &verifier, const void *obj, SerializableValue type) {
+  switch (type) {
+    case SerializableValue_NONE: {
+      return true;
+    }
+    case SerializableValue_U_int: {
+      auto ptr = reinterpret_cast<const AssetPack::U_int *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case SerializableValue_U_float: {
+      auto ptr = reinterpret_cast<const AssetPack::U_float *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    case SerializableValue_U_vec2: {
+      auto ptr = reinterpret_cast<const AssetPack::U_vec2 *>(obj);
+      return verifier.VerifyTable(ptr);
+    }
+    default: return true;
+  }
+}
+
+inline bool VerifySerializableValueVector(::flatbuffers::Verifier &verifier, const ::flatbuffers::Vector<::flatbuffers::Offset<void>> *values, const ::flatbuffers::Vector<uint8_t> *types) {
+  if (!values || !types) return !values && !types;
+  if (values->size() != types->size()) return false;
+  for (::flatbuffers::uoffset_t i = 0; i < values->size(); ++i) {
+    if (!VerifySerializableValue(
+        verifier,  values->Get(i), types->GetEnum<SerializableValue>(i))) {
+      return false;
+    }
+  }
+  return true;
 }
 
 }  // namespace AssetPack

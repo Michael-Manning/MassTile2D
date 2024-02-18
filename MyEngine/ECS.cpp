@@ -59,18 +59,9 @@ json Entity::serializeJson() const {
 	}
 	j["transform"] = transform.serializeJson();
 
-	j["behaviorHash"] = getBehaviorHash();
-
 	return j;
 }
 void Entity::deserializeJson(const nlohmann::json& j, Entity* e) {
-
-	uint32_t hash = j["behaviorHash"];
-	if (hash != 0)
-		assert(false);
-	//	e = BehaviorMap[hash].second();
-	//else
-	//	e = make_shared<Entity>();
 
 	e->ID = j["id"].get<int>();
 	e->name = j["name"].get<string>();
@@ -86,13 +77,6 @@ void Entity::deserializeJson(const nlohmann::json& j, Entity* e) {
 }
 
 void Entity::deserializeFlatbuffers(const AssetPack::Entity* packEntity, Entity* entity) {
-
-	uint32_t hash = packEntity->behaviorHash();
-	if (hash != 0)
-		assert(false);
-	//	entity = BehaviorMap[hash].second();
-	//else
-	//	entity = make_shared<Entity>();
 
 	entity->ID = packEntity->id();
 	entity->name = packEntity->name()->str();

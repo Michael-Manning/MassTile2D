@@ -10,6 +10,8 @@
 #include "Physics.h"
 #include "IDGenerator.h"
 #include "SceneData.h"
+#include "Behaviour.h"
+#include "BehaviorRegistry.h"
 
 #include <assetPack/Scene_generated.h>
 
@@ -20,18 +22,14 @@ public:
 
 	std::string name;
 
-	Scene() : bworld(gravity) {
-		CreateComponentAccessor();
-	};
+	SceneData sceneData;
+
+	Scene();
 
 	~Scene() {
-
-		// must destroy all registrered physics objects and world.
-		// either do it here, or have explicit unload function and then verify desctruction here
-		//assert(false);
+		cleanup();
 	}
 
-	SceneData sceneData;
 
 	void serializeJson(std::string filename);
 	static std::shared_ptr<Scene> deserializeJson(std::string filename);
@@ -46,25 +44,22 @@ public:
 
 	void UnregisterEntity(entityID id);
 
-	//entityID RegisterEntity(std::shared_ptr<Entity> entity);
-
 	Entity* GetEntity(entityID ID) {
 		return &sceneData.entities.at(ID);
 	};
 
 	Entity* CreateEntity(Transform transform = {}, std::string name = "", bool persistent = false);
 
-	//// inserts of overwrites an entity at the specified ID with blank entity without affecting components
-	//Entity* EmplaceEntity(entityID ID);
+	Behaviour* AddBehaviour(Entity* entity, std::string behaviourName);
+	Behaviour* AddBehaviour(Entity* entity, behavioiurHash hash);
+	//Behaviour* AddBehaviour(entityID, std::string behaviourName);
 
-	//void OverwriteEntity(std::shared_ptr<Entity> entity, entityID ID);
-	//void RegisterAsChild(std::shared_ptr<Entity> parent, std::shared_ptr<Entity> child);
 	void SetEntityAsChild(Entity* parent, Entity* child);
 
 	// returns ID of new duplicate
 	entityID DuplicateEntity(entityID original);
 
-	Prefab CreatePrefab(std::shared_ptr<Entity> entity);
+
 
 	Entity* Instantiate(Prefab& prefab, std::string name = "prefab", glm::vec2 position = glm::vec2(0.0f), float rotation = 0.0f);
 
@@ -114,14 +109,21 @@ public:
 
 private:
 
+	void cleanup();
+
 	// fills in entity cache pointers after deserializing a scene
 	void LinkEntityRelationships();
 	void LinkEntityRelationshipsRecurse(Entity* entity);
 
-	std::shared_ptr<ComponentAccessor>	componentAccessor;
-
-	void CreateComponentAccessor();
+	std::unique_ptr<ComponentAccessor> componentAccessor;
 
 	void linkRigidbodyB2D(entityID id, Rigidbody* r);
 	void linkStaticbodyB2D(entityID id, Staticbody* r);
+
+
+	robin_hood::unordered_flat_map<std::string, std::pair<behavioiurHash, BehaviourFactoryFunc>> stringBehaviourMap;
+	// 
+	// copy of behaviour map, but directly hashable by name
+	
+	//robin_hood::unordered_flat_map<std::string, std::function<std::unique_ptr<Behaviour>(ComponentAccessor*, Entity*)>> stringBehaviourMap;
 };

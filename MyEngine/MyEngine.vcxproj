@@ -333,10 +333,12 @@
   <ItemGroup>
     <ClCompile Include="AssetManager.cpp" />
     <ClCompile Include="Audio.cpp" />
+    <ClCompile Include="Behaviour.cpp" />
     <ClCompile Include="ComputeTemplate.cpp" />
     <ClCompile Include="descriptorManager.cpp" />
     <ClCompile Include="boidsCompute.cpp" />
     <ClCompile Include="Entity.cpp" />
+    <ClCompile Include="Font.cpp" />
     <ClCompile Include="FontGenerator.cpp" />
     <ClCompile Include="globalBufferDefinitions.h">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
@@ -385,6 +387,7 @@
     <ClInclude Include="AssetManager.h" />
     <ClInclude Include="Audio.h" />
     <ClInclude Include="BehaviorRegistry.h" />
+    <ClInclude Include="Behaviour.h" />
     <ClInclude Include="benchmark.h" />
     <ClInclude Include="BinaryWriter.h" />
     <ClInclude Include="BindingManager.h" />

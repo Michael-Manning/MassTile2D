@@ -1,20 +1,17 @@
 
 Near roadmap:
-- particle system serialization
-- auto save prefabs to folder instead of openging save file dialog
 - new behaviour system
-- refactor prefab to contain scene data allowing entity hierarchies
 - add prefab preview/edit utility to editor
-- add deletion of components to editor
-- flatten assets in editor view into one list with drop down sorting
-- remove shared ptr use from: scene, Input manager, vulkan engine, asset manager, resource manager, componentAccessor
-- finish scene desctructor
-- update serialization to not use shared_ptr
+- flatten assets in editor view into one list with drop down sorting 
+- scene entity duplicate
 
 ---- Test:
 - entity deleation
 - nested prefab with all component types
 - full serialization setup and publish build
+
+- switch all deserialization functions to constructors for uniformity, simplicity, as well as slight performance boost as components could all
+be emplaced into maps instead of constructed, coppied, and destructed;
 
 Major optimization:
 Sprites store their image file name, and texture IDs are hashed from the same filename. Could stop serializing the textureID
@@ -25,16 +22,17 @@ texture manager, removing one of the 3 layers of inderection required to link a 
 
 - component deletion from editor
 
-- switch all deserialization functions to constructors for uniformity, simplicity, as well as slight performance boost as components could all
-be emplaced into maps instead of constructed, coppied, and destructed;
+
 
 - drag prefab to instantiate
 
 - only enable used device features instead of enabling everything for the sake of bindless textures
 
-- text render spaces don't work with kerning hash lookup
-
 - support downscaled resolution (run full screen at lower resolution than monitor resolution)
+
+- run main loop in a different thread so game logic doesn't freeze whem moving window
+
+- add deletion of components to editor
 
 - fix getkeyup
 

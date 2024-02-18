@@ -34,7 +34,7 @@ struct packedChar {
 	glm::vec2 scale;
 	float xOff, yOff, advance;
 
-	nlohmann::json serializeJson() {
+	nlohmann::json serializeJson() const {
 		nlohmann::json j;
 		j["uvmin"] = toJson(uvmin);
 		j["uvmax"] = toJson(uvmax);
@@ -100,101 +100,10 @@ public:
 
 	packedChar operator [] (char c) const { return packedChars[c - firstChar]; }
 
-	void serializeJson(std::string filepath) {
-
-		nlohmann::json j;
-
-		j["name"] = name;
-		j["firstChar"] = firstChar;
-		j["charCount"] = charCount;
-		j["fontHeight"] = fontHeight;
-		j["atlas"] = atlas;
-		j["ID"] = ID;
-
-		for (auto& c : packedChars)
-			j["packedChars"].push_back(c.serializeJson());
-
-		for (auto& c : kerningTable)
-			j["kerningTable"].push_back(c);
-
-
-		std::ofstream output(filepath);
-		output << j.dump(3) << std::endl;
-		output.close();
-	};
-	void serializeBinary(std::string filepath) {
-		BinaryWriter writer(filepath);
-
-		writer << name;
-		writer << firstChar;
-		writer << charCount;
-		writer << fontHeight;
-		writer << baseline;
-		writer << lineGap;
-		writer << atlas;
-		writer << ID;
-		writer << packedChars;
-		writer << kerningTable;
-	}
-	static void deserializeBinary(std::string filepath, Font* font) {
-
-		BinaryReader reader(filepath);
-		reader >> font->name;
-		reader >> font->firstChar;
-		reader >> font->charCount;
-		reader >> font->fontHeight;
-		reader >> font->baseline;
-		reader >> font->lineGap;
-		reader >> font->atlas;
-		reader >> font->ID;
-		reader >> font->packedChars;
-		reader >> font->kerningTable;
-
-		return;
-	}
-	static void deserializeFlatbuffer(const AssetPack::Font* f, Font* font) {
-
-		font->name = f->name()->str();
-		font->firstChar = f->firstChar();
-		font->charCount = f->charCount();
-		font->fontHeight = f->fontHeight();
-		font->baseline = f->baseline();
-		font->lineGap = f->lineGap();
-		font->atlas = f->atlas();
-		font->ID = f->ID();
-		
-		font->packedChars.resize(f->packedChars()->size());
-		for (size_t i = 0; i < font->packedChars.size(); i++)
-			font->packedChars[i] = packedChar::deserializeFlatbuffer(f->packedChars()->Get(i));
-
-		font->kerningTable.resize(f->kerningTable()->size());
-		for (size_t i = 0; i < font->kerningTable.size(); i++)
-			font->kerningTable[i] = f->kerningTable()->Get(i);
-
-		return;
-	}
+	void serializeJson(std::string filepath) const;
+	void serializeBinary(std::string filepath) const;
+	static void deserializeBinary(std::string filepath, Font* font);
+	static void deserializeFlatbuffer(const AssetPack::Font* f, Font* font);
 };
 
-static void CalculateQuads(Font* f, std::string& text, charQuad* quads) {
-
-	glm::vec2 cursor = glm::vec2(0.0f);
-	for (int i = 0; i < text.length(); i++) {
-		char c = text[i];
-
-		if (c == '\n') {
-			cursor.x = 0.0f;
-			cursor.y -= f->lineGap;
-			continue;
-		}
-
-		auto packed = f->operator[](c);
-		charQuad q;
-		q.uvmax = packed.uvmax;
-		q.uvmin = packed.uvmin;
-		q.scale = packed.scale;
-		q.position = glm::vec2(cursor.x + packed.xOff, cursor.y + packed.yOff - f->baseline);
-		cursor.x += packed.advance;
-		cursor.x += f->kerningTable[f->kernHash(c, text[i + 1])];
-		quads[i] = q;
-	}
-};
+void CalculateQuads(Font* f, std::string& text, charQuad* quads);

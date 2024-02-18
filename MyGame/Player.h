@@ -12,6 +12,7 @@
 #include "global.h"
 #include "worldGen.h"
 #include "TileWorld.h"
+#include "Behaviour.h"
 
 using namespace glm;
 using namespace std;
@@ -44,17 +45,49 @@ glm::vec2 decellerate(const glm::vec2& A, const glm::vec2& B) {
 }
 
 
-class Player : public Entity {
+struct serializableProperty {
+	
+	enum class serializableType {
+		INT,
+		FLOAT
+	};
+
+	serializableType type;
+	std::string name;
+	void* value;
+};
+
+
+class serializable {
+	virtual std::vector<serializableProperty> getProperties() = 0;
+};
+
+class myClass : public serializable{
+
+	int myNumber;
+	float myFloat;
+
+	// usage somthing like this. Should expand to an implimentation of getProperties
+	// PROPERTY_EXPORT({serializableType::INT, myNumber}, {serializableType::INT, myFloat});
+};
+
+
+class Player : public Behaviour {
 
 
 public:
-	std::string GetEditorName() override { // deprecate
-		return "Player";
-	};
 
-	uint32_t getBehaviorHash() const override {
-		return cHash("Player");
-	};
+	Player(behavioiurHash classHash, ComponentAccessor* accessor, Entity* entityCache) : Behaviour(classHash, accessor, entityCache) {
+
+	}
+
+	//std::string GetEditorName() override { // deprecate
+	//	return "Player";
+	//};
+
+	//uint32_t getBehaviorHash() const override {
+	//	return cHash("Player");
+	//};
 
 
 	// settings
@@ -113,8 +146,8 @@ public:
 		renderer->atlasIndex = 5;
 
 		tpoints.resize(10);
-		float sx = transform.scale.x / 2.0;
-		float sy = transform.scale.y / 2.0;
+		float sx = transform->scale.x / 2.0;
+		float sy = transform->scale.y / 2.0;
 		tpoints[0] = vec2(sx, sy);
 		tpoints[1] = vec2(-sx, sy);
 		tpoints[2] = vec2(sx, -sy);
@@ -136,25 +169,25 @@ public:
 		bool topCast = false;
 		bool bottomCast = false;
 
-		leftCast |= queryTile(transform.position + tpoints[1] + vec2(-skin * 2, 0));
-		leftCast |= queryTile(transform.position + tpoints[3] + vec2(-skin * 2, 0));
-		leftCast |= queryTile(transform.position + tpoints[4] + vec2(-skin * 2, 0));
-		leftCast |= queryTile(transform.position + tpoints[8] + vec2(-skin * 2, 0));
+		leftCast |= queryTile(transform->position + tpoints[1] + vec2(-skin * 2, 0));
+		leftCast |= queryTile(transform->position + tpoints[3] + vec2(-skin * 2, 0));
+		leftCast |= queryTile(transform->position + tpoints[4] + vec2(-skin * 2, 0));
+		leftCast |= queryTile(transform->position + tpoints[8] + vec2(-skin * 2, 0));
 
-		rightCast |= queryTile(transform.position + tpoints[0] + vec2(skin * 2, 0));
-		rightCast |= queryTile(transform.position + tpoints[2] + vec2(skin * 2, 0));
-		rightCast |= queryTile(transform.position + tpoints[5] + vec2(skin * 2, 0));
-		rightCast |= queryTile(transform.position + tpoints[9] + vec2(skin * 2, 0));
+		rightCast |= queryTile(transform->position + tpoints[0] + vec2(skin * 2, 0));
+		rightCast |= queryTile(transform->position + tpoints[2] + vec2(skin * 2, 0));
+		rightCast |= queryTile(transform->position + tpoints[5] + vec2(skin * 2, 0));
+		rightCast |= queryTile(transform->position + tpoints[9] + vec2(skin * 2, 0));
 
-		topCast |= queryTile(transform.position + tpoints[0] + vec2(0, skin * 2));
-		topCast |= queryTile(transform.position + tpoints[1] + vec2(0, skin * 2));
-		topCast |= queryTile(transform.position + tpoints[7] + vec2(0, skin * 2));
+		topCast |= queryTile(transform->position + tpoints[0] + vec2(0, skin * 2));
+		topCast |= queryTile(transform->position + tpoints[1] + vec2(0, skin * 2));
+		topCast |= queryTile(transform->position + tpoints[7] + vec2(0, skin * 2));
 
-		bottomCast |= queryTile(transform.position + tpoints[2] + vec2(0, -skin * 2));
-		bottomCast |= queryTile(transform.position + tpoints[3] + vec2(0, -skin * 2));
-		bottomCast |= queryTile(transform.position + tpoints[6] + vec2(0, -skin * 2));
+		bottomCast |= queryTile(transform->position + tpoints[2] + vec2(0, -skin * 2));
+		bottomCast |= queryTile(transform->position + tpoints[3] + vec2(0, -skin * 2));
+		bottomCast |= queryTile(transform->position + tpoints[6] + vec2(0, -skin * 2));
 
-		animationTimer += DeltaTime;
+		animationTimer += deltaTime;
 		if (animationTimer > 0.1f)
 			animationTimer = 0.0f;
 
@@ -163,15 +196,15 @@ public:
 		bool right = input->getKey(KeyCode::RightArrow) || input->getKey('d');
 
 		if (left && !right && !leftCast) {
-			velocity += vec2(grounded ? -groundAccel : -airAccel, 0.0f) * DeltaTime;
+			velocity += vec2(grounded ? -groundAccel : -airAccel, 0.0f) * deltaTime;
 		}
 		else if (!left && right && !rightCast) {
-			velocity += vec2(grounded ? groundAccel : airAccel, 0.0f) * DeltaTime;
+			velocity += vec2(grounded ? groundAccel : airAccel, 0.0f) * deltaTime;
 		}
 		else if (!left && !right) {
 			if (grounded) {
 				if (velocity.x)
-					velocity = decellerate(velocity, vec2(idleDecelleratiom * DeltaTime, 0.0f));
+					velocity = decellerate(velocity, vec2(idleDecelleratiom * deltaTime, 0.0f));
 			}
 		}
 
@@ -181,7 +214,7 @@ public:
 
 		}
 		else if (!bottomCast) {
-			velocity.y -= gravityAccel * DeltaTime;
+			velocity.y -= gravityAccel * deltaTime;
 		}
 
 
@@ -206,7 +239,7 @@ public:
 		velocity.y = glm::clamp(velocity.y, -terminalVelocity, terminalVelocity);
 
 
-		vec2 npos = transform.position + velocity * DeltaTime;
+		vec2 npos = transform->position + velocity * deltaTime;
 
 		//int dx = velocity.x == 0 ? 0 : velocity.x < 0 ? -1 : 1;
 		//int dy = velocity.y == 0 ? 0 : velocity.y < 0 ? -1 : 1;
@@ -222,8 +255,8 @@ public:
 
 		float slope = 0;
 
-		float x1 = transform.position.x;
-		float y1 = transform.position.y;
+		float x1 = transform->position.x;
+		float y1 = transform->position.y;
 		float x2 = npos.x;
 		float y2 = npos.y;
 
@@ -242,7 +275,7 @@ public:
 			bool resolveUp = false;
 			bool resolveDown = false;
 
-			volatile ivec2 prevTile = getTileXY(transform.position + tpoints[i]);
+			volatile ivec2 prevTile = getTileXY(transform->position + tpoints[i]);
 			volatile ivec2 curTile = getTileXY(npos + tpoints[i]);
 
 			int dx = curTile.x - prevTile.x;
@@ -368,12 +401,12 @@ public:
 		if (avgSamplesY > 0)
 			npos.y = resolvedYAvg / (float)avgSamplesY;
 
-		transform.position = npos;
+		transform->position = npos;
 
-		if (transform.position != GcameraPos) {
-			vec2 npos = GcameraPos + (transform.position - GcameraPos) * 4.0f * DeltaTime;
-			if (glm::distance(npos, transform.position) > glm::distance(GcameraPos, transform.position)) {
-				GcameraPos = transform.position;
+		if (transform->position != GcameraPos) {
+			vec2 npos = GcameraPos + (transform->position - GcameraPos) * 4.0f * deltaTime;
+			if (glm::distance(npos, transform->position) > glm::distance(GcameraPos, transform->position)) {
+				GcameraPos = transform->position;
 			}
 			else {
 				GcameraPos = npos;

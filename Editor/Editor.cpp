@@ -331,18 +331,25 @@ void Editor::EntitySelectableTree(int& index, Entity* entity) {
 			selectedEntityIndex = -1;
 			ImGui::EndPopup();
 
-			char filename[MAX_PATH];
-			if (saveFileDialog(filename, MAX_PATH, "prefab", "Prefab File\0*.prefab\0")) {
+			//char filename[MAX_PATH];
+			//if (saveFileDialog(filename, MAX_PATH, "prefab", "Prefab File\0*.prefab\0")) {
 				Prefab p;
 				GeneratePrefab(entity, gameScene->sceneData, &p);
-				string fullPath = string(filename);
-				std::string endName = getFileName(fullPath);
-				engine->assetManager->ExportPrefab(p, fullPath);
+
+				std::filesystem::path dir(engine->assetManager->directories.prefabDir);
+				std::filesystem::path fullPath = dir / std::filesystem::path(p.name);
+				//string fullPath = string(filename);
+
+				//std::string endName = getFileName(fullPath);
+				engine->assetManager->ExportPrefab(p, fullPath.string());
+
+				engine->assetManager->LoadPrefab(p.name, false);
+
 				// hope you put it in the right folder or it won't appear in the editor
-				if (std::filesystem::exists(std::filesystem::path(engine->assetManager->directories.prefabDir + endName)) == true) {
-					engine->assetManager->LoadPrefab(p.name, false);
-				}
-			}
+				//if (std::filesystem::exists(std::filesystem::path(engine->assetManager->directories.prefabDir + endName)) == true) {
+				//	engine->assetManager->LoadPrefab(p.name, false);
+				//}
+			//}
 			return;
 		}
 		ImGui::EndPopup();
@@ -1000,8 +1007,37 @@ void Editor::Run() {
 
 			// behavior selector
 			SeparatorText("Behavior");
-			if (selectedEntity->GetEditorName() != "") {
-				Text(selectedEntity->GetEditorName().c_str());
+			if (gameScene->sceneData.behaviours.contains(selectedEntity->ID)) {
+				auto be = gameScene->sceneData.behaviours.at(selectedEntity->ID).get();
+
+				Text(BehaviorMap.at(be->Hash).first.c_str());
+
+				auto props = be->getProperties();
+
+				for (auto& prop : props)
+				{
+					switch (prop.type)
+					{
+					case SerializableProperty::Type::INT:
+					{
+						InputInt(prop.name.c_str(), reinterpret_cast<int*>(prop.value));
+						break;
+					}
+					case SerializableProperty::Type::FLOAT:
+					{
+						InputFloat(prop.name.c_str(), reinterpret_cast<float*>(prop.value));
+						break;
+					}
+					case SerializableProperty::Type::VEC2:
+					{
+						InputFloat2(prop.name.c_str(), reinterpret_cast<float*>(prop.value));
+						break;
+					}
+					default:
+						break;
+					}
+				}
+
 			}
 			else {
 
@@ -1032,11 +1068,12 @@ void Editor::Run() {
 					EndPopup();
 
 					if (selectedBehavior != 0) {
+						gameScene->AddBehaviour(selectedEntity, selectedBehavior);
 						//gameScene->OverwriteEntity(BehaviorMap[selectedBehavior].second(), selectedEntity->ID);
 
 
 
-						assert(false);
+
 						/*auto behaviorEntity = BehaviorMap[selectedBehavior].second();
 						behaviorEntity->transform = selectedEntity->transform;
 						gameScene->OverwriteEntity(behaviorEntity, selectedEntity->ID);

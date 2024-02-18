@@ -115,20 +115,20 @@ void Engine::createScenePLContext(ScenePipelineContext* ctx, bool allocateTileWo
 	rengine->createMappedBuffer(sizeof(cameraUBO_s), vk::BufferUsageFlagBits::eUniformBuffer, ctx->cameraBuffers);
 
 	if (allocateTileWorld) {
-		ctx->worldMap = make_unique<TileWorld>(rengine);
+		ctx->worldMap = make_unique<TileWorld>(rengine.get());
 		ctx->worldMap->AllocateVulkanResources();
 	}
 
 	// section can be done in parrallel
 	{
 		if (allocateTileWorld) {
-			ctx->lightingPipeline = make_unique<LightingComputePL>(rengine, ctx->worldMap.get());
-			ctx->tilemapPipeline = make_unique<TilemapPL>(rengine, ctx->worldMap.get());
+			ctx->lightingPipeline = make_unique<LightingComputePL>(rengine.get(), ctx->worldMap.get());
+			ctx->tilemapPipeline = make_unique<TilemapPL>(rengine.get(), ctx->worldMap.get());
 		}
-		ctx->texturePipeline = make_unique<TexturedQuadPL>(rengine);
-		ctx->colorPipeline = make_unique<ColoredQuadPL>(rengine);
-		ctx->textPipeline = make_unique<TextPL>(rengine);
-		ctx->particlePipeline = make_unique<ParticleSystemPL>(rengine);
+		ctx->texturePipeline = make_unique<TexturedQuadPL>(rengine.get());
+		ctx->colorPipeline = make_unique<ColoredQuadPL>(rengine.get());
+		ctx->textPipeline = make_unique<TextPL>(rengine.get());
+		ctx->particlePipeline = make_unique<ParticleSystemPL>(rengine.get());
 	}
 
 	if (allocateTileWorld)
@@ -193,8 +193,8 @@ void Engine::Start(const VideoSettings& initialSettings, AssetManager::AssetPath
 	glfwSetMouseButtonCallback(rengine->window, mouseButtonCallback);
 	glfwSetScrollCallback(rengine->window, scroll_callback);
 
-	input = make_shared<Input>(rengine->window);
-	Entity::input = input;
+	input = make_unique<Input>(rengine->window);
+	Behaviour::input = input.get();
 
 	DebugLog("Initialized Window");
 
@@ -204,8 +204,8 @@ void Engine::Start(const VideoSettings& initialSettings, AssetManager::AssetPath
 	rengine->createCommandBuffers();
 	rengine->createTextureSamplers();
 
-	resourceManager = std::make_shared<ResourceManager>(rengine, resourceChangeFlags);
-	assetManager = std::make_shared<AssetManager>(rengine, assetPaths, resourceManager);
+	resourceManager = std::make_unique<ResourceManager>(rengine.get(), resourceChangeFlags.get());
+	assetManager = std::make_unique<AssetManager>(rengine.get(), assetPaths, resourceManager.get());
 
 	DebugLog("Initialized Vulkan");
 
@@ -228,8 +228,8 @@ void Engine::Start(const VideoSettings& initialSettings, AssetManager::AssetPath
 	// create some buffers
 	{
 		//cameraUploader.CreateBuffers(rengine);
-		screenSpaceTransformUploader.CreateBuffers(rengine);
-		AllocateQuad(rengine, quadMeshBuffer);
+		screenSpaceTransformUploader.CreateBuffers(rengine.get());
+		AllocateQuad(rengine.get(), quadMeshBuffer);
 
 
 		// allocated dedicated device memory for compute driven particle systems
@@ -247,11 +247,10 @@ void Engine::Start(const VideoSettings& initialSettings, AssetManager::AssetPath
 
 	// contruct pipelines
 	{
-		screenSpaceColorPipeline = make_unique<ColoredQuadPL>(rengine);
-		/*lightingPipeline = make_unique<LightingComputePL>(rengine, worldMap);*/
-		screenSpaceTexturePipeline = make_unique<TexturedQuadPL>(rengine);
-		screenSpaceTextPipeline = make_unique<TextPL>(rengine);
-		particleComputePipeline = make_unique<ParticleComputePL>(rengine);
+		screenSpaceColorPipeline = make_unique<ColoredQuadPL>(rengine.get());
+		screenSpaceTexturePipeline = make_unique<TexturedQuadPL>(rengine.get());
+		screenSpaceTextPipeline = make_unique<TextPL>(rengine.get());
+		particleComputePipeline = make_unique<ParticleComputePL>(rengine.get());
 	}
 
 	InitImgui(); // imgui needs to be initialized to register textures with it
@@ -263,17 +262,10 @@ void Engine::Start(const VideoSettings& initialSettings, AssetManager::AssetPath
 
 	// section can be done in parrallel
 	{
-		/*lightingPipeline->createStagingBuffers();*/
 		screenSpaceColorPipeline->CreateInstancingBuffer();
 		screenSpaceTexturePipeline->createSSBOBuffer();
 		screenSpaceTextPipeline->createSSBOBuffer();
 
-		//{
-		//	vector<uint8_t> comp, blur;
-		//	assetManager->LoadShaderFile("lighting_comp.spv", comp);
-		//	assetManager->LoadShaderFile("lightingBlur_comp.spv", blur);
-		//	lightingPipeline->CreateComputePipeline(comp, blur);
-		//}
 		{
 			vector<uint8_t> comp;
 			assetManager->LoadShaderFile("particleSystem_comp.spv", comp);
@@ -445,6 +437,8 @@ void Engine::recordSceneContextGraphics(const ScenePipelineContext& ctx, framebu
 
 	// particles
 	{
+		float particleDeltaTime = scene->paused ? 0.0f : deltaTime;
+
 		int smallSystemIndex = 0;
 		std::vector<int> indexes;
 		std::vector<int> systemSizes;
@@ -457,10 +451,10 @@ void Engine::recordSceneContextGraphics(const ScenePipelineContext& ctx, framebu
 
 				if (entity.HasParent()) {
 					Transform global = entity.GetGlobalTransform();
-					renderer.runSimulation(deltaTime, global.position);
+					renderer.runSimulation(particleDeltaTime, global.position);
 				}
 				else {
-					renderer.runSimulation(deltaTime, entity.transform.position);
+					renderer.runSimulation(particleDeltaTime, entity.transform.position);
 				}
 
 				ctx.particlePipeline->UploadInstanceData(*renderer.hostParticleBuffer.get(), smallSystemIndex);
@@ -499,12 +493,12 @@ void Engine::recordSceneContextGraphics(const ScenePipelineContext& ctx, framebu
 				Font* f = assetManager->GetFont(r.font);
 				Sprite* sprite = assetManager->GetSprite(f->atlas);
 
-				if (r.dirty) {
+				//if (r.dirty) {
 					r.quads.clear();
 					r.quads.resize(r.text.length());
 					CalculateQuads(f, r.text, r.quads.data());
 					r.dirty = false;
-				}
+				//}
 
 				TextPL::textHeader header;
 				header.color = r.color;
@@ -619,8 +613,11 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 		{
 			vector<ParticleComputePL::DispatchInfo> dispachInfos;
 
+
 			for (auto& job : sceneRenderJobs)
 			{
+				float particleDeltaTime = job.scene->paused? 0.0f : deltaTime;
+
 				for (auto& [entID, renderer] : job.scene->sceneData.particleSystemRenderers) {
 					if (renderer.computeContextDirty) {
 
@@ -647,7 +644,7 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 
 						const auto& entity = job.scene->sceneData.entities.at(entID);
 
-						renderer.spawntimer += deltaTime;
+						renderer.spawntimer += particleDeltaTime;
 						float step = 1.0f / renderer.configuration.spawnRate;
 						int particlesToSpawn = static_cast<int>(renderer.spawntimer / step);
 						renderer.spawntimer -= particlesToSpawn * step;

@@ -21,7 +21,7 @@ namespace VKUtil{
 	class BufferUploader {
 	public:
 
-		void CreateBuffers(std::shared_ptr<VKEngine> engine, vk::BufferUsageFlags usage = vk::BufferUsageFlagBits::eUniformBuffer) {
+		void CreateBuffers(VKEngine* engine, vk::BufferUsageFlags usage = vk::BufferUsageFlagBits::eUniformBuffer) {
 			engine->createMappedBuffer(sizeof(T), usage, transferBuffers);
 		};
 

@@ -47,7 +47,7 @@ public:
 	};
 	static_assert(sizeof(textHeader) % 16 == 0);
 
-	TextPL(std::shared_ptr<VKEngine>& engine) :
+	TextPL(VKEngine* engine) :
 		Pipeline(engine) {
 	}
 

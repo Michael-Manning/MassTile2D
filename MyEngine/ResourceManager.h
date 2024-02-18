@@ -66,7 +66,7 @@ public:
 		return asyncQueue.size();
 	}
 
-	ResourceManager(std::shared_ptr<VKEngine> engine, std::shared_ptr<ChangeFlags> changeFlags)
+	ResourceManager(VKEngine* engine, ChangeFlags* changeFlags)
 		:
 		rengine(engine),
 		changeFlags(changeFlags),
@@ -235,9 +235,9 @@ private:
 		deletion_mtx.unlock();
 	}
 
-	std::shared_ptr<ChangeFlags> changeFlags = nullptr;
+	ChangeFlags* changeFlags = nullptr;
 	std::unordered_map<texID, Texture> textureResources; // reserve capacity or replace with collection protected against re-hashing due to pointer use
 	IDGenerator<texID> TextureIDGenerator;
-	std::shared_ptr<VKEngine> rengine;
+	VKEngine* rengine;
 };
 

@@ -13,7 +13,7 @@
 class GraphicsTemplate : public Pipeline {
 public:
 
-	GraphicsTemplate(std::shared_ptr<VKEngine>& engine) : Pipeline(engine), descriptorManager(engine)
+	GraphicsTemplate(VKEngine* engine) : Pipeline(engine), descriptorManager(engine)
 	{};
 
 	void CreateGraphicsPipeline(const ShaderResourceConfig& resourceConfig);

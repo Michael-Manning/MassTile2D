@@ -34,9 +34,13 @@
 #include "LightingComputePL.h"
 #include "TextPL.h"
 
+#include "Sprite.h"
+#include "Font.h"
+
 #include "MyMath.h"
 #include "engine.h"
-#include "SpriteRenderer.h"	
+//#include "SpriteRenderer.h"	
+#include "ECS.h"
 #include "Physics.h"
 #include "Entity.h"
 #include "Vertex.h"
@@ -46,6 +50,7 @@
 #include "AssetManager.h"
 #include "ResourceManager.h"
 #include "Input.h"
-#include "TextRenderer.h"
+//#include "TextRenderer.h"
 #include "IDGenerator.h"
+#include "BehaviorRegistry.h"
 //#include "GlobalImageDescriptor.h"

@@ -149,7 +149,7 @@ private:
 	float cameraSlepStartTime;
 	bool cameraEntityFocus = false;
 
-	std::shared_ptr<Input> input;
+	Input* input;
 
 	// set every frame, read by different functions
 	glm::vec2 screenSize;

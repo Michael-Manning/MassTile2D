@@ -8,19 +8,20 @@
 
 #include "ECS.h"
 #include "Physics.h"
+#include "Behaviour.h"
 
 class SceneData {
 public:
 
 	robin_hood::unordered_node_map<entityID, Entity> entities;
+	robin_hood::unordered_flat_map<entityID, std::unique_ptr<Behaviour>> behaviours;
 
-	// components
-	robin_hood::unordered_node_map<entityID, SpriteRenderer> spriteRenderers;
 	robin_hood::unordered_node_map<entityID, ColorRenderer> colorRenderers;
-	robin_hood::unordered_node_map<entityID, Rigidbody> rigidbodies;
-	robin_hood::unordered_node_map<entityID, Staticbody> staticbodies;
+	robin_hood::unordered_node_map<entityID, SpriteRenderer> spriteRenderers;
 	robin_hood::unordered_node_map<entityID, TextRenderer> textRenderers;
 	robin_hood::unordered_node_map<entityID, ParticleSystemRenderer> particleSystemRenderers;
+	robin_hood::unordered_node_map<entityID, Rigidbody> rigidbodies;
+	robin_hood::unordered_node_map<entityID, Staticbody> staticbodies;
 
 	nlohmann::json serializeJson() const;
 	static void deserializeJson(nlohmann::json& j, SceneData* sceneData);

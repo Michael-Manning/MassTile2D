@@ -85,9 +85,9 @@ public:
 	uint32_t resourcesOffset;
 
 	AssetManager(
-		std::shared_ptr<VKEngine> engine,
+		VKEngine* engine,
 		AssetPaths directories,
-		std::shared_ptr<ResourceManager> resourceManager)
+		ResourceManager* resourceManager)
 		:
 		rengine(engine),
 		resourceManager(resourceManager),
@@ -261,8 +261,8 @@ private:
 	std::unordered_map<std::string, spriteID> loadedSpritesByName;
 	std::unordered_map<std::string, fontID> loadedFontsByName;
 
-	std::shared_ptr<VKEngine> rengine = nullptr;
-	std::shared_ptr<ResourceManager> resourceManager;
+	VKEngine* rengine = nullptr;
+	ResourceManager* resourceManager;
 
 	IDGenerator<spriteID> SpriteIDGenerator;
 	IDGenerator<fontID> fontIDGenerator;

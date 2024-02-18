@@ -8,7 +8,7 @@
 
 struct UIState {
 
-	std::shared_ptr<Input> input;
+	Input* input;
 
 	VideoSettings* videoSettings;
 
