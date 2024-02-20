@@ -257,7 +257,7 @@ void Editor::EntityGizmo(ImDrawList* drawlist, Camera& camera)
 {
 	vec2 mpos = input->getMousePos();
 
-	float lineLen = 120; // translate gizmo arm length
+	float lineLen = 104; // translate gizmo arm length
 	float wheelRad = 140; // rotate gizmo radius
 
 	vec2 objScreenPos = selectedSceneWorldToScreenPos(selectedEntity->GetGlobalTransform().position);
@@ -265,18 +265,18 @@ void Editor::EntityGizmo(ImDrawList* drawlist, Camera& camera)
 	vec2 xHandlePos = objScreenPos + vec2(lineLen, 0);
 
 	if (input->getMouseBtnDown(MouseBtn::Left)) {
-		draggingY = glm::distance(mpos, yHandlePos) < 16;
-		draggingX = glm::distance(mpos, xHandlePos) < 16;
+		draggingY = glm::distance(mpos, yHandlePos) < 24;
+		draggingX = glm::distance(mpos, xHandlePos) < 24;
 
 		// central handle
-		if (glm::distance(mpos, objScreenPos) < 22) {
+		if (glm::distance(mpos, objScreenPos) < 24) {
 			draggingX = true;
 			draggingY = true;
 		}
 
 		if ((draggingX || draggingY) == false) {
 			float mDist = glm::distance(mpos, objScreenPos);
-			if (mDist > wheelRad - 5 && mDist < wheelRad + 5) {
+			if (mDist > wheelRad - 8 && mDist < wheelRad + 8) {
 				draggingAngle = true;
 				dragInitialAngle = atan2f(mpos.y - objScreenPos.y, mpos.x - objScreenPos.x);
 				dragInitialObjectAngle = selectedEntity->transform.rotation;
@@ -515,6 +515,12 @@ void Editor::entityWindow() {
 	SetNextWindowPos(vec2(0.0f, 0.0f));
 	SetNextWindowSize(vec2(leftPanelWindowWidth, engine->getWindowSize().y / 2));
 
+	// cannot iterate the map as it could be modified in the loop
+	vector<Entity*> entityList;
+	entityList.reserve(selectedScene->sceneData.entities.size());
+	for (auto& [entID, entity] : selectedScene->sceneData.entities)
+		entityList.push_back(&entity);
+
 	if (showingPreviewWindow) {
 		Begin("Prefab", nullptr, flags);
 
@@ -535,11 +541,11 @@ void Editor::entityWindow() {
 		}
 
 		int i = 0;
-		for (auto& [entID, entity] : entityPreviewScene->sceneData.entities)
+		for (auto& entity : entityList)
 		{
 			// start with top level entities
-			if (!entity.HasParent()) {
-				EntitySelectableTree(i, &entity, entityPreviewScene.get());
+			if (!entity->HasParent()) {
+				EntitySelectableTree(i, entity, entityPreviewScene.get());
 			}
 		}
 		End();
@@ -558,11 +564,11 @@ void Editor::entityWindow() {
 		}
 
 		int i = 0;
-		for (auto& [entID, entity] : gameScene->sceneData.entities)
+		for (auto& entity : entityList)
 		{
 			// start with top level entities
-			if (!entity.HasParent()) {
-				EntitySelectableTree(i, &entity, gameScene.get());
+			if (!entity->HasParent()) {
+				EntitySelectableTree(i, entity, gameScene.get());
 			}
 		}
 		End();
@@ -581,13 +587,22 @@ void Editor::assetWindow() {
 			int i = 0;
 			for (auto& p : engine->assetManager->_getLoadedAndUnloadedSceneNames())
 			{
-				Selectable(p.c_str(), selectedSceneIndex == i);
+				if (Selectable(p.c_str(), selectedSceneIndex == i)) {
+					selectedSceneIndex = i;
+				}
 
 				if (ImGui::BeginPopupContextItem()) {
-					selectedEntityIndex = i;
+					selectedSceneIndex = i;
 					i++;
 					if (ImGui::MenuItem("Load")) {
 						loadGameSceneFromDisk(p);
+						selectedSceneIndex = -1;
+						ImGui::EndPopup();
+						break;
+					}
+					if (ImGui::MenuItem("Delete from disk")) {
+						engine->assetManager->deleteSceneFromDisk(p);
+						selectedSceneIndex = -1;
 						ImGui::EndPopup();
 						break;
 					}
@@ -602,18 +617,25 @@ void Editor::assetWindow() {
 
 		if (BeginTabItem("Prefabs")) {
 			int i = 0;
-			for (auto& p : engine->assetManager->_getPrefabIterator())
+			for (auto& [name, prefab] :engine->assetManager->_getPrefabIterator())
 			{
-				if (Selectable(p.first.c_str(), selectedPrefabIndex == i)) {
-					OpenPreviewWindowWithPrefab(p.second);
+				if (Selectable(name.c_str(), selectedPrefabIndex == i)) {
+					OpenPreviewWindowWithPrefab(prefab);
 					selectedPrefabIndex = i;
+				}
+				else {
+					if (IsItemHovered() && input->getMouseBtnDown(MouseBtn::Left)) {
+						prefabDragInStarted = true;
+						dragPrefab = &prefab;
+					}
+
 				}
 
 				if (ImGui::BeginPopupContextItem()) {
 					selectedPrefabIndex = i;
 					i++;
 					if (ImGui::MenuItem("Instantiate")) {
-						auto newEntity = gameScene->Instantiate(p.second, p.first);
+						auto newEntity = gameScene->Instantiate(prefab, name);
 						newEntity->name = gameScene->GetNoneConflictingEntityName(newEntity, nullptr);
 						selectedPrefabIndex = -1;
 						closePreviewWindow();
@@ -621,7 +643,9 @@ void Editor::assetWindow() {
 						break;
 					}
 					if (ImGui::MenuItem("Delete from disk")) {
-						assert(false);
+						
+						engine->assetManager->deletePrefabFromDisk(name);
+
 						selectedPrefabIndex = -1;
 						closePreviewWindow();
 						ImGui::EndPopup();
@@ -825,11 +849,32 @@ void Editor::mainSceneWindow() {
 		engine->ResizeSceneRenderContext(sceneRenderContext, avail);
 
 	//auto cursorPos = ImGui::GetCursorPos();
+	vec2 sceneDrawScreenPos = GetCursorScreenPos();
 	engine->ImGuiFramebufferImage(sceneFramebuffer, ivec2(avail.x, avail.y));
 	//SetCursorPos(cursorPos);
 	//InvisibleButton("gameInvisibleBtn", (vec2)POVViewWinSize); // only to prevent window dragging when clicked
 
 	bool sceneHovered = ImGui::IsItemHovered();
+
+	// imgui only "sees" hover if window has been clicked and focused
+	bool unFocusedHover = within(sceneDrawScreenPos, sceneDrawScreenPos + avail, input->getMousePos());
+
+	if (unFocusedHover && showingPreviewWindow == false) {
+		if (prefabDragInStarted) {
+			assert(dragPrefab != nullptr);
+
+			auto newEntity = gameScene->Instantiate(*dragPrefab, dragPrefab->name, gameSceneSreenToWorldPos(mpos));
+			newEntity->name = gameScene->GetNoneConflictingEntityName(newEntity, nullptr);
+			selectedPrefabIndex = -1;
+
+			selectedEntity = newEntity;
+			draggingX = true;
+			draggingY = true;
+
+			prefabDragInStarted = false;
+			dragPrefab = nullptr;
+		}
+	}
 
 	if (sceneHovered && showingPreviewWindow == false) {
 
@@ -1048,7 +1093,6 @@ void Editor::Run() {
 		SetNextWindowSize(vec2(300, engine->getWindowSize().y));
 		Begin("Inspector", nullptr, flags);
 
-		// TODO: move gizmo logic outside of this window context
 		if (selectedEntity != nullptr) {
 
 			if (Combo("Create", &comboSelected, "Sprite Renderer\0Color Renderer\0Text Renderer\0Particle System\0Box Staticbody\0Circle Staticbody\0Box Rigidbody\0Circle Rigidbody")) {
@@ -1073,19 +1117,19 @@ void Editor::Run() {
 					break;
 				case 4:
 					if (!selectedScene->sceneData.staticbodies.contains(selectedEntity->ID))
-						selectedScene->registerComponent(selectedEntity->ID, Staticbody(make_shared<BoxCollider>(vec2(1.0f))));
+						selectedScene->registerComponent_Staticbody(selectedEntity->ID, make_shared<BoxCollider>(vec2(1.0f)));
 					break;
 				case 5:
 					if (!selectedScene->sceneData.staticbodies.contains(selectedEntity->ID))
-						selectedScene->registerComponent(selectedEntity->ID, Staticbody(make_shared<CircleCollider>(1.0f)));
+						selectedScene->registerComponent_Staticbody(selectedEntity->ID, make_shared<CircleCollider>(1.0f));
 					break;
 				case 6:
 					if (!selectedScene->sceneData.rigidbodies.contains(selectedEntity->ID))
-						selectedScene->registerComponent(selectedEntity->ID, Rigidbody(make_shared<BoxCollider>(vec2(1.0f))));
+						selectedScene->registerComponent_Rigidbody(selectedEntity->ID, make_shared<BoxCollider>(vec2(1.0f)));
 					break;
 				case 7:
 					if (!selectedScene->sceneData.rigidbodies.contains(selectedEntity->ID))
-						selectedScene->registerComponent(selectedEntity->ID, Rigidbody(make_shared<CircleCollider>(1.0f)));
+						selectedScene->registerComponent_Rigidbody(selectedEntity->ID, make_shared<CircleCollider>(1.0f));
 					break;
 				default:
 					break;
@@ -1289,7 +1333,7 @@ void Editor::Run() {
 
 				std::filesystem::path dir(engine->assetManager->directories.sceneDir);
 				std::filesystem::path fullPath = dir / std::filesystem::path(gameScene->name);
-				gameScene->serializeJson(fullPath.string());
+				engine->assetManager->ExportScene(gameScene, fullPath.string());
 			}
 
 		}
@@ -1297,6 +1341,10 @@ void Editor::Run() {
 	}
 
 	debugDataWindow();
+
+	if (input->getMouseBtn(MouseBtn::Left) == false) {
+		prefabDragInStarted = false;
+	}
 }
 
 

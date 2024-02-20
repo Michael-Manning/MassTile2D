@@ -233,6 +233,7 @@ public:
 	spriteID ExportSprite(std::string spriteAssetExportPath, std::string imageSourcePath, Sprite unidentified_sprite);
 	fontID ExportFont(std::string fontAssetExportPath, std::string spriteAssetExportPath, std::string atlasImageSourcePath, Font unidentified_font, Sprite unidentified_sprite);
 	void ExportPrefab(Prefab& prefab, std::string prefabAssetExportPath);
+	void ExportScene(std::shared_ptr<Scene> scene, std::string sceneExportPath);
 #endif
 
 	auto _getSpriteIterator() { return MapProxy<spriteID, Sprite>(spriteAssets.begin(), spriteAssets.end()); };
@@ -250,6 +251,11 @@ public:
 		}
 		return vec;
 	};
+
+#ifndef USE_PACKED_ASSETS
+	void deletePrefabFromDisk(std::string name);
+	void deleteSceneFromDisk(std::string name);
+#endif
 
 private:
 
@@ -405,6 +411,7 @@ private:
 			//}
 		}
 	};
+
 #endif
 
 	void loadPrefabResources(Prefab& prefab);

@@ -26,84 +26,137 @@ constexpr glm::vec2 btg(const b2Vec2& vec) {
 	return glm::vec2(vec.x, vec.y);
 }
 
+//class Collider {
+//public:
+//
+//	virtual nlohmann::json serializeJson() = 0;
+//
+//	virtual b2Shape* _getB2Shape() = 0;
+//
+//	virtual int _getType() = 0;
+//
+//	virtual std::uni<Collider> duplicate() = 0;
+//};
+//
+//class BoxCollider : public Collider {
+//
+//public:
+//
+//	BoxCollider(glm::vec2 scale) {
+//		this->scale = scale;
+//	}
+//
+//	b2Shape* _getB2Shape() override {
+//		dynamicBox.SetAsBox(scale.x / 2.0f, scale.y / 2.0f);
+//		return &dynamicBox;
+//	}
+//
+//	nlohmann::json serializeJson() override {
+//		nlohmann::json j;
+//		j["type"] = _getType();
+//		j["scale"] = toJson(scale);
+//		return j;
+//	};
+//
+//	int _getType() override {
+//		return 1;
+//	}
+//
+//	std::shared_ptr<Collider> duplicate() override {
+//		return std::make_shared<BoxCollider>(scale);
+//	}
+//
+//	glm::vec2 scale;
+//
+//private:
+//	b2PolygonShape dynamicBox;
+//};
+//
+//class CircleCollider : public Collider {
+//
+//public:
+//
+//	CircleCollider(float radius) {
+//		this->radius = radius;
+//	}
+//
+//	b2Shape* _getB2Shape() {
+//		dynamicCircle.m_radius = radius / 2.0f;
+//		return &dynamicCircle;
+//	}
+//
+//	nlohmann::json serializeJson() override {
+//		nlohmann::json j;
+//		j["type"] = _getType();
+//		j["radius"] = radius;
+//		return j;
+//	};
+//
+//	std::shared_ptr<Collider> duplicate() override {
+//		return std::make_shared<CircleCollider>(radius);
+//	}
+//
+//	float radius;
+//
+//	int _getType() override {
+//		return 2;
+//	}
+//
+//private:
+//	b2CircleShape dynamicCircle;
+//};
+
 class Collider {
 public:
 
-	virtual nlohmann::json serializeJson() = 0;
+	enum class Type {
+		Box,
+		Circle
+	};
 
-	virtual b2Shape* _getB2Shape() = 0;
 
-	virtual int _getType() = 0;
+	nlohmann::json serializeJson();
 
-	virtual std::shared_ptr<Collider> duplicate() = 0;
-};
+	b2Shape* _getB2Shape();
 
-class BoxCollider : public Collider {
-
-public:
-
-	BoxCollider(glm::vec2 scale) {
+	Collider(glm::vec2 scale) {
 		this->scale = scale;
+		type = Type::Box;
+		boxShape.SetAsBox(scale.x / 2.0f, scale.y / 2.0f);
+	}
+	Collider(float radius) {
+		this->scale.x = radius;
+		type = Type::Circle;
+		circleShape.m_radius = radius / 2.0f;
+	}
+
+	void setRadius(float radius) {
+
 	}
 
 	b2Shape* _getB2Shape() override {
-		dynamicBox.SetAsBox(scale.x / 2.0f, scale.y / 2.0f);
-		return &dynamicBox;
+		return &shape;
 	}
 
 	nlohmann::json serializeJson() override {
 		nlohmann::json j;
-		j["type"] = _getType();
+		j["type"] = type();
 		j["scale"] = toJson(scale);
 		return j;
 	};
 
-	int _getType() override {
-		return 1;
-	}
-
-	std::shared_ptr<Collider> duplicate() override {
-		return std::make_shared<BoxCollider>(scale);
+	std::unique_ptr<Collider> clone() override {
+		return std::make_shared<Collider>(scale);
 	}
 
 	glm::vec2 scale;
 
 private:
-	b2PolygonShape dynamicBox;
-};
-
-class CircleCollider : public Collider {
-
-public:
-
-	CircleCollider(float radius) {
-		this->radius = radius;
-	}
-
-	b2Shape* _getB2Shape() {
-		dynamicCircle.m_radius = radius / 2.0f;
-		return &dynamicCircle;
-	}
-
-	nlohmann::json serializeJson() override {
-		nlohmann::json j;
-		j["type"] = _getType();
-		j["radius"] = radius;
-		return j;
+	Type type;
+	union {
+		b2PolygonShape boxShape;
+		b2CircleShape circleShape;
 	};
-
-	std::shared_ptr<Collider> duplicate() override {
-		return std::make_shared<CircleCollider>(radius);
-	}
-
-	float radius;
-
-	int _getType() override {
-		return 2;
-	}
-
-private:
-	b2CircleShape dynamicCircle;
 };
 
 
@@ -144,13 +197,20 @@ public:
 
 
 	~Staticbody() {
-		assert(world != nullptr);
+		//assert(world != nullptr);
 		Destroy();
 	}
 
+	void Unlink() {
+		Destroy();
+		world = nullptr;
+	}
+
 	void Destroy() {
-		if (_bodyGenerated())
+		if (_bodyGenerated()) {
+			assert(world != nullptr);
 			world->DestroyBody(body);
+		}
 	};
 
 	bool _bodyGenerated() {
@@ -220,14 +280,12 @@ public:
 	}
 
 	~Rigidbody() {
-		assert(world != nullptr);
+		//assert(world != nullptr);
 		Destroy();
 	}
 
 	// position is overwritten by registerComponent
-	Rigidbody(std::shared_ptr<Collider>  collider) {
-		this->collider = collider;
-	};
+	Rigidbody(std::shared_ptr<Collider>  collider);
 
 	// called upon registration
 	void _generateBody(b2World* world, glm::vec2 position, float angle) {
@@ -278,9 +336,16 @@ public:
 	//};
 
 	//~Rigidbody(){
+	void Unlink() {
+		Destroy();
+		world = nullptr;
+	}
+
 	void Destroy() {
-		if (_bodyGenerated())
+		if (_bodyGenerated()) {
+			assert(world != nullptr);
 			world->DestroyBody(body);
+		}
 	};
 
 	bool _bodyGenerated() {
@@ -403,7 +468,7 @@ public:
 
 
 	nlohmann::json serializeJson(entityID entId) const override;
-	static Rigidbody deserializeJson(const nlohmann::json& j);
+	Rigidbody(const nlohmann::json& j);
 
 	static Rigidbody deserializeFlatbuffers(const AssetPack::Rigidbody* b) {
 		Rigidbody r;

@@ -70,42 +70,41 @@ public:
 	double physicsTimer = 0.0;
 	bool paused = true;
 
-	template <typename T>
-	void registerComponent(entityID id, T component);
+	//template <typename T>
+	//void registerComponent(entityID id, T component);
 
-	template <typename T>
-	inline void registerComponent(std::shared_ptr<Entity> e, T component) {
-		registerComponent(e->ID, component);
-	};
+	//template <typename T>
+	//inline void registerComponent(std::shared_ptr<Entity> e, T component) {
+	//	registerComponent(e->ID, component);
+	//};
 
-	template <typename First, typename... Rest>
-	void registerComponents(entityID id, First firstComponent, Rest... restComponents)
-	{
-		registerComponent(id, firstComponent);  // Register the first component.
+	//template <typename First, typename... Rest>
+	//void registerComponents(entityID id, First firstComponent, Rest... restComponents)
+	//{
+	//	registerComponent(id, firstComponent);  // Register the first component.
 
-		if constexpr (sizeof...(restComponents) > 0)
-		{
-			registerComponents(id, restComponents...);  // Recursively register the remaining components.
-		}
-	};
+	//	if constexpr (sizeof...(restComponents) > 0)
+	//	{
+	//		registerComponents(id, restComponents...);  // Recursively register the remaining components.
+	//	}
+	//};
 
-	template <>
-	void registerComponent<ColorRenderer>(entityID id, ColorRenderer component);
+	void registerComponent(entityID id, ColorRenderer component);
 
-	template <>
-	void registerComponent<SpriteRenderer>(entityID id, SpriteRenderer component);
+	void registerComponent(entityID id, SpriteRenderer component);
 
-	template <>
-	void registerComponent<TextRenderer>(entityID id, TextRenderer component);
+	void registerComponent(entityID id, TextRenderer component);
 
 	void registerComponent(entityID id, ParticleSystemRenderer::ParticleSystemSize systemSize);
 	void registerComponent(entityID id, ParticleSystemRenderer::ParticleSystemSize systemSize, ParticleSystemPL::ParticleSystemConfiguration& configuration);
 
-	template <>
-	void registerComponent<Rigidbody>(entityID id, Rigidbody component);
+	void registerComponent_Rigidbody(entityID id, std::shared_ptr<Collider> collider);
 
-	template <>
-	void registerComponent<Staticbody>(entityID id, Staticbody component);
+	void registerComponent_Staticbody(entityID id, std::shared_ptr<Collider> collider);
+
+	void registerComponent_Rigidbody(entityID id, Rigidbody& component);
+
+	void registerComponent_Staticbody(entityID id, Staticbody& component);
 
 	// remove update responsibility from engine and make private again
 	b2World bworld;

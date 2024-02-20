@@ -100,6 +100,9 @@ private:
 
 	void EntitySelectableTree(int& index, Entity* entity, Scene * scene);
 
+	bool prefabDragInStarted = false;
+	Prefab* dragPrefab = nullptr;
+
 	Entity* topLevelPrefabPreview;
 	void OpenPreviewWindowWithPrefab(Prefab& prefab);
 	void closePreviewWindow();

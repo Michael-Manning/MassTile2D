@@ -42,3 +42,21 @@ Rigidbody Rigidbody::duplicate() {
 
 	return r;
 }
+
+Rigidbody::Rigidbody(std::shared_ptr<Collider>  collider) {
+	this->collider = collider;
+};
+
+Rigidbody::Rigidbody(const nlohmann::json& j) {
+	this->collider = Collider_deserializeJson(j["collider"]);
+
+	desc.linearDamping = j["linearDamping"];
+	desc.angularDamping = j["angularDamping"];
+	desc.fixedRotation = j["fixedRotation"];
+	desc.bullet = j["bullet"];
+	desc.gravityScale = j["gravityScale"];
+
+	desc.friction = j["friction"];
+	desc.density = j["density"];
+	desc.restitution = j["restitution"];
+}

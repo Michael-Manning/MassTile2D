@@ -1,0 +1,34 @@
+{
+    "name": "evbeweeee",
+    "sceneData": {
+        "colorRenderers": [
+            {
+                "color": [
+                    0.1368216872215271,
+                    0.10389522463083267,
+                    0.5730993747711182,
+                    1.0
+                ],
+                "entityID": 1,
+                "shape": 0
+            }
+        ],
+        "entities": [
+            {
+                "id": 1,
+                "name": "entity 1",
+                "transform": {
+                    "position": [
+                        -3.0,
+                        -2.499999761581421
+                    ],
+                    "rotation": 0.0,
+                    "scale": [
+                        1.0,
+                        1.0
+                    ]
+                }
+            }
+        ]
+    }
+}

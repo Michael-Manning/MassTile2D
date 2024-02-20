@@ -252,8 +252,14 @@ void AssetManager::LoadScene(std::string sceneName, bool loadResources) {
 #ifdef USE_PACKED_ASSETS
 	auto scene = Scene::deserializeFlatbuffers(packageAssets->scenes()->Get(sceneIndexesByName[sceneName]));
 #else
-	auto scene = Scene::deserializeJson(scenePathsByName[sceneName]);
 	assert(scenePathsByName.contains(sceneName));
+
+	// uncomment if switching to emplacement
+	//if (sceneAssets.contains(sceneName))
+	//	// overwrite loaded asset
+	//	sceneAssets.erase(sceneName);
+
+	auto scene = Scene::deserializeJson(scenePathsByName[sceneName]);
 #endif
 	sceneAssets.insert_or_assign(sceneName, scene);
 	if (loadResources)
@@ -338,7 +344,11 @@ fontID AssetManager::ExportFont(std::string fontAssetExportPath, std::string spr
 void AssetManager::ExportPrefab(Prefab & prefab, std::string prefabAssetExportPath) {
 
 	prefab.serializeJson(prefabAssetExportPath);
+	createAssetLookups();
+}
 
+void AssetManager::ExportScene(std::shared_ptr<Scene> scene, std::string sceneExportPath) {
+	scene->serializeJson(sceneExportPath);
 	createAssetLookups();
 }
 
@@ -365,3 +375,21 @@ void AssetManager::CreateDefaultSprite(int w, int h, std::vector<uint8_t>&data) 
 	SpriteIDGenerator.Input(defaultSpriteID);
 }
 
+#ifndef USE_PACKED_ASSETS
+
+void AssetManager::deletePrefabFromDisk(std::string name) {
+	assert(prefabAssets.contains(name));
+	std::string path = prefabPathsByName.at(name);
+	prefabPathsByName.erase(name);
+	prefabAssets.erase(name);
+	std::filesystem::remove(std::filesystem::path(path));
+}
+void AssetManager::deleteSceneFromDisk(std::string name) {
+	assert(sceneAssets.contains(name));
+	std::string path = scenePathsByName.at(name);
+	scenePathsByName.erase(name);
+	sceneAssets.erase(name);
+	std::filesystem::remove(std::filesystem::path(path));
+}
+
+#endif

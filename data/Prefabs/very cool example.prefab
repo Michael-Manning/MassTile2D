@@ -9,51 +9,16 @@
                     0.028726786375045776,
                     1.0
                 ],
-                "entityID": 18,
+                "entityID": 6,
                 "shape": 0
             }
         ],
         "entities": [
             {
-                "id": 17,
-                "name": "entity 3",
-                "parent": 18,
-                "transform": {
-                    "position": [
-                        -4.867222785949707,
-                        -4.030442714691162
-                    ],
-                    "rotation": 0.0,
-                    "scale": [
-                        1.0,
-                        1.0
-                    ]
-                }
-            },
-            {
                 "children": [
-                    17
+                    6
                 ],
-                "id": 18,
-                "name": "entity 2",
-                "parent": 16,
-                "transform": {
-                    "position": [
-                        6.29411506652832,
-                        2.6854329109191895
-                    ],
-                    "rotation": -5.610262870788574,
-                    "scale": [
-                        1.0,
-                        1.0
-                    ]
-                }
-            },
-            {
-                "children": [
-                    18
-                ],
-                "id": 16,
+                "id": 5,
                 "name": "very cool example",
                 "transform": {
                     "position": [
@@ -61,6 +26,41 @@
                         0.0
                     ],
                     "rotation": 0.0,
+                    "scale": [
+                        1.0,
+                        1.0
+                    ]
+                }
+            },
+            {
+                "id": 4,
+                "name": "entity 3",
+                "parent": 6,
+                "transform": {
+                    "position": [
+                        -0.14708518981933594,
+                        -4.997836589813232
+                    ],
+                    "rotation": 0.0,
+                    "scale": [
+                        1.0,
+                        1.0
+                    ]
+                }
+            },
+            {
+                "children": [
+                    4
+                ],
+                "id": 6,
+                "name": "entity 2",
+                "parent": 5,
+                "transform": {
+                    "position": [
+                        4.999999523162842,
+                        1.5000001192092896
+                    ],
+                    "rotation": -5.610262870788574,
                     "scale": [
                         1.0,
                         1.0
@@ -91,13 +91,13 @@
                     ],
                     "startSize": 0.30000001192092896
                 },
-                "entityID": 17,
+                "entityID": 4,
                 "size": 0
             }
         ],
         "textRenderers": [
             {
-                "entityID": 16,
+                "entityID": 5,
                 "fontID": 1253197706,
                 "text": "Very Epic Text"
             }

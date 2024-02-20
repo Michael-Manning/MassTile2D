@@ -353,7 +353,7 @@ Entity* Scene::Instantiate(Prefab& prefab, std::string name, glm::vec2 position,
 	for (auto& [ID, r] : prefab.sceneData.particleSystemRenderers)
 		registerComponent(IDRemap.at(ID), r.size, r.configuration);
 	for (auto& [ID, r] : prefab.sceneData.rigidbodies)
-		registerComponent(IDRemap.at(ID), r);
+		registerComponent_(IDRemap.at(ID), r);
 	for (auto& [ID, r] : prefab.sceneData.staticbodies)
 		registerComponent(IDRemap.at(ID), r);
 
@@ -367,20 +367,16 @@ Entity* Scene::Instantiate(Prefab& prefab, std::string name, glm::vec2 position,
 	return topLevelEntity;
 }
 
-// I don't think these need to be templates
 
-template <>
 void Scene::registerComponent(entityID id, ColorRenderer t) {
 	sceneData.colorRenderers.insert({ id, t });
 };
 
-template <>
-void Scene::registerComponent<SpriteRenderer>(entityID id, SpriteRenderer t) {
+void Scene::registerComponent(entityID id, SpriteRenderer t) {
 	sceneData.spriteRenderers.insert({ id, t });
 }
 
-template <>
-void Scene::registerComponent<TextRenderer>(entityID id, TextRenderer t) {
+void Scene::registerComponent(entityID id, TextRenderer t) {
 	sceneData.textRenderers.insert({ id, t });
 }
 
@@ -396,21 +392,32 @@ void Scene::registerComponent(entityID id, ParticleSystemRenderer::ParticleSyste
 
 
 
-// Rigidbodoy
-template <>
-void Scene::registerComponent(entityID id, Rigidbody r) {
-	auto [iter, inserted] = sceneData.rigidbodies.emplace(id, r);
+void Scene::registerComponent_Rigidbody(entityID id, std::shared_ptr<Collider> collider) {
+	auto [iter, inserted] = sceneData.rigidbodies.emplace(id, collider);
 	linkRigidbodyB2D(id, &iter->second);
 };
 
-// Staticbody
-template <>
-void Scene::registerComponent(entityID id, Staticbody s) {
-	auto [iter, inserted] = sceneData.staticbodies.emplace(id, s);
+void Scene::registerComponent_Staticbody(entityID id, std::shared_ptr<Collider> collider){
+	auto [iter, inserted] = sceneData.staticbodies.emplace(id, collider);
+	linkStaticbodyB2D(id, &iter->second);
+};
+
+void Scene::registerComponent_Rigidbody(entityID id, Rigidbody& component) {
+	auto [iter, inserted] = sceneData.rigidbodies.emplace(id, collider);
+	linkRigidbodyB2D(id, &iter->second);
+};
+
+void Scene::registerComponent_Staticbody(entityID id, Staticbody& body) {
+	auto [iter, inserted] = sceneData.staticbodies.emplace(id, collider);
 	linkStaticbodyB2D(id, &iter->second);
 };
 
 void Scene::cleanup() {
+
+	// ensure desctructors are called
+	sceneData.rigidbodies.clear();
+	sceneData.staticbodies.clear();
+
 	for (b2Body* body = bworld.GetBodyList(); body != nullptr; ) {
 		b2Body* nextBody = body->GetNext();
 

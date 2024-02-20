@@ -1,12 +1,15 @@
 
 Near roadmap:
-- drag in prefabs into scene
-- entity editor window, iterator invalid when scene data changed. Create vector of pointers, then iterate that to populate imgui selectable lists
-
+- fix scene first save then reload
+- test prefabs with rigidbodies, test cloning entities
+- give bodies custody of coliders and don't use shared_ptr
 - test packed assets
 - test publish build
 - collision positions not working
 - cannot close application with entities in scene
+- emplace rigibodies everywhere. Add false assertion to destructor to verify
+
+- move all serialize function to source files instead of ecs.cpp
 
 ---- Test:
 - entity deleation
@@ -25,7 +28,7 @@ texture manager, removing one of the 3 layers of inderection required to link a 
 
 - component deletion from editor
 
-
+- rework body collider relationship. Remove use of shared pointer
 
 - drag prefab to instantiate
 
