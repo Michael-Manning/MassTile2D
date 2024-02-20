@@ -1,9 +1,12 @@
 
 Near roadmap:
-- new behaviour system
-- add prefab preview/edit utility to editor
-- flatten assets in editor view into one list with drop down sorting 
-- scene entity duplicate
+- drag in prefabs into scene
+- entity editor window, iterator invalid when scene data changed. Create vector of pointers, then iterate that to populate imgui selectable lists
+
+- test packed assets
+- test publish build
+- collision positions not working
+- cannot close application with entities in scene
 
 ---- Test:
 - entity deleation
@@ -74,6 +77,7 @@ on entities which are drawn for multiple frames(basically all of them)
 There are instances such as with prefab loading that a particle system renderer allocates a large host buffer, but the data is never actually used
 for anything, and the class is just used as a clone template
 
+- entity names should not be part of compilation in publish build
 
 ---- things to abstract:
 

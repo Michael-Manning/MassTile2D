@@ -23,7 +23,7 @@ public:
 	robin_hood::unordered_node_map<entityID, Rigidbody> rigidbodies;
 	robin_hood::unordered_node_map<entityID, Staticbody> staticbodies;
 
-	nlohmann::json serializeJson() const;
+	nlohmann::json serializeJson(bool ignorePersistence = false) const;
 	static void deserializeJson(nlohmann::json& j, SceneData* sceneData);
 	static void deserializeFlatbuffers(const AssetPack::SceneData* s, SceneData* sceneData);
 

@@ -26,7 +26,7 @@ void Prefab::serializeJson(std::string filename) const {
 
 	j["name"] = name;
 
-	j["sceneData"] = sceneData.serializeJson();
+	j["sceneData"] = sceneData.serializeJson(true);
 
 	checkAppend(filename, Prefab_extension);
 	std::ofstream output(filename);

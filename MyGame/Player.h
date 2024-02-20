@@ -77,9 +77,8 @@ class Player : public Behaviour {
 
 public:
 
-	Player(behavioiurHash classHash, ComponentAccessor* accessor, Entity* entityCache) : Behaviour(classHash, accessor, entityCache) {
-
-	}
+	BEHAVIOUR_CONSTUCTOR(Player) {}
+	BEHAVIOUR_CLONE(Player)
 
 	//std::string GetEditorName() override { // deprecate
 	//	return "Player";

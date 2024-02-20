@@ -42,7 +42,9 @@ public:
 		return static_cast<std::string>(j["name"]);
 	}
 
-	void UnregisterEntity(entityID id);
+	void DeleteEntity(entityID id, bool deleteChildren);
+
+	void ClearScene();
 
 	Entity* GetEntity(entityID ID) {
 		return &sceneData.entities.at(ID);
@@ -55,10 +57,12 @@ public:
 	//Behaviour* AddBehaviour(entityID, std::string behaviourName);
 
 	void SetEntityAsChild(Entity* parent, Entity* child);
+	void SetEntityAsChild(entityID parent, entityID child) {
+		SetEntityAsChild(GetEntity(parent), GetEntity(child));
+	}
 
-	// returns ID of new duplicate
-	entityID DuplicateEntity(entityID original);
 
+	Entity* DuplicateEntity(Entity* original);
 
 
 	Entity* Instantiate(Prefab& prefab, std::string name = "prefab", glm::vec2 position = glm::vec2(0.0f), float rotation = 0.0f);
@@ -85,7 +89,6 @@ public:
 		}
 	};
 
-
 	template <>
 	void registerComponent<ColorRenderer>(entityID id, ColorRenderer component);
 
@@ -109,6 +112,8 @@ public:
 
 private:
 
+	void deletechildRecurse(Entity* entity);
+
 	void cleanup();
 
 	// fills in entity cache pointers after deserializing a scene
@@ -120,10 +125,17 @@ private:
 	void linkRigidbodyB2D(entityID id, Rigidbody* r);
 	void linkStaticbodyB2D(entityID id, Staticbody* r);
 
+	void gatherChildIDsRecurse(std::vector<entityID>& IDs, Entity* entity);
 
 	robin_hood::unordered_flat_map<std::string, std::pair<behavioiurHash, BehaviourFactoryFunc>> stringBehaviourMap;
 	// 
 	// copy of behaviour map, but directly hashable by name
-	
+
 	//robin_hood::unordered_flat_map<std::string, std::function<std::unique_ptr<Behaviour>(ComponentAccessor*, Entity*)>> stringBehaviourMap;
+
+#ifdef USING_EDITOR
+public:
+	std::string GetNoneConflictingEntityName(Entity* entity, Entity* hierarchyLevel);
+#endif
+
 };

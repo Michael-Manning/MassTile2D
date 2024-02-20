@@ -39,6 +39,10 @@ void GeneratePrefab(Entity* entity, const SceneData& sceneData, Prefab* p) {
 	{
 		p->sceneData.entities.insert({ e->ID, *e });
 
+		if (sceneData.behaviours.contains(e->ID)) 
+			p->sceneData.behaviours.emplace(e->ID, sceneData.behaviours.at(e->ID)->clone());
+		
+
 		if (sceneData.colorRenderers.contains(e->ID))
 			p->sceneData.colorRenderers.insert({ e->ID, sceneData.colorRenderers.at(e->ID)});
 		if (sceneData.spriteRenderers.contains(e->ID))

@@ -253,6 +253,137 @@ void Editor::DrawPreviewSceneGrid(ImDrawList* drawlist, glm::vec2 size, glm::vec
 	}
 }
 
+void Editor::EntityGizmo(ImDrawList* drawlist, Camera& camera)
+{
+	vec2 mpos = input->getMousePos();
+
+	float lineLen = 120; // translate gizmo arm length
+	float wheelRad = 140; // rotate gizmo radius
+
+	vec2 objScreenPos = selectedSceneWorldToScreenPos(selectedEntity->GetGlobalTransform().position);
+	vec2 yHandlePos = objScreenPos + vec2(0, -lineLen);
+	vec2 xHandlePos = objScreenPos + vec2(lineLen, 0);
+
+	if (input->getMouseBtnDown(MouseBtn::Left)) {
+		draggingY = glm::distance(mpos, yHandlePos) < 16;
+		draggingX = glm::distance(mpos, xHandlePos) < 16;
+
+		// central handle
+		if (glm::distance(mpos, objScreenPos) < 22) {
+			draggingX = true;
+			draggingY = true;
+		}
+
+		if ((draggingX || draggingY) == false) {
+			float mDist = glm::distance(mpos, objScreenPos);
+			if (mDist > wheelRad - 5 && mDist < wheelRad + 5) {
+				draggingAngle = true;
+				dragInitialAngle = atan2f(mpos.y - objScreenPos.y, mpos.x - objScreenPos.x);
+				dragInitialObjectAngle = selectedEntity->transform.rotation;
+			}
+		}
+	}
+
+	{
+		bool mDown = input->getMouseBtn(MouseBtn::Left);
+		draggingY &= mDown;
+		draggingX &= mDown;
+		draggingAngle &= mDown & (!draggingX) & (!draggingY);
+	}
+
+	if (draggingY) {
+
+		// offset handle length if not grabbing central handle
+		float mouseWorldObjPos = selectedSceneSreenToWorldPos(mpos + (draggingX ? 0 : lineLen)).y;
+
+		if (input->getKey(KeyCode::LeftControl))
+			yHandlePos.y = roundf(mouseWorldObjPos * 100) / 100; // two decimal places
+		else
+			mouseWorldObjPos = getWorldGridRounding(mouseWorldObjPos, camera.zoom);
+
+		objScreenPos.y = selectedSceneWorldToScreenPos(vec2(0, mouseWorldObjPos)).y;
+		yHandlePos.y = objScreenPos.y - lineLen;
+	}
+
+	if (draggingX) {
+
+		float mouseWorldObjPos = selectedSceneSreenToWorldPos(mpos - (draggingY ? 0 : lineLen)).x;
+
+		if (input->getKey(KeyCode::LeftControl))
+			xHandlePos.x = roundf(mouseWorldObjPos * 100) / 100; // two decimal places
+		else
+			mouseWorldObjPos = getWorldGridRounding(mouseWorldObjPos, camera.zoom);
+
+		objScreenPos.x = selectedSceneWorldToScreenPos(vec2(mouseWorldObjPos, 0.0)).x;
+		xHandlePos.x = objScreenPos.x + lineLen;
+
+	}
+
+	if (draggingX || draggingY) {
+		vec2 objPos = selectedSceneSreenToWorldPos(objScreenPos);
+		if (selectedEntity->HasParent()) {
+			mat4 m = selectedEntity->GetGlobalToLocalMatrix();
+			vec4 tvec(objPos, 0, 1);
+			vec4 res = m * tvec;
+			objPos = vec2(res);
+		}
+
+		selectedEntity->transform.position = objPos;
+		if (selectedScene->sceneData.rigidbodies.contains(selectedEntity->ID)) {
+			assert(selectedEntity->HasParent() == false);
+			selectedScene->sceneData.rigidbodies[selectedEntity->ID].SetPosition(objPos);
+		}
+		if (selectedScene->sceneData.staticbodies.contains(selectedEntity->ID)) {
+			assert(selectedEntity->HasParent() == false);
+			selectedScene->sceneData.staticbodies[selectedEntity->ID].SetPosition(objPos);
+		}
+	}
+
+	if (draggingAngle) {
+		const int rotationSnapAngles = 8;
+
+		float dragAngle = atan2f(mpos.y - objScreenPos.y, mpos.x - objScreenPos.x);
+		selectedEntity->transform.rotation = dragInitialObjectAngle + dragInitialAngle - dragAngle;
+		if (input->getKey(KeyCode::LeftControl) == false) {
+			float segment = 2.0f * PI / rotationSnapAngles;
+			selectedEntity->transform.rotation = roundf(selectedEntity->transform.rotation / segment) * segment;
+		}
+		if (selectedScene->sceneData.rigidbodies.contains(selectedEntity->ID)) {
+			selectedScene->sceneData.rigidbodies[selectedEntity->ID].SetRotation(selectedEntity->transform.rotation);
+		}
+		if (selectedScene->sceneData.staticbodies.contains(selectedEntity->ID)) {
+			selectedScene->sceneData.staticbodies[selectedEntity->ID].SetRotation(selectedEntity->transform.rotation);
+		}
+	}
+
+	auto yGizCol = draggingY ? IM_COL32(255, 255, 0, 255) : IM_COL32(255, 255, 255, 255);
+	auto xGizCol = draggingX ? IM_COL32(255, 255, 0, 255) : IM_COL32(255, 255, 255, 255);
+	auto cGizCol = (draggingX && draggingY) ? IM_COL32(255, 255, 0, 255) : IM_COL32(255, 255, 255, 255);
+	auto wGizCol = (draggingAngle) ? IM_COL32(255, 255, 0, 255) : IM_COL32(255, 255, 255, 255);
+
+
+	// axis handles
+	drawlist->AddLine(objScreenPos, yHandlePos, yGizCol, 1);
+	drawlist->AddTriangleFilled(
+		yHandlePos,
+		yHandlePos + vec2(8, 14),
+		yHandlePos + vec2(-8, 14), yGizCol);
+
+	drawlist->AddLine(objScreenPos, xHandlePos, xGizCol, 1);
+	drawlist->AddTriangleFilled(
+		xHandlePos,
+		xHandlePos + vec2(-14, 8),
+		xHandlePos + vec2(-14, -8), xGizCol);
+
+	// central handle
+	drawlist->AddRectFilled(objScreenPos - 10.0f, objScreenPos + 10.0f, cGizCol);
+
+	// rotation handle
+	drawlist->AddCircle(objScreenPos, wheelRad, wGizCol);
+
+}
+
+
 void Editor::controlWindow() {
 
 	const float margin = 10.0f;
@@ -269,6 +400,13 @@ void Editor::controlWindow() {
 	if (Button("Show Stats")) {
 		showingStats = true;
 	}
+	if (engine->assetManager->HasScene(selectedScene->name)) {
+		SameLine();
+		if (Button("Reload Scene")) {
+			loadGameSceneFromDisk(selectedScene->name);
+
+		}
+	}
 	SameLine();
 	Text("%.2f", frameRateStat);
 	SameLine();
@@ -284,7 +422,7 @@ void Editor::controlWindow() {
 	End();
 }
 
-void Editor::EntitySelectableTree(int& index, Entity* entity) {
+void Editor::EntitySelectableTree(int& index, Entity* entity, Scene* scene) {
 
 	if (Selectable(entity->name.c_str(), selectedEntityIndex == index)) {
 		clearInspectorSelection();
@@ -305,22 +443,30 @@ void Editor::EntitySelectableTree(int& index, Entity* entity) {
 		selectedEntityIndex = index;
 		index++;
 		if (ImGui::MenuItem("Create child")) {
-			auto child = gameScene->CreateEntity({}, "", true);
-			gameScene->SetEntityAsChild(entity, child);
+			auto child = scene->CreateEntity({}, "", true);
+			scene->SetEntityAsChild(entity, child);
+			child->name = selectedScene->GetNoneConflictingEntityName(child, entity);
 			selectedEntity = nullptr;
 			selectedEntityIndex = -1;
 			ImGui::EndPopup();
 			return;
 		}
 		if (ImGui::MenuItem("Delete")) {
-			gameScene->UnregisterEntity(entity->ID);
+			scene->DeleteEntity(entity->ID, true);
 			selectedEntity = nullptr;
 			selectedEntityIndex = -1;
 			ImGui::EndPopup();
 			return;
 		}
 		if (ImGui::MenuItem("Duplicate")) {
-			gameScene->DuplicateEntity(entity->ID);
+			auto newEntity = scene->DuplicateEntity(entity);
+			if (entity->HasParent()) {
+				selectedScene->SetEntityAsChild(entity->GetParent(), newEntity->ID);
+				newEntity->name = selectedScene->GetNoneConflictingEntityName(newEntity, selectedScene->GetEntity(entity->GetParent()));
+			}
+			else {
+				newEntity->name = selectedScene->GetNoneConflictingEntityName(newEntity, nullptr);
+			}
 			selectedEntity = nullptr;
 			selectedEntityIndex = -1;
 			ImGui::EndPopup();
@@ -333,23 +479,15 @@ void Editor::EntitySelectableTree(int& index, Entity* entity) {
 
 			//char filename[MAX_PATH];
 			//if (saveFileDialog(filename, MAX_PATH, "prefab", "Prefab File\0*.prefab\0")) {
-				Prefab p;
-				GeneratePrefab(entity, gameScene->sceneData, &p);
+			Prefab p;
+			GeneratePrefab(entity, scene->sceneData, &p);
 
-				std::filesystem::path dir(engine->assetManager->directories.prefabDir);
-				std::filesystem::path fullPath = dir / std::filesystem::path(p.name);
-				//string fullPath = string(filename);
+			std::filesystem::path dir(engine->assetManager->directories.prefabDir);
+			std::filesystem::path fullPath = dir / std::filesystem::path(p.name);
 
-				//std::string endName = getFileName(fullPath);
-				engine->assetManager->ExportPrefab(p, fullPath.string());
+			engine->assetManager->ExportPrefab(p, fullPath.string());
 
-				engine->assetManager->LoadPrefab(p.name, false);
-
-				// hope you put it in the right folder or it won't appear in the editor
-				//if (std::filesystem::exists(std::filesystem::path(engine->assetManager->directories.prefabDir + endName)) == true) {
-				//	engine->assetManager->LoadPrefab(p.name, false);
-				//}
-			//}
+			engine->assetManager->LoadPrefab(p.name, false);
 			return;
 		}
 		ImGui::EndPopup();
@@ -364,7 +502,7 @@ void Editor::EntitySelectableTree(int& index, Entity* entity) {
 			auto children = entity->_GetChildCache_ptr();
 			for (auto& child : *children)
 			{
-				EntitySelectableTree(index, child);
+				EntitySelectableTree(index, child, scene);
 			}
 			ImGui::TreePop();
 		}
@@ -373,33 +511,66 @@ void Editor::EntitySelectableTree(int& index, Entity* entity) {
 
 void Editor::entityWindow() {
 
-	auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoBringToFrontOnFocus;
+	auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoCollapse;
 	SetNextWindowPos(vec2(0.0f, 0.0f));
 	SetNextWindowSize(vec2(leftPanelWindowWidth, engine->getWindowSize().y / 2));
-	Begin("Entities", nullptr, flags);
 
-	if (Selectable(gameScene->name.c_str(), sceneSelected)) {
-		clearInspectorSelection();
-		sceneSelected = true;
-	}
+	if (showingPreviewWindow) {
+		Begin("Prefab", nullptr, flags);
 
-	if (Button("new")) {
-		gameScene->CreateEntity({}, "", true);
-	}
-
-	int i = 0;
-	for (auto& [entID, entity] : gameScene->sceneData.entities)
-	{
-		// start with top level entities
-		if (!entity.HasParent()) {
-			EntitySelectableTree(i, &entity);
+		if (Button("Close")) {
+			closePreviewWindow();
 		}
+		SameLine();
+		if (Button("Overwrite")) {
+			Prefab p;
+			GeneratePrefab(topLevelPrefabPreview, entityPreviewScene->sceneData, &p);
+
+			std::filesystem::path dir(engine->assetManager->directories.prefabDir);
+			std::filesystem::path fullPath = dir / std::filesystem::path(p.name);
+
+			engine->assetManager->ExportPrefab(p, fullPath.string());
+
+			engine->assetManager->LoadPrefab(p.name, false);
+		}
+
+		int i = 0;
+		for (auto& [entID, entity] : entityPreviewScene->sceneData.entities)
+		{
+			// start with top level entities
+			if (!entity.HasParent()) {
+				EntitySelectableTree(i, &entity, entityPreviewScene.get());
+			}
+		}
+		End();
 	}
-	End();
+	else {
+		Begin("Entities", nullptr, flags);
+
+		if (Selectable(gameScene->name.c_str(), sceneSelected)) {
+			clearInspectorSelection();
+			sceneSelected = true;
+		}
+
+		if (Button("new")) {	
+			auto newEntity = gameScene->CreateEntity({}, "", true);
+			newEntity->name = selectedScene->GetNoneConflictingEntityName(newEntity, nullptr);
+		}
+
+		int i = 0;
+		for (auto& [entID, entity] : gameScene->sceneData.entities)
+		{
+			// start with top level entities
+			if (!entity.HasParent()) {
+				EntitySelectableTree(i, &entity, gameScene.get());
+			}
+		}
+		End();
+	}
 }
 
 void Editor::assetWindow() {
-	auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoBringToFrontOnFocus;
+	auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoCollapse;
 	SetNextWindowPos(vec2(0.0f, engine->getWindowSize().y / 2.0f));
 	SetNextWindowSize(vec2(leftPanelWindowWidth, engine->getWindowSize().y / 2));
 	Begin("Assets", nullptr, flags);
@@ -416,11 +587,7 @@ void Editor::assetWindow() {
 					selectedEntityIndex = i;
 					i++;
 					if (ImGui::MenuItem("Load")) {
-						if (!engine->assetManager->IsSceneLoaded(p)) {
-							engine->assetManager->LoadScene(p);
-						}
-						clearInspectorSelection();
-						setSceneCallback(engine->assetManager->GetScene(p));
+						loadGameSceneFromDisk(p);
 						ImGui::EndPopup();
 						break;
 					}
@@ -437,13 +604,26 @@ void Editor::assetWindow() {
 			int i = 0;
 			for (auto& p : engine->assetManager->_getPrefabIterator())
 			{
-				Selectable(p.first.c_str(), selectedPrefabIndex == i);
+				if (Selectable(p.first.c_str(), selectedPrefabIndex == i)) {
+					OpenPreviewWindowWithPrefab(p.second);
+					selectedPrefabIndex = i;
+				}
 
 				if (ImGui::BeginPopupContextItem()) {
-					selectedEntityIndex = i;
+					selectedPrefabIndex = i;
 					i++;
 					if (ImGui::MenuItem("Instantiate")) {
-						gameScene->Instantiate(p.second, p.first);
+						auto newEntity = gameScene->Instantiate(p.second, p.first);
+						newEntity->name = gameScene->GetNoneConflictingEntityName(newEntity, nullptr);
+						selectedPrefabIndex = -1;
+						closePreviewWindow();
+						ImGui::EndPopup();
+						break;
+					}
+					if (ImGui::MenuItem("Delete from disk")) {
+						assert(false);
+						selectedPrefabIndex = -1;
+						closePreviewWindow();
 						ImGui::EndPopup();
 						break;
 					}
@@ -516,7 +696,7 @@ void Editor::assetWindow() {
 				}
 			}
 
-			auto modelFlags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+			auto modelFlags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse;
 			float modelWidth = 360;
 			if (fontModel) {
 				SetNextWindowPos(vec2(glm::clamp(engine->winW / 2 - (int)modelWidth / 2, 0, engine->winW), 50));
@@ -586,21 +766,23 @@ void Editor::debugDataWindow() {
 void Editor::Initialize(Engine* engine, std::shared_ptr<Scene> gameScene, sceneRenderContextID sceneRenderContext, std::function<void(std::shared_ptr<Scene>)> onMainSceneLoad) {
 	this->engine = engine;
 	this->gameScene = gameScene;
+	selectedScene = gameScene.get();
 	this->sceneRenderContext = sceneRenderContext;
 	this->setSceneCallback = onMainSceneLoad;
 
 	entityPreviewScene = make_shared<Scene>();
 	entityPreviewScene->name = "entity preview scene";
 	entityPrviewFrameSize = vec2(600);
-	entityPreviewsSeneRenderContextID = engine->CreateSceneRenderContext(entityPrviewFrameSize, false, glm::vec4(0.0), true);
+	entityPreviewsSeneRenderContextID = engine->CreateSceneRenderContext(entityPrviewFrameSize, false, glm::vec4(vec3(0.2), 1.0), false);
+	entityPreviewsSeneRenderContextID = engine->CreateSceneRenderContext(entityPrviewFrameSize, false, glm::vec4(vec3(0.2), 1.0), false);
 	entityPreviewFramebuffer = engine->GetSceneRenderContextFramebuffer(entityPreviewsSeneRenderContextID);
 
-	const auto& pSys = entityPreviewScene->CreateEntity({}, "myEntity");
+	//const auto& pSys = entityPreviewScene->CreateEntity({}, "myEntity");
 	/*shared_ptr<Entity> teste = make_shared<Entity>("myEntity");
 	auto id = entityPreviewScene->RegisterEntity(teste);*/
 
 	//ParticleSystemRenderer psr = ParticleSystemRenderer(ParticleSystemRenderer::ParticleSystemSize::Small);
-	entityPreviewScene->registerComponent(pSys->ID, ParticleSystemRenderer::ParticleSystemSize::Small);
+	//entityPreviewScene->registerComponent(pSys->ID, ParticleSystemRenderer::ParticleSystemSize::Small);
 
 	//ColorRenderer r;
 	//r.color = vec4(1.0, 0, 0, 1.0);
@@ -621,12 +803,16 @@ void Editor::mainSceneWindow() {
 	}
 
 
-	auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoBringToFrontOnFocus;
-	vec2 sceneWinPos = vec2(leftPanelWindowWidth, 0.0f);
-	vec2 sceneWinSize = vec2(engine->getWindowSize().x - inspectorWindowWidth - leftPanelWindowWidth, engine->getWindowSize().y);
+	auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBringToFrontOnFocus;
+	sceneWinPos = vec2(leftPanelWindowWidth, 0.0f);
+	sceneWinSize = vec2(engine->getWindowSize().x - inspectorWindowWidth - leftPanelWindowWidth, engine->getWindowSize().y);
 	SetNextWindowPos(sceneWinPos);
 	SetNextWindowSize(sceneWinSize);
 	Begin("Game View", nullptr, flags);
+
+	if (showingPreviewWindow && IsWindowFocused()) {
+		closePreviewWindow();
+	}
 
 	auto windowDrawlist = GetWindowDrawList();
 
@@ -643,7 +829,9 @@ void Editor::mainSceneWindow() {
 	//SetCursorPos(cursorPos);
 	//InvisibleButton("gameInvisibleBtn", (vec2)POVViewWinSize); // only to prevent window dragging when clicked
 
-	if (ImGui::IsItemHovered()) {
+	bool sceneHovered = ImGui::IsItemHovered();
+
+	if (sceneHovered && showingPreviewWindow == false) {
 
 		if (input->getMouseBtn(MouseBtn::Right)) {
 			editorCamera.position -= ((mouseDelta * vec2(2.0, -2.0)) / engine->getWindowSize().y) / editorCamera.zoom;
@@ -656,142 +844,19 @@ void Editor::mainSceneWindow() {
 			mainSceneRawZoom += off * 0.02f;
 			mainSceneRawZoom = glm::clamp(mainSceneRawZoom, 0.0f, 1.0f);
 		}
-		editorCamera.zoom = exponentialScale(mainSceneRawZoom, 0.01, 15.1);
 	}
-
-	if (selectedEntity != nullptr) {
-
-
-		// transform gizmo
-		{
-			float lineLen = 120; // translate gizmo arm length
-			float wheelRad = 140; // rotate gizmo radius
-
-			vec2 objScreenPos = gameSceneWorldToScreenPos(selectedEntity->GetGlobalTransform().position);
-			vec2 yHandlePos = objScreenPos + vec2(0, -lineLen);
-			vec2 xHandlePos = objScreenPos + vec2(lineLen, 0);
-
-			if (input->getMouseBtnDown(MouseBtn::Left)) {
-				draggingY = glm::distance(mpos, yHandlePos) < 16;
-				draggingX = glm::distance(mpos, xHandlePos) < 16;
-
-				// central handle
-				if (glm::distance(mpos, objScreenPos) < 22) {
-					draggingX = true;
-					draggingY = true;
-				}
-
-				if ((draggingX || draggingY) == false) {
-					float mDist = glm::distance(mpos, objScreenPos);
-					if (mDist > wheelRad - 5 && mDist < wheelRad + 5) {
-						draggingAngle = true;
-						dragInitialAngle = atan2f(mpos.y - objScreenPos.y, mpos.x - objScreenPos.x);
-						dragInitialObjectAngle = selectedEntity->transform.rotation;
-					}
-				}
-			}
-
-			{
-				bool mDown = input->getMouseBtn(MouseBtn::Left);
-				draggingY &= mDown;
-				draggingX &= mDown;
-				draggingAngle &= mDown & (!draggingX) & (!draggingY);
-			}
-
-			if (draggingY) {
-
-				// offset handle length if not grabbing central handle
-				float mouseWorldObjPos = gameSceneSreenToWorldPos(mpos + (draggingX ? 0 : lineLen)).y;
-
-				if (input->getKey(KeyCode::LeftControl))
-					yHandlePos.y = roundf(mouseWorldObjPos * 100) / 100; // two decimal places
-				else
-					mouseWorldObjPos = getWorldGridRounding(mouseWorldObjPos, editorCamera.zoom);
-
-				objScreenPos.y = gameSceneWorldToScreenPos(vec2(0, mouseWorldObjPos)).y;
-				yHandlePos.y = objScreenPos.y - lineLen;
-			}
-
-			if (draggingX) {
-
-				float mouseWorldObjPos = gameSceneSreenToWorldPos(mpos - (draggingY ? 0 : lineLen)).x;
-
-				if (input->getKey(KeyCode::LeftControl))
-					xHandlePos.x = roundf(mouseWorldObjPos * 100) / 100; // two decimal places
-				else
-					mouseWorldObjPos = getWorldGridRounding(mouseWorldObjPos, editorCamera.zoom);
-
-				objScreenPos.x = gameSceneWorldToScreenPos(vec2(mouseWorldObjPos, 0.0)).x;
-				xHandlePos.x = objScreenPos.x + lineLen;
-
-			}
-
-			if (draggingX || draggingY) {
-				vec2 objPos = gameSceneSreenToWorldPos(objScreenPos);
-				if (selectedEntity->HasParent()) {
-					mat4 m = selectedEntity->GetGlobalToLocalMatrix();
-					vec4 tvec(objPos, 0, 1);
-					vec4 res = m * tvec;
-					objPos = vec2(res);
-				}
-
-				selectedEntity->transform.position = objPos;
-				if (gameScene->sceneData.rigidbodies.contains(selectedEntity->ID)) {
-					assert(selectedEntity->HasParent() == false);
-					gameScene->sceneData.rigidbodies[selectedEntity->ID].SetPosition(objPos);
-				}
-				if (gameScene->sceneData.staticbodies.contains(selectedEntity->ID)) {
-					assert(selectedEntity->HasParent() == false);
-					gameScene->sceneData.staticbodies[selectedEntity->ID].SetPosition(objPos);
-				}
-			}
-
-			if (draggingAngle) {
-				const int rotationSnapAngles = 8;
-
-				float dragAngle = atan2f(mpos.y - objScreenPos.y, mpos.x - objScreenPos.x);
-				selectedEntity->transform.rotation = dragInitialObjectAngle + dragInitialAngle - dragAngle;
-				if (input->getKey(KeyCode::LeftControl) == false) {
-					float segment = 2.0f * PI / rotationSnapAngles;
-					selectedEntity->transform.rotation = roundf(selectedEntity->transform.rotation / segment) * segment;
-				}
-				if (gameScene->sceneData.rigidbodies.contains(selectedEntity->ID)) {
-					gameScene->sceneData.rigidbodies[selectedEntity->ID].SetRotation(selectedEntity->transform.rotation);
-				}
-				if (gameScene->sceneData.staticbodies.contains(selectedEntity->ID)) {
-					gameScene->sceneData.staticbodies[selectedEntity->ID].SetRotation(selectedEntity->transform.rotation);
-				}
-			}
-
-			auto yGizCol = draggingY ? IM_COL32(255, 255, 0, 255) : IM_COL32(255, 255, 255, 255);
-			auto xGizCol = draggingX ? IM_COL32(255, 255, 0, 255) : IM_COL32(255, 255, 255, 255);
-			auto cGizCol = (draggingX && draggingY) ? IM_COL32(255, 255, 0, 255) : IM_COL32(255, 255, 255, 255);
-			auto wGizCol = (draggingAngle) ? IM_COL32(255, 255, 0, 255) : IM_COL32(255, 255, 255, 255);
-
-
-			// axis handles
-			windowDrawlist->AddLine(objScreenPos, yHandlePos, yGizCol, 1);
-			windowDrawlist->AddTriangleFilled(
-				yHandlePos,
-				yHandlePos + vec2(8, 14),
-				yHandlePos + vec2(-8, 14), yGizCol);
-
-			windowDrawlist->AddLine(objScreenPos, xHandlePos, xGizCol, 1);
-			windowDrawlist->AddTriangleFilled(
-				xHandlePos,
-				xHandlePos + vec2(-14, 8),
-				xHandlePos + vec2(-14, -8), xGizCol);
-
-			// central handle
-			windowDrawlist->AddRectFilled(objScreenPos - 10.0f, objScreenPos + 10.0f, cGizCol);
-
-			// rotation handle
-			windowDrawlist->AddCircle(objScreenPos, wheelRad, wGizCol);
-		}
-	}
+	editorCamera.zoom = exponentialScale(mainSceneRawZoom, 0.01, 15.1);
 
 	if (showGrid) {
 		DrawGameSceneGrid(windowDrawlist, mainSceneFrameSize, mainSceneViewerScreenLocation);
+	}
+
+	if (selectedEntity != nullptr && showingPreviewWindow == false) {
+		EntityGizmo(windowDrawlist, editorCamera);
+
+		if (input->getMouseBtnDown(MouseBtn::Left) && sceneHovered && !draggingX && !draggingY && !draggingAngle) {
+			clearInspectorSelection();
+		}
 	}
 
 	windowDrawlist->PopClipRect();
@@ -799,16 +864,29 @@ void Editor::mainSceneWindow() {
 	End();
 }
 
+
+static void myFunction(ImDrawList* testDrawlist) {
+	auto test = vec2(0);
+	auto test2 = vec2(10000);
+	testDrawlist->AddLine(test, test2, IM_COL32(255, 255, 255, 255), 500);
+}
+
 void Editor::EntityPreviewWindow() {
 	vec2 mpos = input->getMousePos();
 
-	auto flags = ImGuiWindowFlags_NoResize;
+	auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar;
 
+	vec2 winSize = entityPrviewFrameSize + 20.0f;
 
-	/*vec2 sceneWinPos = vec2(leftPanelWindowWidth, 0.0f);
-	vec2 sceneWinSize = vec2(engine->getWindowSize().x - inspectorWindowWidth - leftPanelWindowWidth, engine->getWindowSize().y);*/
-	/*SetNextWindowPos(sceneWinPos);
-	SetNextWindowSize(sceneWinSize);*/
+	vec2 pos = vec2(
+		glm::clamp(sceneWinSize.x / 2 - winSize.x / 2, 0.0f, sceneWinSize.x),
+		glm::clamp(sceneWinSize.y / 2 - winSize.y / 2, 0.0f, sceneWinSize.y)
+	);
+
+	SetNextWindowPos(pos + sceneWinPos);
+
+	SetNextWindowSize(winSize);
+
 	Begin("Entity Preview", nullptr, flags);
 
 	auto windowDrawlist = GetWindowDrawList();
@@ -826,13 +904,14 @@ void Editor::EntityPreviewWindow() {
 
 	engine->ImGuiFramebufferImage(entityPreviewFramebuffer, entityPrviewFrameSize);
 
+	bool sceneHovered = ImGui::IsItemHovered();
 
-	if (ImGui::IsItemHovered()) {
+	if (sceneHovered) {
 
-		//if (input->getMouseBtn(MouseBtn::Right)) {
-		//	editorCamera.position -= ((mouseDelta * vec2(2.0, -2.0)) / engine->getWindowSize().y) / editorCamera.zoom;
-		//	cameraEntityFocus = false;
-		//}
+		if (input->getMouseBtn(MouseBtn::Right)) {
+			previewCamera.position -= ((mouseDelta * vec2(2.0, -2.0)) / engine->getWindowSize().y) / previewCamera.zoom;
+			cameraEntityFocus = false;
+		}
 
 		// zoom
 		{
@@ -841,14 +920,57 @@ void Editor::EntityPreviewWindow() {
 			previewSceneRawZoom = glm::clamp(previewSceneRawZoom, 0.0f, 1.0f);
 		}
 	}
+
 	previewCamera.zoom = exponentialScale(previewSceneRawZoom, 0.01, 15.1);
 
-	// need to generalize to work with any scene and window
-	DrawPreviewSceneGrid(windowDrawlist, entityPrviewFrameSize, previewSceneViewerScreenLocation);
+
+	if (showGrid) {
+		DrawPreviewSceneGrid(windowDrawlist, entityPrviewFrameSize, previewSceneViewerScreenLocation);
+	}
+
+	if (selectedEntity != nullptr) {
+		EntityGizmo(windowDrawlist, previewCamera);
+
+		if (input->getMouseBtnDown(MouseBtn::Left) && sceneHovered && !draggingX && !draggingY && !draggingAngle) {
+			clearInspectorSelection();
+		}
+	}
 
 	windowDrawlist->PopClipRect();
 
 	End();
+}
+
+void Editor::loadGameSceneFromDisk(std::string name)
+{
+	//assert(engine->assetManager->HasScene(name));
+	engine->assetManager->LoadScene(name);
+	clearInspectorSelection();
+	setSceneCallback(engine->assetManager->GetScene(name));
+	selectedScene = gameScene.get();
+}
+
+void Editor::OpenPreviewWindowWithPrefab(Prefab& prefab) {
+
+	selectedScene = entityPreviewScene.get();
+
+	showingPreviewWindow = true;
+
+	previewCamera.position = vec2(0.0f);
+	previewCamera.zoom = 1.0f;
+
+	entityPreviewScene->ClearScene();
+	entityPreviewScene->paused = false;
+	topLevelPrefabPreview = entityPreviewScene->Instantiate(prefab);
+
+	selectedEntity = nullptr;
+	selectedEntityIndex = -1;
+}
+
+void Editor::closePreviewWindow() {
+	selectedScene = gameScene.get();
+	showingPreviewWindow = false;
+	clearInspectorSelection();
 }
 
 void Editor::Run() {
@@ -906,7 +1028,9 @@ void Editor::Run() {
 
 	mainSceneWindow();
 
-	controlWindow();
+	if (showingPreviewWindow == false) {
+		controlWindow();
+	}
 
 	if (showingPreviewWindow)
 	{
@@ -919,7 +1043,7 @@ void Editor::Run() {
 	}
 
 	{
-		auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoBringToFrontOnFocus;
+		auto flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoCollapse;
 		SetNextWindowPos(vec2(engine->getWindowSize().x - inspectorWindowWidth, 0.0f));
 		SetNextWindowSize(vec2(300, engine->getWindowSize().y));
 		Begin("Inspector", nullptr, flags);
@@ -931,37 +1055,37 @@ void Editor::Run() {
 				switch (comboSelected)
 				{
 				case 0:
-					if (!gameScene->sceneData.spriteRenderers.contains(selectedEntity->ID))
-						gameScene->registerComponent(selectedEntity->ID, SpriteRenderer(engine->assetManager->defaultSpriteID));
+					if (!selectedScene->sceneData.spriteRenderers.contains(selectedEntity->ID))
+						selectedScene->registerComponent(selectedEntity->ID, SpriteRenderer(engine->assetManager->defaultSpriteID));
 					break;
 				case 1:
-					if (!gameScene->sceneData.colorRenderers.contains(selectedEntity->ID))
-						gameScene->registerComponent(selectedEntity->ID, ColorRenderer(vec4(0.0f, 0.0f, 0.0f, 1.0f)));
+					if (!selectedScene->sceneData.colorRenderers.contains(selectedEntity->ID))
+						selectedScene->registerComponent(selectedEntity->ID, ColorRenderer(vec4(0.0f, 0.0f, 0.0f, 1.0f)));
 					break;
 				case 2:
-					if (!gameScene->sceneData.textRenderers.contains(selectedEntity->ID))
+					if (!selectedScene->sceneData.textRenderers.contains(selectedEntity->ID))
 						if (engine->assetManager->_fontAssetCount() != 0)
-							gameScene->registerComponent(selectedEntity->ID, TextRenderer(engine->assetManager->_getFontIterator().begin()->first));
+							selectedScene->registerComponent(selectedEntity->ID, TextRenderer(engine->assetManager->_getFontIterator().begin()->first));
 					break;
 				case 3:
-					if (!gameScene->sceneData.particleSystemRenderers.contains(selectedEntity->ID))
-						gameScene->registerComponent(selectedEntity->ID, ParticleSystemRenderer::ParticleSystemSize::Small);
+					if (!selectedScene->sceneData.particleSystemRenderers.contains(selectedEntity->ID))
+						selectedScene->registerComponent(selectedEntity->ID, ParticleSystemRenderer::ParticleSystemSize::Small);
 					break;
 				case 4:
-					if (!gameScene->sceneData.staticbodies.contains(selectedEntity->ID))
-						gameScene->registerComponent(selectedEntity->ID, Staticbody(make_shared<BoxCollider>(vec2(1.0f))));
+					if (!selectedScene->sceneData.staticbodies.contains(selectedEntity->ID))
+						selectedScene->registerComponent(selectedEntity->ID, Staticbody(make_shared<BoxCollider>(vec2(1.0f))));
 					break;
 				case 5:
-					if (!gameScene->sceneData.staticbodies.contains(selectedEntity->ID))
-						gameScene->registerComponent(selectedEntity->ID, Staticbody(make_shared<CircleCollider>(1.0f)));
+					if (!selectedScene->sceneData.staticbodies.contains(selectedEntity->ID))
+						selectedScene->registerComponent(selectedEntity->ID, Staticbody(make_shared<CircleCollider>(1.0f)));
 					break;
 				case 6:
-					if (!gameScene->sceneData.rigidbodies.contains(selectedEntity->ID))
-						gameScene->registerComponent(selectedEntity->ID, Rigidbody(make_shared<BoxCollider>(vec2(1.0f))));
+					if (!selectedScene->sceneData.rigidbodies.contains(selectedEntity->ID))
+						selectedScene->registerComponent(selectedEntity->ID, Rigidbody(make_shared<BoxCollider>(vec2(1.0f))));
 					break;
 				case 7:
-					if (!gameScene->sceneData.rigidbodies.contains(selectedEntity->ID))
-						gameScene->registerComponent(selectedEntity->ID, Rigidbody(make_shared<CircleCollider>(1.0f)));
+					if (!selectedScene->sceneData.rigidbodies.contains(selectedEntity->ID))
+						selectedScene->registerComponent(selectedEntity->ID, Rigidbody(make_shared<CircleCollider>(1.0f)));
 					break;
 				default:
 					break;
@@ -973,81 +1097,126 @@ void Editor::Run() {
 			Checkbox("Persistent", &selectedEntity->persistent);
 
 			if (drawInspector(selectedEntity->transform)) {
-				if (gameScene->sceneData.rigidbodies.contains(selectedEntity->ID)) {
-					gameScene->sceneData.rigidbodies[selectedEntity->ID].SetTransform(selectedEntity->transform.position, selectedEntity->transform.rotation);
+				if (selectedScene->sceneData.rigidbodies.contains(selectedEntity->ID)) {
+					selectedScene->sceneData.rigidbodies[selectedEntity->ID].SetTransform(selectedEntity->transform.position, selectedEntity->transform.rotation);
 				}
 			}
 
 
-			if (gameScene->sceneData.colorRenderers.contains(selectedEntity->ID)) {
-				drawInspector(gameScene->sceneData.colorRenderers[selectedEntity->ID]);
+			// color renderer inspector
+			if (selectedScene->sceneData.colorRenderers.contains(selectedEntity->ID)) {
+				SeparatorText("Color Renderer");
+				if (Button("X##1"))
+					selectedScene->sceneData.colorRenderers.erase(selectedEntity->ID);
+				else
+					drawInspector(selectedScene->sceneData.colorRenderers[selectedEntity->ID]);
 			}
 
-			if (gameScene->sceneData.spriteRenderers.contains(selectedEntity->ID)) {
-				rendererSelectedSprite = gameScene->sceneData.spriteRenderers[selectedEntity->ID].sprite;
-				drawInspector(gameScene->sceneData.spriteRenderers[selectedEntity->ID]);
+			// sprite renderer inspector
+			if (selectedScene->sceneData.spriteRenderers.contains(selectedEntity->ID)) {
+				SeparatorText("Sprite Renderer");
+				if (Button("X##2")) {
+					selectedScene->sceneData.spriteRenderers.erase(selectedEntity->ID);
+				}
+				else {
+					rendererSelectedSprite = selectedScene->sceneData.spriteRenderers[selectedEntity->ID].sprite;
+					drawInspector(selectedScene->sceneData.spriteRenderers[selectedEntity->ID]);
+				}
 			}
 
-			if (gameScene->sceneData.textRenderers.contains(selectedEntity->ID)) {
-				drawInspector(gameScene->sceneData.textRenderers[selectedEntity->ID]);
+			// text renderer inspector
+			if (selectedScene->sceneData.textRenderers.contains(selectedEntity->ID)) {
+				SeparatorText("Text Renderer");
+				if (Button("X##3"))
+					selectedScene->sceneData.textRenderers.erase(selectedEntity->ID);
+				else
+					drawInspector(selectedScene->sceneData.textRenderers[selectedEntity->ID]);
 			}
 
-			if (gameScene->sceneData.particleSystemRenderers.contains(selectedEntity->ID)) {
-				drawInspector(gameScene->sceneData.particleSystemRenderers.find(selectedEntity->ID)->second);
+			if (selectedScene->sceneData.particleSystemRenderers.contains(selectedEntity->ID)) {
+				SeparatorText("Particle System");
+				if (Button("X##4"))
+					selectedScene->sceneData.particleSystemRenderers.erase(selectedEntity->ID);
+				else
+					drawInspector(selectedScene->sceneData.particleSystemRenderers.find(selectedEntity->ID)->second);
 			}
 
-			if (gameScene->sceneData.staticbodies.contains(selectedEntity->ID)) {
-				drawInspector(gameScene->sceneData.staticbodies[selectedEntity->ID]);
+			if (selectedScene->sceneData.staticbodies.contains(selectedEntity->ID)) {
+				SeparatorText("Staticbody");
+				if (Button("X##5")) {
+					selectedScene->sceneData.staticbodies.at(selectedEntity->ID).Destroy();
+					selectedScene->sceneData.staticbodies.erase(selectedEntity->ID);
+				}
+				else {
+					drawInspector(selectedScene->sceneData.staticbodies[selectedEntity->ID]);
+				}
 			}
 
-			if (gameScene->sceneData.rigidbodies.contains(selectedEntity->ID)) {
-				drawInspector(gameScene->sceneData.rigidbodies[selectedEntity->ID]);
+			if (selectedScene->sceneData.rigidbodies.contains(selectedEntity->ID)) {
+				SeparatorText("Rigidbody");
+				if (Button("X##6")) {
+					selectedScene->sceneData.rigidbodies.at(selectedEntity->ID).Destroy();
+					selectedScene->sceneData.rigidbodies.erase(selectedEntity->ID);
+				}
+				else {
+					drawInspector(selectedScene->sceneData.rigidbodies[selectedEntity->ID]);
+				}
 			}
 
 
 			// behavior selector
 			SeparatorText("Behavior");
-			if (gameScene->sceneData.behaviours.contains(selectedEntity->ID)) {
-				auto be = gameScene->sceneData.behaviours.at(selectedEntity->ID).get();
+			if (selectedScene->sceneData.behaviours.contains(selectedEntity->ID)) {
+				if (Button("X##7")) {
+					selectedScene->sceneData.behaviours.erase(selectedEntity->ID);
+				}
+				else {
+					auto be = selectedScene->sceneData.behaviours.at(selectedEntity->ID).get();
 
-				Text(BehaviorMap.at(be->Hash).first.c_str());
+					Text(BehaviorMap.at(be->Hash).first.c_str());
 
-				auto props = be->getProperties();
+					auto props = be->getProperties();
 
-				for (auto& prop : props)
-				{
-					switch (prop.type)
+					for (auto& prop : props)
 					{
-					case SerializableProperty::Type::INT:
-					{
-						InputInt(prop.name.c_str(), reinterpret_cast<int*>(prop.value));
-						break;
-					}
-					case SerializableProperty::Type::FLOAT:
-					{
-						InputFloat(prop.name.c_str(), reinterpret_cast<float*>(prop.value));
-						break;
-					}
-					case SerializableProperty::Type::VEC2:
-					{
-						InputFloat2(prop.name.c_str(), reinterpret_cast<float*>(prop.value));
-						break;
-					}
-					default:
-						break;
+						switch (prop.type)
+						{
+						case SerializableProperty::Type::INT:
+						{
+							InputInt(prop.name.c_str(), reinterpret_cast<int*>(prop.value));
+							break;
+						}
+						case SerializableProperty::Type::FLOAT:
+						{
+							InputFloat(prop.name.c_str(), reinterpret_cast<float*>(prop.value));
+							break;
+						}
+						case SerializableProperty::Type::VEC2:
+						{
+							InputFloat2(prop.name.c_str(), reinterpret_cast<float*>(prop.value));
+							break;
+						}
+						default:
+							break;
+						}
 					}
 				}
-
 			}
 			else {
 
 				uint32_t selectedBehavior = 0;
 				if (Button("Choose behavior")) {
-					OpenPopup("Available Behaviors");
+					OpenPopup("Select Behavior");
 					behaviorModel = true;
 				}
 
-				if (BeginPopupModal("Available Behaviors", &behaviorModel)) {
+				float modelWidth = 500;
+				auto modelFlags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse;
+				if (behaviorModel) {
+					SetNextWindowPos(vec2(glm::clamp(engine->winW / 2 - (int)modelWidth / 2, 0, engine->winW), 100));
+					SetNextWindowSize(vec2(modelWidth, 600));
+				}
+				if (BeginPopupModal("Select Behavior", &behaviorModel, modelFlags)) {
 
 					static char entSrchTxt[128];
 
@@ -1055,12 +1224,14 @@ void Editor::Run() {
 
 
 					string srchString(entSrchTxt);
+					std::string lowerSearchQuery = toLower(srchString);
 
 					int i = 0;
 					for (auto& ent : BehaviorMap)
 					{
-						if (strlen(entSrchTxt) == 0 || (srchString.find(ent.second.first) != std::string::npos)) {
-							if (Selectable(ent.second.first.c_str(), false)) {
+						string behaviourName = ent.second.first;
+						if (lowerSearchQuery.length() == 0 || (toLower(behaviourName).find(lowerSearchQuery) != std::string::npos)) {
+							if (Selectable(behaviourName.c_str(), false)) {
 								selectedBehavior = ent.first;
 							}
 						}
@@ -1068,16 +1239,7 @@ void Editor::Run() {
 					EndPopup();
 
 					if (selectedBehavior != 0) {
-						gameScene->AddBehaviour(selectedEntity, selectedBehavior);
-						//gameScene->OverwriteEntity(BehaviorMap[selectedBehavior].second(), selectedEntity->ID);
-
-
-
-
-						/*auto behaviorEntity = BehaviorMap[selectedBehavior].second();
-						behaviorEntity->transform = selectedEntity->transform;
-						gameScene->OverwriteEntity(behaviorEntity, selectedEntity->ID);
-						selectedEntity = behaviorEntity;*/
+						selectedScene->AddBehaviour(selectedEntity, selectedBehavior);
 					}
 				}
 			}
@@ -1124,7 +1286,7 @@ void Editor::Run() {
 				save = Button("Save");
 
 			if (save) {
-				
+
 				std::filesystem::path dir(engine->assetManager->directories.sceneDir);
 				std::filesystem::path fullPath = dir / std::filesystem::path(gameScene->name);
 				gameScene->serializeJson(fullPath.string());
@@ -1151,7 +1313,6 @@ bool Editor::drawInspector<Transform>(Transform& t) {
 
 template<>
 bool Editor::drawInspector<ColorRenderer>(ColorRenderer& t) {
-	SeparatorText("Color Renderer");
 	ColorPicker4("Color", value_ptr(t.color));
 	{
 		bool b = t.shape == ColorRenderer::Shape::Circle;
@@ -1165,14 +1326,13 @@ bool Editor::drawInspector<ColorRenderer>(ColorRenderer& t) {
 
 template<>
 bool Editor::drawInspector<SpriteRenderer>(SpriteRenderer& r) {
-	SeparatorText("Sprite Renderer");
 
 	if (Button("choose asset")) {
 		assetModel = true;
 		OpenPopup("Available Assets");
 	}
 
-	auto modelFlags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+	auto modelFlags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse;
 	float modelWidth = 360;
 	if (assetModel) {
 		SetNextWindowPos(vec2(glm::clamp(engine->winW / 2 - (int)modelWidth / 2, 0, engine->winW), 50));
@@ -1223,8 +1383,6 @@ bool Editor::drawInspector<SpriteRenderer>(SpriteRenderer& r) {
 
 template<>
 bool Editor::drawInspector<TextRenderer>(TextRenderer& r) {
-	SeparatorText("Text Renderer");
-
 
 	vector<fontID> ids;
 	vector<string> names;
@@ -1251,8 +1409,6 @@ bool Editor::drawInspector<TextRenderer>(TextRenderer& r) {
 //InputFloatRange
 
 bool Editor::drawInspector(ParticleSystemRenderer& r) {
-	SeparatorText("Particle System");
-
 
 	auto& ps = r.configuration;
 
@@ -1317,7 +1473,6 @@ bool _drawInspector(shared_ptr<Collider> collider) {
 
 template<>
 bool Editor::drawInspector<Rigidbody>(Rigidbody& r) {
-	SeparatorText("Rigidbody");
 
 	{
 		{
@@ -1361,8 +1516,6 @@ bool Editor::drawInspector<Rigidbody>(Rigidbody& r) {
 
 template<>
 bool Editor::drawInspector<Staticbody>(Staticbody& r) {
-	SeparatorText("Staticbody");
-
 
 	if (_drawInspector(r.collider)) {
 		r.updateCollider();

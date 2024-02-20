@@ -21,11 +21,9 @@ using namespace std;
 
 class TestScript : public Behaviour {
 public:
-	//BEHAVIOUR_CONSTUCTOR(TestScript);
-	TestScript(behavioiurHash b, ComponentAccessor* a, Entity* e) : Behaviour(b, a, e) {
-	
-		int tt = 0;
-	};
+	BEHAVIOUR_CONSTUCTOR(TestScript){}
+	BEHAVIOUR_CLONE(TestScript);
+
 
 	PROPERTY_EXPORT(
 		MAKE_PROPERTY(speed),
@@ -35,9 +33,6 @@ public:
 	float speed = 0.3f;
 	vec2 direction = { 1.0f, 0.0f };
 
-	//std::vector<SerializableProperty> getProperties() override {
-	//	return { makeProperty("speed", &speed), makeProperty("direction", &direction) };
-	//};
 
 	void Start() override {
 	}

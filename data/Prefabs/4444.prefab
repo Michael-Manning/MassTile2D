@@ -1,40 +1,39 @@
 {
-    "name": "entity 1",
+    "name": "4444",
     "sceneData": {
         "colorRenderers": [
             {
                 "color": [
-                    0.8128654956817627,
-                    0.09507196396589279,
-                    0.09507196396589279,
+                    0.34502923488616943,
+                    0.1997537612915039,
+                    0.1997537612915039,
                     1.0
                 ],
-                "entityID": 1,
+                "entityID": 5,
                 "shape": 0
             },
             {
                 "color": [
-                    0.0,
-                    0.0,
-                    0.0,
+                    1.0,
+                    1.0,
+                    1.0,
                     1.0
                 ],
-                "entityID": 2,
+                "entityID": 6,
                 "shape": 0
             }
         ],
         "entities": [
             {
-                "behaviorHash": 0,
                 "children": [
-                    2
+                    6
                 ],
-                "id": 1,
-                "name": "entity 1",
+                "id": 5,
+                "name": "4444",
                 "transform": {
                     "position": [
-                        -0.33572906255722046,
-                        1.475809097290039
+                        -1.0,
+                        1.4999996423721313
                     ],
                     "rotation": 0.0,
                     "scale": [
@@ -44,28 +43,20 @@
                 }
             },
             {
-                "behaviorHash": 0,
-                "id": 2,
+                "id": 6,
                 "name": "entity 2",
-                "parent": 1,
+                "parent": 5,
                 "transform": {
                     "position": [
                         3.000000476837158,
-                        0.0
+                        -2.0
                     ],
-                    "rotation": 0.3367087244987488,
+                    "rotation": 0.0,
                     "scale": [
                         1.0,
                         1.0
                     ]
                 }
-            }
-        ],
-        "spriteRenderers": [
-            {
-                "atlasIndex": 0,
-                "entityID": 2,
-                "spriteID": 3241528582
             }
         ]
     }

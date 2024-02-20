@@ -24,7 +24,6 @@ public:
 
 	std::string name;
 
-	uint32_t behaviorHash;
 	Transform transform;
 
 	SceneData sceneData;

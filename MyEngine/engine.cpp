@@ -493,12 +493,12 @@ void Engine::recordSceneContextGraphics(const ScenePipelineContext& ctx, framebu
 				Font* f = assetManager->GetFont(r.font);
 				Sprite* sprite = assetManager->GetSprite(f->atlas);
 
-				//if (r.dirty) {
+				if (r.dirty) {
 					r.quads.clear();
 					r.quads.resize(r.text.length());
 					CalculateQuads(f, r.text, r.quads.data());
 					r.dirty = false;
-				//}
+				}
 
 				TextPL::textHeader header;
 				header.color = r.color;

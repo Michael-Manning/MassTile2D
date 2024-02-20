@@ -355,10 +355,12 @@ private:
 
 		std::vector<std::string> assetFiles = getAllFilesInDirectory(directories.assetDir);
 		std::vector<std::string> prefabFiles = getAllFilesInDirectory(directories.prefabDir);
+		std::vector<std::string> sceneFiles = getAllFilesInDirectory(directories.sceneDir);
 		//	std::vector<std::string> imageFiles = getAllFilesInDirectory(directories.textureSrcDir);
 
 			// combine all three vectors into one
 		assetFiles.insert(assetFiles.end(), prefabFiles.begin(), prefabFiles.end());
+		assetFiles.insert(assetFiles.end(), sceneFiles.begin(), sceneFiles.end());
 		//		assetFiles.insert(assetFiles.end(), imageFiles.begin(), imageFiles.end());
 
 		for (auto& f : assetFiles) {

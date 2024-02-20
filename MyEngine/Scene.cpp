@@ -31,7 +31,7 @@ Scene::Scene() : bworld(gravity) {
 	for (auto& [hash, stringPair] : BehaviorMap)
 	{
 
-		stringBehaviourMap.insert({ stringPair.first, std::pair<behavioiurHash, BehaviourFactoryFunc> (hash, stringPair.second)});
+		stringBehaviourMap.insert({ stringPair.first, std::pair<behavioiurHash, BehaviourFactoryFunc>(hash, stringPair.second) });
 		//stringBehaviourMap.insert({ stringPair.first, stringPair.second });
 	}
 
@@ -130,36 +130,70 @@ std::shared_ptr<Scene> Scene::deserializeFlatbuffers(const AssetPack::Scene* s) 
 }
 
 
-void Scene::UnregisterEntity(entityID id) {
+void Scene::deletechildRecurse(Entity* entity) {
+
+	auto childCache = entity->_GetChildCache_ptr();
+	for (auto& e : *childCache)
+		deletechildRecurse(e);
+
+	sceneData.entities.erase(entity->ID);
+	sceneData.colorRenderers.erase(entity->ID);
+	sceneData.spriteRenderers.erase(entity->ID);
+	sceneData.particleSystemRenderers.erase(entity->ID);
+	sceneData.textRenderers.erase(entity->ID);
+	sceneData.rigidbodies.erase(entity->ID);
+	sceneData.staticbodies.erase(entity->ID);
+}
+
+void Scene::DeleteEntity(entityID id, bool deleteChildren) {
 
 	// NOTE: technically don't have to delete all the components right away.
 	// Could clean up all the components at the end of each frame or n frames if it ends up being faster.
 
-	auto entity = GetEntity(id);
+	Entity* entity = GetEntity(id);
+
 	if (entity->HasParent())
 		(*entity->_GetParentCache_ptr())->RemoveChild(entity);
-	if (entity->HasChildren()) {
-		auto cache = entity->_GetChildCache_ptr();
-		for (auto& child : *cache) {
-			child->ClearParent();
-		}
+
+	if (deleteChildren) {
+		deletechildRecurse(entity);
 	}
+	else {
 
-	sceneData.entities.erase(id);
-	sceneData.colorRenderers.erase(id);
-	sceneData.spriteRenderers.erase(id);
-	sceneData.particleSystemRenderers.erase(id);
-	sceneData.textRenderers.erase(id);
+		if (entity->HasChildren()) {
+			auto cache = entity->_GetChildCache_ptr();
+			for (auto& child : *cache) {
+				child->ClearParent();
+			}
+		}
 
-	if (sceneData.rigidbodies.contains(id))
-		sceneData.rigidbodies[id].Destroy();
-	sceneData.rigidbodies.erase(id);
-
-	if (sceneData.staticbodies.contains(id))
-		sceneData.staticbodies[id].Destroy();
-	sceneData.staticbodies.erase(id);
+		sceneData.entities.erase(id);
+		sceneData.colorRenderers.erase(id);
+		sceneData.spriteRenderers.erase(id);
+		sceneData.particleSystemRenderers.erase(id);
+		sceneData.textRenderers.erase(id);
+		sceneData.rigidbodies.erase(id);
+		sceneData.staticbodies.erase(id);
+	}
 }
 
+void Scene::ClearScene() {
+
+	//for (auto& [ID, b] : sceneData.rigidbodies) 
+	//	sceneData.rigidbodies.at(ID).Destroy();
+	//for (auto& [ID, b] : sceneData.staticbodies)
+	//	sceneData.staticbodies.at(ID).Destroy();
+
+	sceneData.colorRenderers.clear();
+	sceneData.spriteRenderers.clear();
+	sceneData.textRenderers.clear();
+	sceneData.particleSystemRenderers.clear();
+	sceneData.staticbodies.clear();
+	sceneData.rigidbodies.clear();
+
+	sceneData.entities.clear();
+
+}
 
 Entity* Scene::CreateEntity(Transform transform, std::string name, bool persistent) {
 	entityID id = sceneData.EntityGenerator.GenerateID();
@@ -179,12 +213,14 @@ Entity* Scene::CreateEntity(Transform transform, std::string name, bool persiste
 
 Behaviour* Scene::AddBehaviour(Entity* entity, std::string behaviourName) {
 	const auto& hashPtrPair = stringBehaviourMap.at(behaviourName);
-	auto [iter, inserted] = sceneData.behaviours.emplace( entity->ID, hashPtrPair.second(hashPtrPair.first, componentAccessor.get(), entity));
+	auto [iter, inserted] = sceneData.behaviours.emplace(entity->ID, hashPtrPair.second(hashPtrPair.first, entity));
+	iter->second->_SetComponentAccessor(componentAccessor.get());
 	return iter->second.get();
 }
 Behaviour* Scene::AddBehaviour(Entity* entity, behavioiurHash hash) {
 	assert(BehaviorMap.contains(hash));
-	auto [iter, inserted] = sceneData.behaviours.emplace(entity->ID, BehaviorMap.at(hash).second(hash, componentAccessor.get(), entity));
+	auto [iter, inserted] = sceneData.behaviours.emplace(entity->ID, BehaviorMap.at(hash).second(hash, entity));
+	iter->second->_SetComponentAccessor(componentAccessor.get());
 	return iter->second.get();
 }
 
@@ -194,52 +230,88 @@ void Scene::SetEntityAsChild(Entity* parent, Entity* child) {
 	child->SetParent(parent);
 }
 
-entityID Scene::DuplicateEntity(entityID original) {
-	assert(false);
-	return 0;
+void Scene::gatherChildIDsRecurse(std::vector<entityID>& IDs, Entity* entity) {
+	IDs.push_back(entity->ID);
 
-	//std::shared_ptr<Entity> copy;
-	//if (entity->getBehaviorHash() == 0)
-	//	copy = std::make_shared<Entity>();
-	//else
-	//	copy = BehaviorMap[entity->getBehaviorHash()].second();
+	auto childCache = entity->_GetChildCache_ptr();
+	for (auto& e : *childCache)
+		gatherChildIDsRecurse(IDs, e);
+}
 
-	//copy->name = entity->name + std::string("_copy");
-	//copy->persistent = false;
-	//copy->transform = entity->transform;
+Entity* Scene::DuplicateEntity(Entity* original) {
 
-	//RegisterEntity(copy);
+	vector<entityID> IDTree;
+	gatherChildIDsRecurse(IDTree, original);
 
-	//if (sceneData.colorRenderers.contains(entity->ID)) {
-	//	auto c = sceneData.colorRenderers[entity->ID].duplicate();
-	//	registerComponent(copy, c);
-	//}
-	//if (sceneData.spriteRenderers.contains(entity->ID)) {
-	//	auto c = sceneData.spriteRenderers[entity->ID].duplicate();
-	//	registerComponent(copy, c);
-	//}
-	//if (sceneData.textRenderers.contains(entity->ID)) {
-	//	auto c = sceneData.textRenderers[entity->ID].duplicate();
-	//	registerComponent(copy, c);
-	//}
-	//if (sceneData.staticbodies.contains(entity->ID)) {
-	//	auto c = sceneData.staticbodies[entity->ID].duplicate();
-	//	registerComponent(copy, c);
-	//}
-	//if (sceneData.rigidbodies.contains(entity->ID)) {
-	//	auto c = sceneData.rigidbodies[entity->ID].duplicate();
-	//	registerComponent(copy, c);
-	//}
+	std::unordered_map<entityID, entityID> IDRemap;
+	for (auto& ID : IDTree)
+	{
+		IDRemap.insert({ ID, sceneData.EntityGenerator.GenerateID() });
+	}
 
-	//return copy->ID;
+
+	Entity* copyTopLevel = nullptr;
+
+	// set relationship IDs in new entities with mapped values from the originals
+	for (auto& ID : IDTree) {
+
+		Entity* e = GetEntity(ID);
+
+		Entity* copy = sceneData.EmplaceEntity(IDRemap.at(ID));
+		e->CloneInto(copy);
+
+		copy->persistent = false;
+
+		if (e == original) {
+			copyTopLevel = copy;
+			copy->ClearParent(); // cut off parent in copy
+		}
+		else if (e->HasParent())
+		{
+			*copy->_GetParent() = IDRemap.at(e->GetParent());
+		}
+
+		auto origChildSet = e->_GetChildSet();
+		auto copyChildSet = copy->_GetChildSet();
+		for (auto& child : *origChildSet) {
+			copyChildSet->insert(IDRemap.at(child));
+		}
+	}
+
+	for (auto& ID : IDTree) {
+
+		if (sceneData.behaviours.contains(ID)) {
+			entityID newID = IDRemap.at(ID);
+			Entity* be = &sceneData.entities.at(newID);
+			sceneData.behaviours.emplace(newID, sceneData.behaviours.at(ID)->clone(be));
+		}
+
+		// copy all components
+		if (sceneData.colorRenderers.contains(ID))
+			registerComponent(IDRemap.at(ID), sceneData.colorRenderers.at(ID));
+		if (sceneData.spriteRenderers.contains(ID))
+			registerComponent(IDRemap.at(ID), sceneData.spriteRenderers.at(ID));
+		if (sceneData.textRenderers.contains(ID))
+			registerComponent(IDRemap.at(ID), sceneData.textRenderers.at(ID));
+		if (sceneData.particleSystemRenderers.contains(ID)) {
+			auto& ps = sceneData.particleSystemRenderers.at(ID);
+			registerComponent(IDRemap.at(ID), ps.size, ps.configuration);
+		}
+		if (sceneData.rigidbodies.contains(ID))
+			registerComponent(IDRemap.at(ID), sceneData.rigidbodies.at(ID));
+		if (sceneData.staticbodies.contains(ID))
+			registerComponent(IDRemap.at(ID), sceneData.staticbodies.at(ID));
+	}
+
+	LinkEntityRelationshipsRecurse(copyTopLevel);
+
+	copyTopLevel->name = original->name + "(copy)";
+
+	return copyTopLevel;
 }
 
 
 Entity* Scene::Instantiate(Prefab& prefab, std::string name, glm::vec2 position, float rotation) {
-
-	if (prefab.behaviorHash != 0) {
-		assert(false);
-	}
 
 	std::unordered_map<entityID, entityID> IDRemap;
 	for (auto& [ID, e] : prefab.sceneData.entities)
@@ -264,6 +336,12 @@ Entity* Scene::Instantiate(Prefab& prefab, std::string name, glm::vec2 position,
 		for (auto& child : *origChildSet) {
 			copyChildSet->insert(IDRemap.at(child));
 		}
+	}
+
+	for (auto& [ID, b] : prefab.sceneData.behaviours) {
+		entityID newID = IDRemap.at(ID);
+		Entity* be = &sceneData.entities.at(newID);
+		sceneData.behaviours.emplace(newID, b->clone(be));
 	}
 
 	for (auto& [ID, r] : prefab.sceneData.colorRenderers)
@@ -312,7 +390,7 @@ void Scene::registerComponent(entityID id, ParticleSystemRenderer::ParticleSyste
 void Scene::registerComponent(entityID id, ParticleSystemRenderer::ParticleSystemSize systemSize, ParticleSystemPL::ParticleSystemConfiguration& configuration) {
 	sceneData.particleSystemRenderers.emplace(
 		std::piecewise_construct,
-		std::forward_as_tuple(id), 
+		std::forward_as_tuple(id),
 		std::forward_as_tuple(systemSize, configuration));
 }
 
@@ -346,3 +424,67 @@ void Scene::cleanup() {
 		body = nextBody; // Move to the next body in the list
 	}
 }
+
+
+#ifdef USING_EDITOR
+
+#include <regex>
+
+std::string Scene::GetNoneConflictingEntityName(Entity* entity, Entity* hierarchyLevel)
+{
+
+	std::string name = entity->name;
+
+	robin_hood::unordered_flat_set<std::string> usedNames;
+
+	if (hierarchyLevel != nullptr) {
+		auto childPtr = hierarchyLevel->_GetChildCache_ptr();
+		for (auto& c : *childPtr)
+		{
+			if (c == entity)
+				continue;
+			usedNames.insert(c->name);
+		}
+	}
+	else {
+		for (auto& [ID, e] : sceneData.entities)
+		{
+			if (&e == entity)
+				continue;
+
+			if (e.HasParent() == false)
+				usedNames.insert(e.name);
+		}
+	}
+
+	if (usedNames.contains(name) == false)
+		return name;
+
+	// Prepare to check if the name ends with "(n)" and extract the base name and the number.
+	std::regex namePattern(R"((.*)(\(\d+\))$)");
+	std::smatch matches;
+
+	std::string baseName = name; // The original name or the name without the trailing number.
+	int number = 1; // The starting number to append or increment.
+
+	// If the name already ends with "(n)", extract the base name and start with the next number.
+	if (std::regex_match(name, matches, namePattern)) {
+		if (matches.size() == 3) { // matches[0] is the full match, [1] is the base name, [2] is the number part.
+			baseName = matches[1].str();
+			// Extract the number, ignoring the surrounding parentheses.
+			number = std::stoi(matches[2].str().substr(1, matches[2].str().size() - 2)) + 1;
+		}
+	}
+
+	// Generate new names until one is found that isn't used.
+	std::string newName;
+	do {
+		newName = baseName + "(" + std::to_string(number) + ")";
+		number++; // Prepare for the next iteration, if necessary.
+	} while (usedNames.find(newName) != usedNames.end());
+
+	return newName;
+}
+
+
+#endif

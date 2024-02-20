@@ -19,18 +19,11 @@ using namespace std;
 
 
 class Demon : public Behaviour {
-
-
 public:
-	//std::string GetEditorName() override { // deprecate
-	//	return "Demon";
-	//};
 
-	//uint32_t getBehaviorHash() const override {
-	//	return cHash("Demon");
-	//};
 
-	BEHAVIOUR_CONSTUCTOR(Demon);
+	BEHAVIOUR_CONSTUCTOR(Demon) {}
+	BEHAVIOUR_CLONE(Demon)
 
 	// settings
 	const float groundAccel = 10.0f;

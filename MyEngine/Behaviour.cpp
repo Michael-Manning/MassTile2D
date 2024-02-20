@@ -30,9 +30,9 @@ nlohmann::json SerializableProperty::serializeJson() const {
 
 	if (type == SerializableProperty::Type::INT)
 		j["value"] = *reinterpret_cast<int*>(value);
-	else if (type == SerializableProperty::Type::FLOAT) 
+	else if (type == SerializableProperty::Type::FLOAT)
 		j["value"] = *reinterpret_cast<float*>(value);
-	else if (type == SerializableProperty::Type::VEC2) 
+	else if (type == SerializableProperty::Type::VEC2)
 		j["value"] = toJson(*reinterpret_cast<glm::vec2*>(value));
 	else {
 		assert(false);
@@ -40,20 +40,34 @@ nlohmann::json SerializableProperty::serializeJson() const {
 
 	return j;
 }
-void SerializableProperty::deserialize(const nlohmann::json& j, SerializableProperty* sp) {
-	sp->type = j["type"];
-	sp->name = j["name"];
 
-	if (sp->type == SerializableProperty::Type::INT)
-		*reinterpret_cast<int*>(sp->value) = static_cast<int>(j["value"]);
-	else if (sp->type == SerializableProperty::Type::FLOAT)
-		*reinterpret_cast<float*>(sp->value) = static_cast<float>(j["value"]);
-	else if (sp->type == SerializableProperty::Type::VEC2)
-		*reinterpret_cast<glm::vec2*>(sp->value) = static_cast<glm::vec2>(j["value"]);
+
+void SerializableProperty::assignValue(const nlohmann::json& j) {
+	if (type == SerializableProperty::Type::INT)
+		*reinterpret_cast<int*>(value) = static_cast<int>(j["value"]);
+	else if (type == SerializableProperty::Type::FLOAT)
+		*reinterpret_cast<float*>(value) = static_cast<float>(j["value"]);
+	else if (type == SerializableProperty::Type::VEC2)
+		*reinterpret_cast<glm::vec2*>(value) = fromJson<glm::vec2>(j["value"]);
 	else {
 		assert(false);
 	}
 }
+
+//void SerializableProperty::deserialize(const nlohmann::json& j, SerializableProperty* sp) {
+//	sp->type = j["type"];
+//	sp->name = j["name"];
+//
+//	if (sp->type == SerializableProperty::Type::INT)
+//		*reinterpret_cast<int*>(sp->value) = static_cast<int>(j["value"]);
+//	else if (sp->type == SerializableProperty::Type::FLOAT)
+//		*reinterpret_cast<float*>(sp->value) = static_cast<float>(j["value"]);
+//	else if (sp->type == SerializableProperty::Type::VEC2)
+//		*reinterpret_cast<glm::vec2*>(sp->value) = static_cast<glm::vec2>(j["value"]);
+//	else {
+//		assert(false);
+//	}
+//}
 void SerializableProperty::deserialize(const AssetPack::SerializableProperty* s, SerializableProperty* sp) {
 	sp->type = static_cast<SerializableProperty::Type>(s->type());
 	sp->name = s->name()->str();

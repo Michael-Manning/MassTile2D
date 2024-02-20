@@ -49,7 +49,7 @@ namespace ImGui {
 
 constexpr uint64_t FNV_prime = 1099511628211u;
 constexpr uint64_t FNV_offset_basis = 14695981039346656037u;
-constexpr uint32_t cHash(std::string_view str, uint64_t hash = FNV_offset_basis) {
+consteval uint32_t cHash(std::string_view str, uint64_t hash = FNV_offset_basis) {
 	return static_cast<uint32_t>(str.empty() ? hash : cHash(str.substr(1), (hash ^ static_cast<uint64_t>(str[0])) * FNV_prime));
 }
 
@@ -165,7 +165,6 @@ static std::vector<uint8_t> readFile(const std::string& filename, int offset, in
     return buffer;
 }
 
-
 static bool within(glm::vec2 rectStart, glm::vec2  rectEnd, glm::vec2 pos) {
     return pos.x > rectStart.x && pos.x < rectEnd.x && pos.y > rectStart.y && pos.y < rectEnd.y;
 }
@@ -198,4 +197,11 @@ static glm::vec2 extractPosition(const glm::mat4& m) {
 
 static float extractRotation(const glm::mat4& m) {
     return -std::atan2f(m[1][0], m[0][0]); 
+}
+
+static std::string toLower(const std::string& str) {
+    std::string lowerStr = str;
+    std::transform(lowerStr.begin(), lowerStr.end(), lowerStr.begin(),
+        [](unsigned char c) { return std::tolower(c); });
+    return lowerStr;
 }

@@ -143,6 +143,11 @@ public:
 	}
 
 
+	~Staticbody() {
+		assert(world != nullptr);
+		Destroy();
+	}
+
 	void Destroy() {
 		if (_bodyGenerated())
 			world->DestroyBody(body);
@@ -185,7 +190,7 @@ public:
 
 		std::shared_ptr<Collider> collider;
 		auto fbCollider = b->collider();
-		if(fbCollider.type() == 1){
+		if (fbCollider.type() == 1) {
 			collider = std::make_shared<BoxCollider>(fromAP(fbCollider.scale()));
 		}
 		else {
@@ -212,6 +217,11 @@ public:
 
 	Rigidbody() {
 		//assert(false);
+	}
+
+	~Rigidbody() {
+		assert(world != nullptr);
+		Destroy();
 	}
 
 	// position is overwritten by registerComponent
@@ -369,7 +379,7 @@ public:
 	float GetDensity() const {
 		return fixture->GetDensity();
 	};
-	
+
 	void SetRestitution(float restitution) const {
 		fixture->SetRestitution(restitution);
 	};
@@ -404,7 +414,7 @@ public:
 		}
 		else {
 			r.collider = std::make_shared<CircleCollider>(fbCollider.radius());
-		} 
+		}
 
 		r.desc.linearDamping = b->linearDamping();
 		r.desc.angularDamping = b->angularDamping();
@@ -454,6 +464,6 @@ private:
 	b2Body* body = nullptr;
 	b2Fixture* fixture = nullptr;
 
-	b2World * world;
+	b2World* world;
 };
 

@@ -64,13 +64,11 @@ using namespace glm;
 using namespace nlohmann;
 
 
-const robin_hood::unordered_flat_map<behavioiurHash, std::pair<std::string, BehaviourFactoryFunc>> BehaviorMap = {
-	//{1234,  std::pair < std::string, std::function<Behaviour(ComponentAccessor *, Entity *)>>("player", [](ComponentAccessor* a, Entity* e)->Behaviour {return Player(1234, a, e); })},
+const BehaviourFactoryMap BehaviorMap = {
 	REG_BEHAVIOR(Player),
 	REG_BEHAVIOR(Demon),
 	REG_BEHAVIOR(TestScript)
 };
-
 
 
 static vec2 GcameraPos;
@@ -213,7 +211,7 @@ void initializeEngine(std::unique_ptr<Engine>& engine) {
 
 	auto exePath = get_executable_directory();
 #ifndef USE_PACKED_ASSETS
-	AssetDirectories.sceneDir = makePathAbsolute(exePath, "../../data/Assets/") + "/";
+	AssetDirectories.sceneDir = makePathAbsolute(exePath, "../../data/Scenes/") + "/";
 	AssetDirectories.prefabDir = makePathAbsolute(exePath, "../../data/Prefabs/") + "/";
 	AssetDirectories.assetDir = makePathAbsolute(exePath, "../../data/Assets/") + "/";
 	AssetDirectories.fontsDir = makePathAbsolute(exePath, "../../data/Fonts/") + "/";

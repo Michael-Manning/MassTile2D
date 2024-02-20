@@ -81,11 +81,16 @@ private:
 
 	void DrawGameSceneGrid(ImDrawList* drawlist, glm::vec2 size, glm::vec2 offset);
 	void DrawPreviewSceneGrid(ImDrawList* drawlist, glm::vec2 size, glm::vec2 offset);
+
+	void EntityGizmo(ImDrawList* drawlist, Camera& camera);
+
 	void controlWindow();
 	void entityWindow();
 	void assetWindow();
 	void mainSceneWindow();
 	void EntityPreviewWindow();
+
+	void loadGameSceneFromDisk(std::string name);
 
 	glm::vec2 DrawSpriteAtlas(spriteID id, glm::vec2 maxSize, int atlasIndex);
 	glm::vec2 DrawSprite(spriteID id, glm::vec2 maxSize);
@@ -93,7 +98,12 @@ private:
 	bool showingStats = false;
 	void debugDataWindow();
 
-	void EntitySelectableTree(int& index, Entity* entity);
+	void EntitySelectableTree(int& index, Entity* entity, Scene * scene);
+
+	Entity* topLevelPrefabPreview;
+	void OpenPreviewWindowWithPrefab(Prefab& prefab);
+	void closePreviewWindow();
+
 
 	bool behaviorModel = true;
 
@@ -109,12 +119,15 @@ private:
 	int selectedEntityIndex = -1;
 	Entity* selectedEntity = nullptr;
 
+	Scene* selectedScene = nullptr;
+
 	int selectedPrefabIndex = 0;
 	int selectedSceneIndex = 0;
 
 	void clearInspectorSelection() {
 		selectedEntityIndex = -1;
 		selectedEntity = nullptr;
+		selectedPrefabIndex = -1;
 
 		rendererSelectedSprite = 0;
 
@@ -133,6 +146,7 @@ private:
 	glm::vec2 lastMpos = glm::vec2(0);
 	glm::vec2 mouseDelta = glm::vec2(0);
 
+	// gizmo
 	bool draggingY = false;
 	bool draggingX = false;
 	bool draggingAngle = false;
@@ -156,16 +170,29 @@ private:
 	glm::vec2 mainSceneFrameSize;
 	glm::vec2 lastMainSceneFrameSize;
 	glm::vec2 mainSceneViewerScreenLocation; // position of view window framebuffer image on screen
+	glm::vec2 sceneWinPos;
+	glm::vec2 sceneWinSize;
 	bool mainSceneFrameSizeChanged;
 	/*ImDrawList* sceneViewDrawlist;*/
 
 
 	// TODO: if rendering scene in an imgui window, must store screen space offset of the image render location and apply to these functions
 
+	glm::vec2 selectedSceneWorldToScreenPos(glm::vec2 pos) {
+		if (showingPreviewWindow)
+			return previewSceneWorldToScreenPos(pos);
+		return gameSceneWorldToScreenPos(pos);
+	}
+	glm::vec2 selectedSceneSreenToWorldPos(glm::vec2 pos) {
+		if (showingPreviewWindow)
+			return previewSceneSreenToWorldPos(pos);
+		return gameSceneSreenToWorldPos(pos);
+	
+	}
+
 	glm::vec2 gameSceneWorldToScreenPos(glm::vec2 pos) {
 		return worldToScreenPos(pos, editorCamera, mainSceneFrameSize) + mainSceneViewerScreenLocation;
 	}
-
 	glm::vec2 gameSceneSreenToWorldPos(glm::vec2 pos) {
 		return screenToWorldPos(pos - mainSceneViewerScreenLocation, editorCamera, mainSceneFrameSize);
 	}
@@ -173,7 +200,6 @@ private:
 	glm::vec2 previewSceneWorldToScreenPos(glm::vec2 pos) {
 		return worldToScreenPos(pos, previewCamera, entityPrviewFrameSize) + previewSceneViewerScreenLocation;
 	}
-
 	glm::vec2 previewSceneSreenToWorldPos(glm::vec2 pos) {
 		return screenToWorldPos(pos - previewSceneViewerScreenLocation, previewCamera, entityPrviewFrameSize);
 	}

@@ -42,7 +42,7 @@ struct SerializableProperty {
 	void* value = nullptr;
 
 	nlohmann::json serializeJson() const;
-	static void deserialize(const nlohmann::json& j, SerializableProperty* sp);
+	void assignValue(const nlohmann::json& j);
 	static void deserialize(const AssetPack::SerializableProperty* s, SerializableProperty* sp);
 };
 
@@ -60,16 +60,18 @@ struct SerializableProperty {
 
 #define MAKE_PROPERTY(variable) makeProperty(#variable, &variable)
 
+
 class Behaviour {
 
 public:
 
-	Behaviour(behavioiurHash classHash, ComponentAccessor* accessor, Entity* entityCache) : Hash(classHash), entity(entityCache){
+	Behaviour(behavioiurHash classHash, Entity* entityCache) : Hash(classHash){
 		this->startRan = false;
-		this->transform = &entity->transform;
-		this->accessor = accessor;
-
+		_setEntity(entityCache);
 	};
+
+
+	virtual std::unique_ptr<Behaviour> clone(Entity* entity = nullptr) const = 0;
 
 	const behavioiurHash Hash;
 
@@ -90,15 +92,32 @@ public:
 	Entity* GetEntity() {
 		return entity;
 	};
+	entityID GetEntityID() {
+		return entID;
+	};
 
 	static Input* input;
 	static float deltaTime;
 
+	void _SetComponentAccessor(ComponentAccessor* accessor) {
+		this->accessor = accessor;
+	}
+	void _ReplaceEntityLink(Entity* entity) {
+		this->entity = entity;
+		this->entID = entity->ID;
+	}
 
 protected:
 
 	Transform* transform;
 	Entity* entity;
+	entityID entID;
+
+	void _setEntity(Entity* entity) {
+		this->entity = entity;
+		entID = entity->ID;
+		transform = &entity->transform;
+	}
 
 	template <typename T>
 	T* getComponent();
@@ -120,4 +139,12 @@ private:
 	ComponentAccessor* accessor = nullptr;
 };
 
-#define BEHAVIOUR_CONSTUCTOR(c) c(behavioiurHash b, ComponentAccessor* a, Entity* e) : Behaviour(b, a, e) {}
+#define BEHAVIOUR_CONSTUCTOR(c) c(behavioiurHash b, Entity* e) : Behaviour(b, e)
+
+#define BEHAVIOUR_CLONE(c)     std::unique_ptr<Behaviour> clone(Entity* entity = nullptr) const override { \
+auto copy = std::make_unique<c>(*this); \
+if(entity != nullptr){ \
+copy->_setEntity(entity); \
+} \
+return copy; \
+};

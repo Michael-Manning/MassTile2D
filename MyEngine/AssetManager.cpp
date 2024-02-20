@@ -123,7 +123,7 @@ void AssetManager::UnloadSprite(spriteID spriteID, bool freeResources) {
 	const auto& sprite = spriteAssets[spriteID];
 	if (freeResources)
 		resourceManager->SetTextureFreeable(sprite.textureID);
-		//resourceManager->FreeTexture(sprite->textureID);
+	//resourceManager->FreeTexture(sprite->textureID);
 
 	loadedSpritesByName.erase(sprite.name);
 	spriteAssets.erase(spriteID);
@@ -233,8 +233,14 @@ void AssetManager::LoadPrefab(std::string name, bool loadResources) {
 	prefabAssets[name] = Prefab::deserializeFlatbuffer(packageAssets->prefabs()->Get(prefabIndexesByName[name]));
 #else
 	assert(prefabPathsByName.contains(name));
+
+	if (prefabAssets.contains(name))
+		// overwrite loaded asset
+		prefabAssets.erase(name);
+
 	auto [iter, inserted] = prefabAssets.emplace(std::piecewise_construct, std::forward_as_tuple(name), std::tuple<>());
 	Prefab::deserializeJson(prefabPathsByName.at(name), &iter->second);
+
 #endif
 	if (loadResources)
 		loadPrefabResources(prefabAssets[name]);
@@ -249,7 +255,7 @@ void AssetManager::LoadScene(std::string sceneName, bool loadResources) {
 	auto scene = Scene::deserializeJson(scenePathsByName[sceneName]);
 	assert(scenePathsByName.contains(sceneName));
 #endif
-	sceneAssets.emplace(sceneName, scene);
+	sceneAssets.insert_or_assign(sceneName, scene);
 	if (loadResources)
 		loadSceneResources(scene->sceneData);
 }

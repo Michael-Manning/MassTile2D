@@ -14,19 +14,19 @@
 using namespace nlohmann;
 using namespace std;
 
-nlohmann::json SceneData::serializeJson() const {
+nlohmann::json SceneData::serializeJson(bool ignorePersistence) const {
 
 	nlohmann::json j;
 
 	for (auto& [id, e] : entities) {
-		if (e.persistent) {
+		if (e.persistent || ignorePersistence) {
 			j["entities"].push_back(e.serializeJson());
 		}
 	}
 
 	for (auto& [id, b] : behaviours)
 	{
-		if (entities.at(id).persistent) {
+		if (entities.at(id).persistent || ignorePersistence) {
 
 			nlohmann::json j2;
 			{
@@ -46,32 +46,32 @@ nlohmann::json SceneData::serializeJson() const {
 	}
 
 	for (auto& s : spriteRenderers) {
-		if (entities.at(s.first).persistent) {
+		if (entities.at(s.first).persistent || ignorePersistence) {
 			j["spriteRenderers"].push_back(s.second.serializeJson(s.first));
 		}
 	}
 	for (auto& c : colorRenderers) {
-		if (entities.at(c.first).persistent) {
+		if (entities.at(c.first).persistent || ignorePersistence) {
 			j["colorRenderers"].push_back(c.second.serializeJson(c.first));
 		}
 	}
 	for (auto& c : textRenderers) {
-		if (entities.at(c.first).persistent) {
+		if (entities.at(c.first).persistent || ignorePersistence) {
 			j["textRenderers"].push_back(c.second.serializeJson(c.first));
 		}
 	}
 	for (auto& c : particleSystemRenderers) {
-		if (entities.at(c.first).persistent) {
+		if (entities.at(c.first).persistent || ignorePersistence) {
 			j["particleSystemRenderers"].push_back(c.second.serializeJson(c.first));
 		}
 	}
 	for (auto& r : rigidbodies) {
-		if (entities.at(r.first).persistent) {
+		if (entities.at(r.first).persistent || ignorePersistence) {
 			j["rigidbodies"].push_back(r.second.serializeJson(r.first));
 		}
 	}
 	for (auto& s : staticbodies) {
-		if (entities.at(s.first).persistent) {
+		if (entities.at(s.first).persistent || ignorePersistence) {
 			j["staticbodies"].push_back(s.second.serializeJson(s.first));
 		}
 	}
@@ -91,9 +91,24 @@ void SceneData::deserializeJson(nlohmann::json& j, SceneData* sceneData) {
 
 	for (auto& e : j["behaviours"]) {
 		entityID entID = e["entityID"];
+		behavioiurHash hash = e["hash"];
 
-		/*BehaviorMap.at
-		sceneData->behaviours.in*/
+		auto [iter, inserted] = sceneData->behaviours.emplace(entID, BehaviorMap.at(hash).second(hash, &sceneData->entities.at(entID)));
+
+		std::vector<SerializableProperty> props = iter->second->getProperties();
+		
+		for (auto& jprop : e["properties"])
+		{
+			std::string pname = jprop["name"];
+			for (auto& prop : props)
+			{
+				if (pname == prop.name) {
+					assert(prop.type == static_cast<SerializableProperty::Type>(jprop["type"]));
+					prop.assignValue(jprop);
+					break;
+				}
+			}
+		}
 	}
 
 
