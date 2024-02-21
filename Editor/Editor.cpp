@@ -1117,19 +1117,19 @@ void Editor::Run() {
 					break;
 				case 4:
 					if (!selectedScene->sceneData.staticbodies.contains(selectedEntity->ID))
-						selectedScene->registerComponent_Staticbody(selectedEntity->ID, make_shared<BoxCollider>(vec2(1.0f)));
+						selectedScene->registerComponent_Staticbody(selectedEntity->ID, Collider(vec2(1.0f)));
 					break;
 				case 5:
 					if (!selectedScene->sceneData.staticbodies.contains(selectedEntity->ID))
-						selectedScene->registerComponent_Staticbody(selectedEntity->ID, make_shared<CircleCollider>(1.0f));
+						selectedScene->registerComponent_Staticbody(selectedEntity->ID, Collider(1.0f));
 					break;
 				case 6:
 					if (!selectedScene->sceneData.rigidbodies.contains(selectedEntity->ID))
-						selectedScene->registerComponent_Rigidbody(selectedEntity->ID, make_shared<BoxCollider>(vec2(1.0f)));
+						selectedScene->registerComponent_Rigidbody(selectedEntity->ID, Collider(vec2(1.0f)));
 					break;
 				case 7:
 					if (!selectedScene->sceneData.rigidbodies.contains(selectedEntity->ID))
-						selectedScene->registerComponent_Rigidbody(selectedEntity->ID, make_shared<CircleCollider>(1.0f));
+						selectedScene->registerComponent_Rigidbody(selectedEntity->ID, Collider(1.0f));
 					break;
 				default:
 					break;
@@ -1491,29 +1491,27 @@ bool Editor::drawInspector(ParticleSystemRenderer& r) {
 	return false;
 }
 
-bool _drawInspector(shared_ptr<Collider> collider) {
-	int type = collider->_getType();
+bool _drawInspector(Collider& collider) {
 
-	if (type == 1) {
-		auto bc = dynamic_pointer_cast<BoxCollider>(collider);
+	if (collider.GetType() == Collider::Type::Box) {
 
 		SeparatorText("Box Collider");
-		vec2 nScale = bc->scale;
+		vec2 nScale = collider.GetScale();
 		bool change = ImGui::SliderFloat2("Scale", value_ptr(nScale), 0.0f, 100.0f);
-		bc->scale = nScale;
 		if (change) {
-			bc->scale.x = glm::max(bc->scale.x, 0.01f);
-			bc->scale.y = glm::max(bc->scale.y, 0.01f);
+			nScale.x = glm::max(nScale.x, 0.01f);
+			nScale.y = glm::max(nScale.y, 0.01f);
+			collider.setScale(nScale);
 		}
 		return change;
 	}
 	else {
-		auto cc = dynamic_pointer_cast<CircleCollider>(collider);
-
 		SeparatorText("Circle Collider");
-		bool change = ImGui::SliderFloat("Radius", &cc->radius, 0.0f, 100.0f);
+		float nrad = collider.GetRadius();
+		bool change = ImGui::SliderFloat("Radius", &nrad, 0.0f, 100.0f);
 		if (change) {
-			cc->radius = glm::max(cc->radius, 0.01f);
+			nrad = glm::max(nrad, 0.01f);
+			collider.setRadius(nrad);
 		}
 		return change;
 	}
