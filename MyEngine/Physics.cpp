@@ -16,7 +16,7 @@
 #include "Physics.h"
 
 
-Rigidbody::Rigidbody(const nlohmann::json& j) : collider(j) {
+Rigidbody::Rigidbody(const nlohmann::json& j) : collider(j["collider"]) {
 
 	desc.linearDamping = j["linearDamping"];
 	desc.angularDamping = j["angularDamping"];
@@ -29,6 +29,6 @@ Rigidbody::Rigidbody(const nlohmann::json& j) : collider(j) {
 	desc.restitution = j["restitution"];
 }
 
-Staticbody::Staticbody(const nlohmann::json& j) : collider(j) {
+Staticbody::Staticbody(const nlohmann::json& j) : collider(j["collider"]) {
 
 }

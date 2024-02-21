@@ -122,26 +122,26 @@ public:
 	Collider(glm::vec2 scale) {
 		this->scale = scale;
 		type = Type::Box;
-		bShape.boxShape.SetAsBox(scale.x / 2.0f, scale.y / 2.0f);
+		boxShape.SetAsBox(scale.x / 2.0f, scale.y / 2.0f);
 	}
 	Collider(float radius) {
 		this->scale.x = radius;
 		type = Type::Circle;
-		bShape.circleShape.m_radius = radius / 2.0f;
+		circleShape.m_radius = radius / 2.0f;
 	}
 
 	glm::vec2 GetScale() { return scale; }
 	void setScale(glm::vec2 scale) {
 		assert(type == Type::Box);
 		this->scale = scale;
-		bShape.boxShape.SetAsBox(scale.x / 2.0f, scale.y / 2.0f);
+		boxShape.SetAsBox(scale.x / 2.0f, scale.y / 2.0f);
 	}
 
 	float GetRadius() { return scale.x; }
 	void setRadius(float radius) {
 		assert(type == Type::Circle);
 		this->scale.x = radius;
-		bShape.circleShape.m_radius = radius / 2.0f;
+		circleShape.m_radius = radius / 2.0f;
 	}
 
 	nlohmann::json serializeJson() const {
@@ -153,12 +153,12 @@ public:
 
 	Collider(const nlohmann::json& j) {
 		type = static_cast<Type>(j["type"]);
-		glm::vec2 scale = fromJson<glm::vec2>(j["scale"]);
+		scale = fromJson<glm::vec2>(j["scale"]);
 		if (type == Type::Box) {
-			bShape.boxShape.SetAsBox(scale.x / 2.0f, scale.y / 2.0f);
+			boxShape.SetAsBox(scale.x / 2.0f, scale.y / 2.0f);
 		}
 		else if (type == Type::Circle) {
-			bShape.circleShape.m_radius = scale.x;
+			circleShape.m_radius = scale.x;
 		}
 		else {
 			assert(false);
@@ -182,21 +182,14 @@ private:
 
 	b2Shape* getShape() {
 		if (type == Type::Box)
-			return &bShape.boxShape;
+			return &boxShape;
 		else
-			return &bShape.circleShape;
+			return &circleShape;
 	}
 
 	Type type;
-	union shapeUnion {
-		shapeUnion() {}
-		~shapeUnion() {}
-		shapeUnion(const shapeUnion& other) : boxShape(other.boxShape) {};
-		shapeUnion& operator=(const shapeUnion& other) = default;
-		b2PolygonShape boxShape;
-		b2CircleShape circleShape;
-	};
-	shapeUnion bShape;
+	b2PolygonShape boxShape;
+	b2CircleShape circleShape;
 };
 
 
@@ -233,7 +226,6 @@ public:
 		bodyDef.angle = angle;
 
 		body = world->CreateBody(&bodyDef);
-
 		body->CreateFixture(collider.getShape(), 0.0f);
 
 		linked = true;
@@ -261,6 +253,8 @@ public:
 			assert(world != nullptr);
 			body->DestroyFixture(fixture);
 			world->DestroyBody(body);
+			body = nullptr;
+			fixture = nullptr;
 		}
 	};
 
@@ -269,23 +263,10 @@ public:
 		fixture = body->CreateFixture(collider.getShape(), 0.0f);
 	};
 
-	Staticbody Clone(b2World* world) const {
+	// Clone()
+	Staticbody(const Staticbody& original, b2World* world) : collider(original.collider) {
 		if (world != nullptr) {
-			// shouldn't be cloning into a new world if it wasn't already linked to a world
-			assert(linked);
-
-			Staticbody clone = *this;
-
-			clone.Unlink();
-
-			clone._LinkWorld(world, btg(body->GetPosition()), body->GetAngle());
-
-			return clone;
-		}
-		else {
-			Staticbody clone = *this;
-			clone.Unlink();
-			return clone;
+			_LinkWorld(world, btg(original.body->GetPosition()), original.body->GetAngle());
 		}
 	}
 
@@ -337,7 +318,7 @@ private:
 	Staticbody(const Staticbody& other) = default;
 	Staticbody& operator=(const Staticbody& other) = default;
 
-	b2World* world;
+	b2World* world = nullptr;
 
 	b2Body* body = nullptr;
 	b2Fixture* fixture = nullptr;
@@ -348,7 +329,6 @@ class Rigidbody : Component {
 
 public:
 
-
 	// NOTE: must delete collider default contructor if allowing rigidbody default constructor
 	//Rigidbody() {
 	//}
@@ -358,7 +338,6 @@ public:
 		Destroy();
 	}
 
-	// position is overwritten by registerComponent
 	Rigidbody(Collider collider) : collider(collider) {}
 
 	Rigidbody(Rigidbody&& other) noexcept = default; // Move constructor
@@ -395,33 +374,21 @@ public:
 	};
 
 	// could running copy of body/fixture def as params are updated for faster copy?
-	Rigidbody Clone(b2World* world) const {
+	// Clone()
+	Rigidbody(const Rigidbody& original, b2World* world) :collider(original.collider) {
+
+		desc.linearDamping = original.GetLinearDamping();
+		desc.angularDamping = original.GetAngularDamping();
+		desc.fixedRotation = original.GetFixedRotation();
+		desc.bullet = original.GetBullet();
+		desc.gravityScale = original.GetGravityScale();
+
+		desc.friction = original.GetFriction();
+		desc.density = original.GetDensity();
+		desc.restitution = original.GetRestitution();
+
 		if (world != nullptr) {
-			// shouldn't be cloning into a new world if it wasn't already linked to a world
-			assert(linked);
-
-			Rigidbody clone = *this;
-
-			clone.Unlink();
-
-			clone.desc.linearDamping = GetLinearDamping();
-			clone.desc.angularDamping = GetAngularDamping();
-			clone.desc.fixedRotation = GetFixedRotation();
-			clone.desc.bullet = GetBullet();
-			clone.desc.gravityScale = GetGravityScale();
-
-			clone.desc.friction = GetFriction();
-			clone.desc.density = GetDensity();
-			clone.desc.restitution = GetRestitution();
-
-			clone._LinkWorld(world, btg(body->GetPosition()), body->GetAngle());
-
-			return clone;
-		}
-		else {
-		// shouldn't be cloning without a new world if still linked to a world
-			assert(_bodyGenerated() == false && world == nullptr);
-			return *this;
+			_LinkWorld(world, btg(original.body->GetPosition()), original.body->GetAngle());	
 		}
 	}
 
@@ -440,6 +407,7 @@ public:
 			assert(world != nullptr);
 			body->DestroyFixture(fixture);
 			world->DestroyBody(body);
+			body = nullptr;
 		}
 	};
 
@@ -479,7 +447,7 @@ public:
 	void SetAngularVelocity(float velocity) {
 		body->SetAngularVelocity(velocity);
 	};
-	float GetAngularVelocity() const{
+	float GetAngularVelocity() const {
 		return body->GetAngularVelocity();
 	};
 

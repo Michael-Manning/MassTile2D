@@ -175,16 +175,17 @@ void SceneData::deserializeFlatbuffers(const AssetPack::SceneData* s, SceneData*
 		entityID entID = s->particleSystemRenderers()->Get(i)->entityID();
 		sceneData->particleSystemRenderers.emplace(entID, s->particleSystemRenderers()->Get(i));
 	}
-	for (size_t i = 0; i < s->rigidbodies()->size(); i++) {
-		Rigidbody r = Rigidbody::deserializeFlatbuffers(s->rigidbodies()->Get(i));
-		entityID entID = s->rigidbodies()->Get(i)->entityID();
-		sceneData->rigidbodies.insert({ entID, r });
-	}
-	for (size_t i = 0; i < s->staticbodies()->size(); i++) {
-		Staticbody r = Staticbody::deserializeFlatbuffers(s->staticbodies()->Get(i));
-		entityID entID = s->staticbodies()->Get(i)->entityID();
-		sceneData->staticbodies.insert({ entID, r });
-	}
+	assert(false);
+	//for (size_t i = 0; i < s->rigidbodies()->size(); i++) {
+	//	Rigidbody r = Rigidbody::deserializeFlatbuffers(s->rigidbodies()->Get(i));
+	//	entityID entID = s->rigidbodies()->Get(i)->entityID();
+	//	sceneData->rigidbodies.insert({ entID, r });
+	//}
+	//for (size_t i = 0; i < s->staticbodies()->size(); i++) {
+	//	Staticbody r = Staticbody::deserializeFlatbuffers(s->staticbodies()->Get(i));
+	//	entityID entID = s->staticbodies()->Get(i)->entityID();
+	//	sceneData->staticbodies.insert({ entID, r });
+	//}
 }
 
 Entity* SceneData::EmplaceEntity(entityID ID) {

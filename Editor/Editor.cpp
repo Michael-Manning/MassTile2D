@@ -331,11 +331,11 @@ void Editor::EntityGizmo(ImDrawList* drawlist, Camera& camera)
 		selectedEntity->transform.position = objPos;
 		if (selectedScene->sceneData.rigidbodies.contains(selectedEntity->ID)) {
 			assert(selectedEntity->HasParent() == false);
-			selectedScene->sceneData.rigidbodies[selectedEntity->ID].SetPosition(objPos);
+			selectedScene->sceneData.rigidbodies.at(selectedEntity->ID).SetPosition(objPos);
 		}
 		if (selectedScene->sceneData.staticbodies.contains(selectedEntity->ID)) {
 			assert(selectedEntity->HasParent() == false);
-			selectedScene->sceneData.staticbodies[selectedEntity->ID].SetPosition(objPos);
+			selectedScene->sceneData.staticbodies.at(selectedEntity->ID).SetPosition(objPos);
 		}
 	}
 
@@ -349,10 +349,10 @@ void Editor::EntityGizmo(ImDrawList* drawlist, Camera& camera)
 			selectedEntity->transform.rotation = roundf(selectedEntity->transform.rotation / segment) * segment;
 		}
 		if (selectedScene->sceneData.rigidbodies.contains(selectedEntity->ID)) {
-			selectedScene->sceneData.rigidbodies[selectedEntity->ID].SetRotation(selectedEntity->transform.rotation);
+			selectedScene->sceneData.rigidbodies.at(selectedEntity->ID).SetRotation(selectedEntity->transform.rotation);
 		}
 		if (selectedScene->sceneData.staticbodies.contains(selectedEntity->ID)) {
-			selectedScene->sceneData.staticbodies[selectedEntity->ID].SetRotation(selectedEntity->transform.rotation);
+			selectedScene->sceneData.staticbodies.at(selectedEntity->ID).SetRotation(selectedEntity->transform.rotation);
 		}
 	}
 
@@ -424,7 +424,7 @@ void Editor::controlWindow() {
 
 void Editor::EntitySelectableTree(int& index, Entity* entity, Scene* scene) {
 
-	if (Selectable(entity->name.c_str(), selectedEntityIndex == index)) {
+	if (Selectable(entity->name.c_str(), entity == selectedEntity)) {
 		clearInspectorSelection();
 		selectedEntityIndex = index;
 
@@ -561,6 +561,7 @@ void Editor::entityWindow() {
 		if (Button("new")) {	
 			auto newEntity = gameScene->CreateEntity({}, "", true);
 			newEntity->name = selectedScene->GetNoneConflictingEntityName(newEntity, nullptr);
+			selectedEntity = newEntity;
 		}
 
 		int i = 0;
@@ -1142,7 +1143,10 @@ void Editor::Run() {
 
 			if (drawInspector(selectedEntity->transform)) {
 				if (selectedScene->sceneData.rigidbodies.contains(selectedEntity->ID)) {
-					selectedScene->sceneData.rigidbodies[selectedEntity->ID].SetTransform(selectedEntity->transform.position, selectedEntity->transform.rotation);
+					selectedScene->sceneData.rigidbodies.at(selectedEntity->ID).SetTransform(selectedEntity->transform.position, selectedEntity->transform.rotation);
+				}
+				if (selectedScene->sceneData.staticbodies.contains(selectedEntity->ID)) {
+					selectedScene->sceneData.staticbodies.at(selectedEntity->ID).SetTransform(selectedEntity->transform.position, selectedEntity->transform.rotation);
 				}
 			}
 
@@ -1188,22 +1192,22 @@ void Editor::Run() {
 			if (selectedScene->sceneData.staticbodies.contains(selectedEntity->ID)) {
 				SeparatorText("Staticbody");
 				if (Button("X##5")) {
-					selectedScene->sceneData.staticbodies.at(selectedEntity->ID).Destroy();
+				//	selectedScene->sceneData.staticbodies.at(selectedEntity->ID).Destroy();
 					selectedScene->sceneData.staticbodies.erase(selectedEntity->ID);
 				}
 				else {
-					drawInspector(selectedScene->sceneData.staticbodies[selectedEntity->ID]);
+					drawInspector(selectedScene->sceneData.staticbodies.at(selectedEntity->ID));
 				}
 			}
 
 			if (selectedScene->sceneData.rigidbodies.contains(selectedEntity->ID)) {
 				SeparatorText("Rigidbody");
 				if (Button("X##6")) {
-					selectedScene->sceneData.rigidbodies.at(selectedEntity->ID).Destroy();
+					//selectedScene->sceneData.rigidbodies.at(selectedEntity->ID).Destroy();
 					selectedScene->sceneData.rigidbodies.erase(selectedEntity->ID);
 				}
 				else {
-					drawInspector(selectedScene->sceneData.rigidbodies[selectedEntity->ID]);
+					drawInspector(selectedScene->sceneData.rigidbodies.at(selectedEntity->ID));
 				}
 			}
 

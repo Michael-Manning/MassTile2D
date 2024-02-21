@@ -98,9 +98,9 @@ public:
 	void registerComponent(entityID id, ParticleSystemRenderer::ParticleSystemSize systemSize);
 	void registerComponent(entityID id, ParticleSystemRenderer::ParticleSystemSize systemSize, ParticleSystemPL::ParticleSystemConfiguration& configuration);
 
-	void registerComponent_Rigidbody(entityID id, const Collider& collider);
+	Rigidbody* registerComponent_Rigidbody(entityID id, const Collider& collider);
 
-	void registerComponent_Staticbody(entityID id, const Collider& collider);
+	Staticbody* registerComponent_Staticbody(entityID id, const Collider& collider);
 
 	void registerComponent_Rigidbody(entityID id, const Rigidbody& component);
 
@@ -121,8 +121,8 @@ private:
 
 	std::unique_ptr<ComponentAccessor> componentAccessor;
 
-	//void linkRigidbodyB2D(entityID id, Rigidbody* r);
-	//void linkStaticbodyB2D(entityID id, Staticbody* r);
+	void linkRigidbodyB2D(entityID id, Rigidbody* r);
+	void linkStaticbodyB2D(entityID id, Staticbody* r);
 
 	void gatherChildIDsRecurse(std::vector<entityID>& IDs, Entity* entity);
 

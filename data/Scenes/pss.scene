@@ -1,5 +1,5 @@
 {
-    "name": "entity 1",
+    "name": "pss",
     "sceneData": {
         "entities": [
             {
@@ -8,7 +8,7 @@
                 "transform": {
                     "position": [
                         0.0,
-                        -0.0
+                        0.0
                     ],
                     "rotation": 0.0,
                     "scale": [
@@ -18,24 +18,16 @@
                 }
             }
         ],
-        "rigidbodies": [
+        "staticbodies": [
             {
-                "angularDamping": -4.2201683186052844e+37,
-                "bullet": true,
                 "collider": {
                     "scale": [
                         1.0,
                         1.0
                     ],
-                    "type": 1
+                    "type": 0
                 },
-                "density": 1.9008207785121462e+37,
-                "entityID": 1,
-                "fixedRotation": true,
-                "friction": -4.2201683186052844e+37,
-                "gravityScale": -4.2201683186052844e+37,
-                "linearDamping": -4.2201683186052844e+37,
-                "restitution": -4.2201683186052844e+37
+                "entityID": 1
             }
         ]
     }

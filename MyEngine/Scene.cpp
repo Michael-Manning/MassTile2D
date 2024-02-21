@@ -45,15 +45,15 @@ Scene::Scene() : bworld(gravity) {
 	componentAccessor->staticbodies = &sceneData.staticbodies;
 }
 
-//void Scene::linkRigidbodyB2D(entityID id, Rigidbody* r) {
-//	const auto& t = sceneData.entities.at(id).transform;
-//	r->_generateBody(&bworld, t.position, t.rotation);
-//}
-//
-//void Scene::linkStaticbodyB2D(entityID id, Staticbody* s) {
-//	const auto& t = sceneData.entities.at(id).transform;
-//	s->_generateBody(&bworld, t.position, t.rotation);
-//}
+void Scene::linkRigidbodyB2D(entityID id, Rigidbody* r) {
+	const auto& t = sceneData.entities.at(id).transform;
+	r->_LinkWorld(&bworld, t.position, t.rotation);
+}
+
+void Scene::linkStaticbodyB2D(entityID id, Staticbody* s) {
+	const auto& t = sceneData.entities.at(id).transform;
+	s->_LinkWorld(&bworld, t.position, t.rotation);
+}
 
 void Scene::serializeJson(std::string filename) {
 	json j;
@@ -105,6 +105,7 @@ std::shared_ptr<Scene> Scene::deserializeJson(std::string filename) {
 
 	for (auto& [id, r] : scene->sceneData.rigidbodies)
 		scene->linkRigidbodyB2D(id, &r);
+
 	for (auto& [id, r] : scene->sceneData.staticbodies)
 		scene->linkStaticbodyB2D(id, &r);
 
@@ -392,29 +393,40 @@ void Scene::registerComponent(entityID id, ParticleSystemRenderer::ParticleSyste
 
 
 
-void Scene::registerComponent_Rigidbody(entityID id, const Collider& collider) {
+Rigidbody* Scene::registerComponent_Rigidbody(entityID id, const Collider& collider) {
 	auto [iter, inserted] = sceneData.rigidbodies.emplace(id, collider);
-	const auto& t = sceneData.entities.at(id).transform;
-	iter->second.SetTransform(t.position, t.rotation);
-	/*linkRigidbodyB2D(id, &iter->second);*/
+	//const auto& t = sceneData.entities.at(id).transform;
+	/*iter->second._LinkWorld(&bworld, t.position, t.rotation);*/
+	linkRigidbodyB2D(id, &iter->second);
+	return &iter->second;
+
 };
 
-void Scene::registerComponent_Staticbody(entityID id, const Collider& collider){
+Staticbody* Scene::registerComponent_Staticbody(entityID id, const Collider& collider) {
 	auto [iter, inserted] = sceneData.staticbodies.emplace(id, collider);
-	const auto& t = sceneData.entities.at(id).transform;
-	iter->second.SetTransform(t.position, t.rotation);
-	//linkStaticbodyB2D(id, &iter->second);
+	/*const auto& t = sceneData.entities.at(id).transform;
+	iter->second._LinkWorld(&bworld, t.position, t.rotation);*/
+	linkStaticbodyB2D(id, &iter->second);
+	return &iter->second;
 };
 
 void Scene::registerComponent_Rigidbody(entityID id, const Rigidbody& body) {
-	auto [iter, inserted] = sceneData.rigidbodies.emplace(id, body.Clone(&bworld));
+	auto [iter, inserted] = sceneData.rigidbodies.emplace(
+		std::piecewise_construct,
+		std::forward_as_tuple(id),
+		std::forward_as_tuple(body, &bworld));
+
 	const auto& t = sceneData.entities.at(id).transform;
 	iter->second.SetTransform(t.position, t.rotation);
 	//linkRigidbodyB2D(id, &iter->second);
 };
 
 void Scene::registerComponent_Staticbody(entityID id, const Staticbody& body) {
-	auto [iter, inserted] = sceneData.staticbodies.emplace(id, body.Clone(&bworld));
+	auto [iter, inserted] = sceneData.staticbodies.emplace(
+		std::piecewise_construct,
+		std::forward_as_tuple(id),
+		std::forward_as_tuple(body, &bworld));
+
 	const auto& t = sceneData.entities.at(id).transform;
 	iter->second.SetTransform(t.position, t.rotation);
 	//linkStaticbodyB2D(id, &iter->second);

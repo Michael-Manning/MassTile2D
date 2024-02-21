@@ -1,5 +1,8 @@
 
 Near roadmap:
+- get rid of selectedEntity index. Only use selectedEntity pointer for selectable
+- finish up rigidbody stuff
+- deserializing a rigidbody into the scene needs to set the position. maybe serialize the position of the fixture within the rigidboy serialization itself?
 - test prefabs with rigidbodies, test cloning entities
 - give bodies custody of coliders and don't use shared_ptr
 - test packed assets
