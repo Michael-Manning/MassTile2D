@@ -58,11 +58,11 @@ void GeneratePrefab(Entity* entity, const SceneData& sceneData, Prefab* p) {
 				std::forward_as_tuple(pr->size, pr->configuration));
 		}
 		if (sceneData.rigidbodies.contains(e->ID)) {
-			p->sceneData.rigidbodies.insert({ e->ID, sceneData.rigidbodies.at(e->ID) });
+			p->sceneData.rigidbodies.insert({ e->ID, sceneData.rigidbodies.at(e->ID).Clone(nullptr)});
 
 		}
 		if (sceneData.staticbodies.contains(e->ID))
-			p->sceneData.staticbodies.insert({ e->ID, sceneData.staticbodies.at(e->ID) });
+			p->sceneData.staticbodies.insert({ e->ID, sceneData.staticbodies.at(e->ID).Clone(nullptr)});
 	}
 
 	// should clear parent status of top level to remove potential hanging refernce

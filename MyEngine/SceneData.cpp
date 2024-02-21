@@ -139,8 +139,9 @@ void SceneData::deserializeJson(nlohmann::json& j, SceneData* sceneData) {
 	}
 	for (auto& e : j["staticbodies"]) {
 		entityID entID = e["entityID"];
-		Staticbody r = Staticbody::deserializeJson(e);
-		sceneData->staticbodies.insert({ entID, r });
+		sceneData->staticbodies.emplace(entID, e);
+	//	Staticbody r = Staticbody::deserializeJson(e);
+	//	sceneData->staticbodies.insert({ entID, r });
 	}
 }
 

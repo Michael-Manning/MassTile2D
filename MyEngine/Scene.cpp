@@ -45,15 +45,15 @@ Scene::Scene() : bworld(gravity) {
 	componentAccessor->staticbodies = &sceneData.staticbodies;
 }
 
-void Scene::linkRigidbodyB2D(entityID id, Rigidbody* r) {
-	const auto& t = sceneData.entities.at(id).transform;
-	r->_generateBody(&bworld, t.position, t.rotation);
-}
-
-void Scene::linkStaticbodyB2D(entityID id, Staticbody* s) {
-	const auto& t = sceneData.entities.at(id).transform;
-	s->_generateBody(&bworld, t.position, t.rotation);
-}
+//void Scene::linkRigidbodyB2D(entityID id, Rigidbody* r) {
+//	const auto& t = sceneData.entities.at(id).transform;
+//	r->_generateBody(&bworld, t.position, t.rotation);
+//}
+//
+//void Scene::linkStaticbodyB2D(entityID id, Staticbody* s) {
+//	const auto& t = sceneData.entities.at(id).transform;
+//	s->_generateBody(&bworld, t.position, t.rotation);
+//}
 
 void Scene::serializeJson(std::string filename) {
 	json j;
@@ -298,9 +298,9 @@ Entity* Scene::DuplicateEntity(Entity* original) {
 			registerComponent(IDRemap.at(ID), ps.size, ps.configuration);
 		}
 		if (sceneData.rigidbodies.contains(ID))
-			registerComponent(IDRemap.at(ID), sceneData.rigidbodies.at(ID));
+			registerComponent_Rigidbody(IDRemap.at(ID), sceneData.rigidbodies.at(ID));
 		if (sceneData.staticbodies.contains(ID))
-			registerComponent(IDRemap.at(ID), sceneData.staticbodies.at(ID));
+			registerComponent_Staticbody(IDRemap.at(ID), sceneData.staticbodies.at(ID));
 	}
 
 	LinkEntityRelationshipsRecurse(copyTopLevel);
@@ -353,9 +353,9 @@ Entity* Scene::Instantiate(Prefab& prefab, std::string name, glm::vec2 position,
 	for (auto& [ID, r] : prefab.sceneData.particleSystemRenderers)
 		registerComponent(IDRemap.at(ID), r.size, r.configuration);
 	for (auto& [ID, r] : prefab.sceneData.rigidbodies)
-		registerComponent_(IDRemap.at(ID), r);
+		registerComponent_Rigidbody(IDRemap.at(ID), r);
 	for (auto& [ID, r] : prefab.sceneData.staticbodies)
-		registerComponent(IDRemap.at(ID), r);
+		registerComponent_Staticbody(IDRemap.at(ID), r);
 
 	assert(prefab.TopLevelEntity != NULL_Entity);
 
@@ -392,24 +392,32 @@ void Scene::registerComponent(entityID id, ParticleSystemRenderer::ParticleSyste
 
 
 
-void Scene::registerComponent_Rigidbody(entityID id, std::shared_ptr<Collider> collider) {
+void Scene::registerComponent_Rigidbody(entityID id, const Collider& collider) {
 	auto [iter, inserted] = sceneData.rigidbodies.emplace(id, collider);
-	linkRigidbodyB2D(id, &iter->second);
+	const auto& t = sceneData.entities.at(id).transform;
+	iter->second.SetTransform(t.position, t.rotation);
+	/*linkRigidbodyB2D(id, &iter->second);*/
 };
 
-void Scene::registerComponent_Staticbody(entityID id, std::shared_ptr<Collider> collider){
+void Scene::registerComponent_Staticbody(entityID id, const Collider& collider){
 	auto [iter, inserted] = sceneData.staticbodies.emplace(id, collider);
-	linkStaticbodyB2D(id, &iter->second);
+	const auto& t = sceneData.entities.at(id).transform;
+	iter->second.SetTransform(t.position, t.rotation);
+	//linkStaticbodyB2D(id, &iter->second);
 };
 
-void Scene::registerComponent_Rigidbody(entityID id, Rigidbody& component) {
-	auto [iter, inserted] = sceneData.rigidbodies.emplace(id, collider);
-	linkRigidbodyB2D(id, &iter->second);
+void Scene::registerComponent_Rigidbody(entityID id, const Rigidbody& body) {
+	auto [iter, inserted] = sceneData.rigidbodies.emplace(id, body.Clone(&bworld));
+	const auto& t = sceneData.entities.at(id).transform;
+	iter->second.SetTransform(t.position, t.rotation);
+	//linkRigidbodyB2D(id, &iter->second);
 };
 
-void Scene::registerComponent_Staticbody(entityID id, Staticbody& body) {
-	auto [iter, inserted] = sceneData.staticbodies.emplace(id, collider);
-	linkStaticbodyB2D(id, &iter->second);
+void Scene::registerComponent_Staticbody(entityID id, const Staticbody& body) {
+	auto [iter, inserted] = sceneData.staticbodies.emplace(id, body.Clone(&bworld));
+	const auto& t = sceneData.entities.at(id).transform;
+	iter->second.SetTransform(t.position, t.rotation);
+	//linkStaticbodyB2D(id, &iter->second);
 };
 
 void Scene::cleanup() {

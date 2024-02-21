@@ -98,13 +98,13 @@ public:
 	void registerComponent(entityID id, ParticleSystemRenderer::ParticleSystemSize systemSize);
 	void registerComponent(entityID id, ParticleSystemRenderer::ParticleSystemSize systemSize, ParticleSystemPL::ParticleSystemConfiguration& configuration);
 
-	void registerComponent_Rigidbody(entityID id, std::shared_ptr<Collider> collider);
+	void registerComponent_Rigidbody(entityID id, const Collider& collider);
 
-	void registerComponent_Staticbody(entityID id, std::shared_ptr<Collider> collider);
+	void registerComponent_Staticbody(entityID id, const Collider& collider);
 
-	void registerComponent_Rigidbody(entityID id, Rigidbody& component);
+	void registerComponent_Rigidbody(entityID id, const Rigidbody& component);
 
-	void registerComponent_Staticbody(entityID id, Staticbody& component);
+	void registerComponent_Staticbody(entityID id, const Staticbody& component);
 
 	// remove update responsibility from engine and make private again
 	b2World bworld;
@@ -121,8 +121,8 @@ private:
 
 	std::unique_ptr<ComponentAccessor> componentAccessor;
 
-	void linkRigidbodyB2D(entityID id, Rigidbody* r);
-	void linkStaticbodyB2D(entityID id, Staticbody* r);
+	//void linkRigidbodyB2D(entityID id, Rigidbody* r);
+	//void linkStaticbodyB2D(entityID id, Staticbody* r);
 
 	void gatherChildIDsRecurse(std::vector<entityID>& IDs, Entity* entity);
 

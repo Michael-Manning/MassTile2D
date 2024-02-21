@@ -3,6 +3,9 @@
 
 How to add a component:
 
+- finish up rigidbody stuff
+- deserializing a rigidbody into the scene needs to set the position. maybe serialize the position of the fixture within the rigidboy serialization itself?
+
 - Add new component header and class inheriting component
 - impliment serialize/static deserialize
 - add scene map keyed by entityID

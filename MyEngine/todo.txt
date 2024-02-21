@@ -1,6 +1,5 @@
 
 Near roadmap:
-- fix scene first save then reload
 - test prefabs with rigidbodies, test cloning entities
 - give bodies custody of coliders and don't use shared_ptr
 - test packed assets

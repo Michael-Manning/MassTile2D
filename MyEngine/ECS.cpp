@@ -184,7 +184,7 @@ nlohmann::json Rigidbody::serializeJson(entityID entId) const {
 	j["density"] = GetDensity();
 	j["restitution"] = GetRestitution();
 
-	j["collider"] = collider->serializeJson();
+	j["collider"] = collider.serializeJson();
 
 	return j;
 }
@@ -193,12 +193,8 @@ nlohmann::json Staticbody::serializeJson(entityID entId) const {
 	nlohmann::json j;
 	j["entityID"] = entId;
 
-	j["collider"] = collider->serializeJson();
+	j["collider"] = collider.serializeJson();
 
 	return j;
 }
-Staticbody Staticbody::deserializeJson(const nlohmann::json& j) {
-	auto collider = Collider_deserializeJson(j["collider"]);
-	Staticbody s(collider);
-	return s;
-}
+

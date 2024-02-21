@@ -26,6 +26,9 @@ constexpr glm::vec2 btg(const b2Vec2& vec) {
 	return glm::vec2(vec.x, vec.y);
 }
 
+class Rigidbody;
+class Staticbody;
+
 //class Collider {
 //public:
 //
@@ -114,76 +117,115 @@ public:
 		Circle
 	};
 
-
-	nlohmann::json serializeJson();
-
-	b2Shape* _getB2Shape();
+	Type GetType() { return type; }
 
 	Collider(glm::vec2 scale) {
 		this->scale = scale;
 		type = Type::Box;
-		boxShape.SetAsBox(scale.x / 2.0f, scale.y / 2.0f);
+		bShape.boxShape.SetAsBox(scale.x / 2.0f, scale.y / 2.0f);
 	}
 	Collider(float radius) {
 		this->scale.x = radius;
 		type = Type::Circle;
-		circleShape.m_radius = radius / 2.0f;
+		bShape.circleShape.m_radius = radius / 2.0f;
 	}
 
+	glm::vec2 GetScale() { return scale; }
+	void setScale(glm::vec2 scale) {
+		assert(type == Type::Box);
+		this->scale = scale;
+		bShape.boxShape.SetAsBox(scale.x / 2.0f, scale.y / 2.0f);
+	}
+
+	float GetRadius() { return scale.x; }
 	void setRadius(float radius) {
-
+		assert(type == Type::Circle);
+		this->scale.x = radius;
+		bShape.circleShape.m_radius = radius / 2.0f;
 	}
 
-	b2Shape* _getB2Shape() override {
-		return &shape;
-	}
-
-	nlohmann::json serializeJson() override {
+	nlohmann::json serializeJson() const {
 		nlohmann::json j;
-		j["type"] = type();
+		j["type"] = type;
 		j["scale"] = toJson(scale);
 		return j;
 	};
 
-	std::unique_ptr<Collider> clone() override {
-		return std::make_shared<Collider>(scale);
+	Collider(const nlohmann::json& j) {
+		type = static_cast<Type>(j["type"]);
+		glm::vec2 scale = fromJson<glm::vec2>(j["scale"]);
+		if (type == Type::Box) {
+			bShape.boxShape.SetAsBox(scale.x / 2.0f, scale.y / 2.0f);
+		}
+		else if (type == Type::Circle) {
+			bShape.circleShape.m_radius = scale.x;
+		}
+		else {
+			assert(false);
+		}
 	}
+
+	~Collider() {
+	}
+	Collider(const Collider& other) = default;
+	Collider& operator=(const Collider& other) = default;
+	//Collider(const Collider& other) : scale(other.scale), bShape(other.bShape){ }
+
+private:
 
 	glm::vec2 scale;
 
-private:
+	Collider() = delete;
+
+	friend Rigidbody;
+	friend Staticbody;
+
+	b2Shape* getShape() {
+		if (type == Type::Box)
+			return &bShape.boxShape;
+		else
+			return &bShape.circleShape;
+	}
+
 	Type type;
-	union {
+	union shapeUnion {
+		shapeUnion() {}
+		~shapeUnion() {}
+		shapeUnion(const shapeUnion& other) : boxShape(other.boxShape) {};
+		shapeUnion& operator=(const shapeUnion& other) = default;
 		b2PolygonShape boxShape;
 		b2CircleShape circleShape;
 	};
+	shapeUnion bShape;
 };
 
 
-static std::shared_ptr<Collider> Collider_deserializeJson(nlohmann::json j) {
-	int type = j["type"];
-	if (type == 1) {
-		glm::vec2 scale = fromJson<glm::vec2>(j["scale"]);
-		auto b = std::make_shared<BoxCollider>(scale);
-		return  b;
-	}
-	else {
-		float radius = j["radius"];
-		auto b = std::make_shared<CircleCollider>(radius);
-		return  b;
-	}
-};
+//static std::shared_ptr<Collider> Collider_deserializeJson(nlohmann::json j) {
+//	int type = j["type"];
+//	if (type == 1) {
+//		glm::vec2 scale = fromJson<glm::vec2>(j["scale"]);
+//		auto b = std::make_shared<BoxCollider>(scale);
+//		return  b;
+//	}
+//	else {
+//		float radius = j["radius"];
+//		auto b = std::make_shared<CircleCollider>(radius);
+//		return  b;
+//	}
+//};
 
 
 class Staticbody : Component {
 public:
 
-	Staticbody() {}
-	Staticbody(std::shared_ptr<Collider> collider) {
-		this->collider = collider;
-	};
+	Staticbody(Collider collider) : collider(collider) {};
 
-	void _generateBody(b2World* world, glm::vec2 position, float angle) {
+	// whether internal box2D data is tied to world in a scene
+	bool IsLinked() {
+		return linked;
+	}
+
+	void _LinkWorld(b2World* world, glm::vec2 position, float angle) {
 		this->world = world;
 
 		b2BodyDef bodyDef;
@@ -192,7 +234,9 @@ public:
 
 		body = world->CreateBody(&bodyDef);
 
-		body->CreateFixture(collider->_getB2Shape(), 0.0f);
+		body->CreateFixture(collider.getShape(), 0.0f);
+
+		linked = true;
 	}
 
 
@@ -201,33 +245,49 @@ public:
 		Destroy();
 	}
 
+	Staticbody(Staticbody&& other) noexcept = default; // Move constructor
+
 	void Unlink() {
+		assert(linked == true);
+
 		Destroy();
 		world = nullptr;
+
+		linked = false;
 	}
 
 	void Destroy() {
 		if (_bodyGenerated()) {
 			assert(world != nullptr);
+			body->DestroyFixture(fixture);
 			world->DestroyBody(body);
 		}
 	};
 
-	bool _bodyGenerated() {
-		return body != nullptr;
-	};
-
 	void updateCollider() {
 		body->DestroyFixture(fixture);
-		fixture = body->CreateFixture(collider->_getB2Shape(), 0.0f);
+		fixture = body->CreateFixture(collider.getShape(), 0.0f);
 	};
 
-	Staticbody duplicate() {
-		assert(false); // haven't figured out if this works with new scene/world registration logic
-		Staticbody sb(collider->duplicate());
-		sb._generateBody(world, btg(body->GetPosition()), body->GetAngle());
-		return sb;
-	};
+	Staticbody Clone(b2World* world) const {
+		if (world != nullptr) {
+			// shouldn't be cloning into a new world if it wasn't already linked to a world
+			assert(linked);
+
+			Staticbody clone = *this;
+
+			clone.Unlink();
+
+			clone._LinkWorld(world, btg(body->GetPosition()), body->GetAngle());
+
+			return clone;
+		}
+		else {
+			Staticbody clone = *this;
+			clone.Unlink();
+			return clone;
+		}
+	}
 
 
 	void SetTransform(glm::vec2 position, float rotation) {
@@ -244,26 +304,39 @@ public:
 
 
 	nlohmann::json serializeJson(entityID entId) const override;
-	static Staticbody deserializeJson(const nlohmann::json& j);
+	Staticbody(const nlohmann::json& j);
 
 	static Staticbody deserializeFlatbuffers(const AssetPack::Staticbody* b) {
 
-		std::shared_ptr<Collider> collider;
-		auto fbCollider = b->collider();
-		if (fbCollider.type() == 1) {
-			collider = std::make_shared<BoxCollider>(fromAP(fbCollider.scale()));
-		}
-		else {
-			collider = std::make_shared<CircleCollider>(fbCollider.radius());
-		}
+		assert(false);
+		return Staticbody(Collider(123));
 
-		Staticbody body(collider);
-		return body;
+		//std::shared_ptr<Collider> collider;
+		//auto fbCollider = b->collider();
+		//if (fbCollider.type() == 1) {
+		//	collider = std::make_shared<BoxCollider>(fromAP(fbCollider.scale()));
+		//}
+		//else {
+		//	collider = std::make_shared<CircleCollider>(fbCollider.radius());
+		//}
+
+		//Staticbody body(collider);
+		//return body;
 	}
 
-	std::shared_ptr<Collider> collider;
+	Collider collider;
 
 private:
+
+	bool linked = false;
+
+	bool _bodyGenerated() const {
+		return body != nullptr;
+	};
+
+	Staticbody(const Staticbody& other) = default;
+	Staticbody& operator=(const Staticbody& other) = default;
+
 	b2World* world;
 
 	b2Body* body = nullptr;
@@ -275,9 +348,10 @@ class Rigidbody : Component {
 
 public:
 
-	Rigidbody() {
-		//assert(false);
-	}
+
+	// NOTE: must delete collider default contructor if allowing rigidbody default constructor
+	//Rigidbody() {
+	//}
 
 	~Rigidbody() {
 		//assert(world != nullptr);
@@ -285,14 +359,21 @@ public:
 	}
 
 	// position is overwritten by registerComponent
-	Rigidbody(std::shared_ptr<Collider>  collider);
+	Rigidbody(Collider collider) : collider(collider) {}
+
+	Rigidbody(Rigidbody&& other) noexcept = default; // Move constructor
+
+	// whether internal box2D data is tied to world in a scene
+	bool IsLinked() {
+		return linked;
+	}
 
 	// called upon registration
-	void _generateBody(b2World* world, glm::vec2 position, float angle) {
+	void _LinkWorld(b2World* world, glm::vec2 position, float angle) {
 		this->world = world;
 
 		b2FixtureDef fixtureDef;
-		fixtureDef.shape = collider->_getB2Shape();
+		fixtureDef.shape = collider.getShape();
 		fixtureDef.density = desc.density;
 		fixtureDef.friction = desc.friction;
 		fixtureDef.restitution = desc.restitution;
@@ -309,53 +390,63 @@ public:
 
 		body = world->CreateBody(&bodyDef);
 		fixture = body->CreateFixture(&fixtureDef);
+
+		linked = true;
 	};
 
-	// full body initialization. Used when deserialization so all parameters can be set before body is created
-	//void _generateBody(b2World* world, b2FixtureDef* fixtureDef, b2BodyDef* bodyDef) {
-	//	this->world = world;
+	// could running copy of body/fixture def as params are updated for faster copy?
+	Rigidbody Clone(b2World* world) const {
+		if (world != nullptr) {
+			// shouldn't be cloning into a new world if it wasn't already linked to a world
+			assert(linked);
 
-	//	b2BodyDef bdef;
-	//	bdef.linearDamping = linearDamping();
-	//	bdef.angularDamping = b->angularDamping();
-	//	bdef.fixedRotation = b->fixedRotation();
-	//	bdef.bullet = b->bullet();
-	//	bdef.gravityScale = b->gravityScale();
+			Rigidbody clone = *this;
 
-	//	b2FixtureDef fdef;
-	//	fdef.friction = b->friction();
-	//	fdef.density = b->density();
-	//	fdef.restitution = b->restitution();
+			clone.Unlink();
 
-	//	fixtureDef->shape = collider->_getB2Shape();
+			clone.desc.linearDamping = GetLinearDamping();
+			clone.desc.angularDamping = GetAngularDamping();
+			clone.desc.fixedRotation = GetFixedRotation();
+			clone.desc.bullet = GetBullet();
+			clone.desc.gravityScale = GetGravityScale();
 
-	//	bodyDef->type = b2_dynamicBody;
+			clone.desc.friction = GetFriction();
+			clone.desc.density = GetDensity();
+			clone.desc.restitution = GetRestitution();
 
-	//	body = world->CreateBody(bodyDef);
-	//	fixture = body->CreateFixture(fixtureDef);
-	//};
+			clone._LinkWorld(world, btg(body->GetPosition()), body->GetAngle());
 
-	//~Rigidbody(){
+			return clone;
+		}
+		else {
+		// shouldn't be cloning without a new world if still linked to a world
+			assert(_bodyGenerated() == false && world == nullptr);
+			return *this;
+		}
+	}
+
 	void Unlink() {
+
+		assert(linked == true);
+
 		Destroy();
 		world = nullptr;
+
+		linked = false;
 	}
 
 	void Destroy() {
 		if (_bodyGenerated()) {
 			assert(world != nullptr);
+			body->DestroyFixture(fixture);
 			world->DestroyBody(body);
 		}
-	};
-
-	bool _bodyGenerated() {
-		return body != nullptr;
 	};
 
 	void updateCollider() {
 
 		b2FixtureDef fixtureDef;
-		fixtureDef.shape = collider->_getB2Shape();
+		fixtureDef.shape = collider.getShape();
 		fixtureDef.density = fixture->GetDensity();
 		fixtureDef.friction = fixture->GetFriction();
 		fixtureDef.restitution = fixture->GetRestitution();
@@ -363,10 +454,6 @@ public:
 		body->DestroyFixture(fixture);
 		fixture = body->CreateFixture(&fixtureDef);
 	};
-
-	// could running copy of body/fixture def as params are updated for faster copy?
-	Rigidbody duplicate();
-
 
 	void SetTransform(glm::vec2 position, float rotation) {
 		body->SetTransform(gtb(position), rotation);
@@ -377,7 +464,7 @@ public:
 		body->SetTransform(gtb(position), body->GetAngle());
 		body->SetAwake(true);
 	};
-	glm::vec2 _getPosition() {
+	glm::vec2 _getPosition() const {
 		return btg(body->GetPosition());
 	}
 
@@ -392,7 +479,7 @@ public:
 	void SetAngularVelocity(float velocity) {
 		body->SetAngularVelocity(velocity);
 	};
-	float GetAngularVelocity() {
+	float GetAngularVelocity() const{
 		return body->GetAngularVelocity();
 	};
 
@@ -471,46 +558,44 @@ public:
 	Rigidbody(const nlohmann::json& j);
 
 	static Rigidbody deserializeFlatbuffers(const AssetPack::Rigidbody* b) {
-		Rigidbody r;
+		assert(false);
+		return Rigidbody(Collider(123));
+		//Rigidbody r;
 
-		auto fbCollider = b->collider();
-		if (fbCollider.type() == 1) {
-			r.collider = std::make_shared<BoxCollider>(fromAP(fbCollider.scale()));
-		}
-		else {
-			r.collider = std::make_shared<CircleCollider>(fbCollider.radius());
-		}
+		//auto fbCollider = b->collider();
+		//if (fbCollider.type() == 1) {
+		//	r.collider = std::make_shared<BoxCollider>(fromAP(fbCollider.scale()));
+		//}
+		//else {
+		//	r.collider = std::make_shared<CircleCollider>(fbCollider.radius());
+		//}
 
-		r.desc.linearDamping = b->linearDamping();
-		r.desc.angularDamping = b->angularDamping();
-		r.desc.fixedRotation = b->fixedRotation();
-		r.desc.bullet = b->bullet();
-		r.desc.gravityScale = b->gravityScale();
+		//r.desc.linearDamping = b->linearDamping();
+		//r.desc.angularDamping = b->angularDamping();
+		//r.desc.fixedRotation = b->fixedRotation();
+		//r.desc.bullet = b->bullet();
+		//r.desc.gravityScale = b->gravityScale();
 
-		r.desc.friction = b->friction();
-		r.desc.density = b->density();
-		r.desc.restitution = b->restitution();
-		//b2BodyDef bdef;
-		//bdef.linearDamping = b->linearDamping();
-		//bdef.angularDamping = b->angularDamping();
-		//bdef.fixedRotation = b->fixedRotation();
-		//bdef.bullet = b->bullet();
-		//bdef.gravityScale = b->gravityScale();
+		//r.desc.friction = b->friction();
+		//r.desc.density = b->density();
+		//r.desc.restitution = b->restitution();
 
-		//b2FixtureDef fdef;
-		//fdef.friction = b->friction();
-		//fdef.density = b->density();
-		//fdef.restitution = b->restitution();
-
-		//r._generateBody(world, &fdef, &bdef);
-
-		return r;
+		//return r;
 
 	}
 
-	std::shared_ptr<Collider> collider;
+	Collider collider;
 
 private:
+
+	bool linked = false;
+
+	bool _bodyGenerated() const {
+		return body != nullptr;
+	};
+
+	Rigidbody(const Rigidbody& other) = default;
+	Rigidbody& operator=(const Rigidbody& other) = default;
 
 	// state of body and fixture must be stored outside of world context as the rigidbody
 	// can be created before it is registered to a scene/world
