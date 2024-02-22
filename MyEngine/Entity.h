@@ -12,35 +12,14 @@
 
 #include "typedefs.h"
 //#include "ECS.h"
-#include "Component.h"
+//#include "Component.h"
 #include "Utils.h"
 #include "Input.h"
 #include "serialization.h"
 
 #include <assetPack/common_generated.h>
 
-struct Transform {
-	glm::vec2 position = glm::vec2(0.0f);
-	glm::vec2 scale = glm::vec2(1.0f);
-	float rotation = 0.0f;
-
-	Transform(glm::vec2 position = glm::vec2(0.0f), glm::vec2 scale = glm::vec2(1.0f), float rotation = 0.0f) {
-		this->position = position;
-		this->scale = scale;
-		this->rotation = rotation;
-	}
-
-	nlohmann::json serializeJson() const;
-	static Transform deserializeJson(const nlohmann::json& j);
-
-	static Transform deserializeFlatbuffers(const AssetPack::Transform* t) {
-		return Transform(
-			fromAP(t->position()),
-			fromAP(t->scale()),
-			t->rotation());
-	}
-};
-
+#include "Transform.h"
 
 class Entity {
 
@@ -122,12 +101,6 @@ public:
 	static void deserializeFlatbuffers(const AssetPack::Entity* packEntity, Entity* entity);
 	static entityID PeakID(const nlohmann::json& j) {return j["id"].get<int>();}
 	static entityID PeakID(const AssetPack::Entity* packEntity) {return packEntity->id();}
-
-protected:
-
-
-	template <typename T>
-	T* getComponent();
 
 private:
 

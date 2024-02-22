@@ -32,7 +32,7 @@ namespace Benchmark {
 				auto e = scene->CreateEntity();
 				e->transform.position = vec2(i * size + i * padding, j * size + j * padding);
 				e->transform.scale = vec2(size);
-				scene->registerComponent(e->ID, SpriteRenderer(sprite));
+				scene->registerComponent(e->ID, sprite);
 			}
 		}
 

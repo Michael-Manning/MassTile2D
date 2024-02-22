@@ -361,7 +361,7 @@ Entity* Scene::Instantiate(Prefab& prefab, std::string name, glm::vec2 position,
 	assert(prefab.TopLevelEntity != NULL_Entity);
 
 	Entity* topLevelEntity = &sceneData.entities.at(IDRemap.at(prefab.TopLevelEntity));
-	//topLevelEntity->transform = Transform(position, prefab.transform.scale, rotation);
+	topLevelEntity->transform = Transform(position, topLevelEntity->transform.scale, rotation);
 
 	LinkEntityRelationshipsRecurse(topLevelEntity);
 
@@ -373,8 +373,21 @@ void Scene::registerComponent(entityID id, ColorRenderer t) {
 	sceneData.colorRenderers.insert({ id, t });
 };
 
-void Scene::registerComponent(entityID id, SpriteRenderer t) {
-	sceneData.spriteRenderers.insert({ id, t });
+void Scene::registerComponent(entityID id, SpriteRenderer& t) {
+	sceneData.spriteRenderers.emplace(
+		std::piecewise_construct,
+		std::forward_as_tuple(id),
+		std::forward_as_tuple(t, &sceneData.entities.at(id)));
+	//sceneData.spriteRenderers.insert({ id, t });
+}
+SpriteRenderer* Scene::registerComponent(entityID id, spriteID sprite, int atlasIndex){
+
+	auto [iter, inserted] = sceneData.spriteRenderers.emplace(
+	std::piecewise_construct,
+	std::forward_as_tuple(id),
+	std::forward_as_tuple(sprite, atlasIndex, &sceneData.entities.at(id)));
+
+	return &iter->second;
 }
 
 void Scene::registerComponent(entityID id, TextRenderer t) {

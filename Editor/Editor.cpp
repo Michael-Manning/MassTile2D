@@ -1099,7 +1099,7 @@ void Editor::Run() {
 				{
 				case 0:
 					if (!selectedScene->sceneData.spriteRenderers.contains(selectedEntity->ID))
-						selectedScene->registerComponent(selectedEntity->ID, SpriteRenderer(engine->assetManager->defaultSpriteID));
+						selectedScene->registerComponent(selectedEntity->ID, engine->assetManager->defaultSpriteID);
 					break;
 				case 1:
 					if (!selectedScene->sceneData.colorRenderers.contains(selectedEntity->ID))

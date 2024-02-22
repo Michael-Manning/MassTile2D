@@ -91,7 +91,8 @@ public:
 
 	void registerComponent(entityID id, ColorRenderer component);
 
-	void registerComponent(entityID id, SpriteRenderer component);
+	void registerComponent(entityID id, SpriteRenderer& component);
+	SpriteRenderer* registerComponent(entityID id, spriteID sprite, int atlasIndex = 0);
 
 	void registerComponent(entityID id, TextRenderer component);
 

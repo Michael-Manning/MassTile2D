@@ -135,7 +135,6 @@ void Engine::createScenePLContext(ScenePipelineContext* ctx, bool allocateTileWo
 		ctx->lightingPipeline->createStagingBuffers(); // TODO: move to createPipeline() function
 
 	ctx->colorPipeline->CreateInstancingBuffer();
-	ctx->texturePipeline->createSSBOBuffer();
 	ctx->textPipeline->createSSBOBuffer();
 
 	{
@@ -263,7 +262,6 @@ void Engine::Start(const VideoSettings& initialSettings, AssetManager::AssetPath
 	// section can be done in parrallel
 	{
 		screenSpaceColorPipeline->CreateInstancingBuffer();
-		screenSpaceTexturePipeline->createSSBOBuffer();
 		screenSpaceTextPipeline->createSSBOBuffer();
 
 		{
@@ -396,42 +394,52 @@ void Engine::recordSceneContextGraphics(const ScenePipelineContext& ctx, framebu
 			vector<TexturedQuadPL::ssboObjectInstanceData> drawlist;
 			drawlist.reserve(scene->sceneData.spriteRenderers.size());
 
+			TexturedQuadPL::ssboObjectInstanceData* GPUBuffer = ctx.texturePipeline->getUploadMappedBuffer();
+			int instanceIndex = 0;
+
+			assert(scene->sceneData.spriteRenderers.size() < TexturedQuadPL_MAX_OBJECTS);
 			for (auto& [entID, renderer] : scene->sceneData.spriteRenderers)
 			{
-				const auto& entity = scene->sceneData.entities.at(entID);
+				//const auto& entity = scene->sceneData.entities.at(entID);
+				Entity* entity = renderer._entityCache;
 
 				Sprite* s = assetManager->GetSprite(renderer.sprite);
 
-				TexturedQuadPL::ssboObjectInstanceData& drawObject = drawlist.emplace_back();
-				drawObject.uvMin = vec2(0.0f);
-				drawObject.uvMax = vec2(1.0f);
-				drawObject.tex = globalTextureBindingManager.getIndexFromBinding(s->textureID);
+				auto drawObject = GPUBuffer + instanceIndex;
+
+				drawObject->uvMin = vec2(0.0f);
+				drawObject->uvMax = vec2(1.0f);
+				drawObject->tex = globalTextureBindingManager.getIndexFromBinding(s->textureID);
 
 
-				if (entity.HasParent()) {
-					Transform global = entity.GetGlobalTransform();
-					drawObject.translation = global.position;
-					drawObject.scale = global.scale;
-					drawObject.rotation = global.rotation;
+				if (entity->HasParent()) {
+					Transform global = entity->GetGlobalTransform();
+					drawObject->translation = global.position;
+					drawObject->scale = global.scale;
+					drawObject->rotation = global.rotation;
 				}
 				else {
-					drawObject.translation = entity.transform.position;
-					drawObject.scale = entity.transform.scale;
-					drawObject.rotation = entity.transform.rotation;
+					drawObject->translation = entity->transform.position;
+					drawObject->scale = entity->transform.scale;
+					drawObject->rotation = entity->transform.rotation;
 				}
 
 				if (s->atlas.size() > 0) {
 					auto atEntry = s->atlas[renderer.atlasIndex];
-					drawObject.uvMin = atEntry.uv_min;
-					drawObject.uvMax = atEntry.uv_max;
+					drawObject->uvMin = atEntry.uv_min;
+					drawObject->uvMax = atEntry.uv_max;
 				}
 
+				instanceIndex++;
 			}
 
-			ctx.texturePipeline->UploadInstanceData(drawlist);
-			ctx.texturePipeline->recordCommandBuffer(cmdBuffer, drawlist.size());
 
-			runningStats.sprite_render_count += drawlist.size();
+			ctx.texturePipeline->recordCommandBuffer(cmdBuffer, scene->sceneData.spriteRenderers.size());
+			runningStats.sprite_render_count += scene->sceneData.spriteRenderers.size();
+
+			//ctx.texturePipeline->UploadInstanceData(drawlist);
+			/*ctx.texturePipeline->recordCommandBuffer(cmdBuffer, drawlist.size());
+			runningStats.sprite_render_count += drawlist.size();*/
 		}
 	}
 
@@ -616,7 +624,7 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 
 			for (auto& job : sceneRenderJobs)
 			{
-				float particleDeltaTime = job.scene->paused? 0.0f : deltaTime;
+				float particleDeltaTime = job.scene->paused ? 0.0f : deltaTime;
 
 				for (auto& [entID, renderer] : job.scene->sceneData.particleSystemRenderers) {
 					if (renderer.computeContextDirty) {
@@ -871,7 +879,7 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 	if (drawImgui) {
 		ImGui::Render();
 		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdBuffer);
-	}
+			}
 
 	cmdBuffer.endRenderPass();
 	TracyVkCollect(rengine->tracyGraphicsContexts[rengine->currentFrame], rengine->graphicsCommandBuffers[rengine->currentFrame]);
@@ -893,7 +901,7 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 
 	FrameMark;
 	return true;
-}
+		}
 
 bool Engine::ShouldClose() {
 	return rengine->shouldClose();

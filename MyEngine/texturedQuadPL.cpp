@@ -39,6 +39,8 @@ void TexturedQuadPL::CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSr
 
 	this->textureDescriptor = textureDescriptor;
 
+	engine->createMappedBuffer(sizeof(ssboObjectInstanceData) * TexturedQuadPL_MAX_OBJECTS, vk::BufferUsageFlagBits::eStorageBuffer, ssboMappedDB);
+
 	auto shaderStages = createShaderStages(vertexSrc, fragmentSrc);
 
 	descriptorManager.configureDescriptorSets(vector<DescriptorManager::descriptorSetInfo> {
@@ -95,12 +97,6 @@ void TexturedQuadPL::CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSr
 	}
 
 	descriptorManager.buildDescriptorSets();
-}
-
-
-void TexturedQuadPL::createSSBOBuffer() {
-
-	engine->createMappedBuffer(sizeof(ssboObjectInstanceData) * TexturedQuadPL_MAX_OBJECTS, vk::BufferUsageFlagBits::eStorageBuffer, ssboMappedDB);
 }
 
 void TexturedQuadPL::recordCommandBuffer(vk::CommandBuffer commandBuffer, int instanceCount){

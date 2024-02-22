@@ -120,7 +120,11 @@ void SceneData::deserializeJson(nlohmann::json& j, SceneData* sceneData) {
 	for (auto& e : j["spriteRenderers"]) {
 		entityID entID = e["entityID"];
 		SpriteRenderer r = SpriteRenderer::deserializeJson(e);
-		sceneData->spriteRenderers.insert({ entID, r });
+		sceneData->spriteRenderers.emplace(
+			std::piecewise_construct,
+			std::forward_as_tuple(entID),
+			std::forward_as_tuple(r, &sceneData->entities.at(entID)));
+		//sceneData->spriteRenderers.insert({ entID, r });
 	}
 	for (auto& e : j["textRenderers"]) {
 		entityID entID = e["entityID"];
@@ -165,6 +169,7 @@ void SceneData::deserializeFlatbuffers(const AssetPack::SceneData* s, SceneData*
 		SpriteRenderer r = SpriteRenderer::deserializeFlatbuffers(s->spriteRenderers()->Get(i));
 		entityID entID = s->spriteRenderers()->Get(i)->entityID();
 		sceneData->spriteRenderers.insert({ entID, r });
+		assert(false);
 	}
 	for (size_t i = 0; i < s->textRenderers()->size(); i++) {
 		TextRenderer r = TextRenderer::deserializeFlatbuffers(s->textRenderers()->Get(i));

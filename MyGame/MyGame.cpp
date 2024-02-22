@@ -395,7 +395,7 @@ void worldDebug() {
 #endif
 }
 
-constexpr bool useTileWorld = true;
+constexpr bool useTileWorld = false;
 
 #ifdef  PUBLISH
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
@@ -451,8 +451,8 @@ int main() {
 	uiState.showingInventory = true;
 
 	{
-		//auto testSprite = engine->assetManager->GetSprite("test_cat");
-		//Benchmark::BuildSpriteEntityStressTest(scene.get(), testSprite->ID); // 530fps avg
+		auto testSprite = engine->assetManager->GetSprite("test_cat");
+		Benchmark::BuildSpriteEntityStressTest(scene.get(), testSprite->ID); // 300 avg 2400 release
 	}
 
 	//auto ent = scene->CreateEntity();
