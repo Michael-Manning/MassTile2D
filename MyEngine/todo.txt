@@ -2,7 +2,13 @@
 Near roadmap:
 - test packed assets
 - test publish build
+- cache sprite in spriteRenderer
 
+Major optimization:
+Sprites store their image file name, and texture IDs are hashed from the same filename. Could stop serializing the textureID
+in the sprite (and remove the requirement they be consistent and persistent), then use texture IDs directly in the bindless
+texture manager, removing one of the 3 layers of inderection required to link a sprite renderer to the actual GPU image.
+TextureIDs should be spit out straight from the bindless texture manager instead of the resource manager ID generator
 
 
 ---- Test:
@@ -16,11 +22,6 @@ Near roadmap:
 - switch all deserialization functions to constructors for uniformity, simplicity, as well as slight performance boost as components could all
 be emplaced into maps instead of constructed, coppied, and destructed;
 
-Major optimization:
-Sprites store their image file name, and texture IDs are hashed from the same filename. Could stop serializing the textureID
-in the sprite (and remove the requirement they be consistent and persistent), then use texture IDs directly in the bindless
-texture manager, removing one of the 3 layers of inderection required to link a sprite renderer to the actual GPU image.
-TextureIDs should be spit out straight from the bindless texture manager instead of the resource manager ID generator
 
 - editor issue with selectables when entities have the same name. Problem when instantiating prefabs with same name as existing entity
 

@@ -237,7 +237,7 @@ private:
 
 	ChangeFlags* changeFlags = nullptr;
 	std::unordered_map<texID, Texture> textureResources; // reserve capacity or replace with collection protected against re-hashing due to pointer use
-	IDGenerator<texID> TextureIDGenerator;
+	//IDGenerator<texID> TextureIDGenerator;
 	VKEngine* rengine;
 };
 
