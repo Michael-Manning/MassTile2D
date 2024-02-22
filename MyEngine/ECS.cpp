@@ -175,14 +175,23 @@ nlohmann::json Rigidbody::serializeJson(entityID entId) const {
 	nlohmann::json j;
 	j["entityID"] = entId;
 
-	j["linearDamping"] = GetLinearDamping();
-	j["angularDamping"] = GetAngularDamping();
-	j["fixedRotation"] = GetFixedRotation();
-	j["bullet"] = GetBullet();
-	j["gravityScale"] = GetGravityScale();
-	j["friction"] = GetFriction();
-	j["density"] = GetDensity();
-	j["restitution"] = GetRestitution();
+	j["linearDamping"] = desc.linearDamping;
+	j["angularDamping"] = desc.angularDamping;
+	j["fixedRotation"] = desc.fixedRotation;
+	j["bullet"] = desc.bullet;
+	j["gravityScale"] = desc.gravityScale;
+	j["friction"] = desc.friction;
+	j["density"] = desc.density;
+	j["restitution"] = desc.restitution;
+
+	//j["linearDamping"] = GetLinearDamping();
+	//j["angularDamping"] = GetAngularDamping();
+	//j["fixedRotation"] = GetFixedRotation();
+	//j["bullet"] = GetBullet();
+	//j["gravityScale"] = GetGravityScale();
+	//j["friction"] = GetFriction();
+	//j["density"] = GetDensity();
+	//j["restitution"] = GetRestitution();
 
 	j["collider"] = collider.serializeJson();
 

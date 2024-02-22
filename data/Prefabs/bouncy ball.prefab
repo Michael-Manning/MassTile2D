@@ -1,0 +1,54 @@
+{
+    "name": "bouncy ball",
+    "sceneData": {
+        "colorRenderers": [
+            {
+                "color": [
+                    0.02073686011135578,
+                    0.004206420388072729,
+                    0.23976606130599976,
+                    1.0
+                ],
+                "entityID": 7,
+                "shape": 1
+            }
+        ],
+        "entities": [
+            {
+                "id": 7,
+                "name": "bouncy ball",
+                "transform": {
+                    "position": [
+                        -1.0619908571243286,
+                        1.2049826383590698
+                    ],
+                    "rotation": -10.267378807067871,
+                    "scale": [
+                        2.0,
+                        2.0
+                    ]
+                }
+            }
+        ],
+        "rigidbodies": [
+            {
+                "angularDamping": 0.10000000149011612,
+                "bullet": false,
+                "collider": {
+                    "scale": [
+                        2.0,
+                        -107374176.0
+                    ],
+                    "type": 1
+                },
+                "density": 1.0,
+                "entityID": 7,
+                "fixedRotation": false,
+                "friction": 0.30000001192092896,
+                "gravityScale": 1.0,
+                "linearDamping": 0.10000000149011612,
+                "restitution": 0.8999999761581421
+            }
+        ]
+    }
+}

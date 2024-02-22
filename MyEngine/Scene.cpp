@@ -261,7 +261,7 @@ Entity* Scene::DuplicateEntity(Entity* original) {
 		Entity* copy = sceneData.EmplaceEntity(IDRemap.at(ID));
 		e->CloneInto(copy);
 
-		copy->persistent = false;
+		copy->persistent = true;
 
 		if (e == original) {
 			copyTopLevel = copy;
@@ -361,7 +361,7 @@ Entity* Scene::Instantiate(Prefab& prefab, std::string name, glm::vec2 position,
 	assert(prefab.TopLevelEntity != NULL_Entity);
 
 	Entity* topLevelEntity = &sceneData.entities.at(IDRemap.at(prefab.TopLevelEntity));
-	topLevelEntity->transform = Transform(position, prefab.transform.scale, rotation);
+	//topLevelEntity->transform = Transform(position, prefab.transform.scale, rotation);
 
 	LinkEntityRelationshipsRecurse(topLevelEntity);
 

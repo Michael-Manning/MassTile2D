@@ -24,8 +24,6 @@ public:
 
 	std::string name;
 
-	Transform transform;
-
 	SceneData sceneData;
 
 	entityID TopLevelEntity = NULL_Entity; // prefabs can only have one enity with no parent

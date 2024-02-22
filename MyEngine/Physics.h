@@ -158,7 +158,7 @@ public:
 			boxShape.SetAsBox(scale.x / 2.0f, scale.y / 2.0f);
 		}
 		else if (type == Type::Circle) {
-			circleShape.m_radius = scale.x;
+			circleShape.m_radius = scale.x / 2.0f;
 		}
 		else {
 			assert(false);
@@ -273,13 +273,16 @@ public:
 
 	void SetTransform(glm::vec2 position, float rotation) {
 		body->SetTransform(gtb(position), rotation);
+		body->SetAwake(true);
 	};
 
 	void SetPosition(glm::vec2& position) {
 		body->SetTransform(gtb(position), body->GetAngle());
+		body->SetAwake(true);
 	};
 	void SetRotation(float rotation) {
 		body->SetTransform(body->GetPosition(), rotation);
+		body->SetAwake(true);
 	};
 
 
@@ -377,18 +380,21 @@ public:
 	// Clone()
 	Rigidbody(const Rigidbody& original, b2World* world) :collider(original.collider) {
 
-		desc.linearDamping = original.GetLinearDamping();
-		desc.angularDamping = original.GetAngularDamping();
-		desc.fixedRotation = original.GetFixedRotation();
-		desc.bullet = original.GetBullet();
-		desc.gravityScale = original.GetGravityScale();
+		desc.linearDamping = original.desc.linearDamping;
+		desc.angularDamping = original.desc.angularDamping;
+		desc.fixedRotation = original.desc.fixedRotation;
+		desc.bullet = original.desc.bullet;
+		desc.gravityScale = original.desc.gravityScale;
 
-		desc.friction = original.GetFriction();
-		desc.density = original.GetDensity();
-		desc.restitution = original.GetRestitution();
+		desc.friction = original.desc.friction;
+		desc.density = original.desc.density;
+		desc.restitution = original.desc.restitution;
 
 		if (world != nullptr) {
+			if(original.body != nullptr)
 			_LinkWorld(world, btg(original.body->GetPosition()), original.body->GetAngle());	
+			else
+			_LinkWorld(world, glm::vec2(0.0f), 0.0f);	
 		}
 	}
 
@@ -453,55 +459,63 @@ public:
 
 	void SetLinearDamping(float damping) {
 		body->SetLinearDamping(damping);
+		desc.linearDamping = damping;
 	};
 	float GetLinearDamping() const {
 		return body->GetLinearDamping();
 	};
 
-	void SetAngularDamping(float damping) const {
+	void SetAngularDamping(float damping) {
 		body->SetAngularDamping(damping);
+		desc.angularDamping = damping;
 	};
 	float GetAngularDamping() const {
 		return body->GetAngularDamping();
 	};
 
-	void SetFixedRotation(bool fixed) const {
+	void SetFixedRotation(bool fixed) {
 		body->SetFixedRotation(fixed);
+		desc.fixedRotation = fixed;
 	};
 	bool GetFixedRotation() const {
 		return body->IsFixedRotation();
 	};
 
-	void SetBullet(bool bullet) const {
+	void SetBullet(bool bullet) {
 		body->SetBullet(bullet);
+		desc.bullet = bullet;
 	};
 	bool GetBullet() const {
 		return body->IsBullet();
 	};
 
-	void SetGravityScale(float scale) const {
+	void SetGravityScale(float scale) {
 		body->SetGravityScale(scale);
+		desc.gravityScale = scale;
 	};
 	float GetGravityScale() const {
 		return body->GetGravityScale();
 	};
 
-	void SetFriction(float friction) const {
+	void SetFriction(float friction) {
 		fixture->SetFriction(friction);
+		desc.friction = friction;
 	};
 	float GetFriction() const {
 		return fixture->GetFriction();
 	};
 
-	void SetDensity(float density) const {
+	void SetDensity(float density) {
 		fixture->SetDensity(density);
+		desc.density = density;
 	};
 	float GetDensity() const {
 		return fixture->GetDensity();
 	};
 
-	void SetRestitution(float restitution) const {
+	void SetRestitution(float restitution) {
 		fixture->SetRestitution(restitution);
+		desc.restitution = restitution;
 	};
 	float GetRestitution() const {
 		return fixture->GetRestitution();

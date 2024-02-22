@@ -331,7 +331,10 @@ void Editor::EntityGizmo(ImDrawList* drawlist, Camera& camera)
 		selectedEntity->transform.position = objPos;
 		if (selectedScene->sceneData.rigidbodies.contains(selectedEntity->ID)) {
 			assert(selectedEntity->HasParent() == false);
-			selectedScene->sceneData.rigidbodies.at(selectedEntity->ID).SetPosition(objPos);
+			auto body = &selectedScene->sceneData.rigidbodies.at(selectedEntity->ID);
+			body->SetPosition(objPos);
+			body->SetLinearVelocity(vec2(0.0f));
+			body->SetAngularVelocity(0.0f);
 		}
 		if (selectedScene->sceneData.staticbodies.contains(selectedEntity->ID)) {
 			assert(selectedEntity->HasParent() == false);
@@ -349,7 +352,10 @@ void Editor::EntityGizmo(ImDrawList* drawlist, Camera& camera)
 			selectedEntity->transform.rotation = roundf(selectedEntity->transform.rotation / segment) * segment;
 		}
 		if (selectedScene->sceneData.rigidbodies.contains(selectedEntity->ID)) {
-			selectedScene->sceneData.rigidbodies.at(selectedEntity->ID).SetRotation(selectedEntity->transform.rotation);
+			auto body = &selectedScene->sceneData.rigidbodies.at(selectedEntity->ID);
+			body->SetRotation(selectedEntity->transform.rotation);
+			body->SetAngularVelocity(0.0f);
+
 		}
 		if (selectedScene->sceneData.staticbodies.contains(selectedEntity->ID)) {
 			selectedScene->sceneData.staticbodies.at(selectedEntity->ID).SetRotation(selectedEntity->transform.rotation);
@@ -1143,7 +1149,10 @@ void Editor::Run() {
 
 			if (drawInspector(selectedEntity->transform)) {
 				if (selectedScene->sceneData.rigidbodies.contains(selectedEntity->ID)) {
-					selectedScene->sceneData.rigidbodies.at(selectedEntity->ID).SetTransform(selectedEntity->transform.position, selectedEntity->transform.rotation);
+					auto body = &selectedScene->sceneData.rigidbodies.at(selectedEntity->ID);
+					body->SetTransform(selectedEntity->transform.position, selectedEntity->transform.rotation);
+					body->SetLinearVelocity(vec2(0.0f));
+					body->SetAngularVelocity(0.0f);
 				}
 				if (selectedScene->sceneData.staticbodies.contains(selectedEntity->ID)) {
 					selectedScene->sceneData.staticbodies.at(selectedEntity->ID).SetTransform(selectedEntity->transform.position, selectedEntity->transform.rotation);
