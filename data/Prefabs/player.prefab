@@ -1,0 +1,35 @@
+{
+    "name": "player",
+    "sceneData": {
+        "behaviours": [
+            {
+                "entityID": 1,
+                "hash": 3757936288
+            }
+        ],
+        "entities": [
+            {
+                "id": 1,
+                "name": "player",
+                "transform": {
+                    "position": [
+                        -14.735077857971191,
+                        84.01000213623047
+                    ],
+                    "rotation": 0.0,
+                    "scale": [
+                        0.5,
+                        1.0
+                    ]
+                }
+            }
+        ],
+        "spriteRenderers": [
+            {
+                "atlasIndex": 5,
+                "entityID": 1,
+                "spriteID": 393035407
+            }
+        ]
+    }
+}

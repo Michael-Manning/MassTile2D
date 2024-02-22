@@ -1,22 +1,17 @@
 
 Near roadmap:
-- get rid of selectedEntity index. Only use selectedEntity pointer for selectable
-- finish up rigidbody stuff
-- deserializing a rigidbody into the scene needs to set the position. maybe serialize the position of the fixture within the rigidboy serialization itself?
-- test prefabs with rigidbodies, test cloning entities
-- give bodies custody of coliders and don't use shared_ptr
 - test packed assets
 - test publish build
-- collision positions not working
-- cannot close application with entities in scene
-- emplace rigibodies everywhere. Add false assertion to destructor to verify
 
-- move all serialize function to source files instead of ecs.cpp
+
 
 ---- Test:
 - entity deleation
 - nested prefab with all component types
 - full serialization setup and publish build
+
+
+- move all serialize function to source files instead of ecs.cpp
 
 - switch all deserialization functions to constructors for uniformity, simplicity, as well as slight performance boost as components could all
 be emplaced into maps instead of constructed, coppied, and destructed;

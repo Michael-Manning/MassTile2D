@@ -116,5 +116,5 @@ private:
 
 	GraphicsTemplate pipeline;
 
-	std::shared_ptr<VKEngine> engine;
+	VKEngine* engine;
 };

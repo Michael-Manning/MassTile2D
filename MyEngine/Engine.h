@@ -98,6 +98,9 @@ public:
 		DebugLog("Engine created");
 	}
 
+	~Engine() {
+	}
+
 	void Start(const VideoSettings& initialSettings, AssetManager::AssetPaths assetPaths);
 	void ApplyNewVideoSettings(const VideoSettings settings);
 

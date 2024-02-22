@@ -108,7 +108,7 @@ namespace {
 	//	return Combo(label, current_item, [](void* data, int idx, const char** out_text) { *out_text = ((const std::vector<std::string>*)data)[idx].c_str(); return true; }, (void*)&items, items_count, height_in_items);
 	//}
 
-	const float leftPanelWindowWidth = 200;
+	const float leftPanelWindowWidth = 220;
 	const float inspectorWindowWidth = 300;
 }
 
@@ -430,14 +430,12 @@ void Editor::controlWindow() {
 
 void Editor::EntitySelectableTree(int& index, Entity* entity, Scene* scene) {
 
-	if (Selectable(entity->name.c_str(), entity == selectedEntity)) {
+	if (Selectable((entity->name + "##" + to_string(index)).c_str(), entity == selectedEntity)) {
 		clearInspectorSelection();
-		selectedEntityIndex = index;
 
 		// already selected. deselect
 		if (selectedEntity == entity) {
 			selectedEntity = nullptr;
-			selectedEntityIndex = -1;
 		}
 		// select new
 		else {
@@ -446,21 +444,18 @@ void Editor::EntitySelectableTree(int& index, Entity* entity, Scene* scene) {
 	}
 
 	if (ImGui::BeginPopupContextItem()) {
-		selectedEntityIndex = index;
 		index++;
 		if (ImGui::MenuItem("Create child")) {
 			auto child = scene->CreateEntity({}, "", true);
 			scene->SetEntityAsChild(entity, child);
 			child->name = selectedScene->GetNoneConflictingEntityName(child, entity);
 			selectedEntity = nullptr;
-			selectedEntityIndex = -1;
 			ImGui::EndPopup();
 			return;
 		}
 		if (ImGui::MenuItem("Delete")) {
 			scene->DeleteEntity(entity->ID, true);
 			selectedEntity = nullptr;
-			selectedEntityIndex = -1;
 			ImGui::EndPopup();
 			return;
 		}
@@ -474,13 +469,11 @@ void Editor::EntitySelectableTree(int& index, Entity* entity, Scene* scene) {
 				newEntity->name = selectedScene->GetNoneConflictingEntityName(newEntity, nullptr);
 			}
 			selectedEntity = nullptr;
-			selectedEntityIndex = -1;
 			ImGui::EndPopup();
 			return;
 		}
 		if (ImGui::MenuItem("Save as prefab")) {
 			selectedEntity = nullptr;
-			selectedEntityIndex = -1;
 			ImGui::EndPopup();
 
 			//char filename[MAX_PATH];
@@ -1016,7 +1009,6 @@ void Editor::OpenPreviewWindowWithPrefab(Prefab& prefab) {
 	topLevelPrefabPreview = entityPreviewScene->Instantiate(prefab);
 
 	selectedEntity = nullptr;
-	selectedEntityIndex = -1;
 }
 
 void Editor::closePreviewWindow() {

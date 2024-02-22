@@ -71,7 +71,7 @@ public:
 	};
 
 
-	virtual std::unique_ptr<Behaviour> clone(Entity* entity = nullptr) const = 0;
+	virtual std::unique_ptr<Behaviour> clone(Entity* entity, ComponentAccessor * accessor) const = 0;
 
 	const behavioiurHash Hash;
 
@@ -141,10 +141,11 @@ private:
 
 #define BEHAVIOUR_CONSTUCTOR(c) c(behavioiurHash b, Entity* e) : Behaviour(b, e)
 
-#define BEHAVIOUR_CLONE(c)     std::unique_ptr<Behaviour> clone(Entity* entity = nullptr) const override { \
+#define BEHAVIOUR_CLONE(c)     std::unique_ptr<Behaviour> clone(Entity* entity, ComponentAccessor * accessor) const override { \
 auto copy = std::make_unique<c>(*this); \
 if(entity != nullptr){ \
 copy->_setEntity(entity); \
+copy->_SetComponentAccessor(accessor); \
 } \
 return copy; \
 };

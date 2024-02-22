@@ -284,7 +284,7 @@ Entity* Scene::DuplicateEntity(Entity* original) {
 		if (sceneData.behaviours.contains(ID)) {
 			entityID newID = IDRemap.at(ID);
 			Entity* be = &sceneData.entities.at(newID);
-			sceneData.behaviours.emplace(newID, sceneData.behaviours.at(ID)->clone(be));
+			sceneData.behaviours.emplace(newID, sceneData.behaviours.at(ID)->clone(be, componentAccessor.get()));
 		}
 
 		// copy all components
@@ -342,7 +342,7 @@ Entity* Scene::Instantiate(Prefab& prefab, std::string name, glm::vec2 position,
 	for (auto& [ID, b] : prefab.sceneData.behaviours) {
 		entityID newID = IDRemap.at(ID);
 		Entity* be = &sceneData.entities.at(newID);
-		sceneData.behaviours.emplace(newID, b->clone(be));
+		sceneData.behaviours.emplace(newID, b->clone(be, componentAccessor.get()));
 	}
 
 	for (auto& [ID, r] : prefab.sceneData.colorRenderers)
@@ -513,5 +513,10 @@ std::string Scene::GetNoneConflictingEntityName(Entity* entity, Entity* hierarch
 	return newName;
 }
 
+#else
+std::string Scene::GetNoneConflictingEntityName(Entity* entity, Entity* hierarchyLevel) {
+	assert(false);
+	return "";
+}
 
 #endif

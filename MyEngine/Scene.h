@@ -132,9 +132,8 @@ private:
 
 	//robin_hood::unordered_flat_map<std::string, std::function<std::unique_ptr<Behaviour>(ComponentAccessor*, Entity*)>> stringBehaviourMap;
 
-#ifdef USING_EDITOR
+
 public:
 	std::string GetNoneConflictingEntityName(Entity* entity, Entity* hierarchyLevel);
-#endif
 
 };

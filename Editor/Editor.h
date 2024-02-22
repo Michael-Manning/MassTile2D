@@ -119,7 +119,6 @@ private:
 	int comboSelected = -1;
 	int fontComboSelected = -1;
 
-	int selectedEntityIndex = -1;
 	Entity* selectedEntity = nullptr;
 
 	Scene* selectedScene = nullptr;
@@ -128,7 +127,6 @@ private:
 	int selectedSceneIndex = 0;
 
 	void clearInspectorSelection() {
-		selectedEntityIndex = -1;
 		selectedEntity = nullptr;
 		selectedPrefabIndex = -1;
 

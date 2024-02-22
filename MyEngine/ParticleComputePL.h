@@ -61,7 +61,7 @@ private:
 
 	ComputeTemplate pipeline;
 
-	std::shared_ptr<VKEngine> engine;
+	VKEngine* engine;
 
 	DeviceBuffer* particleDataBuffer;
 

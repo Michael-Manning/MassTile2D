@@ -71,6 +71,8 @@ const BehaviourFactoryMap BehaviorMap = {
 };
 
 
+
+
 static vec2 GcameraPos;
 TileWorld* tileWolrdGlobalRef = nullptr;
 
@@ -393,7 +395,7 @@ void worldDebug() {
 #endif
 }
 
-constexpr bool useTileWorld = false;
+constexpr bool useTileWorld = true;
 
 #ifdef  PUBLISH
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
@@ -452,6 +454,9 @@ int main() {
 		//auto testSprite = engine->assetManager->GetSprite("test_cat");
 		//Benchmark::BuildSpriteEntityStressTest(scene.get(), testSprite->ID); // 530fps avg
 	}
+
+	//auto ent = scene->CreateEntity();
+	//scene->DeleteEntity(ent->ID, false);
 
 	while (!engine->ShouldClose())
 	{

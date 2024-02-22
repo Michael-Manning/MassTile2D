@@ -4,6 +4,7 @@
 #include <type_traits>
 #include <set>
 #include <string>
+#include <robin_hood.h>
 
 //#include <functional>
 //#include <iomanip>
@@ -68,7 +69,10 @@ public:
 		generatedIDs.clear();
 	}
 
+	~IDGenerator() {
+	}
+
 private:
 	T lastID = 0;
-	std::set<T> generatedIDs;
+	robin_hood::unordered_flat_set<T> generatedIDs;
 };

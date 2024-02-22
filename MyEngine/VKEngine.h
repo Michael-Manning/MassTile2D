@@ -116,6 +116,9 @@ public:
 		defaultThreadContext.id = contextIDGenerator.GenerateID();
 	}
 
+	~VKEngine() {
+	}
+
 	struct ThreadContext {
 		vk::Fence SingleUseCommandFence = nullptr;
 		vk::CommandPool commandPool = nullptr;
