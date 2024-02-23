@@ -156,63 +156,79 @@ SceneData::SceneData(const AssetPack::SceneData* sceneData) {
 		iterator->second.persistent = true;
 	}
 
-	for (size_t i = 0; i < sceneData->behaviors()->size(); i++)
-	{
-		auto pack = sceneData->behaviors()->Get(i);
-		entityID entID = pack->entityID();
-		behavioiurHash hash = pack->hash();
-		
-		auto [iter, inserted] = behaviours.emplace(entID, BehaviorMap.at(hash).second(hash, &entities.at(entID)));
 
-		std::vector<SerializableProperty> props = iter->second->getProperties();
-
-		for (size_t j = 0; j < pack->properties()->size(); j++)
+	if (sceneData->behaviours() != nullptr) {
+		for (size_t i = 0; i < sceneData->behaviours()->size(); i++)
 		{
-			auto packProp = pack->properties()->Get(j);
-			std::string pname = packProp->name()->str();
+			auto pack = sceneData->behaviours()->Get(i);
+			entityID entID = pack->entityID();
+			behavioiurHash hash = pack->hash();
 
-			for (auto& prop : props)
-			{
-				if (pname == prop.name) {
-					assert(prop.type == static_cast<SerializableProperty::Type>(packProp->type()));
-					prop.assignValue(packProp);
-					break;
+			auto [iter, inserted] = behaviours.emplace(entID, BehaviorMap.at(hash).second(hash, &entities.at(entID)));
+
+			std::vector<SerializableProperty> props = iter->second->getProperties();
+
+			if (pack->properties() != nullptr) {
+				for (size_t j = 0; j < pack->properties()->size(); j++)
+				{
+					auto packProp = pack->properties()->Get(j);
+					std::string pname = packProp->name()->str();
+
+					for (auto& prop : props)
+					{
+						if (pname == prop.name) {
+							assert(prop.type == static_cast<SerializableProperty::Type>(packProp->type()));
+							prop.assignValue(packProp);
+							break;
+						}
+					}
+
 				}
 			}
-
 		}
 	}
 
-	for (size_t i = 0; i < sceneData->colorRenderers()->size(); i++) {
-		ColorRenderer r = ColorRenderer::deserializeFlatbuffers(sceneData->colorRenderers()->Get(i));
-		entityID entID = sceneData->colorRenderers()->Get(i)->entityID();
-		colorRenderers.insert({ entID, r });
+	if (sceneData->colorRenderers() != nullptr) {
+		for (size_t i = 0; i < sceneData->colorRenderers()->size(); i++) {
+			ColorRenderer r = ColorRenderer::deserializeFlatbuffers(sceneData->colorRenderers()->Get(i));
+			entityID entID = sceneData->colorRenderers()->Get(i)->entityID();
+			colorRenderers.insert({ entID, r });
+		}
 	}
-	for (size_t i = 0; i < sceneData->spriteRenderers()->size(); i++) {
-		auto pack = sceneData->spriteRenderers()->Get(i);
-		entityID entID = sceneData->spriteRenderers()->Get(i)->entityID();
-		spriteRenderers.emplace(
-			std::piecewise_construct,
-			std::forward_as_tuple(entID),
-			std::forward_as_tuple(pack, &entities.at(entID)));
+	if (sceneData->spriteRenderers() != nullptr) {
+		for (size_t i = 0; i < sceneData->spriteRenderers()->size(); i++) {
+			auto pack = sceneData->spriteRenderers()->Get(i);
+			entityID entID = sceneData->spriteRenderers()->Get(i)->entityID();
+			spriteRenderers.emplace(
+				std::piecewise_construct,
+				std::forward_as_tuple(entID),
+				std::forward_as_tuple(pack, &entities.at(entID)));
+		}
 	}
-	for (size_t i = 0; i < sceneData->textRenderers()->size(); i++) {
-		TextRenderer r = TextRenderer::deserializeFlatbuffers(sceneData->textRenderers()->Get(i));
-		entityID entID = sceneData->textRenderers()->Get(i)->entityID();
-		textRenderers.insert({ entID, r });
+	if (sceneData->textRenderers() != nullptr) {
+		for (size_t i = 0; i < sceneData->textRenderers()->size(); i++) {
+			TextRenderer r = TextRenderer::deserializeFlatbuffers(sceneData->textRenderers()->Get(i));
+			entityID entID = sceneData->textRenderers()->Get(i)->entityID();
+			textRenderers.insert({ entID, r });
+		}
 	}
-	for (size_t i = 0; i < sceneData->particleSystemRenderers()->size(); i++) {
-		entityID entID = sceneData->particleSystemRenderers()->Get(i)->entityID();
-		particleSystemRenderers.emplace(entID, sceneData->particleSystemRenderers()->Get(i));
+	if (sceneData->particleSystemRenderers() != nullptr) {
+		for (size_t i = 0; i < sceneData->particleSystemRenderers()->size(); i++) {
+			entityID entID = sceneData->particleSystemRenderers()->Get(i)->entityID();
+			particleSystemRenderers.emplace(entID, sceneData->particleSystemRenderers()->Get(i));
+		}
 	}
-
-	for (size_t i = 0; i < sceneData->rigidbodies()->size(); i++) {
-		auto pack = sceneData->rigidbodies()->Get(i);
-		rigidbodies.emplace(pack->entityID(), pack);
+	if (sceneData->rigidbodies() != nullptr) {
+		for (size_t i = 0; i < sceneData->rigidbodies()->size(); i++) {
+			auto pack = sceneData->rigidbodies()->Get(i);
+			rigidbodies.emplace(pack->entityID(), pack);
+		}
 	}
-	for (size_t i = 0; i < sceneData->staticbodies()->size(); i++) {
-		auto pack = sceneData->staticbodies()->Get(i);
-		staticbodies.emplace(pack->entityID(), pack);
+	if (sceneData->staticbodies() != nullptr) {
+		for (size_t i = 0; i < sceneData->staticbodies()->size(); i++) {
+			auto pack = sceneData->staticbodies()->Get(i);
+			staticbodies.emplace(pack->entityID(), pack);
+		}
 	}
 }
 

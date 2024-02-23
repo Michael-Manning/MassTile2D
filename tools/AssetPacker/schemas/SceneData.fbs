@@ -6,7 +6,7 @@ table SceneData{
    name:string;
 
    entities:[Entity];
-   behaviors:[Behaviour];
+   behaviours:[Behaviour];
 
    colorRenderers:[ColorRenderer];
    spriteRenderers:[SpriteRenderer];

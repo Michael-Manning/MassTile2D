@@ -49,7 +49,6 @@ table TextRenderer{
 
 struct Collider{
     type:int;
-    radius:float;
     scale:vec2;
 }
 
@@ -58,7 +57,7 @@ struct Rigidbody{
     collider:Collider;
     linearDamping:float;
     angularDamping:float;
-    fixedRotation:float;
+    fixedRotation:bool;
     bullet:bool;
     gravityScale:float;
     friction:float;
@@ -98,6 +97,8 @@ table Entity{
    id:uint;
    name:string;
    transform:Transform;
+   parent:uint = 0; // 0 == NULL_ENTITY
+   children:[uint];
 }
 
 enum SerializableType : int{

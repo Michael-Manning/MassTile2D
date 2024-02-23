@@ -99,7 +99,13 @@
             {
                 "entityID": 1,
                 "fontID": 1253197706,
-                "text": "Very Epic Text"
+                "text": "Very Epic Text",
+				"color": [
+                        1.0,
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
             }
         ]
     }

@@ -39,12 +39,7 @@ public:
 	vec2 velocity = vec2(0.0f);
 	float grounded = true;
 
-
-	std::shared_ptr<Player> playerRef;
-	void setPlayerRef(std::shared_ptr<Player> playerRef) {
-		this->playerRef = playerRef;
-	}
-
+	Player* playerRef = nullptr;
 
 	bool queryTile(vec2 pos) {
 		int tileX = pos.x / tileWorldSize + mapW / 2;
@@ -97,6 +92,8 @@ public:
 		tpoints[7] = vec2(0, sy);
 		tpoints[8] = vec2(-sx, -sy / 2.0f);
 		tpoints[9] = vec2(sx, -sy / 2.0f);
+
+		this->playerRef = reinterpret_cast<Player*>(global::player);
 	};
 
 	float animationTimer = 0;

@@ -25,6 +25,8 @@ void Font::serializeJson(std::string filepath) const{
 	j["firstChar"] = firstChar;
 	j["charCount"] = charCount;
 	j["fontHeight"] = fontHeight;
+	j["baseline"] = baseline;
+	j["lineGap"] = baseline;
 	j["atlas"] = atlas;
 	j["ID"] = ID;
 

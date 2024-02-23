@@ -6,8 +6,6 @@
 #include "typedefs.h"
 
 
-// TODO: store engine in class instead of passing it all over the place
-
 class Editor {
 public:
 

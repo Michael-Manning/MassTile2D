@@ -382,31 +382,25 @@ FLATBUFFERS_STRUCT_END(ColorRenderer, 24);
 FLATBUFFERS_MANUALLY_ALIGNED_STRUCT(4) Collider FLATBUFFERS_FINAL_CLASS {
  private:
   int32_t type_;
-  float radius_;
   AssetPack::vec2 scale_;
 
  public:
   Collider()
       : type_(0),
-        radius_(0),
         scale_() {
   }
-  Collider(int32_t _type, float _radius, const AssetPack::vec2 &_scale)
+  Collider(int32_t _type, const AssetPack::vec2 &_scale)
       : type_(::flatbuffers::EndianScalar(_type)),
-        radius_(::flatbuffers::EndianScalar(_radius)),
         scale_(_scale) {
   }
   int32_t type() const {
     return ::flatbuffers::EndianScalar(type_);
   }
-  float radius() const {
-    return ::flatbuffers::EndianScalar(radius_);
-  }
   const AssetPack::vec2 &scale() const {
     return scale_;
   }
 };
-FLATBUFFERS_STRUCT_END(Collider, 16);
+FLATBUFFERS_STRUCT_END(Collider, 12);
 
 FLATBUFFERS_MANUALLY_ALIGNED_STRUCT(4) Rigidbody FLATBUFFERS_FINAL_CLASS {
  private:
@@ -414,9 +408,9 @@ FLATBUFFERS_MANUALLY_ALIGNED_STRUCT(4) Rigidbody FLATBUFFERS_FINAL_CLASS {
   AssetPack::Collider collider_;
   float linearDamping_;
   float angularDamping_;
-  float fixedRotation_;
+  uint8_t fixedRotation_;
   uint8_t bullet_;
-  int8_t padding0__;  int16_t padding1__;
+  int16_t padding0__;
   float gravityScale_;
   float friction_;
   float density_;
@@ -431,29 +425,25 @@ FLATBUFFERS_MANUALLY_ALIGNED_STRUCT(4) Rigidbody FLATBUFFERS_FINAL_CLASS {
         fixedRotation_(0),
         bullet_(0),
         padding0__(0),
-        padding1__(0),
         gravityScale_(0),
         friction_(0),
         density_(0),
         restitution_(0) {
     (void)padding0__;
-    (void)padding1__;
   }
-  Rigidbody(uint32_t _entityID, const AssetPack::Collider &_collider, float _linearDamping, float _angularDamping, float _fixedRotation, bool _bullet, float _gravityScale, float _friction, float _density, float _restitution)
+  Rigidbody(uint32_t _entityID, const AssetPack::Collider &_collider, float _linearDamping, float _angularDamping, bool _fixedRotation, bool _bullet, float _gravityScale, float _friction, float _density, float _restitution)
       : entityID_(::flatbuffers::EndianScalar(_entityID)),
         collider_(_collider),
         linearDamping_(::flatbuffers::EndianScalar(_linearDamping)),
         angularDamping_(::flatbuffers::EndianScalar(_angularDamping)),
-        fixedRotation_(::flatbuffers::EndianScalar(_fixedRotation)),
+        fixedRotation_(::flatbuffers::EndianScalar(static_cast<uint8_t>(_fixedRotation))),
         bullet_(::flatbuffers::EndianScalar(static_cast<uint8_t>(_bullet))),
         padding0__(0),
-        padding1__(0),
         gravityScale_(::flatbuffers::EndianScalar(_gravityScale)),
         friction_(::flatbuffers::EndianScalar(_friction)),
         density_(::flatbuffers::EndianScalar(_density)),
         restitution_(::flatbuffers::EndianScalar(_restitution)) {
     (void)padding0__;
-    (void)padding1__;
   }
   uint32_t entityID() const {
     return ::flatbuffers::EndianScalar(entityID_);
@@ -467,8 +457,8 @@ FLATBUFFERS_MANUALLY_ALIGNED_STRUCT(4) Rigidbody FLATBUFFERS_FINAL_CLASS {
   float angularDamping() const {
     return ::flatbuffers::EndianScalar(angularDamping_);
   }
-  float fixedRotation() const {
-    return ::flatbuffers::EndianScalar(fixedRotation_);
+  bool fixedRotation() const {
+    return ::flatbuffers::EndianScalar(fixedRotation_) != 0;
   }
   bool bullet() const {
     return ::flatbuffers::EndianScalar(bullet_) != 0;
@@ -486,7 +476,7 @@ FLATBUFFERS_MANUALLY_ALIGNED_STRUCT(4) Rigidbody FLATBUFFERS_FINAL_CLASS {
     return ::flatbuffers::EndianScalar(restitution_);
   }
 };
-FLATBUFFERS_STRUCT_END(Rigidbody, 52);
+FLATBUFFERS_STRUCT_END(Rigidbody, 44);
 
 FLATBUFFERS_MANUALLY_ALIGNED_STRUCT(4) Staticbody FLATBUFFERS_FINAL_CLASS {
  private:
@@ -509,7 +499,7 @@ FLATBUFFERS_MANUALLY_ALIGNED_STRUCT(4) Staticbody FLATBUFFERS_FINAL_CLASS {
     return collider_;
   }
 };
-FLATBUFFERS_STRUCT_END(Staticbody, 20);
+FLATBUFFERS_STRUCT_END(Staticbody, 16);
 
 FLATBUFFERS_MANUALLY_ALIGNED_STRUCT(4) ParticleSystemConfiguration FLATBUFFERS_FINAL_CLASS {
  private:
@@ -706,7 +696,9 @@ struct Entity FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_ID = 4,
     VT_NAME = 6,
-    VT_TRANSFORM = 8
+    VT_TRANSFORM = 8,
+    VT_PARENT = 10,
+    VT_CHILDREN = 12
   };
   uint32_t id() const {
     return GetField<uint32_t>(VT_ID, 0);
@@ -717,12 +709,21 @@ struct Entity FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   const AssetPack::Transform *transform() const {
     return GetStruct<const AssetPack::Transform *>(VT_TRANSFORM);
   }
+  uint32_t parent() const {
+    return GetField<uint32_t>(VT_PARENT, 0);
+  }
+  const ::flatbuffers::Vector<uint32_t> *children() const {
+    return GetPointer<const ::flatbuffers::Vector<uint32_t> *>(VT_CHILDREN);
+  }
   bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<uint32_t>(verifier, VT_ID, 4) &&
            VerifyOffset(verifier, VT_NAME) &&
            verifier.VerifyString(name()) &&
            VerifyField<AssetPack::Transform>(verifier, VT_TRANSFORM, 4) &&
+           VerifyField<uint32_t>(verifier, VT_PARENT, 4) &&
+           VerifyOffset(verifier, VT_CHILDREN) &&
+           verifier.VerifyVector(children()) &&
            verifier.EndTable();
   }
 };
@@ -740,6 +741,12 @@ struct EntityBuilder {
   void add_transform(const AssetPack::Transform *transform) {
     fbb_.AddStruct(Entity::VT_TRANSFORM, transform);
   }
+  void add_parent(uint32_t parent) {
+    fbb_.AddElement<uint32_t>(Entity::VT_PARENT, parent, 0);
+  }
+  void add_children(::flatbuffers::Offset<::flatbuffers::Vector<uint32_t>> children) {
+    fbb_.AddOffset(Entity::VT_CHILDREN, children);
+  }
   explicit EntityBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
@@ -755,8 +762,12 @@ inline ::flatbuffers::Offset<Entity> CreateEntity(
     ::flatbuffers::FlatBufferBuilder &_fbb,
     uint32_t id = 0,
     ::flatbuffers::Offset<::flatbuffers::String> name = 0,
-    const AssetPack::Transform *transform = nullptr) {
+    const AssetPack::Transform *transform = nullptr,
+    uint32_t parent = 0,
+    ::flatbuffers::Offset<::flatbuffers::Vector<uint32_t>> children = 0) {
   EntityBuilder builder_(_fbb);
+  builder_.add_children(children);
+  builder_.add_parent(parent);
   builder_.add_transform(transform);
   builder_.add_name(name);
   builder_.add_id(id);
@@ -767,13 +778,18 @@ inline ::flatbuffers::Offset<Entity> CreateEntityDirect(
     ::flatbuffers::FlatBufferBuilder &_fbb,
     uint32_t id = 0,
     const char *name = nullptr,
-    const AssetPack::Transform *transform = nullptr) {
+    const AssetPack::Transform *transform = nullptr,
+    uint32_t parent = 0,
+    const std::vector<uint32_t> *children = nullptr) {
   auto name__ = name ? _fbb.CreateString(name) : 0;
+  auto children__ = children ? _fbb.CreateVector<uint32_t>(*children) : 0;
   return AssetPack::CreateEntity(
       _fbb,
       id,
       name__,
-      transform);
+      transform,
+      parent,
+      children__);
 }
 
 struct U_int FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {

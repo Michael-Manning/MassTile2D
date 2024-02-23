@@ -21,7 +21,6 @@ constexpr bool usingEditor = true;
 constexpr bool usingEditor = false;
 #endif
 
-
 void AssetManager::LoadAllSprites(bool loadResources) {
 
 	assert(allLoadedSprites == false);
@@ -43,9 +42,9 @@ void AssetManager::LoadAllSprites(bool loadResources) {
 		Sprite::deserializeJson(path, sprite);
 #endif
 
-		if (loadResources && resourceManager->HasTexture(sprite->textureID) == false) {
+		if (loadResources && resourceManager->HasTexture(sprite->imageFileName) == false) {
 #ifdef USE_PACKED_ASSETS
-			uint32_t fileSize = resourceFileSizes[sprite->imageFileName];
+			uint32_t fileSize = resourceFileSizes.at(sprite->imageFileName);
 			vector<uint8_t> fileData;
 			fileData.resize(fileSize);
 			GetPackedResourceData(fileData.data(), resourceFileOffsets.at(sprite->imageFileName), fileSize);
@@ -76,9 +75,9 @@ void AssetManager::LoadSprite(spriteID spriteID, bool loadResources) {
 	Sprite::deserializeJson(spritePathsByID.at(spriteID), sprite);
 #endif
 
-	if (loadResources && resourceManager->HasTexture(sprite->textureID) == false) {
+	if (loadResources && resourceManager->HasTexture(sprite->imageFileName) == false) {
 #ifdef USE_PACKED_ASSETS
-		uint32_t fileSize = resourceFileSizes[sprite->imageFileName];
+		uint32_t fileSize = resourceFileSizes.at(sprite->imageFileName);
 		vector<uint8_t> fileData;
 		fileData.resize(fileSize);
 		GetPackedResourceData(fileData.data(), resourceFileOffsets.at(sprite->imageFileName), fileSize);
@@ -109,8 +108,7 @@ void AssetManager::LoadSprite(std::string name, bool loadResources) {
 	Sprite* sprite = &iter->second;
 #endif
 
-	if (loadResources && resourceManager->HasTexture(sprite->textureID) == false) {
-
+	if (loadResources && resourceManager->HasTexture(sprite->imageFileName) == false) {
 #ifdef USE_PACKED_ASSETS
 		uint32_t fileSize = resourceFileSizes[sprite->imageFileName];
 		vector<uint8_t> fileData;

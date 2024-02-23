@@ -25,7 +25,7 @@ struct SceneData FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_NAME = 4,
     VT_ENTITIES = 6,
-    VT_BEHAVIORS = 8,
+    VT_BEHAVIOURS = 8,
     VT_COLORRENDERERS = 10,
     VT_SPRITERENDERERS = 12,
     VT_TEXTRENDERERS = 14,
@@ -39,8 +39,8 @@ struct SceneData FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   const ::flatbuffers::Vector<::flatbuffers::Offset<AssetPack::Entity>> *entities() const {
     return GetPointer<const ::flatbuffers::Vector<::flatbuffers::Offset<AssetPack::Entity>> *>(VT_ENTITIES);
   }
-  const ::flatbuffers::Vector<::flatbuffers::Offset<AssetPack::Behaviour>> *behaviors() const {
-    return GetPointer<const ::flatbuffers::Vector<::flatbuffers::Offset<AssetPack::Behaviour>> *>(VT_BEHAVIORS);
+  const ::flatbuffers::Vector<::flatbuffers::Offset<AssetPack::Behaviour>> *behaviours() const {
+    return GetPointer<const ::flatbuffers::Vector<::flatbuffers::Offset<AssetPack::Behaviour>> *>(VT_BEHAVIOURS);
   }
   const ::flatbuffers::Vector<const AssetPack::ColorRenderer *> *colorRenderers() const {
     return GetPointer<const ::flatbuffers::Vector<const AssetPack::ColorRenderer *> *>(VT_COLORRENDERERS);
@@ -67,9 +67,9 @@ struct SceneData FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
            VerifyOffset(verifier, VT_ENTITIES) &&
            verifier.VerifyVector(entities()) &&
            verifier.VerifyVectorOfTables(entities()) &&
-           VerifyOffset(verifier, VT_BEHAVIORS) &&
-           verifier.VerifyVector(behaviors()) &&
-           verifier.VerifyVectorOfTables(behaviors()) &&
+           VerifyOffset(verifier, VT_BEHAVIOURS) &&
+           verifier.VerifyVector(behaviours()) &&
+           verifier.VerifyVectorOfTables(behaviours()) &&
            VerifyOffset(verifier, VT_COLORRENDERERS) &&
            verifier.VerifyVector(colorRenderers()) &&
            VerifyOffset(verifier, VT_SPRITERENDERERS) &&
@@ -97,8 +97,8 @@ struct SceneDataBuilder {
   void add_entities(::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<AssetPack::Entity>>> entities) {
     fbb_.AddOffset(SceneData::VT_ENTITIES, entities);
   }
-  void add_behaviors(::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<AssetPack::Behaviour>>> behaviors) {
-    fbb_.AddOffset(SceneData::VT_BEHAVIORS, behaviors);
+  void add_behaviours(::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<AssetPack::Behaviour>>> behaviours) {
+    fbb_.AddOffset(SceneData::VT_BEHAVIOURS, behaviours);
   }
   void add_colorRenderers(::flatbuffers::Offset<::flatbuffers::Vector<const AssetPack::ColorRenderer *>> colorRenderers) {
     fbb_.AddOffset(SceneData::VT_COLORRENDERERS, colorRenderers);
@@ -133,7 +133,7 @@ inline ::flatbuffers::Offset<SceneData> CreateSceneData(
     ::flatbuffers::FlatBufferBuilder &_fbb,
     ::flatbuffers::Offset<::flatbuffers::String> name = 0,
     ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<AssetPack::Entity>>> entities = 0,
-    ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<AssetPack::Behaviour>>> behaviors = 0,
+    ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<AssetPack::Behaviour>>> behaviours = 0,
     ::flatbuffers::Offset<::flatbuffers::Vector<const AssetPack::ColorRenderer *>> colorRenderers = 0,
     ::flatbuffers::Offset<::flatbuffers::Vector<const AssetPack::SpriteRenderer *>> spriteRenderers = 0,
     ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<AssetPack::TextRenderer>>> textRenderers = 0,
@@ -147,7 +147,7 @@ inline ::flatbuffers::Offset<SceneData> CreateSceneData(
   builder_.add_textRenderers(textRenderers);
   builder_.add_spriteRenderers(spriteRenderers);
   builder_.add_colorRenderers(colorRenderers);
-  builder_.add_behaviors(behaviors);
+  builder_.add_behaviours(behaviours);
   builder_.add_entities(entities);
   builder_.add_name(name);
   return builder_.Finish();
@@ -157,7 +157,7 @@ inline ::flatbuffers::Offset<SceneData> CreateSceneDataDirect(
     ::flatbuffers::FlatBufferBuilder &_fbb,
     const char *name = nullptr,
     const std::vector<::flatbuffers::Offset<AssetPack::Entity>> *entities = nullptr,
-    const std::vector<::flatbuffers::Offset<AssetPack::Behaviour>> *behaviors = nullptr,
+    const std::vector<::flatbuffers::Offset<AssetPack::Behaviour>> *behaviours = nullptr,
     const std::vector<AssetPack::ColorRenderer> *colorRenderers = nullptr,
     const std::vector<AssetPack::SpriteRenderer> *spriteRenderers = nullptr,
     const std::vector<::flatbuffers::Offset<AssetPack::TextRenderer>> *textRenderers = nullptr,
@@ -166,7 +166,7 @@ inline ::flatbuffers::Offset<SceneData> CreateSceneDataDirect(
     const std::vector<AssetPack::Staticbody> *staticbodies = nullptr) {
   auto name__ = name ? _fbb.CreateString(name) : 0;
   auto entities__ = entities ? _fbb.CreateVector<::flatbuffers::Offset<AssetPack::Entity>>(*entities) : 0;
-  auto behaviors__ = behaviors ? _fbb.CreateVector<::flatbuffers::Offset<AssetPack::Behaviour>>(*behaviors) : 0;
+  auto behaviours__ = behaviours ? _fbb.CreateVector<::flatbuffers::Offset<AssetPack::Behaviour>>(*behaviours) : 0;
   auto colorRenderers__ = colorRenderers ? _fbb.CreateVectorOfStructs<AssetPack::ColorRenderer>(*colorRenderers) : 0;
   auto spriteRenderers__ = spriteRenderers ? _fbb.CreateVectorOfStructs<AssetPack::SpriteRenderer>(*spriteRenderers) : 0;
   auto textRenderers__ = textRenderers ? _fbb.CreateVector<::flatbuffers::Offset<AssetPack::TextRenderer>>(*textRenderers) : 0;
@@ -177,7 +177,7 @@ inline ::flatbuffers::Offset<SceneData> CreateSceneDataDirect(
       _fbb,
       name__,
       entities__,
-      behaviors__,
+      behaviours__,
       colorRenderers__,
       spriteRenderers__,
       textRenderers__,

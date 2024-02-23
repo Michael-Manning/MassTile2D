@@ -40,9 +40,10 @@ public:
 		return *this;
 	};
 	
-	BinaryWriter& operator<<(std::string& value) {
+	BinaryWriter& operator<<(const std::string& value) {
 		assert(value.length() < BinaryWriter_MAX_STRING_SIZE);
-		write((uint32_t)value.length());
+		uint32_t testt = (uint32_t)value.length();
+		write(testt);
 		outStream->write(reinterpret_cast<const char*>(value.c_str()), value.length());
 		return *this;
 	};

@@ -22,6 +22,8 @@ const auto Prefab_extension = ".prefab";
 class Prefab {
 public:
 
+	Prefab() {}
+
 	std::string name;
 
 	SceneData sceneData;

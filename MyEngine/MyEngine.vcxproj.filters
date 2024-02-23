@@ -51,9 +51,6 @@
     <ClCompile Include="engine.cpp">
       <Filter>Source Files\Engine</Filter>
     </ClCompile>
-    <ClCompile Include="IDGenerator.h">
-      <Filter>Source Files\Engine</Filter>
-    </ClCompile>
     <ClCompile Include="vulkan_engine.cpp">
       <Filter>Source Files\vulkan</Filter>
     </ClCompile>
@@ -78,9 +75,6 @@
     <ClCompile Include="tilemapPL.cpp">
       <Filter>Source Files\vulkan\piplines</Filter>
     </ClCompile>
-    <ClCompile Include="globalBufferDefinitions.h">
-      <Filter>Source Files\vulkan</Filter>
-    </ClCompile>
     <ClCompile Include="LightingComputePL.cpp">
       <Filter>Source Files\vulkan\piplines</Filter>
     </ClCompile>
@@ -96,9 +90,6 @@
     <ClCompile Include="TextPL.cpp">
       <Filter>Source Files\vulkan\piplines</Filter>
     </ClCompile>
-    <ClCompile Include="TextRenderer.h">
-      <Filter>Source Files\Engine\ECS\Components</Filter>
-    </ClCompile>
     <ClCompile Include="Scene.cpp">
       <Filter>Source Files\Engine\ECS\Assets</Filter>
     </ClCompile>
@@ -107,9 +98,6 @@
     </ClCompile>
     <ClCompile Include="Audio.cpp">
       <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="GlobalImageDescriptor.h">
-      <Filter>Source Files\vulkan</Filter>
     </ClCompile>
     <ClCompile Include="ComputeTemplate.cpp">
       <Filter>Source Files\vulkan\piplines</Filter>
@@ -322,6 +310,18 @@
     </ClInclude>
     <ClInclude Include="SlotManager.h">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TextRenderer.h">
+      <Filter>Source Files\Engine\ECS\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="IDGenerator.h">
+      <Filter>Source Files\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="globalBufferDefinitions.h">
+      <Filter>Source Files\vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="GlobalImageDescriptor.h">
+      <Filter>Source Files\vulkan</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

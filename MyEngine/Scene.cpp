@@ -105,9 +105,7 @@ std::shared_ptr<Scene> Scene::deserializeJson(std::string filename, AssetManager
 	SceneData::deserializeJson(j["sceneData"], &scene->sceneData);
 
 	for (auto& [entID, sr] : scene->sceneData.spriteRenderers)
-	{
 		sr._spriteCache = assetManager->GetSprite(sr.sprite);
-	}
 
 	for (auto& [id, r] : scene->sceneData.rigidbodies)
 		scene->linkRigidbodyB2D(id, &r);
@@ -123,6 +121,9 @@ std::shared_ptr<Scene> Scene::deserializeJson(std::string filename, AssetManager
 Scene::Scene(const AssetPack::Scene* scene, AssetManager* assetManager) : assetManager(assetManager), bworld(gravity), sceneData(scene->sceneData()) {
 	
 	name = scene->name()->str();
+
+	for (auto& [entID, sr] : sceneData.spriteRenderers)
+		sr._spriteCache = assetManager->GetSprite(sr.sprite);
 
 	for (auto& [id, r] : sceneData.rigidbodies)
 		linkRigidbodyB2D(id, &r);

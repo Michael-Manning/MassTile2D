@@ -22,33 +22,51 @@
 #include "Behaviour.h"
 
 
+namespace {
+	std::string flatbufferUnionTypeString(SerializableProperty::Type type) {
+		if (type == SerializableProperty::Type::INT)
+			return "U_int";
+		else if (type == SerializableProperty::Type::FLOAT)
+			return "U_float";
+		else if (type == SerializableProperty::Type::VEC2)
+			return "U_vec2";
+		else
+			assert(false);
+		return "";
+	}
+}
+
 nlohmann::json SerializableProperty::serializeJson() const {
 
 	nlohmann::json j;
 	j["type"] = type;
 	j["name"] = name;
 
-	if (type == SerializableProperty::Type::INT)
-		j["value"] = *reinterpret_cast<int*>(value);
-	else if (type == SerializableProperty::Type::FLOAT)
-		j["value"] = *reinterpret_cast<float*>(value);
-	else if (type == SerializableProperty::Type::VEC2)
-		j["value"] = toJson(*reinterpret_cast<glm::vec2*>(value));
-	else {
-		assert(false);
+	// have to format this in an unusual way so support automatic flatbuffer unions
+	j["value_type"] = flatbufferUnionTypeString(type);
+	nlohmann::json j2;
+	{
+		if (type == SerializableProperty::Type::INT)
+			j2["value"] = *reinterpret_cast<int*>(value);
+		else if (type == SerializableProperty::Type::FLOAT)
+			j2["value"] = *reinterpret_cast<float*>(value);
+		else if (type == SerializableProperty::Type::VEC2)
+			j2["value"] = toJson(*reinterpret_cast<glm::vec2*>(value));
+		else
+			assert(false);
 	}
-
+	j["value"] = j2;
 	return j;
 }
 
 
 void SerializableProperty::assignValue(const nlohmann::json& j) {
 	if (type == SerializableProperty::Type::INT)
-		*reinterpret_cast<int*>(value) = static_cast<int>(j["value"]);
+		*reinterpret_cast<int*>(value) = static_cast<int>(j["value"]["value"]);
 	else if (type == SerializableProperty::Type::FLOAT)
-		*reinterpret_cast<float*>(value) = static_cast<float>(j["value"]);
+		*reinterpret_cast<float*>(value) = static_cast<float>(j["value"]["value"]);
 	else if (type == SerializableProperty::Type::VEC2)
-		*reinterpret_cast<glm::vec2*>(value) = fromJson<glm::vec2>(j["value"]);
+		*reinterpret_cast<glm::vec2*>(value) = fromJson<glm::vec2>(j["value"]["value"]);
 	else {
 		assert(false);
 	}

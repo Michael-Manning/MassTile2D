@@ -1,0 +1,35 @@
+{
+    "name": "demon",
+    "sceneData": {
+        "behaviours": [
+            {
+                "entityID": 2,
+                "hash": 1644023240
+            }
+        ],
+        "entities": [
+            {
+                "id": 2,
+                "name": "demon",
+                "transform": {
+                    "position": [
+                        -12.0884428024292,
+                        93.86904907226563
+                    ],
+                    "rotation": 0.0,
+                    "scale": [
+                        0.5,
+                        1.0
+                    ]
+                }
+            }
+        ],
+        "spriteRenderers": [
+            {
+                "atlasIndex": 0,
+                "entityID": 2,
+                "spriteID": 4025101928
+            }
+        ]
+    }
+}

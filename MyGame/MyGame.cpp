@@ -1,7 +1,5 @@
 #include "stdafx.h"
 
-#define USE_PACKED_ASSETS
-
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
@@ -71,8 +69,6 @@ const BehaviourFactoryMap BehaviorMap = {
 	REG_BEHAVIOR(Demon),
 	REG_BEHAVIOR(TestScript)
 };
-
-
 
 
 static vec2 GcameraPos;
@@ -183,7 +179,7 @@ Editor editor;
 
 VideoSettings videoSettings = {};
 
-void initializeEngine(std::unique_ptr<Engine>& engine) {
+bool initializeEngine(std::unique_ptr<Engine>& engine) {
 
 	void* resourcePtr = nullptr;
 #ifdef USE_EMBEDDED_ASSETS
@@ -194,21 +190,21 @@ void initializeEngine(std::unique_ptr<Engine>& engine) {
 		HRSRC hResource = FindResource(hModule, MAKEINTRESOURCEA(101), lpType);
 		if (hResource == NULL) {
 			std::cerr << "Unable to find resource." << std::endl;
-			return  1;
+			return  false;
 		}
 
 		// Load the resource
 		HGLOBAL hMemory = LoadResource(hModule, hResource);
 		if (hMemory == NULL) {
 			std::cerr << "Unable to load resource." << std::endl;
-			return 1;
+			return false;
 		}
 
 		// Lock the resource and get a pointer to the data
 		resourcePtr = LockResource(hMemory);
 		if (resourcePtr == NULL) {
 			std::cerr << "Unable to lock resource." << std::endl;
-			return 1;
+			return false;
 		}
 	}
 #endif
@@ -240,6 +236,8 @@ void initializeEngine(std::unique_ptr<Engine>& engine) {
 
 	engine->Start(videoSettings, AssetDirectories);
 	input = engine->GetInput();
+
+	return true;
 }
 
 void createTileWorld() {
@@ -293,16 +291,18 @@ void queueRenderTasks() {
 		mainSceneRender.camera = editor.editorCamera;
 #endif
 
-
 	vector<Engine::SceneRenderJob> sceneRenderJobs;
 	sceneRenderJobs.push_back(mainSceneRender);
 
+#ifdef USING_EDITOR
 	if (showingEditor) {
 		auto jobs = editor.GetAdditionalRenderJobs();
 		for (auto& job : jobs) {
 			sceneRenderJobs.push_back(job);
 		}
 	}
+#endif
+
 	engine->QueueNextFrame(sceneRenderJobs, showingEditor);
 }
 
@@ -397,7 +397,7 @@ void worldDebug() {
 #endif
 }
 
-constexpr bool useTileWorld = false;
+constexpr bool useTileWorld = true;
 
 #ifdef  PUBLISH
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
@@ -407,7 +407,8 @@ int main() {
 
 	// start up engine
 	engine = make_unique<Engine>();
-	initializeEngine(engine);
+	if (!initializeEngine(engine))
+		return 1;
 
 	// create or load main scene
 	scene = make_shared<Scene>(engine->assetManager.get());
@@ -434,6 +435,8 @@ int main() {
 	if(useTileWorld)
 		createTileWorld();
 
+	engine->ShowWindow();
+
 	vector<vec2> torchPositions;
 
 	//shared_ptr<Player> player = dynamic_pointer_cast<Player>(scene->Instantiate(engine.assetManager->GetPrefab("Player"), "Player", vec2(0, 106), 0));
@@ -457,6 +460,9 @@ int main() {
 		//Benchmark::BuildSpriteEntityStressTest(scene.get(), testSprite->ID); // 300 avg 2400 release
 		// 460, 2800
 	}
+
+	//engine->assetManager->LoadScene("serial_demo");
+	//scene = engine->assetManager->GetScene("serial_demo");
 
 	//auto ent = scene->CreateEntity();
 	//scene->DeleteEntity(ent->ID, false);
@@ -484,7 +490,7 @@ int main() {
 
 		else if (appState == AppState::PlayingGame) {
 
-			engine->addScreenSpaceText(UI.smallfont, { 0, 0 }, vec4(1.0), "fps: %d", (int)engine->_getAverageFramerate());
+			engine->addScreenSpaceText(UI.smallfont, { 4, 4 }, vec4(1.0), "fps: %d", (int)engine->_getAverageFramerate());
 
 			//engine.addScreenSpaceTexture("hotbar", 0, vec2(0, 0), 60);
 			//UI::DoUI(uiState);
@@ -492,6 +498,12 @@ int main() {
 			GcameraPos = mainCamera.position;
 			engine->EntityStartUpdate(scene);
 			mainCamera.position = GcameraPos;
+
+			if (showingEditor == false) {
+				mainCamera.zoom += input->GetScrollDelta() * 0.1f;
+				mainCamera.zoom = glm::clamp(mainCamera.zoom, 0.1f, 10.0f);
+
+			}
 
 			if (ImGui::GetIO().WantTextInput == false) {
 #ifdef USING_EDITOR
@@ -520,6 +532,7 @@ int main() {
 				editor.Run();
 			}
 #endif
+
 
 			//worldDebug();
 		}

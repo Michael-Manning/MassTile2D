@@ -1,8 +1,6 @@
 
 Near roadmap:
-- test packed assets
-- test publish build
-- cache sprite in spriteRenderer
+- adding textures at runtime, create sprite/font maybe broken.
 
 
 ---- Test:
@@ -10,9 +8,6 @@ Near roadmap:
 - nested prefab with all component types
 - full serialization setup and publish build
 
-- disable font copy
-
-- apply optimizations made to cachine and drawlist direct insertion done to texture pipeline to other pipelines
 
 - move all serialize function to source files instead of ecs.cpp
 

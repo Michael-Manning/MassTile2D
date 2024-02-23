@@ -100,20 +100,6 @@ public:
 		}
 	}
 
-	//Collider(const AssetPack::Collider* c) {
-	//	type = static_cast<Type>(c->type());
-	//	scale = fromAP(c->scale());
-	//	if (type == Type::Box) {
-	//		boxShape.SetAsBox(scale.x / 2.0f, scale.y / 2.0f);
-	//	}
-	//	else if (type == Type::Circle) {
-	//		circleShape.m_radius = scale.x / 2.0f;
-	//	}
-	//	else {
-	//		assert(false);
-	//	}
-	//}
-
 	~Collider() {
 	}
 	Collider(const Collider& other) = default;

@@ -65,6 +65,7 @@ nlohmann::json TextRenderer::serializeJson(entityID entId) const {
 	nlohmann::json j;
 	j["entityID"] = entId;
 	j["fontID"] = font;
+	j["color"] = toJson(color);
 	j["text"] = text;
 	return j;
 }
@@ -72,6 +73,7 @@ TextRenderer TextRenderer::deserializeJson(nlohmann::json j){
 	fontID id = j["fontID"].get<uint32_t>();
 	TextRenderer t(id);
 	t.text = j["text"];
+	t.color = fromJson <glm::vec4>(j["color"]);
 	return t;
 }
 

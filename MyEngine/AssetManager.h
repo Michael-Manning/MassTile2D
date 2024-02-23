@@ -13,12 +13,6 @@
 
 #include <robin_hood.h>
 
-//#ifdef USE_PACKED_ASSETS
-//#define USE_EMBEDDED_ASSETS
-//#endif
-
-#define USE_PACKED_ASSETS
-
 #ifdef USE_EMBEDDED_ASSETS
 #include <Windows.h>
 #endif
@@ -32,7 +26,6 @@
 #include "IDGenerator.h"
 #include "Prefab.h"
 #include "Sprite.h"
-//#include "Scene.h"
 #include "SceneData.h"
 #include "ResourceManager.h"
 
@@ -136,7 +129,7 @@ public:
 		packLayoutData = readFile(assetPackPath, layoutOffset, layoutSize);
 		packageLayout = AssetPack::GetPackageLayout(packLayoutData.data());
 
-		// TEMP: just load all assets flatbuffer data emediatly. Replace with mapped pointer, at least optionally
+		// TEMP: just load all assets flatbuffer data immediatly. Replace with mapped pointer, at least optionally
 		temp_packAssetData = readFile(assetPackPath, assetsOffset, assetsSize);
 		packageAssets = AssetPack::GetPackageAssets(temp_packAssetData.data());
 #endif
@@ -232,6 +225,31 @@ public:
 #endif
 
 
+#ifndef  USE_PACKED_ASSETS
+	std::vector<std::string> _getLoadedAndUnloadedSceneNames() {
+		std::vector<std::string> vec;
+		vec.reserve(scenePathsByName.size());
+		for (auto& [name, file] : scenePathsByName)
+		{
+			vec.push_back(name);
+		}
+		return vec;
+	};
+	void deletePrefabFromDisk(std::string name);
+	void deleteSceneFromDisk(std::string name);
+#else
+	std::vector<std::string> _getLoadedAndUnloadedSceneNames() {
+		assert(false);
+		return {};
+	};
+
+	void deletePrefabFromDisk(std::string name) {}
+	void deleteSceneFromDisk(std::string name) {}
+
+#endif
+
+
+
 #ifndef PUBLISH
 	// Generated assets can be exported with these functions which assign an ID and save the asset to disk
 	spriteID ExportSprite(std::string spriteAssetExportPath, std::string imageSourcePath, Sprite unidentified_sprite);
@@ -246,11 +264,6 @@ public:
 	size_t _spriteAssetCount() { return spriteAssets.size(); }
 	size_t _fontAssetCount() { return fontAssets.size(); }
 
-
-#ifndef USE_PACKED_ASSETS
-	void deletePrefabFromDisk(std::string name);
-	void deleteSceneFromDisk(std::string name);
-#endif
 
 private:
 
@@ -341,16 +354,6 @@ private:
 	std::unordered_map<std::string, std::string> prefabPathsByName;
 
 	std::unordered_map<std::string, std::string> scenePathsByName;
-
-	std::vector<std::string> _getLoadedAndUnloadedSceneNames() {
-		std::vector<std::string> vec;
-		vec.reserve(scenePathsByName.size());
-		for (auto& [name, file] : scenePathsByName)
-		{
-			vec.push_back(name);
-		}
-		return vec;
-	};
 
 	//std::unordered_map<std::string, std::string> ImagePathsByFileName;
 

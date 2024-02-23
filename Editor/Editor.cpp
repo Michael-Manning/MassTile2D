@@ -8,6 +8,7 @@
     ImVec2& operator-=(const glm::vec2& f) { x -= f.x; y -= f.y; return *this; }
 #endif // !IM_VEC2_CLASS_EXTRA
 
+
 #include <string>
 #include <vector>
 #include <unordered_map>
@@ -558,7 +559,7 @@ void Editor::entityWindow() {
 		}
 
 		if (Button("new")) {	
-			auto newEntity = gameScene->CreateEntity({}, "", true);
+			auto newEntity = gameScene->CreateEntity({gameSceneSreenToWorldPos(sceneWinPos + sceneWinSize / 2.0f), vec2(1.0f), 0.0f}, "", true);
 			newEntity->name = selectedScene->GetNoneConflictingEntityName(newEntity, nullptr);
 			selectedEntity = newEntity;
 		}

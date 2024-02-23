@@ -28,7 +28,6 @@ public:
 
 	std::string text;
 	glm::vec4 color = glm::vec4(1.0f);
-
 	fontID font;
 
 	bool dirty = true;

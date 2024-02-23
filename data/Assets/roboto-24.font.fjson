@@ -1,6 +1,7 @@
 {
    "ID": 1253398241,
    "atlas": 1253398241,
+   "baseline": 0.7916666865348816,
    "charCount": 96,
    "firstChar": 32,
    "fontHeight": 24.0,
@@ -9222,6 +9223,7 @@
       0.0,
       0.0
    ],
+   "lineGap": 0.7916666865348816,
    "name": "roboto-24",
    "packedChars": [
       {

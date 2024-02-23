@@ -290,12 +290,12 @@ void Engine::Start(const VideoSettings& initialSettings, AssetManager::AssetPath
 
 	DebugLog("Initialized pipelines");
 
-	// no point in showing window before vulkan initilized
-	glfwShowWindow(rengine->window);
-
-	_onWindowResize();
-
 	PROFILE_END(Engine_Startup);
+}
+
+void Engine::ShowWindow() {
+	glfwShowWindow(rengine->window);
+	_onWindowResize();
 }
 
 void Engine::ApplyNewVideoSettings(const VideoSettings settings) {
@@ -749,6 +749,9 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 		if (texturesAdded || filtersChanged) {
 			textureDescriptorDirtyFlags = { true, true };
 		}
+		resourceChangeFlags->ClearTexturesAdded();
+		resourceChangeFlags->ClearTextureFilterschanged();
+
 		if(textureDescriptorDirtyFlags[rengine->currentFrame])
 		{
 			std::vector<int> indexes;

@@ -7,9 +7,14 @@
 #include "typedefs.h"
 #include "TileWorld.h"
 
+
 extern TileWorld* tileWolrdGlobalRef;
 
 extern glm::vec2 GcameraPos;
+
+namespace global {
+	extern Behaviour* player;
+}
 
 
 

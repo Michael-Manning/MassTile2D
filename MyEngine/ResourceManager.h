@@ -111,6 +111,10 @@ public:
 		std::unique_lock<std::mutex> lock(texMapMtx);
 		return textureResources.contains(id);
 	}
+	bool HasTexture(std::string originalFilename) {
+		std::unique_lock<std::mutex> lock(texMapMtx);
+		return textureFileNameMap.contains(originalFilename);
+	}
 
 	std::mutex texMapMtx;
 

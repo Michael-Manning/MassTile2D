@@ -18,6 +18,7 @@ packageExportDir = os.path.join(projDir, "MyGame")
 
 assetSrcDir = os.path.join(os.path.join(projDir, "data"), "Assets")
 prefabsDir = os.path.join(os.path.join(projDir, "data"), "Prefabs")
+ScenesSrcDir = os.path.join(os.path.join(projDir, "data"), "Scenes")
 shadersSrcDir = os.path.join(os.path.join(projDir, "shaders"), "compiled")
 
 flatcPath = os.path.join(os.path.dirname(current_directory), "flatc")
@@ -86,6 +87,9 @@ for root, dirs, files in os.walk(assetSrcDir):
    for file in files:
       allAssetFiles.append(os.path.join(root, file))
 for root, dirs, files in os.walk(prefabsDir):
+   for file in files:
+      allAssetFiles.append(os.path.join(root, file))
+for root, dirs, files in os.walk(ScenesSrcDir):
    for file in files:
       allAssetFiles.append(os.path.join(root, file))
 
@@ -222,6 +226,7 @@ os.remove(HeaderFileName + ".json")
 combineFiles( os.path.join(packageExportDir, packagedFileName), [HeaderFileName + ".bin", combinedLayoutAssetsFileName, combinedResourceFileName])
 
 print("exported assets to: {0}".format(os.path.join(packageExportDir, packagedFileName)))
+print("finished :)")
 
 os.remove(HeaderFileName + ".bin");
 os.remove(LayoutFileName + ".bin");

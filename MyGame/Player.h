@@ -77,7 +77,9 @@ class Player : public Behaviour {
 
 public:
 
-	BEHAVIOUR_CONSTUCTOR(Player) {}
+	BEHAVIOUR_CONSTUCTOR(Player) {
+		global::player = this;
+	}
 	BEHAVIOUR_CLONE(Player)
 
 	//std::string GetEditorName() override { // deprecate

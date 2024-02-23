@@ -102,6 +102,7 @@ public:
 	}
 
 	void Start(const VideoSettings& initialSettings, AssetManager::AssetPaths assetPaths);
+	void ShowWindow();
 	void ApplyNewVideoSettings(const VideoSettings settings);
 
 	bool ShouldClose();
