@@ -17,6 +17,8 @@
 
 const auto Scene_extension = ".scene";
 
+class AssetManager;
+
 class Scene {
 public:
 
@@ -24,7 +26,7 @@ public:
 
 	SceneData sceneData;
 
-	Scene();
+	Scene(AssetManager* assetManager);
 
 	~Scene() {
 		cleanup();
@@ -32,8 +34,8 @@ public:
 
 
 	void serializeJson(std::string filename);
-	static std::shared_ptr<Scene> deserializeJson(std::string filename);
-	static std::shared_ptr<Scene> deserializeFlatbuffers(const AssetPack::Scene* scene);
+	static std::shared_ptr<Scene> deserializeJson(std::string filename, AssetManager* assetManager);
+	static std::shared_ptr<Scene> deserializeFlatbuffers(const AssetPack::Scene* scene, AssetManager* assetManager);
 	static std::string peakJsonName(std::string filename) {
 		checkAppend(filename, Scene_extension);
 		std::ifstream input(filename);
@@ -70,25 +72,6 @@ public:
 	double physicsTimer = 0.0;
 	bool paused = true;
 
-	//template <typename T>
-	//void registerComponent(entityID id, T component);
-
-	//template <typename T>
-	//inline void registerComponent(std::shared_ptr<Entity> e, T component) {
-	//	registerComponent(e->ID, component);
-	//};
-
-	//template <typename First, typename... Rest>
-	//void registerComponents(entityID id, First firstComponent, Rest... restComponents)
-	//{
-	//	registerComponent(id, firstComponent);  // Register the first component.
-
-	//	if constexpr (sizeof...(restComponents) > 0)
-	//	{
-	//		registerComponents(id, restComponents...);  // Recursively register the remaining components.
-	//	}
-	//};
-
 	void registerComponent(entityID id, ColorRenderer component);
 
 	void registerComponent(entityID id, SpriteRenderer& component);
@@ -111,6 +94,8 @@ public:
 	b2World bworld;
 
 private:
+
+	AssetManager* assetManager;
 
 	void deletechildRecurse(Entity* entity);
 

@@ -408,7 +408,7 @@ int main() {
 	initializeEngine(engine);
 
 	// create or load main scene
-	scene = make_shared<Scene>();
+	scene = make_shared<Scene>(engine->assetManager.get());
 	scene->name = "main scene";
 	//sceneRenderCtx = engine->CreateSceneRenderContext(engine->getWindowSize(), useTileWorld, vec4(0, 0, 0, 1));
 	sceneRenderCtx = engine->CreateSceneRenderContext(engine->getWindowSize(), useTileWorld, { 0.2, 0.3, 1.0, 1 });
@@ -453,6 +453,7 @@ int main() {
 	{
 		auto testSprite = engine->assetManager->GetSprite("test_cat");
 		Benchmark::BuildSpriteEntityStressTest(scene.get(), testSprite->ID); // 300 avg 2400 release
+		// 380, 2400
 	}
 
 	//auto ent = scene->CreateEntity();

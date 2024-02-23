@@ -11,6 +11,7 @@
 #include "Prefab.h"
 #include "sprite.h"
 #include "Font.h"
+#include "Scene.h"
 
 using namespace std;
 
@@ -250,7 +251,7 @@ void AssetManager::LoadPrefab(std::string name, bool loadResources) {
 void AssetManager::LoadScene(std::string sceneName, bool loadResources) {
 
 #ifdef USE_PACKED_ASSETS
-	auto scene = Scene::deserializeFlatbuffers(packageAssets->scenes()->Get(sceneIndexesByName[sceneName]));
+	auto scene = Scene::deserializeFlatbuffers(packageAssets->scenes()->Get(sceneIndexesByName[sceneName]), this);
 #else
 	assert(scenePathsByName.contains(sceneName));
 
@@ -259,7 +260,7 @@ void AssetManager::LoadScene(std::string sceneName, bool loadResources) {
 	//	// overwrite loaded asset
 	//	sceneAssets.erase(sceneName);
 
-	auto scene = Scene::deserializeJson(scenePathsByName[sceneName]);
+	auto scene = Scene::deserializeJson(scenePathsByName.at(sceneName), this);
 #endif
 	sceneAssets.insert_or_assign(sceneName, scene);
 	if (loadResources)
@@ -391,5 +392,73 @@ void AssetManager::deleteSceneFromDisk(std::string name) {
 	sceneAssets.erase(name);
 	std::filesystem::remove(std::filesystem::path(path));
 }
+
+#endif
+
+#ifdef USE_PACKED_ASSETS
+#else
+
+void AssetManager::createAssetLookups() {
+
+	spritePathsByName.clear();
+	spritePathsByID.clear();
+	fontPathsByName.clear();
+	fontPathsByID.clear();
+	prefabPathsByName.clear();
+	scenePathsByName.clear();
+	//ImagePathsByFileName.clear();
+
+	std::vector<std::string> assetFiles = getAllFilesInDirectory(directories.assetDir);
+	std::vector<std::string> prefabFiles = getAllFilesInDirectory(directories.prefabDir);
+	std::vector<std::string> sceneFiles = getAllFilesInDirectory(directories.sceneDir);
+	//	std::vector<std::string> imageFiles = getAllFilesInDirectory(directories.textureSrcDir);
+
+		// combine all three vectors into one
+	assetFiles.insert(assetFiles.end(), prefabFiles.begin(), prefabFiles.end());
+	assetFiles.insert(assetFiles.end(), sceneFiles.begin(), sceneFiles.end());
+	//		assetFiles.insert(assetFiles.end(), imageFiles.begin(), imageFiles.end());
+
+	for (auto& f : assetFiles) {
+
+		size_t lastindex = f.find_last_of(".");
+		std::string extension = f.substr(lastindex, f.length() - 1);
+
+
+		if (extension == Sprite_extension) {
+
+			Sprite tmpSprite;
+			Sprite::deserializeJson(f, &tmpSprite);
+
+			// responsibility of engine to create the default sprite
+			if (tmpSprite.ID == defaultSpriteID)
+				continue;
+
+			spritePathsByID[tmpSprite.ID] = f;
+			spritePathsByName[tmpSprite.name] = f;
+		}
+		else if (extension == Font_extension) {
+			Font tempFont;
+			Font::deserializeBinary(f, &tempFont);
+			fontPathsByID[tempFont.ID] = f;
+			fontPathsByName[tempFont.name] = f;
+		}
+		else if (extension == Prefab_extension) {
+			auto name = Prefab::peakJsonName(f);
+			prefabPathsByName[name] = f;
+		}
+		else if (extension == Scene_extension) {
+			auto name = Scene::peakJsonName(f);
+			scenePathsByName[name] = f;
+		}
+		//else {
+		//	for (auto& s : ResourceManager_supportedExtensions) {
+		//		if (extension == s) {
+		//			std::string name = getFileName(f);
+		//			ImagePathsByFileName[name] = f;
+		//		}
+		//	}
+		//}
+	}
+};
 
 #endif

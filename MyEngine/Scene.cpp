@@ -18,6 +18,7 @@
 #include "texture.h"
 #include "BehaviorRegistry.h"
 #include "Input.h"
+#include "AssetManager.h";
 
 #include <assetPack/Scene_generated.h>
 
@@ -25,7 +26,7 @@ using namespace nlohmann;
 using namespace std;
 
 
-Scene::Scene() : bworld(gravity) {
+Scene::Scene(AssetManager* assetManager) : assetManager(assetManager), bworld(gravity) {
 
 
 	for (auto& [hash, stringPair] : BehaviorMap)
@@ -90,18 +91,23 @@ void Scene::LinkEntityRelationships() {
 	}
 }
 
-std::shared_ptr<Scene> Scene::deserializeJson(std::string filename) {
+std::shared_ptr<Scene> Scene::deserializeJson(std::string filename, AssetManager* assetManager) {
 
 	checkAppend(filename, ".scene");
 	std::ifstream input(filename);
 	json j;
 	input >> j;
 
-	auto scene = std::make_shared<Scene>();
+	auto scene = std::make_shared<Scene>(assetManager);
 
 	scene->name = j["name"];
 
 	SceneData::deserializeJson(j["sceneData"], &scene->sceneData);
+
+	for (auto& [entID, sr] : scene->sceneData.spriteRenderers)
+	{
+		sr._spriteCache = assetManager->GetSprite(sr.sprite);
+	}
 
 	for (auto& [id, r] : scene->sceneData.rigidbodies)
 		scene->linkRigidbodyB2D(id, &r);
@@ -114,8 +120,8 @@ std::shared_ptr<Scene> Scene::deserializeJson(std::string filename) {
 }
 
 
-std::shared_ptr<Scene> Scene::deserializeFlatbuffers(const AssetPack::Scene* s) {
-	auto scene = std::make_shared<Scene>();
+std::shared_ptr<Scene> Scene::deserializeFlatbuffers(const AssetPack::Scene* s, AssetManager* assetManager) {
+	auto scene = std::make_shared<Scene>(assetManager);
 
 	scene->name = s->name()->str();
 
@@ -377,15 +383,14 @@ void Scene::registerComponent(entityID id, SpriteRenderer& t) {
 	sceneData.spriteRenderers.emplace(
 		std::piecewise_construct,
 		std::forward_as_tuple(id),
-		std::forward_as_tuple(t, &sceneData.entities.at(id)));
-	//sceneData.spriteRenderers.insert({ id, t });
+		std::forward_as_tuple(t, &sceneData.entities.at(id), assetManager->GetSprite(t.sprite)));
 }
 SpriteRenderer* Scene::registerComponent(entityID id, spriteID sprite, int atlasIndex){
 
 	auto [iter, inserted] = sceneData.spriteRenderers.emplace(
 	std::piecewise_construct,
 	std::forward_as_tuple(id),
-	std::forward_as_tuple(sprite, atlasIndex, &sceneData.entities.at(id)));
+	std::forward_as_tuple(sprite, atlasIndex, &sceneData.entities.at(id), assetManager->GetSprite(sprite)));
 
 	return &iter->second;
 }

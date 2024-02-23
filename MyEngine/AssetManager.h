@@ -30,7 +30,8 @@
 #include "IDGenerator.h"
 #include "Prefab.h"
 #include "Sprite.h"
-#include "Scene.h"
+//#include "Scene.h"
+#include "SceneData.h"
 #include "ResourceManager.h"
 
 #include <assetPack/PackageHeader_generated.h>
@@ -53,6 +54,7 @@ struct MapProxy {
 
 const auto AssetPackFileName = "Assets.bin";
 
+class Scene;
 
 class AssetManager {
 
@@ -182,7 +184,7 @@ public:
 	bool IsSceneLoaded(std::string sceneName) { return sceneAssets.contains(sceneName); };
 	void LoadScene(std::string sceneName, bool loadResources = true);
 	void UnloadScene(std::string sceneName, bool unloadResources);
-	std::shared_ptr<Scene> GetScene(std::string name) { return sceneAssets.find(name)->second; };
+	std::shared_ptr<Scene> GetScene(std::string name) { return sceneAssets.at(name); };
 	bool HasScene(std::string name) { return sceneAssets.contains(name); }
 
 	void CreateDefaultSprite(int w, int h, std::vector<uint8_t>& data);
@@ -349,68 +351,7 @@ private:
 
 	//std::unordered_map<std::string, std::string> ImagePathsByFileName;
 
-	void createAssetLookups() {
-
-		spritePathsByName.clear();
-		spritePathsByID.clear();
-		fontPathsByName.clear();
-		fontPathsByID.clear();
-		prefabPathsByName.clear();
-		scenePathsByName.clear();
-		//ImagePathsByFileName.clear();
-
-		std::vector<std::string> assetFiles = getAllFilesInDirectory(directories.assetDir);
-		std::vector<std::string> prefabFiles = getAllFilesInDirectory(directories.prefabDir);
-		std::vector<std::string> sceneFiles = getAllFilesInDirectory(directories.sceneDir);
-		//	std::vector<std::string> imageFiles = getAllFilesInDirectory(directories.textureSrcDir);
-
-			// combine all three vectors into one
-		assetFiles.insert(assetFiles.end(), prefabFiles.begin(), prefabFiles.end());
-		assetFiles.insert(assetFiles.end(), sceneFiles.begin(), sceneFiles.end());
-		//		assetFiles.insert(assetFiles.end(), imageFiles.begin(), imageFiles.end());
-
-		for (auto& f : assetFiles) {
-
-			size_t lastindex = f.find_last_of(".");
-			std::string extension = f.substr(lastindex, f.length() - 1);
-
-
-			if (extension == Sprite_extension) {
-
-				Sprite tmpSprite;
-				Sprite::deserializeJson(f, &tmpSprite);
-
-				// responsibility of engine to create the default sprite
-				if (tmpSprite.ID == defaultSpriteID)
-					continue;
-
-				spritePathsByID[tmpSprite.ID] = f;
-				spritePathsByName[tmpSprite.name] = f;
-			}
-			else if (extension == Font_extension) {
-				Font tempFont;
-				Font::deserializeBinary(f, &tempFont);
-				fontPathsByID[tempFont.ID] = f;
-				fontPathsByName[tempFont.name] = f;
-			}
-			else if (extension == Prefab_extension) {
-				auto name = Prefab::peakJsonName(f);
-				prefabPathsByName[name] = f;
-			}
-			else if (extension == Scene_extension) {
-				auto name = Scene::peakJsonName(f);
-				scenePathsByName[name] = f;
-			}
-			//else {
-			//	for (auto& s : ResourceManager_supportedExtensions) {
-			//		if (extension == s) {
-			//			std::string name = getFileName(f);
-			//			ImagePathsByFileName[name] = f;
-			//		}
-			//	}
-			//}
-		}
-	};
+	void createAssetLookups();
 
 #endif
 

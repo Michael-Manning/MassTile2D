@@ -403,7 +403,8 @@ void Engine::recordSceneContextGraphics(const ScenePipelineContext& ctx, framebu
 				//const auto& entity = scene->sceneData.entities.at(entID);
 				Entity* entity = renderer._entityCache;
 
-				Sprite* s = assetManager->GetSprite(renderer.sprite);
+				//Sprite* s = assetManager->GetSprite(renderer.sprite);
+				Sprite* s = renderer._spriteCache;
 
 				auto drawObject = GPUBuffer + instanceIndex;
 

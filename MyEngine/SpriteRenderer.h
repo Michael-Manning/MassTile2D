@@ -41,10 +41,18 @@ public:
 		return r;
 	};
 
-	SpriteRenderer(spriteID sprite, int atlasIndex, Entity* entityCache) :
+	SpriteRenderer(spriteID sprite, int atlasIndex, Entity* entityCache, Sprite* spriteCache) :
 		sprite(sprite),
 		atlasIndex(atlasIndex),
-		_entityCache(entityCache)
+		_entityCache(entityCache),
+		_spriteCache(spriteCache)
+	{}
+
+	SpriteRenderer(const SpriteRenderer& data, Entity* entityCache, Sprite* spriteCache) :
+		sprite(data.sprite),
+		atlasIndex(data.atlasIndex),
+		_entityCache(entityCache),
+		_spriteCache(spriteCache)
 	{}
 
 	SpriteRenderer(const SpriteRenderer& data, Entity* entityCache) :
@@ -54,4 +62,5 @@ public:
 	{}
 
 	Entity* _entityCache = nullptr;
+	Sprite* _spriteCache = nullptr;
 };

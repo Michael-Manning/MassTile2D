@@ -794,7 +794,7 @@ void Editor::Initialize(Engine* engine, std::shared_ptr<Scene> gameScene, sceneR
 	this->sceneRenderContext = sceneRenderContext;
 	this->setSceneCallback = onMainSceneLoad;
 
-	entityPreviewScene = make_shared<Scene>();
+	entityPreviewScene = make_shared<Scene>(engine->assetManager.get());
 	entityPreviewScene->name = "entity preview scene";
 	entityPrviewFrameSize = vec2(600);
 	entityPreviewsSeneRenderContextID = engine->CreateSceneRenderContext(entityPrviewFrameSize, false, glm::vec4(vec3(0.2), 1.0), false);
