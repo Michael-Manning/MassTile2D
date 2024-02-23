@@ -130,10 +130,9 @@ struct Sprite FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
     VT_ID = 6,
     VT_RESOLUTION = 8,
     VT_IMAGEFILENAME = 10,
-    VT_TEXTUREID = 12,
-    VT_FILTERMODE = 14,
-    VT_ATLAS = 16,
-    VT_ATLASLAYOUT = 18
+    VT_FILTERMODE = 12,
+    VT_ATLAS = 14,
+    VT_ATLASLAYOUT = 16
   };
   const ::flatbuffers::String *name() const {
     return GetPointer<const ::flatbuffers::String *>(VT_NAME);
@@ -146,9 +145,6 @@ struct Sprite FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   }
   const ::flatbuffers::String *imageFileName() const {
     return GetPointer<const ::flatbuffers::String *>(VT_IMAGEFILENAME);
-  }
-  int32_t textureID() const {
-    return GetField<int32_t>(VT_TEXTUREID, 0);
   }
   AssetPack::FilterMode filterMode() const {
     return static_cast<AssetPack::FilterMode>(GetField<int32_t>(VT_FILTERMODE, 0));
@@ -167,7 +163,6 @@ struct Sprite FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
            VerifyField<AssetPack::vec2>(verifier, VT_RESOLUTION, 4) &&
            VerifyOffset(verifier, VT_IMAGEFILENAME) &&
            verifier.VerifyString(imageFileName()) &&
-           VerifyField<int32_t>(verifier, VT_TEXTUREID, 4) &&
            VerifyField<int32_t>(verifier, VT_FILTERMODE, 4) &&
            VerifyOffset(verifier, VT_ATLAS) &&
            verifier.VerifyVector(atlas()) &&
@@ -192,9 +187,6 @@ struct SpriteBuilder {
   }
   void add_imageFileName(::flatbuffers::Offset<::flatbuffers::String> imageFileName) {
     fbb_.AddOffset(Sprite::VT_IMAGEFILENAME, imageFileName);
-  }
-  void add_textureID(int32_t textureID) {
-    fbb_.AddElement<int32_t>(Sprite::VT_TEXTUREID, textureID, 0);
   }
   void add_filterMode(AssetPack::FilterMode filterMode) {
     fbb_.AddElement<int32_t>(Sprite::VT_FILTERMODE, static_cast<int32_t>(filterMode), 0);
@@ -222,7 +214,6 @@ inline ::flatbuffers::Offset<Sprite> CreateSprite(
     uint32_t ID = 0,
     const AssetPack::vec2 *resolution = nullptr,
     ::flatbuffers::Offset<::flatbuffers::String> imageFileName = 0,
-    int32_t textureID = 0,
     AssetPack::FilterMode filterMode = AssetPack::FilterMode_Nearest,
     ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<AssetPack::AtlasEntry>>> atlas = 0,
     const AssetPack::AtlasLayout *atlasLayout = nullptr) {
@@ -230,7 +221,6 @@ inline ::flatbuffers::Offset<Sprite> CreateSprite(
   builder_.add_atlasLayout(atlasLayout);
   builder_.add_atlas(atlas);
   builder_.add_filterMode(filterMode);
-  builder_.add_textureID(textureID);
   builder_.add_imageFileName(imageFileName);
   builder_.add_resolution(resolution);
   builder_.add_ID(ID);
@@ -244,7 +234,6 @@ inline ::flatbuffers::Offset<Sprite> CreateSpriteDirect(
     uint32_t ID = 0,
     const AssetPack::vec2 *resolution = nullptr,
     const char *imageFileName = nullptr,
-    int32_t textureID = 0,
     AssetPack::FilterMode filterMode = AssetPack::FilterMode_Nearest,
     const std::vector<::flatbuffers::Offset<AssetPack::AtlasEntry>> *atlas = nullptr,
     const AssetPack::AtlasLayout *atlasLayout = nullptr) {
@@ -257,7 +246,6 @@ inline ::flatbuffers::Offset<Sprite> CreateSpriteDirect(
       ID,
       resolution,
       imageFileName__,
-      textureID,
       filterMode,
       atlas__,
       atlasLayout);

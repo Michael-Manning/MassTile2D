@@ -23,7 +23,6 @@
 #include "GlobalImageDescriptor.h"
 #include "globalBufferDefinitions.h"
 
-constexpr int TexturedQuadPL_MAX_TEXTURES = 10;
 constexpr int TexturedQuadPL_MAX_OBJECTS = 100000;
 
 
@@ -51,8 +50,6 @@ public:
 	void CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc, vk::RenderPass& renderTarget, GlobalImageDescriptor* textureDescriptor, MappedDoubleBuffer<cameraUBO_s>& cameradb, bool flipFaces = false);
 
 	void recordCommandBuffer(vk::CommandBuffer commandBuffer, int instanceCount);
-
-	void UploadInstanceData(std::vector<ssboObjectInstanceData>& drawlist);
 
 	ssboObjectInstanceData* getUploadMappedBuffer() {
 		return ssboMappedDB.buffersMapped[engine->currentFrame];

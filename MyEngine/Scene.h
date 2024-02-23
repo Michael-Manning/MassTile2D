@@ -35,7 +35,7 @@ public:
 
 	void serializeJson(std::string filename);
 	static std::shared_ptr<Scene> deserializeJson(std::string filename, AssetManager* assetManager);
-	static std::shared_ptr<Scene> deserializeFlatbuffers(const AssetPack::Scene* scene, AssetManager* assetManager);
+	Scene(const AssetPack::Scene* scene, AssetManager* assetManager);
 	static std::string peakJsonName(std::string filename) {
 		checkAppend(filename, Scene_extension);
 		std::ifstream input(filename);

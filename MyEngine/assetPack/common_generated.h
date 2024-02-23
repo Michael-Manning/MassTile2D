@@ -53,9 +53,6 @@ struct U_vec2Builder;
 struct SerializableProperty;
 struct SerializablePropertyBuilder;
 
-struct PropertyGroup;
-struct PropertyGroupBuilder;
-
 struct Behaviour;
 struct BehaviourBuilder;
 
@@ -1012,75 +1009,29 @@ inline ::flatbuffers::Offset<SerializableProperty> CreateSerializablePropertyDir
       value);
 }
 
-struct PropertyGroup FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
-  typedef PropertyGroupBuilder Builder;
+struct Behaviour FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
+  typedef BehaviourBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
-    VT_PROPERTIES = 4
+    VT_ENTITYID = 4,
+    VT_HASH = 6,
+    VT_PROPERTIES = 8
   };
+  uint32_t entityID() const {
+    return GetField<uint32_t>(VT_ENTITYID, 0);
+  }
+  uint32_t hash() const {
+    return GetField<uint32_t>(VT_HASH, 0);
+  }
   const ::flatbuffers::Vector<::flatbuffers::Offset<AssetPack::SerializableProperty>> *properties() const {
     return GetPointer<const ::flatbuffers::Vector<::flatbuffers::Offset<AssetPack::SerializableProperty>> *>(VT_PROPERTIES);
   }
   bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
+           VerifyField<uint32_t>(verifier, VT_ENTITYID, 4) &&
+           VerifyField<uint32_t>(verifier, VT_HASH, 4) &&
            VerifyOffset(verifier, VT_PROPERTIES) &&
            verifier.VerifyVector(properties()) &&
            verifier.VerifyVectorOfTables(properties()) &&
-           verifier.EndTable();
-  }
-};
-
-struct PropertyGroupBuilder {
-  typedef PropertyGroup Table;
-  ::flatbuffers::FlatBufferBuilder &fbb_;
-  ::flatbuffers::uoffset_t start_;
-  void add_properties(::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<AssetPack::SerializableProperty>>> properties) {
-    fbb_.AddOffset(PropertyGroup::VT_PROPERTIES, properties);
-  }
-  explicit PropertyGroupBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
-        : fbb_(_fbb) {
-    start_ = fbb_.StartTable();
-  }
-  ::flatbuffers::Offset<PropertyGroup> Finish() {
-    const auto end = fbb_.EndTable(start_);
-    auto o = ::flatbuffers::Offset<PropertyGroup>(end);
-    return o;
-  }
-};
-
-inline ::flatbuffers::Offset<PropertyGroup> CreatePropertyGroup(
-    ::flatbuffers::FlatBufferBuilder &_fbb,
-    ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<AssetPack::SerializableProperty>>> properties = 0) {
-  PropertyGroupBuilder builder_(_fbb);
-  builder_.add_properties(properties);
-  return builder_.Finish();
-}
-
-inline ::flatbuffers::Offset<PropertyGroup> CreatePropertyGroupDirect(
-    ::flatbuffers::FlatBufferBuilder &_fbb,
-    const std::vector<::flatbuffers::Offset<AssetPack::SerializableProperty>> *properties = nullptr) {
-  auto properties__ = properties ? _fbb.CreateVector<::flatbuffers::Offset<AssetPack::SerializableProperty>>(*properties) : 0;
-  return AssetPack::CreatePropertyGroup(
-      _fbb,
-      properties__);
-}
-
-struct Behaviour FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
-  typedef BehaviourBuilder Builder;
-  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
-    VT_ENTITYID = 4,
-    VT_PROPERTYGROUP = 6
-  };
-  uint32_t entityID() const {
-    return GetField<uint32_t>(VT_ENTITYID, 0);
-  }
-  const AssetPack::PropertyGroup *propertyGroup() const {
-    return GetPointer<const AssetPack::PropertyGroup *>(VT_PROPERTYGROUP);
-  }
-  bool Verify(::flatbuffers::Verifier &verifier) const {
-    return VerifyTableStart(verifier) &&
-           VerifyField<uint32_t>(verifier, VT_ENTITYID, 4) &&
-           VerifyOffset(verifier, VT_PROPERTYGROUP) &&
-           verifier.VerifyTable(propertyGroup()) &&
            verifier.EndTable();
   }
 };
@@ -1092,8 +1043,11 @@ struct BehaviourBuilder {
   void add_entityID(uint32_t entityID) {
     fbb_.AddElement<uint32_t>(Behaviour::VT_ENTITYID, entityID, 0);
   }
-  void add_propertyGroup(::flatbuffers::Offset<AssetPack::PropertyGroup> propertyGroup) {
-    fbb_.AddOffset(Behaviour::VT_PROPERTYGROUP, propertyGroup);
+  void add_hash(uint32_t hash) {
+    fbb_.AddElement<uint32_t>(Behaviour::VT_HASH, hash, 0);
+  }
+  void add_properties(::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<AssetPack::SerializableProperty>>> properties) {
+    fbb_.AddOffset(Behaviour::VT_PROPERTIES, properties);
   }
   explicit BehaviourBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -1109,11 +1063,26 @@ struct BehaviourBuilder {
 inline ::flatbuffers::Offset<Behaviour> CreateBehaviour(
     ::flatbuffers::FlatBufferBuilder &_fbb,
     uint32_t entityID = 0,
-    ::flatbuffers::Offset<AssetPack::PropertyGroup> propertyGroup = 0) {
+    uint32_t hash = 0,
+    ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<AssetPack::SerializableProperty>>> properties = 0) {
   BehaviourBuilder builder_(_fbb);
-  builder_.add_propertyGroup(propertyGroup);
+  builder_.add_properties(properties);
+  builder_.add_hash(hash);
   builder_.add_entityID(entityID);
   return builder_.Finish();
+}
+
+inline ::flatbuffers::Offset<Behaviour> CreateBehaviourDirect(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    uint32_t entityID = 0,
+    uint32_t hash = 0,
+    const std::vector<::flatbuffers::Offset<AssetPack::SerializableProperty>> *properties = nullptr) {
+  auto properties__ = properties ? _fbb.CreateVector<::flatbuffers::Offset<AssetPack::SerializableProperty>>(*properties) : 0;
+  return AssetPack::CreateBehaviour(
+      _fbb,
+      entityID,
+      hash,
+      properties__);
 }
 
 inline bool VerifySerializableValue(::flatbuffers::Verifier &verifier, const void *obj, SerializableValue type) {

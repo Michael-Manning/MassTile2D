@@ -4,18 +4,15 @@ Near roadmap:
 - test publish build
 - cache sprite in spriteRenderer
 
-Major optimization:
-Sprites store their image file name, and texture IDs are hashed from the same filename. Could stop serializing the textureID
-in the sprite (and remove the requirement they be consistent and persistent), then use texture IDs directly in the bindless
-texture manager, removing one of the 3 layers of inderection required to link a sprite renderer to the actual GPU image.
-TextureIDs should be spit out straight from the bindless texture manager instead of the resource manager ID generator
-
 
 ---- Test:
 - entity deleation
 - nested prefab with all component types
 - full serialization setup and publish build
 
+- disable font copy
+
+- apply optimizations made to cachine and drawlist direct insertion done to texture pipeline to other pipelines
 
 - move all serialize function to source files instead of ecs.cpp
 

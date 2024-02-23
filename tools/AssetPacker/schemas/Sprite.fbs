@@ -18,7 +18,6 @@ table Sprite{
     ID:uint;
     resolution:vec2;
     imageFileName:string;
-    textureID:int;
     filterMode:FilterMode;
     atlas:[AtlasEntry];
     atlasLayout:AtlasLayout;

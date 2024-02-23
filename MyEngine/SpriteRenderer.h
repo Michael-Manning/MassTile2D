@@ -34,11 +34,9 @@ public:
 	//};
 
 
-	static SpriteRenderer deserializeFlatbuffers(const AssetPack::SpriteRenderer* s) {
-		SpriteRenderer r;
-		r.sprite = s->spriteID();
-		r.atlasIndex = s->atlasIndex();
-		return r;
+	SpriteRenderer (const AssetPack::SpriteRenderer* s, Entity* entityCache) : _entityCache(entityCache){
+		sprite = s->spriteID();
+		atlasIndex = s->atlasIndex();
 	};
 
 	SpriteRenderer(spriteID sprite, int atlasIndex, Entity* entityCache, Sprite* spriteCache) :
@@ -60,6 +58,11 @@ public:
 		atlasIndex(data.atlasIndex),
 		_entityCache(entityCache)
 	{}
+
+	void SetSprite(Sprite* spr) {
+		sprite = spr->ID;
+		_spriteCache = spr;
+	}
 
 	Entity* _entityCache = nullptr;
 	Sprite* _spriteCache = nullptr;

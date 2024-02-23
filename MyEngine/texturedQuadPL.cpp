@@ -117,13 +117,3 @@ void TexturedQuadPL::recordCommandBuffer(vk::CommandBuffer commandBuffer, int in
 		commandBuffer.drawIndexed(QuadIndices.size(), instanceCount, 0, 0, 0);
 	}
 }
-
-void TexturedQuadPL::UploadInstanceData(std::vector<ssboObjectInstanceData>& drawlist) {
-	ZoneScopedN("texture quad data copy");
-	if (drawlist.size() == 0)
-		return;
-
-	assert(drawlist.size() < TexturedQuadPL_MAX_OBJECTS);
-
-	memcpy(ssboMappedDB.buffersMapped[engine->currentFrame], drawlist.data(), sizeof(ssboObjectInstanceData) * drawlist.size());
-}

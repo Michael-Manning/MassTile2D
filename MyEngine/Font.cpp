@@ -69,24 +69,24 @@ void Font::deserializeBinary(std::string filepath, Font* font) {
 
 	return;
 }
-void Font::deserializeFlatbuffer(const AssetPack::Font* f, Font* font) {
+Font::Font(const AssetPack::Font* f) {
 
-	font->name = f->name()->str();
-	font->firstChar = f->firstChar();
-	font->charCount = f->charCount();
-	font->fontHeight = f->fontHeight();
-	font->baseline = f->baseline();
-	font->lineGap = f->lineGap();
-	font->atlas = f->atlas();
-	font->ID = f->ID();
+	name = f->name()->str();
+	firstChar = f->firstChar();
+	charCount = f->charCount();
+	fontHeight = f->fontHeight();
+	baseline = f->baseline();
+	lineGap = f->lineGap();
+	atlas = f->atlas();
+	ID = f->ID();
 
-	font->packedChars.resize(f->packedChars()->size());
-	for (size_t i = 0; i < font->packedChars.size(); i++)
-		font->packedChars[i] = packedChar::deserializeFlatbuffer(f->packedChars()->Get(i));
+	packedChars.resize(f->packedChars()->size());
+	for (size_t i = 0; i < packedChars.size(); i++)
+		packedChars[i] = packedChar::deserializeFlatbuffer(f->packedChars()->Get(i));
 
-	font->kerningTable.resize(f->kerningTable()->size());
-	for (size_t i = 0; i < font->kerningTable.size(); i++)
-		font->kerningTable[i] = f->kerningTable()->Get(i);
+	kerningTable.resize(f->kerningTable()->size());
+	for (size_t i = 0; i < kerningTable.size(); i++)
+		kerningTable[i] = f->kerningTable()->Get(i);
 
 	return;
 }

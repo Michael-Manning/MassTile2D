@@ -13,6 +13,8 @@
 class SceneData {
 public:
 
+	SceneData() {}
+
 	robin_hood::unordered_node_map<entityID, Entity> entities;
 	robin_hood::unordered_flat_map<entityID, std::unique_ptr<Behaviour>> behaviours;
 
@@ -25,7 +27,7 @@ public:
 
 	nlohmann::json serializeJson(bool ignorePersistence = false) const;
 	static void deserializeJson(nlohmann::json& j, SceneData* sceneData);
-	static void deserializeFlatbuffers(const AssetPack::SceneData* s, SceneData* sceneData);
+	SceneData(const AssetPack::SceneData* s);
 
 	// inserts of overwrites an entity at the specified ID with blank entity without affecting components
 	Entity* EmplaceEntity(entityID ID);

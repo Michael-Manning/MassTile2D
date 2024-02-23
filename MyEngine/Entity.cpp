@@ -1,12 +1,15 @@
 #include "stdafx.h"
 
 #include <stdint.h>
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 #include <string>
 #include <set>
 #include <optional>
 #include <memory>
+
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <nlohmann/json.hpp>
+#include <assetPack/common_generated.h>
 
 #include "typedefs.h"
 
@@ -65,4 +68,43 @@ glm::mat4 Entity::GetGlobalToLocalMatrix() const {
 	mat4 m(1.0f);
 	parent_cachePtr->globalTransformRecursive(&m);
 	return m;
+}
+
+nlohmann::json Entity::serializeJson() const {
+
+	nlohmann::json j;
+	j["id"] = ID;
+	j["name"] = name;
+	if (HasParent()) {
+		j["parent"] = parent;
+	}
+	if (children.size() > 0) {
+		for (auto& c : children) {
+			j["children"].push_back((entityID)c);
+		}
+	}
+	j["transform"] = transform.serializeJson();
+
+	return j;
+}
+void Entity::deserializeJson(const nlohmann::json& j, Entity* e) {
+
+	e->ID = j["id"].get<int>();
+	e->name = j["name"].get<std::string>();
+	e->transform = Transform::deserializeJson(j["transform"]);
+	if (j.contains("parent")) {
+		e->parent = j["parent"];
+	}
+	if (j.contains("children")) {
+		for (auto& c : j["children"]) {
+			e->children.insert(static_cast<entityID>(c));
+		}
+	}
+}
+
+Entity::Entity(const AssetPack::Entity* packEntity) {
+
+	ID = packEntity->id();
+	name = packEntity->name()->str();
+	transform = Transform(packEntity->transform());
 }

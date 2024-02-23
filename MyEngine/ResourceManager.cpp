@@ -18,7 +18,8 @@ texID ResourceManager::GenerateTexture(int w, int h, std::vector<uint8_t>& data,
 
 	Texture tex = rengine->genTexture(w, h, data, filterMode);
 	texID id;
-	id = TextureIDGenerator.GenerateID();
+	id = textureIDSlotManager.GetAvailableSlot();
+	//id = TextureIDGenerator.GenerateID();
 
 	if (imGuiTexure)
 		tex.imTexture = ImGui_ImplVulkan_AddTexture(tex.sampler, tex.imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
@@ -30,13 +31,19 @@ texID ResourceManager::GenerateTexture(int w, int h, std::vector<uint8_t>& data,
 
 texID ResourceManager::LoadTexture(std::string imagePath, FilterMode filterMode, bool imGuiTexure) {
 
-	std::string filename = std::filesystem::path(imagePath).filename().string();
+	std::string fileName = std::filesystem::path(imagePath).filename().string();
+	assert(textureFileNameMap.contains(fileName) == false);
 
-	assert(TextureIDGenerator.ContainsHash(filename) == false);
+
+	//assert(TextureIDGenerator.ContainsHash(filename) == false);
 
 	Texture tex = rengine->genTexture(imagePath, filterMode);
-	texID id = TextureIDGenerator.GenerateID(filename);
 
+	texID id = textureIDSlotManager.GetAvailableSlot();
+	textureFileNameMap.insert({ fileName, id });
+	fileNameTextureMap.insert({ id, fileName });
+	//texID id = TextureIDGenerator.GenerateID(filename);
+	
 	if (imGuiTexure) 
 		tex.imTexture = ImGui_ImplVulkan_AddTexture(tex.sampler, tex.imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	
@@ -47,10 +54,14 @@ texID ResourceManager::LoadTexture(std::string imagePath, FilterMode filterMode,
 
 texID ResourceManager::LoadTexture(uint8_t * imageFileData, int dataLength, std::string fileName, FilterMode filterMode, bool imGuiTexure) {
 
-	assert(TextureIDGenerator.ContainsHash(fileName) == false);
+	//assert(TextureIDGenerator.ContainsHash(fileName) == false);
+	assert(textureFileNameMap.contains(fileName) == false);
 
 	Texture tex = rengine->genTexture(imageFileData, dataLength, filterMode);
-	texID id = TextureIDGenerator.GenerateID(fileName);
+	/*texID id = TextureIDGenerator.GenerateID(fileName);*/
+	texID id = textureIDSlotManager.GetAvailableSlot();
+	textureFileNameMap.insert({ fileName, id });
+	fileNameTextureMap.insert({ id, fileName });
 
 	if (imGuiTexure)
 		tex.imTexture = ImGui_ImplVulkan_AddTexture(tex.sampler, tex.imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
@@ -64,17 +75,21 @@ void ResourceManager::UpdateTexture(texID id, FilterMode filterMode) {
 
 	assert(HasTexture(id));
 
-	auto tex = &textureResources[id];
+	auto tex = &textureResources.at(id);
 	tex->sampler = (filterMode == FilterMode::Nearest) ? rengine->textureSampler_nearest : rengine->textureSampler_linear;
 	changeFlags->_flagTextureFiltersChanged();
 }
 
 texID ResourceManager::LoadTextureAsync(std::string imagePath, FilterMode filterMode) {
 
-	std::string filename = std::filesystem::path(imagePath).filename().string();
-	assert(TextureIDGenerator.ContainsHash(filename) == false);
+	std::string fileName = std::filesystem::path(imagePath).filename().string();
+	assert(textureFileNameMap.contains(fileName) == false);
+	//assert(TextureIDGenerator.ContainsHash(filename) == false);
 
-	texID id = TextureIDGenerator.GenerateID(filename);
+	//texID id = TextureIDGenerator.GenerateID(filename);
+	texID id = textureIDSlotManager.GetAvailableSlot();
+	textureFileNameMap.insert({ fileName, id });
+	fileNameTextureMap.insert({ id, fileName });
 
 	textureJob job;
 	job.imagePath = imagePath;
@@ -125,7 +140,8 @@ framebufferID ResourceManager::CreateFramebuffer(glm::ivec2 size, glm::vec4 clea
 	for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++)
 	{
 		texID id;
-		id = TextureIDGenerator.GenerateID();
+		//id = TextureIDGenerator.GenerateID();
+		id = textureIDSlotManager.GetAvailableSlot();
 		dfb.textureIDs[i] = id; 
 		setTextureResource(id, {});
 		dfb.textures[i] = GetTexture(id);
@@ -168,3 +184,48 @@ void ResourceManager::HandleFramebufferRecreation() {
 		}
 	}
 }
+
+void ResourceManager::SetTextureFreeable(texID id) {
+
+	deletion_mtx.lock();
+
+	// given that textures freeable tracks frame synchnronizations, it would be a mistake
+	// to call this function from a different thread than the engine thread.
+	// This assertion may be removed if additional synchronization is added
+	assert(std::this_thread::get_id() == rengine->defaultThreadID);
+	//assert(textureResources.contains(id));
+
+	for (auto& t : deletionList)
+	{
+		assert(id != t.id);
+	}
+
+	textureFreeable t;
+	t.id = id;
+
+	{
+		std::unique_lock<std::mutex> lock(texMapMtx);
+		if (textureResources.contains(id))
+			t.tex = &textureResources[id];
+
+		textureResources.erase(id);
+	}
+	//TextureIDGenerator.Erase(t.id);
+
+	if (fileNameTextureMap.contains(t.id)) {
+		textureFileNameMap.erase(fileNameTextureMap.at(t.id));
+		fileNameTextureMap.erase(t.id);
+	}
+
+	textureIDSlotManager.FreeSlot(t.id);
+
+	deletionList.push_back(t);
+	deletion_mtx.unlock();
+}
+
+void ResourceManager::FreeTexture(textureFreeable& t) {
+	assert(t.tex != nullptr);
+	if (t.tex->imTexture.has_value())
+		ImGui_ImplVulkan_RemoveTexture(t.tex->imTexture.value());
+	rengine->freeTexture(*t.tex);
+};

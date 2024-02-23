@@ -13,9 +13,11 @@
 
 #include <robin_hood.h>
 
-#ifdef USE_PACKED_ASSETS
-#define USE_EMBEDDED_ASSETS
-#endif
+//#ifdef USE_PACKED_ASSETS
+//#define USE_EMBEDDED_ASSETS
+//#endif
+
+#define USE_PACKED_ASSETS
 
 #ifdef USE_EMBEDDED_ASSETS
 #include <Windows.h>
@@ -244,15 +246,6 @@ public:
 	size_t _spriteAssetCount() { return spriteAssets.size(); }
 	size_t _fontAssetCount() { return fontAssets.size(); }
 
-	std::vector<std::string> _getLoadedAndUnloadedSceneNames() {
-		std::vector<std::string> vec;
-		vec.reserve(scenePathsByName.size());
-		for (auto& [name, file] : scenePathsByName)
-		{
-			vec.push_back(name);
-		}
-		return vec;
-	};
 
 #ifndef USE_PACKED_ASSETS
 	void deletePrefabFromDisk(std::string name);
@@ -348,6 +341,16 @@ private:
 	std::unordered_map<std::string, std::string> prefabPathsByName;
 
 	std::unordered_map<std::string, std::string> scenePathsByName;
+
+	std::vector<std::string> _getLoadedAndUnloadedSceneNames() {
+		std::vector<std::string> vec;
+		vec.reserve(scenePathsByName.size());
+		for (auto& [name, file] : scenePathsByName)
+		{
+			vec.push_back(name);
+		}
+		return vec;
+	};
 
 	//std::unordered_map<std::string, std::string> ImagePathsByFileName;
 

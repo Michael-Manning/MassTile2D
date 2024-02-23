@@ -120,20 +120,16 @@ std::shared_ptr<Scene> Scene::deserializeJson(std::string filename, AssetManager
 }
 
 
-std::shared_ptr<Scene> Scene::deserializeFlatbuffers(const AssetPack::Scene* s, AssetManager* assetManager) {
-	auto scene = std::make_shared<Scene>(assetManager);
+Scene::Scene(const AssetPack::Scene* scene, AssetManager* assetManager) : assetManager(assetManager), bworld(gravity), sceneData(scene->sceneData()) {
+	
+	name = scene->name()->str();
 
-	scene->name = s->name()->str();
+	for (auto& [id, r] : sceneData.rigidbodies)
+		linkRigidbodyB2D(id, &r);
+	for (auto& [id, r] : sceneData.staticbodies)
+		linkStaticbodyB2D(id, &r);
 
-	SceneData::deserializeFlatbuffers(s->sceneData(), &scene->sceneData);
-
-	for (auto& [id, r] : scene->sceneData.rigidbodies)
-		scene->linkRigidbodyB2D(id, &r);
-	for (auto& [id, r] : scene->sceneData.staticbodies)
-		scene->linkStaticbodyB2D(id, &r);
-
-	scene->LinkEntityRelationships();
-	return scene;
+	LinkEntityRelationships();
 }
 
 

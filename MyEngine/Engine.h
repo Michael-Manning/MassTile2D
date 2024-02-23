@@ -89,8 +89,8 @@ public:
 	Engine() :
 		rengine(std::make_unique<VKEngine>()),
 		resourceChangeFlags(std::make_unique<ResourceManager::ChangeFlags>()),
-		GlobalTextureDesc(rengine.get()),
-		globalTextureBindingManager(MAX_TEXTURE_RESOURCES)
+		GlobalTextureDesc(rengine.get())
+		//globalTextureBindingManager(MAX_TEXTURE_RESOURCES)
 	{
 		//bworld = std::make_shared<b2World>(gravity);
 		//currentScene = std::make_shared<Scene>(bworld);
@@ -206,21 +206,22 @@ public:
 	}
 
 	inline void addScreenCenteredSpaceTexture(Sprite* sprite, int atlasIndex, glm::vec2 pos, float height, float rotation = 0.0f) {
-		TexturedQuadPL::ssboObjectInstanceData item;
-		item.uvMin = glm::vec2(0.0f);
-		item.uvMax = glm::vec2(1.0f);
-		item.translation = pos;
-		item.scale = glm::vec2(sprite->resolution.x / sprite->resolution.y * height, height);
-		item.rotation = rotation;
-		item.tex = sprite->textureID; 
+		assert(screenSpaceTextureGPUIndex < TexturedQuadPL_MAX_OBJECTS);
+		TexturedQuadPL::ssboObjectInstanceData* item = screenSpaceTextureGPUBuffer + screenSpaceTextureGPUIndex++;
+		item->uvMin = glm::vec2(0.0f);
+		item->uvMax = glm::vec2(1.0f);
+		item->translation = pos;
+		item->scale = glm::vec2(sprite->resolution.x / sprite->resolution.y * height, height);
+		item->rotation = rotation;
+		item->tex = sprite->textureID; 
 
 		if (sprite->atlas.size() > 0) {
 			auto atEntry = sprite->atlas[atlasIndex];
-			item.uvMin = atEntry.uv_min;
-			item.uvMax = atEntry.uv_max;
+			item->uvMin = atEntry.uv_min;
+			item->uvMax = atEntry.uv_max;
 		}
 
-		screenSpaceTextureDrawlist.push_back(item);
+		//screenSpaceTextureDrawlist.push_back(item);
 	}
 	inline void addScreenCenteredSpaceTexture(spriteID sprID, int atlasIndex, glm::vec2 pos, float height, float rotation = 0.0f){
 		auto s = assetManager->GetSprite(sprID);
@@ -246,15 +247,18 @@ public:
 		float w = fb->extents[rengine->currentFrame].width;
 		float h = fb->extents[rengine->currentFrame].height;
 
-		TexturedQuadPL::ssboObjectInstanceData item;
-		item.uvMin = glm::vec2(0.0f);
-		item.uvMax = glm::vec2(1.0f, -1.0f); // I don't actually know why this has to be flipped
-		item.translation = pos;
-		item.scale = glm::vec2((w / h) * height, height);
-		item.rotation = rotation;
-		item.tex = fb->textureIDs[rengine->currentFrame];
+		assert(screenSpaceTextureGPUIndex < TexturedQuadPL_MAX_OBJECTS);
+		TexturedQuadPL::ssboObjectInstanceData* item = screenSpaceTextureGPUBuffer + screenSpaceTextureGPUIndex++;
 
-		screenSpaceTextureDrawlist.push_back(item);
+	//	TexturedQuadPL::ssboObjectInstanceData item;
+		item->uvMin = glm::vec2(0.0f);
+		item->uvMax = glm::vec2(1.0f, -1.0f); // I don't actually know why this has to be flipped
+		item->translation = pos;
+		item->scale = glm::vec2((w / h) * height, height);
+		item->rotation = rotation;
+		item->tex = fb->textureIDs[rengine->currentFrame];
+
+		//screenSpaceTextureDrawlist.push_back(item);
 	}
 
 
@@ -293,7 +297,7 @@ public:
 	void clearScreenSpaceDrawlist() {
 		screenSpaceColorDrawlist.clear();
 		screenSpaceTextDrawlist.clear();
-		screenSpaceTextureDrawlist.clear();
+		//screenSpaceTextureDrawlist.clear();
 	}
 
 	//void SetScene(std::shared_ptr<Scene> scene) {
@@ -349,15 +353,15 @@ public:
 
 private:
 
+	
 	GlobalImageDescriptor GlobalTextureDesc;
-	BindingManager<texID, Texture*> globalTextureBindingManager;
+	std::array<bool, FRAMES_IN_FLIGHT> textureDescriptorDirtyFlags = { false, false };
 
-	//std::shared_ptr<Scene> currentScene = nullptr;
 	std::queue<texID> textureBindingDeletionQueue;
 	std::unique_ptr<ResourceManager::ChangeFlags> resourceChangeFlags;
 	std::unique_ptr<ResourceManager> resourceManager = nullptr;
 	std::vector<ColoredQuadPL::InstanceBufferData> screenSpaceColorDrawlist;
-	std::vector<TexturedQuadPL::ssboObjectInstanceData> screenSpaceTextureDrawlist;
+	//std::vector<TexturedQuadPL::ssboObjectInstanceData> screenSpaceTextureDrawlist;
 
 	struct screenSpaceTextDrawItem {
 		TextPL::textHeader header;
@@ -396,6 +400,9 @@ private:
 	std::unique_ptr<TexturedQuadPL> screenSpaceTexturePipeline = nullptr;
 	std::unique_ptr<TextPL> screenSpaceTextPipeline = nullptr;
 	std::unique_ptr<ParticleComputePL> particleComputePipeline = nullptr;
+
+	TexturedQuadPL::ssboObjectInstanceData* screenSpaceTextureGPUBuffer = nullptr;
+	int screenSpaceTextureGPUIndex = 0;
 
 	//VKUtil::BufferUploader<cameraUBO_s> cameraUploader;
 	VKUtil::BufferUploader<cameraUBO_s> screenSpaceTransformUploader;

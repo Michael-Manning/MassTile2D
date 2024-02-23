@@ -49,11 +49,9 @@ void Prefab::deserializeJson(std::string filename, Prefab* prefab) {
 }
 
 
-void Prefab::deserializeFlatbuffers(const AssetPack::Prefab* s, Prefab* prefab) {
-	prefab->name = s->name()->str();
-	SceneData::deserializeFlatbuffers(s->sceneData(), &prefab->sceneData);
-
-	prefab->FindTopLevelEntity();
+Prefab::Prefab(const AssetPack::Prefab* prefab) : sceneData(prefab->sceneData()) {
+	name = prefab->name()->str();
+	FindTopLevelEntity();
 }
 
 

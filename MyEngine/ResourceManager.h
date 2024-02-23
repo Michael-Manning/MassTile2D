@@ -9,13 +9,15 @@
 #include <mutex>
 #include <atomic>
 #include <iostream>
+#include <robin_hood.h>
 
 #include<vulkan/vulkan.hpp>
 
 #include "VKEngine.h"
 #include "typedefs.h"
 #include "Texture.h"
-#include "IDGenerator.h"
+//#include "IDGenerator.h"
+#include "SlotManager.h"
 #include "ConcurrentQueue.h"
 
 constexpr int MAX_TEXTURE_RESOURCES = 2000;
@@ -70,7 +72,8 @@ public:
 		:
 		rengine(engine),
 		changeFlags(changeFlags),
-		uploadContext(engine->GenerateThreadContext_gfx(true))
+		uploadContext(engine->GenerateThreadContext_gfx(true)),
+		textureIDSlotManager(max_bindless_resources)
 	{
 		asyncThread = std::thread(&ResourceManager::uploadThreadFunc, this, std::ref(asyncQueue));
 	};
@@ -82,7 +85,12 @@ public:
 		return &textureResources[id];
 	}
 
-	const std::unordered_map<texID, Texture>* GetInternalTextureResources() {
+	texID GetTextureID(std::string originalFilename) {
+		assert(textureFileNameMap.contains(originalFilename));
+		return textureFileNameMap.at(originalFilename);
+	}
+	
+	const robin_hood::unordered_node_map<texID, Texture>* GetInternalTextureResources() {
 		return &textureResources;
 	}
 
@@ -97,35 +105,7 @@ public:
 	void UpdateTexture(texID id, FilterMode filterMode);
 
 	// will delete the texture once it is not in use
-	void SetTextureFreeable(texID id) {
-
-		deletion_mtx.lock();
-
-		// given that textures freeable tracks frame synchnronizations, it would be a mistake
-		// to call this function from a different thread than the engine thread.
-		// This assertion may be removed if additional synchronization is added
-		assert(std::this_thread::get_id() == rengine->defaultThreadID);
-		//assert(textureResources.contains(id));
-
-		for (auto& t : deletionList)
-		{
-			assert(id != t.id);
-		}
-
-		textureFreeable t;
-		t.id = id;
-
-		{
-			std::unique_lock<std::mutex> lock(texMapMtx);
-			if (textureResources.contains(id))
-				t.tex = &textureResources[id];
-
-			textureResources.erase(id);
-		}
-		TextureIDGenerator.Erase(t.id);
-		deletionList.push_back(t);
-		deletion_mtx.unlock();
-	}
+	void SetTextureFreeable(texID id);
 
 	bool HasTexture(texID id) {
 		std::unique_lock<std::mutex> lock(texMapMtx);
@@ -171,7 +151,6 @@ public:
 
 private:
 
-
 	IDGenerator<framebufferID> fbIDGenerator;
 	std::unordered_map<framebufferID, DoubleFrameBufferContext> framebufferRefMap;
 
@@ -188,17 +167,12 @@ private:
 		int framesPassed = 0; // swapchain synchronizations since queued
 	};
 
-	void FreeTexture(textureFreeable& t) {
-		assert(t.tex != nullptr);
-		if (t.tex->imTexture.has_value())
-			ImGui_ImplVulkan_RemoveTexture(t.tex->imTexture.value());
-		rengine->freeTexture(*t.tex);
-	};
+	void FreeTexture(textureFreeable& t);
 
 
 	void setTextureResource(texID id, Texture tex) {
 		std::unique_lock<std::mutex> lock(texMapMtx);
-		textureResources.insert(std::pair<texID, Texture>(id, tex));
+		textureResources.insert({id, tex });
 	}
 
 	void uploadThreadFunc(ConcurrentQueue<textureJob>& asyncQueue);
@@ -236,8 +210,13 @@ private:
 	}
 
 	ChangeFlags* changeFlags = nullptr;
-	std::unordered_map<texID, Texture> textureResources; // reserve capacity or replace with collection protected against re-hashing due to pointer use
-	IDGenerator<texID> TextureIDGenerator;
+	robin_hood::unordered_node_map<texID, Texture> textureResources;
+
+	robin_hood::unordered_flat_map<std::string, texID> textureFileNameMap;
+	robin_hood::unordered_flat_map<texID, std::string> fileNameTextureMap;
+	//IDGenerator<texID> TextureIDGenerator;
+	
+	SlotManager<texID> textureIDSlotManager;
 	VKEngine* rengine;
 };
 

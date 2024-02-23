@@ -38,7 +38,7 @@ public:
 
 	void serializeJson(std::string filename) const;
 	static void deserializeJson(std::string filename, Prefab* prefab);
-	static void deserializeFlatbuffers(const AssetPack::Prefab* s, Prefab* prefab);
+	Prefab(const AssetPack::Prefab* s);
 
 private:
 	void FindTopLevelEntity();

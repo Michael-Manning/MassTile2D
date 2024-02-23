@@ -57,12 +57,14 @@ public:
 
 	Sprite() {};
 
+	Sprite(const AssetPack::Sprite* s);
+
 	void serializeJson(std::string filepath) const {
 		nlohmann::json j;
 
 		j["ID"] = ID;
 		j["name"] = name;
-		j["textureID"] = textureID;
+		//j["textureID"] = textureID;
 		j["resolution"] = toJson(resolution);
 		j["imageFileName"] = imageFileName;
 		j["filterMode"] = static_cast<uint32_t>(filterMode);
@@ -82,7 +84,6 @@ public:
 
 		sprite->ID = j["ID"];
 		sprite->name = j["name"];
-		sprite->textureID = j["textureID"];
 
 		sprite->resolution = fromJson<glm::vec2>(j["resolution"]);
 		sprite->imageFileName = j["imageFileName"];
@@ -113,44 +114,6 @@ public:
 			}
 		}
 
-		return;
-	}
-
-	static void deserializeFlatbuffer(const AssetPack::Sprite* s, Sprite* sprite) {
-
-		sprite->ID = s->ID();
-		sprite->name = s->name()->str();
-		sprite->textureID = s->textureID();
-		sprite->resolution = fromAP(s->resolution());
-		sprite->imageFileName = s->imageFileName()->str();
-		sprite->filterMode = static_cast<FilterMode>(s->filterMode());
-
-		if (s->atlas() != nullptr) {
-			sprite->atlas.resize(s->atlas()->size());
-			for (size_t i = 0; i < s->atlas()->size(); i++)
-				sprite->atlas[i] = AtlasEntry::deserializeFlatbuffer(s->atlas()->Get(i));
-		}
-
-		if (sprite->atlas.size() > 0)
-			return;
-
-		auto gridLayout = s->atlasLayout();
-		if (gridLayout != nullptr) {
-			int xcount = gridLayout->xCount();
-			int ycount = gridLayout->yCount();
-
-			float uvw = 1.0f / xcount;
-			float uvh = 1.0f / ycount;
-			for (size_t i = 0; i < ycount; i++) {
-				for (size_t j = 0; j < xcount; j++) {
-					AtlasEntry entry;
-					entry.name = std::to_string((int)(i + j * xcount));
-					entry.uv_min = glm::vec2(j * uvw, i * uvh);
-					entry.uv_max = entry.uv_min + glm::vec2(uvw, uvh);
-					sprite->atlas.push_back(entry);
-				}
-			}
-		}
 		return;
 	}
 };

@@ -39,4 +39,5 @@ for file in generatedFiles:
    shutil.move(file, os.path.join(destinationDir, file))
 
 print("moved generated files to {0}".format(destinationDir))
+print("done :)")
 

@@ -32,11 +32,10 @@ void AssetManager::LoadAllSprites(bool loadResources) {
 		return;
 
 	for (int i = 0; i < packageAssets->sprites()->size(); i++) {
-		// IDEA:  
-		// auto pack = packageAssets->sprites()->Get(i);
-		// auto [iter, inserted] spriteAssets.emplace(pack>ID());
-		/// Also, why not make the deserialize functions constructers to simplify emplace usage?
-		auto sprite = Sprite::deserializeFlatbuffer(packageAssets->sprites()->Get(i));
+
+		auto pack = packageAssets->sprites()->Get(i);
+		auto [iter, inserted] = spriteAssets.emplace(pack->ID(), pack);
+		Sprite* sprite = &iter->second;
 #else
 	for (auto& [ID, path] : spritePathsByID) {
 		auto [iter, inserted] = spriteAssets.emplace(std::piecewise_construct, std::forward_as_tuple(ID), std::tuple<>());
@@ -44,56 +43,64 @@ void AssetManager::LoadAllSprites(bool loadResources) {
 		Sprite::deserializeJson(path, sprite);
 #endif
 
-		loadedSpritesByName[sprite->name] = sprite->ID;
-		SpriteIDGenerator.Input(sprite->ID);
-
 		if (loadResources && resourceManager->HasTexture(sprite->textureID) == false) {
 #ifdef USE_PACKED_ASSETS
 			uint32_t fileSize = resourceFileSizes[sprite->imageFileName];
 			vector<uint8_t> fileData;
 			fileData.resize(fileSize);
-			GetPackedResourceData(fileData.data(), resourceFileOffsets[sprite->imageFileName], fileSize);
+			GetPackedResourceData(fileData.data(), resourceFileOffsets.at(sprite->imageFileName), fileSize);
 			resourceManager->LoadTexture(fileData.data(), fileSize, sprite->imageFileName, sprite->filterMode, usingEditor);
 #else
 			resourceManager->LoadTexture(directories.assetDir + sprite->imageFileName, sprite->filterMode, usingEditor);
 #endif
 		}
+
+		sprite->textureID = resourceManager->GetTextureID(sprite->imageFileName);
+
+		loadedSpritesByName[sprite->name] = sprite->ID;
+		SpriteIDGenerator.Input(sprite->ID);
 	}
 }
 
 
 void AssetManager::LoadSprite(spriteID spriteID, bool loadResources) {
 
-	auto [iter, inserted] = spriteAssets.emplace(std::piecewise_construct, std::forward_as_tuple(spriteID), std::tuple<>());
-	Sprite* sprite = &spriteAssets.at(spriteID);
 
 #ifdef USE_PACKED_ASSETS
-	Sprite::deserializeFlatbuffer(packageAssets->sprites()->Get(spriteIndexesByID[spriteID]), sprite);
+	int index = spriteIndexesByID.at(spriteID);
+	auto [iter, inserted] = spriteAssets.emplace(spriteID, packageAssets->sprites()->Get(index));
+	Sprite* sprite = &iter->second;
 #else
-	assert(spriteAssets.contains(spriteID) == false);
+	auto [iter, inserted] = spriteAssets.emplace(std::piecewise_construct, std::forward_as_tuple(spriteID), std::tuple<>());
+	Sprite* sprite = &iter->second;
 	Sprite::deserializeJson(spritePathsByID.at(spriteID), sprite);
 #endif
-
-	loadedSpritesByName[sprite->name] = sprite->ID;
 
 	if (loadResources && resourceManager->HasTexture(sprite->textureID) == false) {
 #ifdef USE_PACKED_ASSETS
 		uint32_t fileSize = resourceFileSizes[sprite->imageFileName];
 		vector<uint8_t> fileData;
 		fileData.resize(fileSize);
-		GetPackedResourceData(fileData.data(), resourceFileOffsets[sprite->imageFileName], fileSize);
+		GetPackedResourceData(fileData.data(), resourceFileOffsets.at(sprite->imageFileName), fileSize);
 		resourceManager->LoadTexture(fileData.data(), fileSize, sprite->imageFileName, sprite->filterMode, usingEditor);
 #else
 		resourceManager->LoadTexture(directories.assetDir + sprite->imageFileName, sprite->filterMode, usingEditor);
 #endif
 	}
+
+	sprite->textureID = resourceManager->GetTextureID(sprite->imageFileName);
+
+	loadedSpritesByName[sprite->name] = sprite->ID;
 }
 
 // slowest method since sprite must be coppied to read ID before inserting into asset map (at least for json?)
 void AssetManager::LoadSprite(std::string name, bool loadResources) {
 
 #ifdef USE_PACKED_ASSETS
-	auto sprite = Sprite::deserializeFlatbuffer(packageAssets->sprites()->Get(spriteIndexesByName[name]));
+	int index = spriteIndexesByName.at(name);
+	auto pack = packageAssets->sprites()->Get(index);
+	auto [iter, inserted] = spriteAssets.emplace(pack->ID(), pack);
+	Sprite* sprite = &iter->second;
 #else
 	assert(spritePathsByName.contains(name) == true);
 	Sprite tmpSprite;
@@ -102,22 +109,22 @@ void AssetManager::LoadSprite(std::string name, bool loadResources) {
 	Sprite* sprite = &iter->second;
 #endif
 
-	loadedSpritesByName[sprite->name] = sprite->ID;
-
-	assert(spriteAssets.contains(sprite->ID) == false);
-
 	if (loadResources && resourceManager->HasTexture(sprite->textureID) == false) {
 
 #ifdef USE_PACKED_ASSETS
 		uint32_t fileSize = resourceFileSizes[sprite->imageFileName];
 		vector<uint8_t> fileData;
 		fileData.resize(fileSize);
-		GetPackedResourceData(fileData.data(), resourceFileOffsets[sprite->imageFileName], fileSize);
+		GetPackedResourceData(fileData.data(), resourceFileOffsets.at(sprite->imageFileName), fileSize);
 		resourceManager->LoadTexture(fileData.data(), fileSize, sprite->imageFileName, sprite->filterMode, usingEditor);
 #else
 		resourceManager->LoadTexture(directories.assetDir + sprite->imageFileName, sprite->filterMode, usingEditor);
 #endif
 	}
+
+	sprite->textureID = resourceManager->GetTextureID(sprite->imageFileName);
+
+	loadedSpritesByName[sprite->name] = sprite->ID;
 }
 
 void AssetManager::UnloadSprite(spriteID spriteID, bool freeResources) {
@@ -144,7 +151,9 @@ void AssetManager::LoadAllFonts(bool loadResources) {
 		return;
 
 	for (int i = 0; i < packageAssets->fonts()->size(); i++) {
-		auto font = Font::deserializeFlatbuffer(packageAssets->fonts()->Get(i));
+		auto pack = packageAssets->fonts()->Get(i);
+		auto [iter, inserted] = fontAssets.emplace(pack->ID(), pack);
+		Font* font = &iter->second;
 #else
 	for (auto& [fontID, path] : fontPathsByID) {
 		auto [iter, inserted] = fontAssets.emplace(std::piecewise_construct, std::forward_as_tuple(fontID), std::tuple<>());
@@ -152,7 +161,7 @@ void AssetManager::LoadAllFonts(bool loadResources) {
 		Font::deserializeBinary(path, font);
 #endif
 
-		loadedFontsByName[font->name] = font->ID;
+		loadedFontsByName.insert({font->name, font->ID });
 		fontIDGenerator.Input(font->ID);
 
 		if (loadResources && spriteAssets.contains(font->atlas) == false)
@@ -163,12 +172,15 @@ void AssetManager::LoadAllFonts(bool loadResources) {
 void AssetManager::LoadFont(fontID fontID, bool loadResources) {
 	assert(fontAssets.contains(fontID) == false);
 
-	auto [iter, inserted] = fontAssets.emplace(std::piecewise_construct, std::forward_as_tuple(fontID), std::tuple<>());
-	Font* font = &iter->second;
 
 #ifdef USE_PACKED_ASSETS
-	auto font = Font::deserializeFlatbuffer(packageAssets->fonts()->Get(fontIndexesByID[fontID]));
+	int index = fontIndexesByID.at(fontID);
+	auto [iter, inserted] = fontAssets.emplace(fontID, packageAssets->fonts()->Get(index));
+	Font* font = &iter->second;
+
 #else
+	auto [iter, inserted] = fontAssets.emplace(std::piecewise_construct, std::forward_as_tuple(fontID), std::tuple<>());
+	Font* font = &iter->second;
 	Font::deserializeBinary(fontPathsByID[fontID], font);
 #endif
 
@@ -181,7 +193,10 @@ void AssetManager::LoadFont(fontID fontID, bool loadResources) {
 void AssetManager::LoadFont(std::string name, bool loadResources) {
 
 #ifdef USE_PACKED_ASSETS
-	auto font = Font::deserializeFlatbuffer(packageAssets->fonts()->Get(fontIndexesByName[name]));
+	int index = fontIndexesByName.at(name);
+	auto  pack = packageAssets->fonts()->Get(index);
+	auto [iter, inserted] = fontAssets.emplace(pack->ID(), pack);
+	Font* font = &iter->second;
 #else
 	assert(fontPathsByName.contains(name) == true);
 	Font tmpFont;
@@ -217,8 +232,9 @@ void AssetManager::LoadAllPrefabs(bool loadResources) {
 		return;
 
 	for (int i = 0; i < packageAssets->prefabs()->size(); i++) {
-		auto prefab = Prefab::deserializeFlatbuffer(packageAssets->prefabs()->Get(i));
-		prefabAssets[prefab.name] = prefab;
+
+		auto pack = packageAssets->prefabs()->Get(i);
+		prefabAssets.emplace(pack->name()->str(), pack);
 #else
 	for (auto& [name, path] : prefabPathsByName) {
 
@@ -231,7 +247,7 @@ void AssetManager::LoadAllPrefabs(bool loadResources) {
 
 void AssetManager::LoadPrefab(std::string name, bool loadResources) {
 #ifdef USE_PACKED_ASSETS
-	prefabAssets[name] = Prefab::deserializeFlatbuffer(packageAssets->prefabs()->Get(prefabIndexesByName[name]));
+	prefabAssets.emplace(name, packageAssets->prefabs()->Get(prefabIndexesByName.at(name)));
 #else
 	assert(prefabPathsByName.contains(name));
 
@@ -244,14 +260,14 @@ void AssetManager::LoadPrefab(std::string name, bool loadResources) {
 
 #endif
 	if (loadResources)
-		loadPrefabResources(prefabAssets[name]);
+		loadPrefabResources(prefabAssets.at(name));
 }
 
 
 void AssetManager::LoadScene(std::string sceneName, bool loadResources) {
 
 #ifdef USE_PACKED_ASSETS
-	auto scene = Scene::deserializeFlatbuffers(packageAssets->scenes()->Get(sceneIndexesByName[sceneName]), this);
+	auto scene = make_shared<Scene>(packageAssets->scenes()->Get(sceneIndexesByName[sceneName]), this);
 #else
 	assert(scenePathsByName.contains(sceneName));
 

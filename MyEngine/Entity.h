@@ -98,7 +98,7 @@ public:
 
 	nlohmann::json serializeJson() const;
 	static void deserializeJson(const nlohmann::json& j, Entity* entity);
-	static void deserializeFlatbuffers(const AssetPack::Entity* packEntity, Entity* entity);
+	Entity(const AssetPack::Entity* packEntity);
 	static entityID PeakID(const nlohmann::json& j) {return j["id"].get<int>();}
 	static entityID PeakID(const AssetPack::Entity* packEntity) {return packEntity->id();}
 

@@ -1412,7 +1412,7 @@ bool Editor::drawInspector<SpriteRenderer>(SpriteRenderer& r) {
 	}
 
 	if (rendererSelectedSprite != r.sprite) {
-		r.sprite = rendererSelectedSprite;
+		r.SetSprite(engine->assetManager->GetSprite(rendererSelectedSprite));
 	}
 
 	Text("Sprite ID: %d", r.sprite);

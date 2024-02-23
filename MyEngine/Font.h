@@ -77,6 +77,8 @@ class Font {
 
 public:
 
+	Font() {}
+
 	std::string name;
 
 	int firstChar = 32;
@@ -103,7 +105,7 @@ public:
 	void serializeJson(std::string filepath) const;
 	void serializeBinary(std::string filepath) const;
 	static void deserializeBinary(std::string filepath, Font* font);
-	static void deserializeFlatbuffer(const AssetPack::Font* f, Font* font);
+	Font(const AssetPack::Font* f);
 };
 
 void CalculateQuads(Font* f, std::string& text, charQuad* quads);

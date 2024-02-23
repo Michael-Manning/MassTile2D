@@ -43,7 +43,7 @@ struct SerializableProperty {
 
 	nlohmann::json serializeJson() const;
 	void assignValue(const nlohmann::json& j);
-	static void deserialize(const AssetPack::SerializableProperty* s, SerializableProperty* sp);
+	void assignValue(const AssetPack::SerializableProperty* s);
 };
 
 //struct PropertyGroup {

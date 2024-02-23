@@ -1,5 +1,7 @@
 #include "stdafx.h"
 
+#define USE_PACKED_ASSETS
+
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
@@ -451,9 +453,9 @@ int main() {
 	uiState.showingInventory = true;
 
 	{
-		auto testSprite = engine->assetManager->GetSprite("test_cat");
-		Benchmark::BuildSpriteEntityStressTest(scene.get(), testSprite->ID); // 300 avg 2400 release
-		// 380, 2400
+		//auto testSprite = engine->assetManager->GetSprite("test_cat");
+		//Benchmark::BuildSpriteEntityStressTest(scene.get(), testSprite->ID); // 300 avg 2400 release
+		// 460, 2800
 	}
 
 	//auto ent = scene->CreateEntity();

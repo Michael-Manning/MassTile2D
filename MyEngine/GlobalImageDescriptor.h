@@ -65,7 +65,7 @@ public:
 		}
 	}
 
-	void AddDescriptors(std::vector<int>& indexes, std::vector<Texture*>& textures, int frame) {
+	void AddDescriptors(std::vector<int>& indexes, std::vector<const Texture*>& textures, int frame) {
 
 		assert(indexes.size() == textures.size());
 		if (indexes.size() == 0)

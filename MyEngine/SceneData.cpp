@@ -5,6 +5,7 @@
 #include <nlohmann/json.hpp>
 #include <robin_hood.h>
 #include <assetPack/SceneData_generated.h>
+#include <assetPack/common_generated.h>
 
 #include "ECS.h"
 #include "Physics.h"
@@ -96,7 +97,7 @@ void SceneData::deserializeJson(nlohmann::json& j, SceneData* sceneData) {
 		auto [iter, inserted] = sceneData->behaviours.emplace(entID, BehaviorMap.at(hash).second(hash, &sceneData->entities.at(entID)));
 
 		std::vector<SerializableProperty> props = iter->second->getProperties();
-		
+
 		for (auto& jprop : e["properties"])
 		{
 			std::string pname = jprop["name"];
@@ -111,7 +112,6 @@ void SceneData::deserializeJson(nlohmann::json& j, SceneData* sceneData) {
 		}
 	}
 
-
 	for (auto& e : j["colorRenderers"]) {
 		entityID entID = e["entityID"];
 		ColorRenderer r = ColorRenderer::deserializeJson(e);
@@ -124,7 +124,6 @@ void SceneData::deserializeJson(nlohmann::json& j, SceneData* sceneData) {
 			std::piecewise_construct,
 			std::forward_as_tuple(entID),
 			std::forward_as_tuple(r, &sceneData->entities.at(entID)));
-		//sceneData->spriteRenderers.insert({ entID, r });
 	}
 	for (auto& e : j["textRenderers"]) {
 		entityID entID = e["entityID"];
@@ -138,59 +137,83 @@ void SceneData::deserializeJson(nlohmann::json& j, SceneData* sceneData) {
 	for (auto& e : j["rigidbodies"]) {
 		entityID entID = e["entityID"];
 		sceneData->rigidbodies.emplace(entID, e);
-		/*Rigidbody r = Rigidbody::deserializeJson(e);
-		sceneData->rigidbodies.insert({ entID, r });*/
 	}
 	for (auto& e : j["staticbodies"]) {
 		entityID entID = e["entityID"];
 		sceneData->staticbodies.emplace(entID, e);
-	//	Staticbody r = Staticbody::deserializeJson(e);
-	//	sceneData->staticbodies.insert({ entID, r });
 	}
 }
 
-void SceneData::deserializeFlatbuffers(const AssetPack::SceneData* s, SceneData* sceneData) {
+SceneData::SceneData(const AssetPack::SceneData* sceneData) {
 
-	for (size_t i = 0; i < s->entities()->size(); i++) {
+	for (size_t i = 0; i < sceneData->entities()->size(); i++) {
 
-		const auto& fb = s->entities()->Get(i);
-		entityID id = Entity::PeakID(fb);
-		// must have been persitent to have been serialized in the first place
-		Entity* entity = sceneData->EmplaceEntity(id);
-		Entity::deserializeFlatbuffers(fb, entity);
-		entity->persistent = true;
+		auto pack = sceneData->entities()->Get(i);
+		entityID ID = pack->id();
+		assert(EntityGenerator.Contains(ID) == false);
+		EntityGenerator.Input(ID);
+		auto [iterator, inserted] = entities.emplace(ID, pack);
+		iterator->second.persistent = true;
 	}
-	for (size_t i = 0; i < s->colorRenderers()->size(); i++) {
-		ColorRenderer r = ColorRenderer::deserializeFlatbuffers(s->colorRenderers()->Get(i));
-		entityID entID = s->colorRenderers()->Get(i)->entityID();
-		sceneData->colorRenderers.insert({ entID, r });
+
+	for (size_t i = 0; i < sceneData->behaviors()->size(); i++)
+	{
+		auto pack = sceneData->behaviors()->Get(i);
+		entityID entID = pack->entityID();
+		behavioiurHash hash = pack->hash();
+		
+		auto [iter, inserted] = behaviours.emplace(entID, BehaviorMap.at(hash).second(hash, &entities.at(entID)));
+
+		std::vector<SerializableProperty> props = iter->second->getProperties();
+
+		for (size_t j = 0; j < pack->properties()->size(); j++)
+		{
+			auto packProp = pack->properties()->Get(j);
+			std::string pname = packProp->name()->str();
+
+			for (auto& prop : props)
+			{
+				if (pname == prop.name) {
+					assert(prop.type == static_cast<SerializableProperty::Type>(packProp->type()));
+					prop.assignValue(packProp);
+					break;
+				}
+			}
+
+		}
 	}
-	for (size_t i = 0; i < s->spriteRenderers()->size(); i++) {
-		SpriteRenderer r = SpriteRenderer::deserializeFlatbuffers(s->spriteRenderers()->Get(i));
-		entityID entID = s->spriteRenderers()->Get(i)->entityID();
-		sceneData->spriteRenderers.insert({ entID, r });
-		assert(false);
+
+	for (size_t i = 0; i < sceneData->colorRenderers()->size(); i++) {
+		ColorRenderer r = ColorRenderer::deserializeFlatbuffers(sceneData->colorRenderers()->Get(i));
+		entityID entID = sceneData->colorRenderers()->Get(i)->entityID();
+		colorRenderers.insert({ entID, r });
 	}
-	for (size_t i = 0; i < s->textRenderers()->size(); i++) {
-		TextRenderer r = TextRenderer::deserializeFlatbuffers(s->textRenderers()->Get(i));
-		entityID entID = s->textRenderers()->Get(i)->entityID();
-		sceneData->textRenderers.insert({ entID, r });
+	for (size_t i = 0; i < sceneData->spriteRenderers()->size(); i++) {
+		auto pack = sceneData->spriteRenderers()->Get(i);
+		entityID entID = sceneData->spriteRenderers()->Get(i)->entityID();
+		spriteRenderers.emplace(
+			std::piecewise_construct,
+			std::forward_as_tuple(entID),
+			std::forward_as_tuple(pack, &entities.at(entID)));
 	}
-	for (size_t i = 0; i < s->particleSystemRenderers()->size(); i++) {
-		entityID entID = s->particleSystemRenderers()->Get(i)->entityID();
-		sceneData->particleSystemRenderers.emplace(entID, s->particleSystemRenderers()->Get(i));
+	for (size_t i = 0; i < sceneData->textRenderers()->size(); i++) {
+		TextRenderer r = TextRenderer::deserializeFlatbuffers(sceneData->textRenderers()->Get(i));
+		entityID entID = sceneData->textRenderers()->Get(i)->entityID();
+		textRenderers.insert({ entID, r });
 	}
-	assert(false);
-	//for (size_t i = 0; i < s->rigidbodies()->size(); i++) {
-	//	Rigidbody r = Rigidbody::deserializeFlatbuffers(s->rigidbodies()->Get(i));
-	//	entityID entID = s->rigidbodies()->Get(i)->entityID();
-	//	sceneData->rigidbodies.insert({ entID, r });
-	//}
-	//for (size_t i = 0; i < s->staticbodies()->size(); i++) {
-	//	Staticbody r = Staticbody::deserializeFlatbuffers(s->staticbodies()->Get(i));
-	//	entityID entID = s->staticbodies()->Get(i)->entityID();
-	//	sceneData->staticbodies.insert({ entID, r });
-	//}
+	for (size_t i = 0; i < sceneData->particleSystemRenderers()->size(); i++) {
+		entityID entID = sceneData->particleSystemRenderers()->Get(i)->entityID();
+		particleSystemRenderers.emplace(entID, sceneData->particleSystemRenderers()->Get(i));
+	}
+
+	for (size_t i = 0; i < sceneData->rigidbodies()->size(); i++) {
+		auto pack = sceneData->rigidbodies()->Get(i);
+		rigidbodies.emplace(pack->entityID(), pack);
+	}
+	for (size_t i = 0; i < sceneData->staticbodies()->size(); i++) {
+		auto pack = sceneData->staticbodies()->Get(i);
+		staticbodies.emplace(pack->entityID(), pack);
+	}
 }
 
 Entity* SceneData::EmplaceEntity(entityID ID) {

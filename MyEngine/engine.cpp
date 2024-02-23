@@ -218,12 +218,6 @@ void Engine::Start(const VideoSettings& initialSettings, AssetManager::AssetPath
 	lastwinW = winW;
 	lastwinH = winH;
 
-	vector<uint8_t> checkerData;
-	genCheckerboard(400, vec4(1, 0, 0, 1), vec4(0, 0, 1, 1), 6, checkerData);
-	texNotFoundID = resourceManager->GenerateTexture(400, 400, checkerData, FilterMode::Nearest, false);
-	auto texNotFound = resourceManager->GetTexture(texNotFoundID);
-	globalTextureBindingManager.AddBinding(texNotFoundID, texNotFound);
-
 	// create some buffers
 	{
 		//cameraUploader.CreateBuffers(rengine);
@@ -274,6 +268,7 @@ void Engine::Start(const VideoSettings& initialSettings, AssetManager::AssetPath
 			assetManager->LoadShaderFile("screenSpaceTexture_vert.spv", vert);
 			assetManager->LoadShaderFile("screenSpaceTexture_frag.spv", frag);
 			screenSpaceTexturePipeline->CreateGraphicsPipeline(vert, frag, rengine->swapchainRenderPass, &GlobalTextureDesc, screenSpaceTransformUploader.transferBuffers, true);
+			screenSpaceTextureGPUBuffer = screenSpaceTexturePipeline->getUploadMappedBuffer();
 		}
 		{
 			vector<uint8_t> vert, frag;
@@ -289,6 +284,7 @@ void Engine::Start(const VideoSettings& initialSettings, AssetManager::AssetPath
 		}
 	}
 
+	vector<uint8_t> checkerData;
 	genCheckerboard(400, vec4(1, 1, 0, 1), vec4(0, 0, 1, 1), 6, checkerData);
 	assetManager->CreateDefaultSprite(400, 400, checkerData);
 
@@ -383,7 +379,7 @@ void Engine::recordSceneContextGraphics(const ScenePipelineContext& ctx, framebu
 	if (ctx.tilemapPipeline != nullptr)
 	{
 		ZoneScopedN("tilemap PL");
-		ctx.tilemapPipeline->recordCommandBuffer(cmdBuffer, globalTextureBindingManager.getIndexFromBinding(ctx.tilemapTextureAtlas));
+		ctx.tilemapPipeline->recordCommandBuffer(cmdBuffer, ctx.tilemapTextureAtlas);
 	}
 
 	// Textured quad
@@ -400,18 +396,15 @@ void Engine::recordSceneContextGraphics(const ScenePipelineContext& ctx, framebu
 			assert(scene->sceneData.spriteRenderers.size() < TexturedQuadPL_MAX_OBJECTS);
 			for (auto& [entID, renderer] : scene->sceneData.spriteRenderers)
 			{
-				//const auto& entity = scene->sceneData.entities.at(entID);
 				Entity* entity = renderer._entityCache;
 
-				//Sprite* s = assetManager->GetSprite(renderer.sprite);
 				Sprite* s = renderer._spriteCache;
 
 				auto drawObject = GPUBuffer + instanceIndex;
 
 				drawObject->uvMin = vec2(0.0f);
 				drawObject->uvMax = vec2(1.0f);
-				drawObject->tex = globalTextureBindingManager.getIndexFromBinding(s->textureID);
-
+				drawObject->tex = s->textureID;
 
 				if (entity->HasParent()) {
 					Transform global = entity->GetGlobalTransform();
@@ -435,12 +428,8 @@ void Engine::recordSceneContextGraphics(const ScenePipelineContext& ctx, framebu
 			}
 
 
-			ctx.texturePipeline->recordCommandBuffer(cmdBuffer, scene->sceneData.spriteRenderers.size());
-			runningStats.sprite_render_count += scene->sceneData.spriteRenderers.size();
-
-			//ctx.texturePipeline->UploadInstanceData(drawlist);
-			/*ctx.texturePipeline->recordCommandBuffer(cmdBuffer, drawlist.size());
-			runningStats.sprite_render_count += drawlist.size();*/
+			ctx.texturePipeline->recordCommandBuffer(cmdBuffer, instanceIndex);
+			runningStats.sprite_render_count += instanceIndex;
 		}
 	}
 
@@ -512,7 +501,7 @@ void Engine::recordSceneContextGraphics(const ScenePipelineContext& ctx, framebu
 				TextPL::textHeader header;
 				header.color = r.color;
 				header.textLength = glm::min(TEXTPL_maxTextLength, (int)r.quads.size());
-				header._textureIndex = globalTextureBindingManager.getIndexFromBinding(sprite->textureID);
+				header._textureIndex = sprite->textureID;
 
 				if (entity.HasParent()) {
 					Transform global = entity.GetGlobalTransform();
@@ -559,11 +548,6 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 	this->time = time;
 
 	runningStats.sprite_render_count = 0;
-
-	//if (paused)
-	//{
-	//	deltaTime = 0.0;
-	//}
 
 	// compute buffers can be recoreded in parallel
 
@@ -702,59 +686,94 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 	resourceManager->HandleFramebufferRecreation();
 
 
+	//{
+	//	// free up indexes in bindless descriptor set
+	//	while (textureBindingDeletionQueue.size() > 0) {
+	//		auto& id = textureBindingDeletionQueue.front();
+	//		textureBindingDeletionQueue.pop();
+	//		if (globalTextureBindingManager.HasBinding(id)) // may have been deleted before it was finished uploading
+	//			globalTextureBindingManager.RemoveBinding(id);
+	//	}
+
+	//	bool texturesAdded = resourceChangeFlags->TexturesAdded();
+	//	if (texturesAdded) {
+	//		globalTextureBindingManager.InvalidateDescriptors();
+	//	}
+
+	//	// mainly needed for asynchronous textures becoming available
+	//	if (texturesAdded) {
+	//		for (auto& [ID, tex] : *resourceManager->GetInternalTextureResources()) {
+	//			globalTextureBindingManager.AddBinding(ID, (Texture*)&tex);
+	//		}
+	//	}
+
+	//	if (resourceChangeFlags->TextureFiltersChanged())
+	//		globalTextureBindingManager.InvalidateDescriptors();
+
+	//	if (globalTextureBindingManager.IsDescriptorDirty(rengine->currentFrame) == true) {
+
+	//		std::vector<int> indexes;
+	//		std::vector <Texture*> textures;
+
+	//		// TODO: Optimize use of bindless descriptors by only adding new textures to descriptor instead of all loaded textures.
+	//		// Will need additional queues for each frame in flight to keep track of what textures have been fully uploaded and need to be bound.
+	//		{
+	//			std::unique_lock<std::mutex> lock(resourceManager->texMapMtx);
+	//			for (auto& [ID, tex] : *resourceManager->GetInternalTextureResources()) {
+
+	//				if (globalTextureBindingManager.HasBinding(ID)) {
+
+	//					indexes.push_back(globalTextureBindingManager.getIndexFromBinding(ID));
+	//					auto tt = globalTextureBindingManager.getValueFromBinding(ID);
+	//					textures.push_back(tt);
+	//				}
+	//			}
+	//		}
+
+	//		GlobalTextureDesc.AddDescriptors(indexes, textures, rengine->currentFrame);
+	//		globalTextureBindingManager.ClearDescriptorDirty(rengine->currentFrame);
+	//	}
+
+	//	// use flag for thread safety
+	//	if (texturesAdded)
+	//		resourceChangeFlags->ClearTexturesAdded();
+
+	//	resourceChangeFlags->ClearTextureFilterschanged();
+	//}
+
+	// very slow
 	{
-		// free up indexes in bindless descriptor set
-		while (textureBindingDeletionQueue.size() > 0) {
-			auto& id = textureBindingDeletionQueue.front();
-			textureBindingDeletionQueue.pop();
-			if (globalTextureBindingManager.HasBinding(id)) // may have been deleted before it was finished uploading
-				globalTextureBindingManager.RemoveBinding(id);
-		}
-
 		bool texturesAdded = resourceChangeFlags->TexturesAdded();
-		if (texturesAdded) {
-			globalTextureBindingManager.InvalidateDescriptors();
+		bool filtersChanged = resourceChangeFlags->TextureFiltersChanged();
+
+		if (texturesAdded || filtersChanged) {
+			textureDescriptorDirtyFlags = { true, true };
 		}
-
-		// mainly needed for asynchronous textures becoming available
-		if (texturesAdded) {
-			for (auto& [ID, tex] : *resourceManager->GetInternalTextureResources()) {
-				globalTextureBindingManager.AddBinding(ID, (Texture*)&tex);
-			}
-		}
-
-		if (resourceChangeFlags->TextureFiltersChanged())
-			globalTextureBindingManager.InvalidateDescriptors();
-
-		if (globalTextureBindingManager.IsDescriptorDirty(rengine->currentFrame) == true) {
-
+		if(textureDescriptorDirtyFlags[rengine->currentFrame])
+		{
 			std::vector<int> indexes;
-			std::vector <Texture*> textures;
+			std::vector <const Texture*> textures;
 
 			// TODO: Optimize use of bindless descriptors by only adding new textures to descriptor instead of all loaded textures.
 			// Will need additional queues for each frame in flight to keep track of what textures have been fully uploaded and need to be bound.
+			// Extra consideration needed for async uploading
 			{
 				std::unique_lock<std::mutex> lock(resourceManager->texMapMtx);
-				for (auto& [ID, tex] : *resourceManager->GetInternalTextureResources()) {
+				auto& srcMap = *resourceManager->GetInternalTextureResources();
+				indexes.reserve(srcMap.size() + 1);
+				textures.reserve(srcMap.size() + 1);
 
-					if (globalTextureBindingManager.HasBinding(ID)) {
+				for (auto& [ID, tex] : srcMap) {
 
-						indexes.push_back(globalTextureBindingManager.getIndexFromBinding(ID));
-						auto tt = globalTextureBindingManager.getValueFromBinding(ID);
-						textures.push_back(tt);
-					}
+					indexes.push_back(ID);
+					textures.push_back(&tex);
 				}
 			}
 
 			GlobalTextureDesc.AddDescriptors(indexes, textures, rengine->currentFrame);
-			globalTextureBindingManager.ClearDescriptorDirty(rengine->currentFrame);
+
+			textureDescriptorDirtyFlags[rengine->currentFrame] = false;
 		}
-
-		// use flag for thread safety
-		if (texturesAdded)
-			resourceChangeFlags->ClearTexturesAdded();
-
-		resourceChangeFlags->ClearTextureFilterschanged();
 	}
 
 	auto cmdBuffer = rengine->getNextGfxCommandBuffer();
@@ -834,7 +853,7 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 		runningStats.entity_count = ctx.scene->sceneData.entities.size();
 	}
 
-	// screenspace quad
+	// screenspace colored quad
 	{
 		screenSpaceColorPipeline->UploadInstanceData(screenSpaceColorDrawlist);
 		screenSpaceColorPipeline->recordCommandBuffer(cmdBuffer, screenSpaceColorDrawlist.size());
@@ -843,15 +862,8 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 
 	// screenspace texture
 	{
-		for (auto& d : screenSpaceTextureDrawlist)
-		{
-			d.tex = globalTextureBindingManager.getIndexFromBinding(d.tex);
-		}
-
-		screenSpaceTexturePipeline->UploadInstanceData(screenSpaceTextureDrawlist);
-		screenSpaceTexturePipeline->recordCommandBuffer(cmdBuffer, screenSpaceTextureDrawlist.size());
-
-		runningStats.sprite_render_count += screenSpaceTextureDrawlist.size();
+		screenSpaceTexturePipeline->recordCommandBuffer(cmdBuffer, screenSpaceTextureGPUIndex);
+		runningStats.sprite_render_count += screenSpaceTextureGPUIndex;
 	}
 
 	// screenspace text
@@ -869,7 +881,7 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 				CalculateQuads(f, i.text, textData.quads);
 
 				i.header.scale = vec2(f->fontHeight * 2) * i.scaleFactor;
-				i.header._textureIndex = globalTextureBindingManager.getIndexFromBinding(sprite->textureID);
+				i.header._textureIndex = sprite->textureID;
 
 				screenSpaceTextPipeline->UploadTextData(rengine->currentFrame, memSlot++, i.header, i.font, textData);
 			}
@@ -880,7 +892,7 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 	if (drawImgui) {
 		ImGui::Render();
 		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmdBuffer);
-			}
+	}
 
 	cmdBuffer.endRenderPass();
 	TracyVkCollect(rengine->tracyGraphicsContexts[rengine->currentFrame], rengine->graphicsCommandBuffers[rengine->currentFrame]);
@@ -898,11 +910,14 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 
 	frameCounter++;
 
+	screenSpaceTextureGPUBuffer = screenSpaceTexturePipeline->getUploadMappedBuffer();
+	screenSpaceTextureGPUIndex = 0;
+
 	firstFrame = false;
 
 	FrameMark;
 	return true;
-		}
+}
 
 bool Engine::ShouldClose() {
 	return rengine->shouldClose();

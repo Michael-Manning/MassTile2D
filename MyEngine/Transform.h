@@ -21,13 +21,25 @@ struct Transform {
 		this->rotation = rotation;
 	}
 
-	nlohmann::json serializeJson() const;
-	static Transform deserializeJson(const nlohmann::json& j);
-
-	static Transform deserializeFlatbuffers(const AssetPack::Transform* t) {
-		return Transform(
-			fromAP(t->position()),
-			fromAP(t->scale()),
-			t->rotation());
+	nlohmann::json serializeJson() const {
+		nlohmann::json j;
+		j["position"] = { position.x, position.y };
+		j["scale"] = { scale.x, scale.y };
+		j["rotation"] = rotation;
+		return j;
 	}
+
+	static Transform deserializeJson(const nlohmann::json& j) {
+		Transform t;
+		t.position = glm::vec2(j["position"][0], j["position"][1]);
+		t.scale = glm::vec2(j["scale"][0], j["scale"][1]);
+		t.rotation = j["rotation"].get<float>();
+		return t;
+	}
+
+	Transform(const AssetPack::Transform* t) :
+		position(fromAP(t->position())),
+		scale(fromAP(t->scale())),
+		rotation(t->rotation())
+	{}
 };

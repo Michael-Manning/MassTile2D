@@ -29,60 +29,6 @@ using namespace std;
 
 using namespace nlohmann;
 
-json Transform::serializeJson() const {
-	json j;
-	j["position"] = { position.x, position.y };
-	j["scale"] = { scale.x, scale.y };
-	j["rotation"] = rotation;
-	return j;
-}
-Transform Transform::deserializeJson(const nlohmann::json& j) {
-	Transform t;
-	t.position = glm::vec2(j["position"][0], j["position"][1]);
-	t.scale = glm::vec2(j["scale"][0], j["scale"][1]);
-	t.rotation = j["rotation"].get<float>();
-	return t;
-}
-
-json Entity::serializeJson() const {
-
-	nlohmann::json j;
-	j["id"] = ID;
-	j["name"] = name;
-	if (HasParent()) {
-		j["parent"] = parent;
-	}
-	if (children.size() > 0) {
-		for (auto& c : children) {
-			j["children"].push_back((entityID)c);
-		}
-	}
-	j["transform"] = transform.serializeJson();
-
-	return j;
-}
-void Entity::deserializeJson(const nlohmann::json& j, Entity* e) {
-
-	e->ID = j["id"].get<int>();
-	e->name = j["name"].get<string>();
-	e->transform = Transform::deserializeJson(j["transform"]);
-	if (j.contains("parent")) {
-		e->parent = j["parent"];
-	}
-	if (j.contains("children")) {
-		for (auto& c : j["children"]) {
-			e->children.insert(static_cast<entityID>(c));
-		}
-	}
-}
-
-void Entity::deserializeFlatbuffers(const AssetPack::Entity* packEntity, Entity* entity) {
-
-	entity->ID = packEntity->id();
-	entity->name = packEntity->name()->str();
-	entity->transform = Transform::deserializeFlatbuffers(packEntity->transform());
-}
-
 
 nlohmann::json ColorRenderer::serializeJson(entityID entId) const {
 	nlohmann::json j;

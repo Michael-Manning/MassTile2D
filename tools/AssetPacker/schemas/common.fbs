@@ -128,11 +128,8 @@ table SerializableProperty{
    value:SerializableValue;
 }
 
-table PropertyGroup{
-   properties:[SerializableProperty];
-}
-
 table Behaviour{
    entityID:uint;
-   propertyGroup:PropertyGroup;
+   hash:uint;
+   properties:[SerializableProperty];
 }

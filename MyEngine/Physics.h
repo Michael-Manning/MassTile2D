@@ -29,85 +29,6 @@ constexpr glm::vec2 btg(const b2Vec2& vec) {
 class Rigidbody;
 class Staticbody;
 
-//class Collider {
-//public:
-//
-//	virtual nlohmann::json serializeJson() = 0;
-//
-//	virtual b2Shape* _getB2Shape() = 0;
-//
-//	virtual int _getType() = 0;
-//
-//	virtual std::uni<Collider> duplicate() = 0;
-//};
-//
-//class BoxCollider : public Collider {
-//
-//public:
-//
-//	BoxCollider(glm::vec2 scale) {
-//		this->scale = scale;
-//	}
-//
-//	b2Shape* _getB2Shape() override {
-//		dynamicBox.SetAsBox(scale.x / 2.0f, scale.y / 2.0f);
-//		return &dynamicBox;
-//	}
-//
-//	nlohmann::json serializeJson() override {
-//		nlohmann::json j;
-//		j["type"] = _getType();
-//		j["scale"] = toJson(scale);
-//		return j;
-//	};
-//
-//	int _getType() override {
-//		return 1;
-//	}
-//
-//	std::shared_ptr<Collider> duplicate() override {
-//		return std::make_shared<BoxCollider>(scale);
-//	}
-//
-//	glm::vec2 scale;
-//
-//private:
-//	b2PolygonShape dynamicBox;
-//};
-//
-//class CircleCollider : public Collider {
-//
-//public:
-//
-//	CircleCollider(float radius) {
-//		this->radius = radius;
-//	}
-//
-//	b2Shape* _getB2Shape() {
-//		dynamicCircle.m_radius = radius / 2.0f;
-//		return &dynamicCircle;
-//	}
-//
-//	nlohmann::json serializeJson() override {
-//		nlohmann::json j;
-//		j["type"] = _getType();
-//		j["radius"] = radius;
-//		return j;
-//	};
-//
-//	std::shared_ptr<Collider> duplicate() override {
-//		return std::make_shared<CircleCollider>(radius);
-//	}
-//
-//	float radius;
-//
-//	int _getType() override {
-//		return 2;
-//	}
-//
-//private:
-//	b2CircleShape dynamicCircle;
-//};
 
 class Collider {
 public:
@@ -165,11 +86,38 @@ public:
 		}
 	}
 
+	Collider(const AssetPack::Collider& c) {
+		type = static_cast<Type>(c.type());
+		scale = fromAP(c.scale());
+		if (type == Type::Box) {
+			boxShape.SetAsBox(scale.x / 2.0f, scale.y / 2.0f);
+		}
+		else if (type == Type::Circle) {
+			circleShape.m_radius = scale.x / 2.0f;
+		}
+		else {
+			assert(false);
+		}
+	}
+
+	//Collider(const AssetPack::Collider* c) {
+	//	type = static_cast<Type>(c->type());
+	//	scale = fromAP(c->scale());
+	//	if (type == Type::Box) {
+	//		boxShape.SetAsBox(scale.x / 2.0f, scale.y / 2.0f);
+	//	}
+	//	else if (type == Type::Circle) {
+	//		circleShape.m_radius = scale.x / 2.0f;
+	//	}
+	//	else {
+	//		assert(false);
+	//	}
+	//}
+
 	~Collider() {
 	}
 	Collider(const Collider& other) = default;
 	Collider& operator=(const Collider& other) = default;
-	//Collider(const Collider& other) : scale(other.scale), bShape(other.bShape){ }
 
 private:
 
@@ -191,21 +139,6 @@ private:
 	b2PolygonShape boxShape;
 	b2CircleShape circleShape;
 };
-
-
-//static std::shared_ptr<Collider> Collider_deserializeJson(nlohmann::json j) {
-//	int type = j["type"];
-//	if (type == 1) {
-//		glm::vec2 scale = fromJson<glm::vec2>(j["scale"]);
-//		auto b = std::make_shared<BoxCollider>(scale);
-//		return  b;
-//	}
-//	else {
-//		float radius = j["radius"];
-//		auto b = std::make_shared<CircleCollider>(radius);
-//		return  b;
-//	}
-//};
 
 
 class Staticbody : Component {
@@ -289,24 +222,8 @@ public:
 
 	nlohmann::json serializeJson(entityID entId) const override;
 	Staticbody(const nlohmann::json& j);
+	Staticbody (const AssetPack::Staticbody* b);
 
-	static Staticbody deserializeFlatbuffers(const AssetPack::Staticbody* b) {
-
-		assert(false);
-		return Staticbody(Collider(123));
-
-		//std::shared_ptr<Collider> collider;
-		//auto fbCollider = b->collider();
-		//if (fbCollider.type() == 1) {
-		//	collider = std::make_shared<BoxCollider>(fromAP(fbCollider.scale()));
-		//}
-		//else {
-		//	collider = std::make_shared<CircleCollider>(fbCollider.radius());
-		//}
-
-		//Staticbody body(collider);
-		//return body;
-	}
 
 	Collider collider;
 
@@ -538,33 +455,7 @@ public:
 
 	nlohmann::json serializeJson(entityID entId) const override;
 	Rigidbody(const nlohmann::json& j);
-
-	static Rigidbody deserializeFlatbuffers(const AssetPack::Rigidbody* b) {
-		assert(false);
-		return Rigidbody(Collider(123));
-		//Rigidbody r;
-
-		//auto fbCollider = b->collider();
-		//if (fbCollider.type() == 1) {
-		//	r.collider = std::make_shared<BoxCollider>(fromAP(fbCollider.scale()));
-		//}
-		//else {
-		//	r.collider = std::make_shared<CircleCollider>(fbCollider.radius());
-		//}
-
-		//r.desc.linearDamping = b->linearDamping();
-		//r.desc.angularDamping = b->angularDamping();
-		//r.desc.fixedRotation = b->fixedRotation();
-		//r.desc.bullet = b->bullet();
-		//r.desc.gravityScale = b->gravityScale();
-
-		//r.desc.friction = b->friction();
-		//r.desc.density = b->density();
-		//r.desc.restitution = b->restitution();
-
-		//return r;
-
-	}
+	Rigidbody(const AssetPack::Rigidbody* b);
 
 	Collider collider;
 
