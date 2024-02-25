@@ -37,6 +37,7 @@ Scene::Scene(AssetManager* assetManager) : assetManager(assetManager), bworld(gr
 	}
 
 	componentAccessor = make_unique<ComponentAccessor>();
+	componentAccessor->behaviours = &sceneData.behaviours;
 	componentAccessor->entities = &sceneData.entities;
 	componentAccessor->colorRenderers = &sceneData.colorRenderers;
 	componentAccessor->spriteRenderers = &sceneData.spriteRenderers;
@@ -98,11 +99,14 @@ std::shared_ptr<Scene> Scene::deserializeJson(std::string filename, AssetManager
 	json j;
 	input >> j;
 
-	auto scene = std::make_shared<Scene>(assetManager);
+	auto scene = Scene::MakeScene(assetManager);//std::make_shared<Scene>(assetManager);
 
 	scene->name = j["name"];
 
 	SceneData::deserializeJson(j["sceneData"], &scene->sceneData);
+
+	for (auto& b : scene->sceneData.behaviours)
+		b.second->_SetComponentAccessor(scene->componentAccessor.get());
 
 	for (auto& [entID, sr] : scene->sceneData.spriteRenderers)
 	{
@@ -121,7 +125,7 @@ std::shared_ptr<Scene> Scene::deserializeJson(std::string filename, AssetManager
 
 
 std::shared_ptr<Scene> Scene::deserializeFlatbuffers(const AssetPack::Scene* s, AssetManager* assetManager) {
-	auto scene = std::make_shared<Scene>(assetManager);
+	auto scene = Scene::MakeScene(assetManager);//std::make_shared<Scene>(assetManager);
 
 	scene->name = s->name()->str();
 
@@ -136,12 +140,31 @@ std::shared_ptr<Scene> Scene::deserializeFlatbuffers(const AssetPack::Scene* s, 
 	return scene;
 }
 
+void Scene::DeleteAfter(Entity* entity, float seconds) {
+	defferedDeletions.push_back(DeferredEntityDelete{ .secondsLeft = seconds, .entity = entity });
+}
+
+void Scene::ProcessDeferredDeletions(float deltaTime) {
+	for (size_t i = 0; i < defferedDeletions.size(); i++)
+	{
+		auto& d = defferedDeletions[i];
+		d.secondsLeft -= deltaTime;
+		if (d.secondsLeft <= 0) {
+			DeleteEntity(d.entity->ID, true);
+			defferedDeletions.erase(defferedDeletions.begin() + i);
+		}
+	}
+}
 
 void Scene::deletechildRecurse(Entity* entity) {
 
 	auto childCache = entity->_GetChildCache_ptr();
 	for (auto& e : *childCache)
 		deletechildRecurse(e);
+
+	if (sceneData.behaviours.contains(entity->ID))
+		sceneData.behaviours.at(entity->ID)->OnDestroy();
+	sceneData.behaviours.erase(entity->ID);
 
 	sceneData.entities.erase(entity->ID);
 	sceneData.colorRenderers.erase(entity->ID);
@@ -173,6 +196,10 @@ void Scene::DeleteEntity(entityID id, bool deleteChildren) {
 				child->ClearParent();
 			}
 		}
+
+		if (sceneData.behaviours.contains(entity->ID))
+			sceneData.behaviours.at(entity->ID)->OnDestroy();
+		sceneData.behaviours.erase(entity->ID);
 
 		sceneData.entities.erase(id);
 		sceneData.colorRenderers.erase(id);
@@ -318,17 +345,17 @@ Entity* Scene::DuplicateEntity(Entity* original) {
 }
 
 
-Entity* Scene::Instantiate(Prefab& prefab, std::string name, glm::vec2 position, float rotation) {
+Entity* Scene::Instantiate(Prefab* prefab, std::string name, glm::vec2 position, float rotation) {
 
 	std::unordered_map<entityID, entityID> IDRemap;
-	for (auto& [ID, e] : prefab.sceneData.entities)
+	for (auto& [ID, e] : prefab->sceneData.entities)
 	{
 		IDRemap.insert({ ID, sceneData.EntityGenerator.GenerateID() });
 	}
 
 
 	// set relationship IDs in new entities with mapped values from the originals
-	for (auto& [ID, e] : prefab.sceneData.entities) {
+	for (auto& [ID, e] : prefab->sceneData.entities) {
 		Entity* copy = sceneData.EmplaceEntity(IDRemap.at(ID));
 		e.CloneInto(copy);
 
@@ -345,28 +372,28 @@ Entity* Scene::Instantiate(Prefab& prefab, std::string name, glm::vec2 position,
 		}
 	}
 
-	for (auto& [ID, b] : prefab.sceneData.behaviours) {
+	for (auto& [ID, b] : prefab->sceneData.behaviours) {
 		entityID newID = IDRemap.at(ID);
 		Entity* be = &sceneData.entities.at(newID);
 		sceneData.behaviours.emplace(newID, b->clone(be, componentAccessor.get()));
 	}
 
-	for (auto& [ID, r] : prefab.sceneData.colorRenderers)
+	for (auto& [ID, r] : prefab->sceneData.colorRenderers)
 		registerComponent(IDRemap.at(ID), r);
-	for (auto& [ID, r] : prefab.sceneData.spriteRenderers)
+	for (auto& [ID, r] : prefab->sceneData.spriteRenderers)
 		registerComponent(IDRemap.at(ID), r);
-	for (auto& [ID, r] : prefab.sceneData.textRenderers)
+	for (auto& [ID, r] : prefab->sceneData.textRenderers)
 		registerComponent(IDRemap.at(ID), r);
-	for (auto& [ID, r] : prefab.sceneData.particleSystemRenderers)
+	for (auto& [ID, r] : prefab->sceneData.particleSystemRenderers)
 		registerComponent(IDRemap.at(ID), r.size, r.configuration);
-	for (auto& [ID, r] : prefab.sceneData.rigidbodies)
+	for (auto& [ID, r] : prefab->sceneData.rigidbodies)
 		registerComponent_Rigidbody(IDRemap.at(ID), r);
-	for (auto& [ID, r] : prefab.sceneData.staticbodies)
+	for (auto& [ID, r] : prefab->sceneData.staticbodies)
 		registerComponent_Staticbody(IDRemap.at(ID), r);
 
-	assert(prefab.TopLevelEntity != NULL_Entity);
+	assert(prefab->TopLevelEntity != NULL_Entity);
 
-	Entity* topLevelEntity = &sceneData.entities.at(IDRemap.at(prefab.TopLevelEntity));
+	Entity* topLevelEntity = &sceneData.entities.at(IDRemap.at(prefab->TopLevelEntity));
 	topLevelEntity->transform = Transform(position, topLevelEntity->transform.scale, rotation);
 
 	LinkEntityRelationshipsRecurse(topLevelEntity);
@@ -385,12 +412,12 @@ void Scene::registerComponent(entityID id, SpriteRenderer& t) {
 		std::forward_as_tuple(id),
 		std::forward_as_tuple(t, &sceneData.entities.at(id), assetManager->GetSprite(t.sprite)));
 }
-SpriteRenderer* Scene::registerComponent(entityID id, spriteID sprite, int atlasIndex){
+SpriteRenderer* Scene::registerComponent(entityID id, spriteID sprite, int atlasIndex) {
 
 	auto [iter, inserted] = sceneData.spriteRenderers.emplace(
-	std::piecewise_construct,
-	std::forward_as_tuple(id),
-	std::forward_as_tuple(sprite, atlasIndex, &sceneData.entities.at(id), assetManager->GetSprite(sprite)));
+		std::piecewise_construct,
+		std::forward_as_tuple(id),
+		std::forward_as_tuple(sprite, atlasIndex, &sceneData.entities.at(id), assetManager->GetSprite(sprite)));
 
 	return &iter->second;
 }
@@ -451,6 +478,9 @@ void Scene::registerComponent_Staticbody(entityID id, const Staticbody& body) {
 };
 
 void Scene::cleanup() {
+
+	for (auto& [id, b] : sceneData.behaviours)
+		b->OnDestroy();
 
 	// ensure desctructors are called
 	sceneData.rigidbodies.clear();

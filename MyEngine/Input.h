@@ -22,6 +22,7 @@ enum class KeyCode {
 	RightArrow,
 	UpArrow,
 	DownArrow,
+	Spacebar
 };
 
 enum class MouseBtn {
@@ -58,7 +59,9 @@ public:
 	bool getKeyDown(KeyCode key);
 	//bool getKeyUp(KeyCode key);
 
-	glm::vec2 getMousePos();
+	glm::vec2 getMousePos(); // rename as live version. add per frame cached version for behaviour consistency
+
+
 	bool getMouseBtn(MouseBtn button);
 	bool getMouseBtnDown(MouseBtn button);
 	bool getMouseBtnUp(MouseBtn button);

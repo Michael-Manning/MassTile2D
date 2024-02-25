@@ -38,6 +38,13 @@ public:
 
 	Camera editorCamera;
 
+	glm::vec2 gameSceneWorldToScreenPos(glm::vec2 pos) {
+		return worldToScreenPos(pos, editorCamera, mainSceneFrameSize) + mainSceneViewerScreenLocation;
+	}
+	glm::vec2 gameSceneSreenToWorldPos(glm::vec2 pos) {
+		return screenToWorldPos(pos - mainSceneViewerScreenLocation, editorCamera, mainSceneFrameSize);
+	}
+
 private:
 
 	Engine* engine;
@@ -189,13 +196,6 @@ private:
 			return previewSceneSreenToWorldPos(pos);
 		return gameSceneSreenToWorldPos(pos);
 	
-	}
-
-	glm::vec2 gameSceneWorldToScreenPos(glm::vec2 pos) {
-		return worldToScreenPos(pos, editorCamera, mainSceneFrameSize) + mainSceneViewerScreenLocation;
-	}
-	glm::vec2 gameSceneSreenToWorldPos(glm::vec2 pos) {
-		return screenToWorldPos(pos - mainSceneViewerScreenLocation, editorCamera, mainSceneFrameSize);
 	}
 
 	glm::vec2 previewSceneWorldToScreenPos(glm::vec2 pos) {

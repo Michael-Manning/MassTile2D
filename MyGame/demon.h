@@ -13,10 +13,10 @@
 #include "worldGen.h"
 #include "TileWorld.h"
 #include "Player.h"
+#include "Collision.h"
 
 using namespace glm;
 using namespace std;
-
 
 class Demon : public Behaviour {
 public:
@@ -26,12 +26,12 @@ public:
 	BEHAVIOUR_CLONE(Demon)
 
 	// settings
-	const float groundAccel = 10.0f;
+	const float groundAccel = 11.0f;
 	const float airAccel = 7.0f;
 	const float topMoveSpeed = 3.0f; // max speed achieved through self movement
 	const float terminalVelocity = 12.0f; // maximum speed achieved through gravity acceleration
-	const float idleDecelleratiom = 45.0f;
-	const float gravityAccel = 18;
+	const float idleDecelleratiom = 0.0f;
+	const float gravityAccel = 10;
 	const float jumpVel = 6;
 	const float skin = 0.01f;
 
@@ -39,12 +39,7 @@ public:
 	vec2 velocity = vec2(0.0f);
 	float grounded = true;
 
-
-	std::shared_ptr<Player> playerRef;
-	void setPlayerRef(std::shared_ptr<Player> playerRef) {
-		this->playerRef = playerRef;
-	}
-
+	int health = 15;
 
 	bool queryTile(vec2 pos) {
 		int tileX = pos.x / tileWorldSize + mapW / 2;
@@ -76,7 +71,10 @@ public:
 
 	//SpriteRenderer* renderer;
 
-	vector<vec2> tpoints;
+	ColliderCallback collider;
+
+	std::vector<glm::vec2> tpoints;
+	std::vector<glm::vec2> worldCollisionPoints;
 	float sx = 0;
 	float sy = 0;
 	void Start() override {
@@ -85,6 +83,7 @@ public:
 		//renderer->atlasIndex = 5;
 
 		tpoints.resize(10);
+		worldCollisionPoints.resize(tpoints.size());
 		float sx = transform->scale.x / 2.0;
 		float sy = transform->scale.y / 2.0;
 		tpoints[0] = vec2(sx, sy);
@@ -97,7 +96,18 @@ public:
 		tpoints[7] = vec2(0, sy);
 		tpoints[8] = vec2(-sx, -sy / 2.0f);
 		tpoints[9] = vec2(sx, -sy / 2.0f);
+
+		collider.pointList = &worldCollisionPoints;
+		collider.OnCollision = [this](int d, float k, glm::vec2 h) {OnCollision(d, k, h); };
+
+		AddToEnemyHitCheckList(&collider);
 	};
+
+	void OnDestroy() override {
+		RemoveFromEnemyHitCheckList(&collider);
+	}
+
+	void OnCollision(int damage, float knockback, glm::vec2 hitOrigin);
 
 	float animationTimer = 0;
 
@@ -108,31 +118,38 @@ public:
 		bool topCast = false;
 		bool bottomCast = false;
 
-		leftCast |= queryTile(transform->position + tpoints[1] + vec2(-skin * 2, 0));
-		leftCast |= queryTile(transform->position + tpoints[3] + vec2(-skin * 2, 0));
-		leftCast |= queryTile(transform->position + tpoints[4] + vec2(-skin * 2, 0));
-		leftCast |= queryTile(transform->position + tpoints[8] + vec2(-skin * 2, 0));
+		for (size_t i = 0; i < tpoints.size(); i++)
+		{
+			worldCollisionPoints[i] = tpoints[i] + transform->position;
+		}
 
-		rightCast |= queryTile(transform->position + tpoints[0] + vec2(skin * 2, 0));
-		rightCast |= queryTile(transform->position + tpoints[2] + vec2(skin * 2, 0));
-		rightCast |= queryTile(transform->position + tpoints[5] + vec2(skin * 2, 0));
-		rightCast |= queryTile(transform->position + tpoints[9] + vec2(skin * 2, 0));
+		leftCast |= queryTile(worldCollisionPoints[1] + vec2(-skin * 2, 0));
+		leftCast |= queryTile(worldCollisionPoints[3] + vec2(-skin * 2, 0));
+		leftCast |= queryTile(worldCollisionPoints[4] + vec2(-skin * 2, 0));
+		leftCast |= queryTile(worldCollisionPoints[8] + vec2(-skin * 2, 0));
 
-		topCast |= queryTile(transform->position + tpoints[0] + vec2(0, skin * 2));
-		topCast |= queryTile(transform->position + tpoints[1] + vec2(0, skin * 2));
-		topCast |= queryTile(transform->position + tpoints[7] + vec2(0, skin * 2));
+		rightCast |= queryTile(worldCollisionPoints[0] + vec2(skin * 2, 0));
+		rightCast |= queryTile(worldCollisionPoints[2] + vec2(skin * 2, 0));
+		rightCast |= queryTile(worldCollisionPoints[5] + vec2(skin * 2, 0));
+		rightCast |= queryTile(worldCollisionPoints[9] + vec2(skin * 2, 0));
 
-		bottomCast |= queryTile(transform->position + tpoints[2] + vec2(0, -skin * 2));
-		bottomCast |= queryTile(transform->position + tpoints[3] + vec2(0, -skin * 2));
-		bottomCast |= queryTile(transform->position + tpoints[6] + vec2(0, -skin * 2));
+		topCast |= queryTile(worldCollisionPoints[0] + vec2(0, skin * 2));
+		topCast |= queryTile(worldCollisionPoints[1] + vec2(0, skin * 2));
+		topCast |= queryTile(worldCollisionPoints[7] + vec2(0, skin * 2));
+
+		bottomCast |= queryTile(worldCollisionPoints[2] + vec2(0, -skin * 2));
+		bottomCast |= queryTile(worldCollisionPoints[3] + vec2(0, -skin * 2));
+		bottomCast |= queryTile(worldCollisionPoints[6] + vec2(0, -skin * 2));
 
 		animationTimer += deltaTime;
 		if (animationTimer > 0.1f)
 			animationTimer = 0.0f;
 
+		auto pplo = global::player->GetEntity();
+
 		//left and right movement
 		bool left, right;
-		if (transform->position.x < playerRef->GetEntity()->transform.position.x) {
+		if (transform->position.x < global::player->GetEntity()->transform.position.x) {
 			right = true;
 			left = false;
 		}
@@ -144,10 +161,12 @@ public:
 
 
 		if (left && !right && !leftCast) {
-			velocity += vec2(grounded ? -groundAccel : -airAccel, 0.0f) * deltaTime;
+			if(abs(velocity.x) < topMoveSpeed)
+				velocity += vec2(grounded ? -groundAccel : -airAccel, 0.0f) * deltaTime;
 		}
 		else if (!left && right && !rightCast) {
-			velocity += vec2(grounded ? groundAccel : airAccel, 0.0f) * deltaTime;
+			if (abs(velocity.x) < topMoveSpeed)
+				velocity += vec2(grounded ? groundAccel : airAccel, 0.0f) * deltaTime;
 		}
 		else if (!left && !right) {
 			if (grounded) {
@@ -186,7 +205,7 @@ public:
 		//}
 
 
-		velocity.x = glm::clamp(velocity.x, -topMoveSpeed, topMoveSpeed);
+		//velocity.x = glm::clamp(velocity.x, -topMoveSpeed, topMoveSpeed);
 		velocity.y = glm::clamp(velocity.y, -terminalVelocity, terminalVelocity);
 
 
@@ -346,16 +365,6 @@ public:
 			npos.y = resolvedYAvg / (float)avgSamplesY;
 
 		transform->position = npos;
-
-		if (transform->position != GcameraPos) {
-			vec2 npos = GcameraPos + (transform->position - GcameraPos) * 4.0f * deltaTime;
-			if (glm::distance(npos, transform->position) > glm::distance(GcameraPos, transform->position)) {
-				GcameraPos = transform->position;
-			}
-			else {
-				GcameraPos = npos;
-			}
-		}
 	};
 };
 

@@ -11,5 +11,13 @@ extern TileWorld* tileWolrdGlobalRef;
 
 extern glm::vec2 GcameraPos;
 
+class Player;
 
+namespace global {
 
+	extern Player* player;
+
+	extern Scene* mainScene;
+
+	extern AssetManager* assetManager;
+}

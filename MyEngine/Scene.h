@@ -22,6 +22,12 @@ class AssetManager;
 class Scene {
 public:
 
+	static std::shared_ptr<Scene> MakeScene(AssetManager* assetManager) {
+		auto scene = std::make_shared<Scene>(assetManager);
+		scene->componentAccessor->scene = scene.get();
+		return scene;
+	}
+
 	std::string name;
 
 	SceneData sceneData;
@@ -45,6 +51,8 @@ public:
 	}
 
 	void DeleteEntity(entityID id, bool deleteChildren);
+	void DeleteAfter(Entity* entity, float seconds);
+	void ProcessDeferredDeletions(float deltaTime);
 
 	void ClearScene();
 
@@ -67,7 +75,7 @@ public:
 	Entity* DuplicateEntity(Entity* original);
 
 
-	Entity* Instantiate(Prefab& prefab, std::string name = "prefab", glm::vec2 position = glm::vec2(0.0f), float rotation = 0.0f);
+	Entity* Instantiate(Prefab* prefab, std::string name = "prefab", glm::vec2 position = glm::vec2(0.0f), float rotation = 0.0f);
 
 	double physicsTimer = 0.0;
 	bool paused = true;
@@ -94,6 +102,12 @@ public:
 	b2World bworld;
 
 private:
+
+	struct DeferredEntityDelete{
+		float secondsLeft;
+		Entity* entity;
+	};
+	std::vector<DeferredEntityDelete> defferedDeletions;
 
 	AssetManager* assetManager;
 

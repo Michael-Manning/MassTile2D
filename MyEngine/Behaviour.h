@@ -18,16 +18,23 @@
 #include <nlohmann/json.hpp>
 #include <assetPack/common_generated.h>
 
+class Scene;
+class Behaviour;
 
 struct ComponentAccessor {
+
+	Scene* scene;
+
 	robin_hood::unordered_node_map<entityID, Entity>* entities;
 
-	robin_hood::unordered_flat_map<entityID, SpriteRenderer>* spriteRenderers;
-	robin_hood::unordered_flat_map<entityID, ColorRenderer>* colorRenderers;
+	robin_hood::unordered_node_map<entityID, std::unique_ptr<Behaviour>>* behaviours;
+	robin_hood::unordered_node_map<entityID, SpriteRenderer>* spriteRenderers;
+	robin_hood::unordered_node_map<entityID, ColorRenderer>* colorRenderers;
 	robin_hood::unordered_node_map<entityID, Rigidbody>* rigidbodies;
 	robin_hood::unordered_node_map<entityID, Staticbody>* staticbodies;
 	robin_hood::unordered_node_map<entityID, TextRenderer>* textRenderers;
 	robin_hood::unordered_node_map<entityID, ParticleSystemRenderer>* particleSystemRenderers;
+
 };
 
 struct SerializableProperty {
@@ -77,6 +84,11 @@ public:
 
 	virtual void Start() = 0;
 	virtual void Update() = 0;
+	virtual void OnDestroy() {};
+
+	void Destory();
+	//	//accessor->scene->DeleteEntity(entity->ID, true);
+	//}
 
 	void _runStartUpdate() {
 		if (startRan == false) {

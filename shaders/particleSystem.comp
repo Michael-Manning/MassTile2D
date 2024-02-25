@@ -16,6 +16,7 @@ struct particle {
 struct ParticleSystemConfiguration {
    int particleCount;
    bool burstMode;
+   bool burstRepeate;
    float spawnRate; // particles per second
    float particleLifeSpan; // seconds
    float gravity;

@@ -13,12 +13,13 @@
 #include "worldGen.h"
 #include "TileWorld.h"
 #include "Behaviour.h"
+#include "Collision.h"
 
 using namespace glm;
 using namespace std;
 
 // offset toward zero with floor
-glm::vec2 decellerate(const glm::vec2& A, const glm::vec2& B) {
+static glm::vec2 decellerate(const glm::vec2& A, const glm::vec2& B) {
 	glm::vec2 result;
 
 	if (A.x < 0) {
@@ -77,7 +78,9 @@ class Player : public Behaviour {
 
 public:
 
-	BEHAVIOUR_CONSTUCTOR(Player) {}
+	BEHAVIOUR_CONSTUCTOR(Player) {
+	
+	}
 	BEHAVIOUR_CLONE(Player)
 
 	//std::string GetEditorName() override { // deprecate
@@ -103,7 +106,7 @@ public:
 	vec2 velocity = vec2(0.0f);
 	float grounded = true;
 
-
+	float facingX = 1.0f;;
 
 
 	bool queryTile(vec2 pos) {
@@ -136,6 +139,8 @@ public:
 
 	SpriteRenderer* renderer;
 
+	vector<vec2> fanPoints;
+
 	vector<vec2> tpoints;
 	float sx = 0;
 	float sy = 0;
@@ -157,6 +162,10 @@ public:
 		tpoints[7] = vec2(0, sy);
 		tpoints[8] = vec2(-sx, -sy / 2.0f);
 		tpoints[9] = vec2(sx, -sy / 2.0f);
+
+		global::player = this;
+
+		fanPoints = CreateTriangleFan(-0.5f, 0.5f, 4, 1.5f, vec2(0.0));
 	};
 
 	float animationTimer = 0;
@@ -194,6 +203,11 @@ public:
 		bool left = input->getKey(KeyCode::LeftArrow) || input->getKey('a');
 		bool right = input->getKey(KeyCode::RightArrow) || input->getKey('d');
 
+		if (left && !right)
+			facingX = -1;
+		else if(!left &&  right)
+			facingX = 1;
+
 		if (left && !right && !leftCast) {
 			velocity += vec2(grounded ? -groundAccel : -airAccel, 0.0f) * deltaTime;
 		}
@@ -207,7 +221,7 @@ public:
 			}
 		}
 
-		if ((input->getKeyDown(KeyCode::UpArrow) || input->getKey('w')) && grounded) {
+		if ((input->getKeyDown(KeyCode::UpArrow) || input->getKey('w') || input->getKeyDown(KeyCode::Spacebar)) && grounded) {
 			velocity.y = jumpVel;
 			grounded = false;
 
@@ -411,7 +425,26 @@ public:
 				GcameraPos = npos;
 			}
 		}
+
+		for (auto& p : fanPoints)
+		{
+			debugTriangles.push_back(p * facingX + transform->position);
+		}
+
+		if (input->getMouseBtnDown(MouseBtn::Left)) {
+
+			std::vector<glm::vec2> swordTriangles;
+			swordTriangles.reserve(fanPoints.size());
+			for (auto& p : fanPoints)
+			{
+				swordTriangles.push_back(p * facingX + transform->position);
+			}
+
+			damageEnemiesTriangles(swordTriangles, 10.0f, 5);
+		}
 	};
+
+	void damageEnemiesTriangles(std::vector<glm::vec2> vertices, float knockback, int damage);
 };
 
 

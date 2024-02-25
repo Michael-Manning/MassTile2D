@@ -329,9 +329,13 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Benchmarking.cpp" />
+    <ClCompile Include="Collision.cpp" />
+    <ClCompile Include="demon.cpp" />
     <ClCompile Include="GameUI.cpp" />
+    <ClCompile Include="global.cpp" />
     <ClCompile Include="Menus.cpp" />
     <ClCompile Include="MyGame.cpp" />
+    <ClCompile Include="Player.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
     </ClCompile>
@@ -360,6 +364,7 @@
   <ItemGroup>
     <ClInclude Include="Benchmarking.h" />
     <ClInclude Include="boidTestes.h" />
+    <ClInclude Include="Collision.h" />
     <ClInclude Include="demon.h" />
     <ClInclude Include="GameUI.h" />
     <ClInclude Include="global.h" />

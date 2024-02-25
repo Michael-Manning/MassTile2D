@@ -47,6 +47,7 @@
 #include "GameUI.h"
 #include "Behaviour.h"
 #include "Benchmarking.h"
+#include "Collision.h"
 
 #include "player.h"
 #include "demon.h"
@@ -163,7 +164,7 @@ AssetManager::AssetPaths AssetDirectories = {};
 TileWorld* worldMap;
 Camera mainCamera{
 	glm::vec2(0.0f),
-	1.0f
+	0.25f
 };
 bool editorToggledThisFrame = false;
 
@@ -222,8 +223,8 @@ void initializeEngine(std::unique_ptr<Engine>& engine) {
 	AssetDirectories.resourcePtr = resourcePtr;
 
 	WindowSetting windowSetting;
-	windowSetting.windowSizeX = 1400;
-	windowSetting.windowSizeY = 800;
+	windowSetting.windowSizeX = 1900;
+	windowSetting.windowSizeY = 1080;
 	windowSetting.windowMode = WindowMode::Windowed;
 	windowSetting.name = "video game";
 
@@ -395,7 +396,23 @@ void worldDebug() {
 #endif
 }
 
-constexpr bool useTileWorld = false;
+glm::vec2 gameSceneWorldToScreenPos(glm::vec2 pos) {
+#ifdef USING_EDITOR
+	if (showingEditor)
+		return editor.gameSceneWorldToScreenPos(pos);
+#endif
+	return worldToScreenPos(pos, mainCamera, engine->getWindowSize());
+}
+glm::vec2 gameSceneSreenToWorldPos(glm::vec2 pos) {
+#ifdef USING_EDITOR
+	if (showingEditor)
+		return editor.gameSceneSreenToWorldPos(pos);
+#endif
+	return screenToWorldPos(pos, mainCamera, engine->getWindowSize());
+}
+
+
+constexpr bool useTileWorld = true;
 
 #ifdef  PUBLISH
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
@@ -408,18 +425,22 @@ int main() {
 	initializeEngine(engine);
 
 	// create or load main scene
-	scene = make_shared<Scene>(engine->assetManager.get());
+	scene = Scene::MakeScene(engine->assetManager.get()); /*make_shared<Scene>(engine->assetManager.get());*/
+	global::mainScene = scene.get();
+	global::assetManager = engine->assetManager.get();
+
 	scene->name = "main scene";
 	//sceneRenderCtx = engine->CreateSceneRenderContext(engine->getWindowSize(), useTileWorld, vec4(0, 0, 0, 1));
 	sceneRenderCtx = engine->CreateSceneRenderContext(engine->getWindowSize(), useTileWorld, { 0.2, 0.3, 1.0, 1 });
 #ifdef USING_EDITOR
 	editor.Initialize(
-		engine.get(), 
-		scene, 
+		engine.get(),
+		scene,
 		sceneRenderCtx,
 		[&](std::shared_ptr<Scene> newScene) {
 			scene = newScene; // releases old scene memory
 			editor.SetGameScene(newScene);
+			global::mainScene = newScene.get();
 		}
 	);
 #endif
@@ -429,7 +450,7 @@ int main() {
 	engine->assetManager->LoadAllFonts();
 	engine->assetManager->LoadAllPrefabs(false);
 
-	if(useTileWorld)
+	if (useTileWorld)
 		createTileWorld();
 
 	vector<vec2> torchPositions;
@@ -451,14 +472,15 @@ int main() {
 	uiState.showingInventory = true;
 
 	{
-		auto testSprite = engine->assetManager->GetSprite("test_cat");
-		Benchmark::BuildSpriteEntityStressTest(scene.get(), testSprite->ID); // 300 avg 2400 release
+		//auto testSprite = engine->assetManager->GetSprite("test_cat");
+		//Benchmark::BuildSpriteEntityStressTest(scene.get(), testSprite->ID); // 300 avg 2400 release
 		// 380, 2400
 	}
 
 	//auto ent = scene->CreateEntity();
 	//scene->DeleteEntity(ent->ID, false);
 
+	bool firstFrame = true;
 	while (!engine->ShouldClose())
 	{
 		ZoneScopedN("main application loop");
@@ -486,6 +508,8 @@ int main() {
 
 			//engine.addScreenSpaceTexture("hotbar", 0, vec2(0, 0), 60);
 			//UI::DoUI(uiState);
+
+
 
 			GcameraPos = mainCamera.position;
 			engine->EntityStartUpdate(scene);
@@ -519,10 +543,58 @@ int main() {
 			}
 #endif
 
+
+			vector<vec2> triangles;
+			vector<vec4> colors;
+
+
+			vec2 mouseWorld = gameSceneSreenToWorldPos(input->getMousePos());
+
+			triangles.push_back(vec2(1.0f, -1.0f) + mouseWorld);
+			triangles.push_back(vec2(-1.0f, -1.0f) + mouseWorld);
+			triangles.push_back(vec2(0.5f, 0.5f) + mouseWorld);
+
+			auto drawlist = ImGui::GetForegroundDrawList();
+
+			bool hit = false;
+
+			for (auto& c : enemyColliderList)
+			{
+				auto pointList = c->pointList;
+
+				for (auto& p : *pointList)
+				{
+					if (isPointInTriangle(triangles[0], triangles[1], triangles[2], p) || input->getKeyDown('u')) {
+
+						hit = true;
+						//c->OnCollision();
+					}
+				}
+
+			}
+			if (hit)
+				colors.push_back({ 1.0, 0.0, 0.0, 0.5 });
+			else
+				colors.push_back({ 0.0, 1.0, 0.0, 0.5 });
+
+		//	engine->SceneTriangles(sceneRenderCtx, triangles, colors);
+
 			//worldDebug();
+
+			vector<vec4> debugColors;
+
+			for (size_t i = 0; i < debugTriangles.size() / 3; i++)
+			{
+				debugColors.push_back(vec4(1.0, 0.0, 0.0, 0.5));
+			}
+
+			engine->SceneTriangles(sceneRenderCtx, debugTriangles, debugColors);
+
+			debugTriangles.clear();
 		}
 
 		queueRenderTasks();
+		firstFrame = false;
 	}
 
 	engine->Close();

@@ -1,0 +1,59 @@
+{
+    "name": "game_test",
+    "sceneData": {
+        "behaviours": [
+            {
+                "entityID": 1,
+                "hash": 3757936288
+            },
+            {
+                "entityID": 2,
+                "hash": 1644023240
+            }
+        ],
+        "entities": [
+            {
+                "id": 1,
+                "name": "player",
+                "transform": {
+                    "position": [
+                        -18.0,
+                        87.51000213623047
+                    ],
+                    "rotation": 0.0,
+                    "scale": [
+                        0.5,
+                        1.0
+                    ]
+                }
+            },
+            {
+                "id": 2,
+                "name": "Demon",
+                "transform": {
+                    "position": [
+                        -15.0,
+                        84.0
+                    ],
+                    "rotation": 0.0,
+                    "scale": [
+                        0.5,
+                        1.0
+                    ]
+                }
+            }
+        ],
+        "spriteRenderers": [
+            {
+                "atlasIndex": 5,
+                "entityID": 1,
+                "spriteID": 393035407
+            },
+            {
+                "atlasIndex": 0,
+                "entityID": 2,
+                "spriteID": 4025101928
+            }
+        ]
+    }
+}

@@ -17,6 +17,8 @@ namespace {
 			{RightArrow, GLFW_KEY_RIGHT},
 			{UpArrow, GLFW_KEY_UP},
 			{DownArrow, GLFW_KEY_DOWN},
+			{DownArrow, GLFW_KEY_DOWN},
+			{Spacebar, GLFW_KEY_SPACE}
 	};
 
 	static std::unordered_map<MouseBtn, int> mouseInputMap = {
@@ -97,9 +99,13 @@ bool Input::getKeyDown(KeyCode key) {
 }
 //bool Input::getKeyUp(KeyCode key);
 
-glm::vec2 Input::getMousePos() {
+glm::vec2 Input::getMousePos() { 
 	double x, y;
 	glfwGetCursorPos(window, &x, &y);
+	//if (std::isnan(x))
+	//	x = 0;
+	//if (std::isnan(y))
+	//	y = 0;
 	return glm::vec2((float)x, (float)y);
 }
 bool Input::getMouseBtn(MouseBtn button) {

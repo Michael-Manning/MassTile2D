@@ -150,6 +150,9 @@
     <ClCompile Include="Behaviour.cpp">
       <Filter>Source Files\Engine\ECS</Filter>
     </ClCompile>
+    <ClCompile Include="ColoredTrianglesPL.cpp">
+      <Filter>Source Files\vulkan\piplines</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pipeline.h">
@@ -316,6 +319,9 @@
     </ClInclude>
     <ClInclude Include="Transform.h">
       <Filter>Source Files\Engine\ECS</Filter>
+    </ClInclude>
+    <ClInclude Include="ColoredTrianglesPL.h">
+      <Filter>Source Files\vulkan\piplines</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

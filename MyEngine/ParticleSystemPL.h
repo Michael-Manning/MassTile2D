@@ -27,7 +27,7 @@
 #include "GraphicsTemplate.h"
 
 constexpr int MAX_PARTICLES_SMALL = 400;
-constexpr int MAX_PARTICLE_SYSTEMS_SMALL = 10;
+constexpr int MAX_PARTICLE_SYSTEMS_SMALL = 20;
 constexpr int MAX_PARTICLES_LARGE = 400000;
 constexpr int MAX_PARTICLE_SYSTEMS_LARGE = 4;
 
@@ -46,7 +46,8 @@ public:
 
 	struct ParticleSystemConfiguration {
 		int32_t particleCount = 200;
-		bool burstMode;
+		bool burstMode = false;
+		bool burstRepeat = false;
 		float spawnRate = 100.0f; // particles per second
 		float particleLifeSpan = 1.0f; // seconds
 		float gravity = -10.0f;

@@ -334,6 +334,7 @@
     <ClCompile Include="AssetManager.cpp" />
     <ClCompile Include="Audio.cpp" />
     <ClCompile Include="Behaviour.cpp" />
+    <ClCompile Include="ColoredTrianglesPL.cpp" />
     <ClCompile Include="ComputeTemplate.cpp" />
     <ClCompile Include="descriptorManager.cpp" />
     <ClCompile Include="boidsCompute.cpp" />
@@ -393,6 +394,7 @@
     <ClInclude Include="BindingManager.h" />
     <ClInclude Include="boidsCompute.h" />
     <ClInclude Include="coloredQuadPL.h" />
+    <ClInclude Include="ColoredTrianglesPL.h" />
     <ClInclude Include="ColorRenderer.h" />
     <ClInclude Include="Component.h" />
     <ClInclude Include="ComputeTemplate.h" />

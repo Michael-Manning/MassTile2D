@@ -1,0 +1,11 @@
+{
+    "ID": 4025101928,
+    "filterMode": 1,
+    "imageFileName": "demon.png",
+    "name": "demon",
+    "resolution": [
+        120.0,
+        240.0
+    ],
+    "textureID": -812681011
+}

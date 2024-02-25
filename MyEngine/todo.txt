@@ -10,6 +10,7 @@ in the sprite (and remove the requirement they be consistent and persistent), th
 texture manager, removing one of the 3 layers of inderection required to link a sprite renderer to the actual GPU image.
 TextureIDs should be spit out straight from the bindless texture manager instead of the resource manager ID generator
 
+- verity if direct GPU map access when doing screen space drawlists breaks synchronization rules
 
 ---- Test:
 - entity deleation
@@ -87,6 +88,7 @@ for anything, and the class is just used as a clone template
 
 - descriptor pool sizes
 
+- colored quad/triangles could use a different vertex buffer which doesn't calculate UVs
 
 ---- features:
 
