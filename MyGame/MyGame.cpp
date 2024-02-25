@@ -271,15 +271,15 @@ void createTileWorld() {
 
 void queueRenderTasks() {
 
-	if (engine->WindowResizedLastFrame() || (editorToggledThisFrame && showingEditor == false)) {
-		engine->ResizeSceneRenderContext(sceneRenderCtx, engine->getWindowSize());
-	}
+	//if (engine->WindowResizedLastFrame() || (editorToggledThisFrame && showingEditor == false)) {
+	//	engine->ResizeSceneRenderContext(sceneRenderCtx, engine->getWindowSize());
+	//}
 
-	// draw main scene full screen
-	if (showingEditor == false) {
-		framebufferID fb = engine->GetSceneRenderContextFramebuffer(sceneRenderCtx);
-		engine->addScreenCenteredSpaceFramebufferTexture(fb, engine->getWindowSize() / 2.0f, engine->winH, 0);
-	}
+	//// draw main scene full screen
+	//if (showingEditor == false) {
+	//	framebufferID fb = engine->GetSceneRenderContextFramebuffer(sceneRenderCtx);
+	//	engine->addScreenCenteredSpaceFramebufferTexture(fb, engine->getWindowSize() / 2.0f, engine->winH, 0);
+	//}
 
 	// render main scene no matter what as the editor will use it if active
 	Engine::SceneRenderJob mainSceneRender;
@@ -412,7 +412,7 @@ glm::vec2 gameSceneSreenToWorldPos(glm::vec2 pos) {
 }
 
 
-constexpr bool useTileWorld = true;
+constexpr bool useTileWorld = false;
 
 #ifdef  PUBLISH
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
@@ -489,6 +489,41 @@ int main() {
 
 		engine->clearScreenSpaceDrawlist();
 
+
+		if (ImGui::GetIO().WantTextInput == false) {
+#ifdef USING_EDITOR
+			if (input->getKeyDown('e')) {
+				showingEditor = !showingEditor;
+				editorToggledThisFrame = true;
+			}
+#endif
+			if (input->getKeyDown('p')) {
+				scene->paused = !scene->paused;
+			}
+			if (input->getKeyDown('l')) {
+				worldMap->FullLightingUpdate();
+			}
+			if (input->getKeyDown('m')) {
+				break;
+			}
+		}
+
+
+
+		// pulled out of queue function because it prevents drawing anything on top of the main framebuffer
+		{
+			if (engine->WindowResizedLastFrame() || (editorToggledThisFrame && showingEditor == false)) {
+				engine->ResizeSceneRenderContext(sceneRenderCtx, engine->getWindowSize());
+			}
+
+			// draw main scene full screen
+			if (showingEditor == false) {
+				framebufferID fb = engine->GetSceneRenderContextFramebuffer(sceneRenderCtx);
+				engine->addScreenCenteredSpaceFramebufferTexture(fb, engine->getWindowSize() / 2.0f, engine->winH, 0);
+			}
+		}
+
+
 		if (appState == AppState::MainMenu)
 		{
 			switch (UI.currentPage)
@@ -506,32 +541,13 @@ int main() {
 
 			engine->addScreenSpaceText(UI.smallfont, { 0, 0 }, vec4(1.0), "fps: %d", (int)engine->_getAverageFramerate());
 
-			//engine.addScreenSpaceTexture("hotbar", 0, vec2(0, 0), 60);
-			//UI::DoUI(uiState);
+			UI::DoUI(uiState);
 
 
 
 			GcameraPos = mainCamera.position;
 			engine->EntityStartUpdate(scene);
 			mainCamera.position = GcameraPos;
-
-			if (ImGui::GetIO().WantTextInput == false) {
-#ifdef USING_EDITOR
-				if (input->getKeyDown('e')) {
-					showingEditor = !showingEditor;
-					editorToggledThisFrame = true;
-				}
-#endif
-				if (input->getKeyDown('p')) {
-					scene->paused = !scene->paused;
-				}
-				if (input->getKeyDown('l')) {
-					worldMap->FullLightingUpdate();
-				}
-				if (input->getKeyDown('m')) {
-					break;
-				}
-			}
 
 #ifdef USING_EDITOR
 			if (showingEditor) {
@@ -544,42 +560,6 @@ int main() {
 #endif
 
 
-			vector<vec2> triangles;
-			vector<vec4> colors;
-
-
-			vec2 mouseWorld = gameSceneSreenToWorldPos(input->getMousePos());
-
-			triangles.push_back(vec2(1.0f, -1.0f) + mouseWorld);
-			triangles.push_back(vec2(-1.0f, -1.0f) + mouseWorld);
-			triangles.push_back(vec2(0.5f, 0.5f) + mouseWorld);
-
-			auto drawlist = ImGui::GetForegroundDrawList();
-
-			bool hit = false;
-
-			for (auto& c : enemyColliderList)
-			{
-				auto pointList = c->pointList;
-
-				for (auto& p : *pointList)
-				{
-					if (isPointInTriangle(triangles[0], triangles[1], triangles[2], p) || input->getKeyDown('u')) {
-
-						hit = true;
-						//c->OnCollision();
-					}
-				}
-
-			}
-			if (hit)
-				colors.push_back({ 1.0, 0.0, 0.0, 0.5 });
-			else
-				colors.push_back({ 0.0, 1.0, 0.0, 0.5 });
-
-		//	engine->SceneTriangles(sceneRenderCtx, triangles, colors);
-
-			//worldDebug();
 
 			vector<vec4> debugColors;
 

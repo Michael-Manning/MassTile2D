@@ -355,40 +355,6 @@ void Engine::recordSceneContextGraphics(const ScenePipelineContext& ctx, framebu
 
 	rengine->beginRenderpass(fb, cmdBuffer);
 
-	// colored quad
-	{
-		ZoneScopedN("Colored quad PL");
-
-		vector<ColoredQuadPL::InstanceBufferData> drawlist;
-		drawlist.reserve(scene->sceneData.colorRenderers.size());
-
-		for (auto& renderer : scene->sceneData.colorRenderers)
-		{
-			const auto& entity = scene->sceneData.entities.at(renderer.first);
-
-			ColoredQuadPL::InstanceBufferData instanceData;
-			instanceData.color = renderer.second.color;
-			instanceData.circle = renderer.second.shape == ColorRenderer::Shape::Circle;
-
-			if (entity.HasParent()) {
-				Transform global = entity.GetGlobalTransform();
-				instanceData.position = global.position;
-				instanceData.scale = global.scale;
-				instanceData.rotation = global.rotation;
-			}
-			else {
-				instanceData.position = entity.transform.position;
-				instanceData.scale = entity.transform.scale;
-				instanceData.rotation = entity.transform.rotation;
-			}
-
-			drawlist.push_back(instanceData);
-		}
-
-		ctx.colorPipeline->UploadInstanceData(drawlist);
-		ctx.colorPipeline->recordCommandBuffer(cmdBuffer, drawlist.size());
-	}
-
 	// tilemap
 	if (ctx.tilemapPipeline != nullptr)
 	{
@@ -452,6 +418,40 @@ void Engine::recordSceneContextGraphics(const ScenePipelineContext& ctx, framebu
 			/*ctx.texturePipeline->recordCommandBuffer(cmdBuffer, drawlist.size());
 			runningStats.sprite_render_count += drawlist.size();*/
 		}
+	}
+
+	// colored quad
+	{
+		ZoneScopedN("Colored quad PL");
+
+		vector<ColoredQuadPL::InstanceBufferData> drawlist;
+		drawlist.reserve(scene->sceneData.colorRenderers.size());
+
+		for (auto& renderer : scene->sceneData.colorRenderers)
+		{
+			const auto& entity = scene->sceneData.entities.at(renderer.first);
+
+			ColoredQuadPL::InstanceBufferData instanceData;
+			instanceData.color = renderer.second.color;
+			instanceData.circle = renderer.second.shape == ColorRenderer::Shape::Circle;
+
+			if (entity.HasParent()) {
+				Transform global = entity.GetGlobalTransform();
+				instanceData.position = global.position;
+				instanceData.scale = global.scale;
+				instanceData.rotation = global.rotation;
+			}
+			else {
+				instanceData.position = entity.transform.position;
+				instanceData.scale = entity.transform.scale;
+				instanceData.rotation = entity.transform.rotation;
+			}
+
+			drawlist.push_back(instanceData);
+		}
+
+		ctx.colorPipeline->UploadInstanceData(drawlist);
+		ctx.colorPipeline->recordCommandBuffer(cmdBuffer, drawlist.size());
 	}
 
 	// particles
@@ -845,13 +845,6 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 		runningStats.entity_count = ctx.scene->sceneData.entities.size();
 	}
 
-	// screenspace quad
-	{
-		screenSpaceColorPipeline->UploadInstanceData(screenSpaceColorDrawlist);
-		screenSpaceColorPipeline->recordCommandBuffer(cmdBuffer, screenSpaceColorDrawlist.size());
-
-	}
-
 	// screenspace texture
 	{
 		for (auto& d : screenSpaceTextureDrawlist)
@@ -863,6 +856,13 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 		screenSpaceTexturePipeline->recordCommandBuffer(cmdBuffer, screenSpaceTextureDrawlist.size());
 
 		runningStats.sprite_render_count += screenSpaceTextureDrawlist.size();
+	}
+
+	// screenspace quad
+	{
+		screenSpaceColorPipeline->UploadInstanceData(screenSpaceColorDrawlist);
+		screenSpaceColorPipeline->recordCommandBuffer(cmdBuffer, screenSpaceColorDrawlist.size());
+
 	}
 
 	// screenspace text

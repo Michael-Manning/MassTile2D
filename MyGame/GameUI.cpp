@@ -60,7 +60,7 @@ namespace UI {
 
 			auto pos = getInvSlotPos(i);
 			if (within(pos, pos + InvSlotSize, mpos)) {
-				state.engine->addScreenSpaceQuad(glm::vec4(1, 1, 1, 0.5f), pos + InvSlotSize / 2.0f, vec2(InvSlotSize));
+				state.engine->addScreenSpaceQuad(glm::vec4(1, 1, 1, 0.4f), pos + InvSlotSize / 2.0f, vec2(InvSlotSize));
 				break;
 			}
 

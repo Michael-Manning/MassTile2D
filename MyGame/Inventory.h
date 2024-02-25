@@ -3,7 +3,9 @@
 #include <stdint.h>
 #include <string>
 
-struct ItemDefinition
+typedef itemID;
+
+struct ItemBase
 {
 	uint32_t ID;
 	std::string name;
@@ -13,7 +15,7 @@ struct ItemDefinition
 
 struct ItemInstanceStack
 {
-	uint32_t definitionID;
+	itemID item;
 	int count;
 	uint32_t dynmicIdentifier = 0;
 };
