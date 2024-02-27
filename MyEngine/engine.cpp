@@ -869,7 +869,7 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 	{
 		int memSlot = 0;
 		{
-
+			screenSpaceTextPipeline->ClearTextData(rengine->currentFrame);
 			for (auto& i : screenSpaceTextDrawlist)
 			{
 				Font* f = assetManager->GetFont(i.font);

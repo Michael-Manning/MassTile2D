@@ -22,3 +22,6 @@
 #include "GameUI.h"
 #include "Menus.h"
 #include "worldGen.h"
+#include "Inventory.h"
+#include "Player.h"
+#include "Demon.h"

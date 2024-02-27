@@ -1404,6 +1404,7 @@ bool Editor::drawInspector<SpriteRenderer>(SpriteRenderer& r) {
 			SetCursorPos(pos);
 			if (InvisibleButton((string("invbtn") + to_string(i)).c_str(), displaySize)) {
 				rendererSelectedSprite = sprite.first;
+				selectedScene->sceneData.spriteRenderers.at(selectedEntity->ID)._spriteCache = engine->assetManager->GetSprite(rendererSelectedSprite);
 				ImGui::CloseCurrentPopup();
 			}
 			i++;

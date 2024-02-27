@@ -201,7 +201,7 @@ public:
 		screenSpaceTransformUploader.Invalidate();
 	};
 
-	inline void addScreenSpaceQuad(glm::vec4 color, glm::vec2 pos, glm::vec2 scale, float rotation = 0.0f) {
+	inline void addScreenSpaceCenteredQuad(glm::vec4 color, glm::vec2 pos, glm::vec2 scale, float rotation = 0.0f) {
 		ColoredQuadPL::InstanceBufferData item;
 		item.color = color;
 		item.position = pos;

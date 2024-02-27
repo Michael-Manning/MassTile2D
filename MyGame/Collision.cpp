@@ -7,12 +7,15 @@
 #include "Collision.h"
 
 namespace {
-	float pi = glm::pi<float>();
+	float mypi = glm::pi<float>();
 
 }
 	std::vector<glm::vec2> debugTriangles;
 robin_hood::unordered_flat_set<ColliderCallback*> enemyColliderList;
 
+
+using namespace std;
+using namespace glm;
 
 bool isPointInTriangle(const glm::vec2& v1, const glm::vec2& v2, const glm::vec2& v3, const glm::vec2& p) {
 	auto sign = [](const glm::vec2& p1, const glm::vec2& p2, const glm::vec2& p3) {
@@ -57,9 +60,9 @@ void RemoveFromEnemyHitCheckList(ColliderCallback* callback) {
 
 
 float normalizeAngle(float angle) {
-	angle = fmodf(angle, 2 * pi); // Handle overflow and underflow
+	angle = fmodf(angle, 2 * mypi); // Handle overflow and underflow
 	if (angle < 0) {
-		angle += 2 * pi; // Adjust if negative
+		angle += 2 * mypi; // Adjust if negative
 	}
 	return angle;
 }
@@ -74,11 +77,11 @@ float angleDifference(float startAngle, float endAngle) {
 	float difference = endAngle - startAngle;
 
 	// Adjust for rollover
-	if (difference > pi) {
-		difference -= 2 * pi; // Clockwise is shorter
+	if (difference > mypi) {
+		difference -= 2 * mypi; // Clockwise is shorter
 	}
-	else if (difference < -pi) {
-		difference += 2 * pi; // Counter-clockwise is shorter
+	else if (difference < -mypi) {
+		difference += 2 * mypi; // Counter-clockwise is shorter
 	}
 
 	return difference;

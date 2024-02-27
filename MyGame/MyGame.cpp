@@ -46,8 +46,10 @@
 #include "Menus.h"
 #include "GameUI.h"
 #include "Behaviour.h"
+
 #include "Benchmarking.h"
 #include "Collision.h"
+#include "Inventory.h"
 
 #include "player.h"
 #include "demon.h"
@@ -396,21 +398,6 @@ void worldDebug() {
 #endif
 }
 
-glm::vec2 gameSceneWorldToScreenPos(glm::vec2 pos) {
-#ifdef USING_EDITOR
-	if (showingEditor)
-		return editor.gameSceneWorldToScreenPos(pos);
-#endif
-	return worldToScreenPos(pos, mainCamera, engine->getWindowSize());
-}
-glm::vec2 gameSceneSreenToWorldPos(glm::vec2 pos) {
-#ifdef USING_EDITOR
-	if (showingEditor)
-		return editor.gameSceneSreenToWorldPos(pos);
-#endif
-	return screenToWorldPos(pos, mainCamera, engine->getWindowSize());
-}
-
 
 constexpr bool useTileWorld = false;
 
@@ -428,6 +415,7 @@ int main() {
 	scene = Scene::MakeScene(engine->assetManager.get()); /*make_shared<Scene>(engine->assetManager.get());*/
 	global::mainScene = scene.get();
 	global::assetManager = engine->assetManager.get();
+	global::SetEngine(engine.get());
 
 	scene->name = "main scene";
 	//sceneRenderCtx = engine->CreateSceneRenderContext(engine->getWindowSize(), useTileWorld, vec4(0, 0, 0, 1));
@@ -457,12 +445,12 @@ int main() {
 
 	//shared_ptr<Player> player = dynamic_pointer_cast<Player>(scene->Instantiate(engine.assetManager->GetPrefab("Player"), "Player", vec2(0, 106), 0));
 
-	UIState UI;
+	MenuState UI;
 	UI.bigfont = engine->assetManager->GetFontID("roboto-32");
 	UI.medfont = engine->assetManager->GetFontID("roboto-24");
 	UI.smallfont = engine->assetManager->GetFontID("roboto-16");
 	UI.input = input;
-	UI.currentPage = UIState::Page::VideoSettings;
+	UI.currentPage = MenuState::Page::VideoSettings;
 	UI.videoSettings = &videoSettings;
 	UI.selectedWindowOption = videoSettings.windowSetting.windowMode;
 
@@ -470,6 +458,9 @@ int main() {
 	uiState.engine = engine.get();
 	uiState.selectedHotBarSlot = 0;
 	uiState.showingInventory = true;
+	uiState.bigfont = engine->assetManager->GetFontID("roboto-32");
+	uiState.medfont = engine->assetManager->GetFontID("roboto-24");
+	uiState.smallfont = engine->assetManager->GetFontID("roboto-16");
 
 	{
 		//auto testSprite = engine->assetManager->GetSprite("test_cat");
@@ -479,6 +470,26 @@ int main() {
 
 	//auto ent = scene->CreateEntity();
 	//scene->DeleteEntity(ent->ID, false);
+
+	itemLibrary.PopulateTools(AssetDirectories.assetDir + "Tools.csv");
+	itemLibrary.PopulateConsumables(AssetDirectories.assetDir + "Consumables.csv");
+
+	global::playerInventory.slots[4] = ItemStack{
+		.item = 100,
+		.count = 1
+	};
+	global::playerInventory.slots[15] = ItemStack{
+		.item = 101,
+		.count = 1
+	};
+	global::playerInventory.slots[16] = ItemStack{
+		.item = 200,
+		.count = 40
+	};
+	global::playerInventory.slots[33] = ItemStack{
+		.item = 200,
+		.count = 7
+	};
 
 	bool firstFrame = true;
 	while (!engine->ShouldClose())
@@ -528,7 +539,7 @@ int main() {
 		{
 			switch (UI.currentPage)
 			{
-			case UIState::Page::VideoSettings:
+			case MenuState::Page::VideoSettings:
 				DoSettingsMenu(UI, engine.get());
 				break;
 			default:

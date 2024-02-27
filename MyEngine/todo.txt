@@ -4,6 +4,9 @@ Near roadmap:
 - test publish build
 - cache sprite in spriteRenderer
 
+Create serializable "map/grid entity" structure which represents an entity placed on top of the tile world which can be serialized.
+Should be stored within a map keyed by each check for update/draw culling and instantiate a prefab on load. Start with a chest/storage entity
+
 Major optimization:
 Sprites store their image file name, and texture IDs are hashed from the same filename. Could stop serializing the textureID
 in the sprite (and remove the requirement they be consistent and persistent), then use texture IDs directly in the bindless

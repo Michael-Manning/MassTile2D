@@ -5,6 +5,8 @@
 #include "Utils.h"
 #include "GameUI.h"
 
+#include "global.h"
+
 using namespace glm;
 using namespace std;
 
@@ -38,9 +40,9 @@ namespace UI {
 		if (input->getKeyDown('i'))
 			state.showingInventory = !state.showingInventory;
 
-		for (char c = '0'; c <='9'; c++)
+		for (char c = '0'; c <= '9'; c++)
 		{
-			if(input->getKeyDown(c))
+			if (input->getKeyDown(c))
 				state.selectedHotBarSlot = numRowToHotbarIndex(c - '0');
 		}
 
@@ -48,10 +50,10 @@ namespace UI {
 		if (state.showingInventory) {
 			state.engine->addScreenSpaceTexture("inventory", 0, invPos, 550.0f * UIScale);
 		}
-			
+
 		{
 			auto pos = getInvSlotPos(state.selectedHotBarSlot);
-			state.engine->addScreenSpaceQuad(glm::vec4(1, 1, 1, 0.5f), pos + InvSlotSize / 2.0f, vec2(InvSlotSize));
+			state.engine->addScreenSpaceCenteredQuad(glm::vec4(1, 1, 1, 0.5f), pos + InvSlotSize / 2.0f, vec2(InvSlotSize));
 		}
 
 		for (size_t i = 0; i < hotBarSlots + invSlotCount; i++) {
@@ -59,13 +61,62 @@ namespace UI {
 				break;
 
 			auto pos = getInvSlotPos(i);
-			if (within(pos, pos + InvSlotSize, mpos)) {
-				state.engine->addScreenSpaceQuad(glm::vec4(1, 1, 1, 0.4f), pos + InvSlotSize / 2.0f, vec2(InvSlotSize));
+
+			// using 1.5 because sometimes rounding causes gaps to not select anything
+			if (within(pos - InvSlotGap / 1.5f, pos + InvSlotSize + InvSlotGap / 1.5f, mpos)) {
+
+
+				if (global::playerInventory.slots[i].InUse()) {
+
+					if (state.dragSrcContainer == nullptr && input->getMouseBtnDown(MouseBtn::Left)) {
+						state.dragSrcContainer = &global::playerInventory;
+						state.dragSrcSlot = i;
+
+						Inventory::MoveStack(state.dragSrcContainer, state.dragSrcSlot, &global::cursorInventory, 0);
+					}
+				}
+
+				if (input->getMouseBtnUp(MouseBtn::Left) && state.dragSrcContainer != nullptr && global::playerInventory.slots[i].InUse() == false) {
+					Inventory::MoveStack(&global::cursorInventory, 0, &global::playerInventory, i);
+					state.dragSrcContainer = nullptr;
+					state.dragSrcSlot = -1;
+				}
+
+				state.engine->addScreenSpaceCenteredQuad(glm::vec4(1, 1, 1, 0.4f), pos + InvSlotSize / 2.0f, vec2(InvSlotSize));
 				break;
 			}
 
 		}
 
-	}
+		for (size_t i = 0; i < hotBarSlots + invSlotCount; i++) {
 
+			if (i >= hotBarSlots && state.showingInventory == false)
+				break;
+
+			if (global::playerInventory.slots[i].InUse()) {
+				auto pos = getInvSlotPos(i);
+				const auto& itemHeader = itemLibrary.GetItem(global::playerInventory.slots[i].item);
+				state.engine->addScreenCenteredSpaceTexture("itemSprites", itemHeader.inventorySpriteAtlasIndex, pos + InvSlotSize / 2.0f, InvSlotTextureSize);
+				if (itemHeader.maxStack > 1) {
+					state.engine->addScreenSpaceText(state.smallfont, pos + vec2(InvSlotSize / 2.0f - InvSlotSize / 4.0f, InvSlotSize / 2.0f), vec4(1.0), to_string(global::playerInventory.slots[i].count));
+				}
+			}
+		}
+
+		if (input->getMouseBtnUp(MouseBtn::Left) && state.dragSrcContainer) {
+			Inventory::MoveStack(&global::cursorInventory, 0, state.dragSrcContainer, state.dragSrcSlot);
+			state.dragSrcContainer = nullptr;
+			state.dragSrcSlot = -1;
+		}
+
+		//if (state.dragSrcContainer != nullptr) {
+		if (global::cursorInventory.slots[0].InUse()) {
+			vec2 mpos = input->getMousePos();
+			const auto& itemHeader = itemLibrary.GetItem(global::cursorInventory.slots[0].item);
+			state.engine->addScreenCenteredSpaceTexture("itemSprites", itemHeader.inventorySpriteAtlasIndex, mpos, InvSlotTextureSize);
+			if (itemHeader.maxStack > 1) {
+				state.engine->addScreenSpaceText(state.smallfont, mpos - vec2(InvSlotSize / 4.0f, 0.0f), vec4(1.0), to_string(global::cursorInventory.slots[0].count));
+			}
+		}
+	}
 }

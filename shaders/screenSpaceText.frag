@@ -1,7 +1,7 @@
 #version 460
 #extension GL_EXT_nonuniform_qualifier : enable
 
-#define TEXTPL_maxTextObjects 10
+#define TEXTPL_maxTextObjects 100
 #define TEXTPL_maxTextLength 128
 
 struct charQuad {

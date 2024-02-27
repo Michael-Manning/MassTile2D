@@ -7,5 +7,10 @@
         512.0,
         512.0
     ],
-    "textureID": -1244421895
+    "textureID": -1244421895,
+	
+	"atlasLayout":{
+		"xCount": 8,
+		"yCount": 8
+	}
 }

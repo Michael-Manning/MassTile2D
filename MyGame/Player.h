@@ -18,6 +18,8 @@
 using namespace glm;
 using namespace std;
 
+constexpr int PlayerInventorySize = 50;
+
 // offset toward zero with floor
 static glm::vec2 decellerate(const glm::vec2& A, const glm::vec2& B) {
 	glm::vec2 result;

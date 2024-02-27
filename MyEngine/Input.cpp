@@ -50,20 +50,14 @@ namespace {
 void Input::_newFrame() {
 	scrollDelta = ScrollAccumulator;
 
-	if (scrollDelta > 0) {
-		int bbreak = 0;
-	}
-
 	ScrollAccumulator = 0;
 	
 	currentFrameIndex = !currentFrameIndex;
 	lastFrameIndex = !lastFrameIndex;
 
 	std::copy(liveKeyStates, liveKeyStates + keyCount - 1, keyStates[currentFrameIndex]);
-	std::fill(liveKeyStates, liveKeyStates + keyCount - 1, GLFW_RELEASE);
 
 	std::copy(liveMouseBtnStates, liveMouseBtnStates + mouseBtnCount - 1, mouseBtnStates[currentFrameIndex]);
-	std::fill(liveMouseBtnStates, liveMouseBtnStates + mouseBtnCount - 1, GLFW_RELEASE);
 }
 
 void Input::_onScroll(double xoffset, double yoffset) {
@@ -71,10 +65,14 @@ void Input::_onScroll(double xoffset, double yoffset) {
 }
 
 void Input::_onKeyboard(int key, int scancode, int action, int mods) {
-	liveKeyStates[key] |= (action == GLFW_PRESS);
+	if (action == GLFW_REPEAT)
+		return;
+	liveKeyStates[key] = action;
 }
 void Input::_onMouseButton(int button, int action, int mods) {
-	liveMouseBtnStates[button] |= (action == GLFW_PRESS);
+	if (action == GLFW_REPEAT)
+		return;
+	liveMouseBtnStates[button] = action;
 }
 
 
