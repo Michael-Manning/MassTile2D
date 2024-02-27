@@ -22,6 +22,7 @@ enum class KeyCode {
 	RightArrow,
 	UpArrow,
 	DownArrow,
+	Spacebar
 };
 
 enum class MouseBtn {
@@ -29,11 +30,16 @@ enum class MouseBtn {
 	Right
 };
 
+// TODO add mutex to _newFrame() to prevent dropped events when GLFW executes a callback
+
 class Input {
 public:
 
 	Input(GLFWwindow* window) {
 		this->window = window;
+
+		std::fill(liveMouseBtnStates, liveMouseBtnStates + mouseBtnCount - 1, GLFW_FALSE);
+		std::fill(liveKeyStates, liveKeyStates + keyCount - 1, GLFW_FALSE);
 	}
 
 	float GetScrollDelta() {
@@ -58,7 +64,9 @@ public:
 	bool getKeyDown(KeyCode key);
 	//bool getKeyUp(KeyCode key);
 
-	glm::vec2 getMousePos();
+	glm::vec2 getMousePos(); // rename as live version. add per frame cached version for behaviour consistency
+
+
 	bool getMouseBtn(MouseBtn button);
 	bool getMouseBtnDown(MouseBtn button);
 	bool getMouseBtnUp(MouseBtn button);

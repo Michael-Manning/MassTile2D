@@ -17,6 +17,8 @@ namespace {
 			{RightArrow, GLFW_KEY_RIGHT},
 			{UpArrow, GLFW_KEY_UP},
 			{DownArrow, GLFW_KEY_DOWN},
+			{DownArrow, GLFW_KEY_DOWN},
+			{Spacebar, GLFW_KEY_SPACE}
 	};
 
 	static std::unordered_map<MouseBtn, int> mouseInputMap = {
@@ -48,20 +50,14 @@ namespace {
 void Input::_newFrame() {
 	scrollDelta = ScrollAccumulator;
 
-	if (scrollDelta > 0) {
-		int bbreak = 0;
-	}
-
 	ScrollAccumulator = 0;
 	
 	currentFrameIndex = !currentFrameIndex;
 	lastFrameIndex = !lastFrameIndex;
 
 	std::copy(liveKeyStates, liveKeyStates + keyCount - 1, keyStates[currentFrameIndex]);
-	std::fill(liveKeyStates, liveKeyStates + keyCount - 1, GLFW_RELEASE);
 
 	std::copy(liveMouseBtnStates, liveMouseBtnStates + mouseBtnCount - 1, mouseBtnStates[currentFrameIndex]);
-	std::fill(liveMouseBtnStates, liveMouseBtnStates + mouseBtnCount - 1, GLFW_RELEASE);
 }
 
 void Input::_onScroll(double xoffset, double yoffset) {
@@ -69,10 +65,14 @@ void Input::_onScroll(double xoffset, double yoffset) {
 }
 
 void Input::_onKeyboard(int key, int scancode, int action, int mods) {
-	liveKeyStates[key] |= (action == GLFW_PRESS);
+	if (action == GLFW_REPEAT)
+		return;
+	liveKeyStates[key] = action;
 }
 void Input::_onMouseButton(int button, int action, int mods) {
-	liveMouseBtnStates[button] |= (action == GLFW_PRESS);
+	if (action == GLFW_REPEAT)
+		return;
+	liveMouseBtnStates[button] = action;
 }
 
 
@@ -97,9 +97,13 @@ bool Input::getKeyDown(KeyCode key) {
 }
 //bool Input::getKeyUp(KeyCode key);
 
-glm::vec2 Input::getMousePos() {
+glm::vec2 Input::getMousePos() { 
 	double x, y;
 	glfwGetCursorPos(window, &x, &y);
+	//if (std::isnan(x))
+	//	x = 0;
+	//if (std::isnan(y))
+	//	y = 0;
 	return glm::vec2((float)x, (float)y);
 }
 bool Input::getMouseBtn(MouseBtn button) {

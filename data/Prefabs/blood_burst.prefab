@@ -1,0 +1,49 @@
+{
+    "name": "blood_burst",
+    "sceneData": {
+        "entities": [
+            {
+                "id": 1,
+                "name": "blood_burst",
+                "transform": {
+                    "position": [
+                        0.0,
+                        0.0
+                    ],
+                    "rotation": 0.0,
+                    "scale": [
+                        1.0,
+                        1.0
+                    ]
+                }
+            }
+        ],
+        "particleSystemRenderers": [
+            {
+                "configuration": {
+                    "burstMode": true,
+                    "endColor": [
+                        0.18627452850341797,
+                        0.03926374763250351,
+                        0.03926374763250351,
+                        1.0
+                    ],
+                    "endSize": 0.0,
+                    "gravity": -10.0,
+                    "particleCount": 200,
+                    "particleLifeSpan": 1.0,
+                    "spawnRate": 100.0,
+                    "startColor": [
+                        0.5735294222831726,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "startSize": 0.30000001192092896
+                },
+                "entityID": 1,
+                "size": 0
+            }
+        ]
+    }
+}

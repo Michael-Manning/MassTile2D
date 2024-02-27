@@ -6,7 +6,7 @@
 #include "Input.h"
 #include "Settings.h"
 
-struct UIState {
+struct MenuState {
 
 	Input* input;
 
@@ -30,4 +30,4 @@ struct UIState {
 };
 
 // capable of changing and applying video/audio settings via engine
-void DoSettingsMenu(UIState& state, Engine* engine);
+void DoSettingsMenu(MenuState& state, Engine* engine);

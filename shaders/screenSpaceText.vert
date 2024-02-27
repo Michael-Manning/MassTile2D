@@ -1,6 +1,6 @@
 #version 460
 
-#define TEXTPL_maxTextObjects 10
+#define TEXTPL_maxTextObjects 100
 #define TEXTPL_maxTextLength 128
 
 

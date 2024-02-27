@@ -129,6 +129,7 @@ void Engine::createScenePLContext(ScenePipelineContext* ctx, bool allocateTileWo
 		ctx->colorPipeline = make_unique<ColoredQuadPL>(rengine.get());
 		ctx->textPipeline = make_unique<TextPL>(rengine.get());
 		ctx->particlePipeline = make_unique<ParticleSystemPL>(rengine.get());
+		ctx->trianglesPipelines = make_unique<ColoredTrianglesPL>(rengine.get());
 	}
 
 	if (allocateTileWorld)
@@ -145,6 +146,12 @@ void Engine::createScenePLContext(ScenePipelineContext* ctx, bool allocateTileWo
 		assetManager->LoadShaderFile("color_vert.spv", vert);
 		assetManager->LoadShaderFile("color_frag.spv", frag);
 		ctx->colorPipeline->CreateGraphicsPipeline(vert, frag, renderpass, ctx->cameraBuffers);
+	}
+	{
+		vector<uint8_t> vert, frag;
+		assetManager->LoadShaderFile("triangles_vert.spv", vert);
+		assetManager->LoadShaderFile("triangles_frag.spv", frag);
+		ctx->trianglesPipelines->CreateGraphicsPipeline(vert, frag, renderpass, ctx->cameraBuffers, true);
 	}
 	{
 		vector<uint8_t> vert, frag;
@@ -178,6 +185,9 @@ void Engine::createScenePLContext(ScenePipelineContext* ctx, bool allocateTileWo
 		assetManager->LoadShaderFile("particleSystem_frag.spv", frag);
 		ctx->particlePipeline->CreateGraphicsPipeline(vert, frag, renderpass, ctx->cameraBuffers, &computerParticleBuffer, false, transparentFramebufferBlending);
 	}
+
+	ctx->triangleGPUBuffer = ctx->trianglesPipelines->GetVertexMappedBuffer(rengine->currentFrame);
+	ctx->triangleColorGPUBuffer = ctx->trianglesPipelines->GetColorMappedBuffer(rengine->currentFrame);
 }
 
 void Engine::Start(const VideoSettings& initialSettings, AssetManager::AssetPaths assetPaths) {
@@ -341,40 +351,6 @@ void Engine::recordSceneContextGraphics(const ScenePipelineContext& ctx, framebu
 
 	rengine->beginRenderpass(fb, cmdBuffer);
 
-	// colored quad
-	{
-		ZoneScopedN("Colored quad PL");
-
-		vector<ColoredQuadPL::InstanceBufferData> drawlist;
-		drawlist.reserve(scene->sceneData.colorRenderers.size());
-
-		for (auto& renderer : scene->sceneData.colorRenderers)
-		{
-			const auto& entity = scene->sceneData.entities.at(renderer.first);
-
-			ColoredQuadPL::InstanceBufferData instanceData;
-			instanceData.color = renderer.second.color;
-			instanceData.circle = renderer.second.shape == ColorRenderer::Shape::Circle;
-
-			if (entity.HasParent()) {
-				Transform global = entity.GetGlobalTransform();
-				instanceData.position = global.position;
-				instanceData.scale = global.scale;
-				instanceData.rotation = global.rotation;
-			}
-			else {
-				instanceData.position = entity.transform.position;
-				instanceData.scale = entity.transform.scale;
-				instanceData.rotation = entity.transform.rotation;
-			}
-
-			drawlist.push_back(instanceData);
-		}
-
-		ctx.colorPipeline->UploadInstanceData(drawlist);
-		ctx.colorPipeline->recordCommandBuffer(cmdBuffer, drawlist.size());
-	}
-
 	// tilemap
 	if (ctx.tilemapPipeline != nullptr)
 	{
@@ -433,6 +409,40 @@ void Engine::recordSceneContextGraphics(const ScenePipelineContext& ctx, framebu
 		}
 	}
 
+	// colored quad
+	{
+		ZoneScopedN("Colored quad PL");
+
+		vector<ColoredQuadPL::InstanceBufferData> drawlist;
+		drawlist.reserve(scene->sceneData.colorRenderers.size());
+
+		for (auto& renderer : scene->sceneData.colorRenderers)
+		{
+			const auto& entity = scene->sceneData.entities.at(renderer.first);
+
+			ColoredQuadPL::InstanceBufferData instanceData;
+			instanceData.color = renderer.second.color;
+			instanceData.circle = renderer.second.shape == ColorRenderer::Shape::Circle;
+
+			if (entity.HasParent()) {
+				Transform global = entity.GetGlobalTransform();
+				instanceData.position = global.position;
+				instanceData.scale = global.scale;
+				instanceData.rotation = global.rotation;
+			}
+			else {
+				instanceData.position = entity.transform.position;
+				instanceData.scale = entity.transform.scale;
+				instanceData.rotation = entity.transform.rotation;
+			}
+
+			drawlist.push_back(instanceData);
+		}
+
+		ctx.colorPipeline->UploadInstanceData(drawlist);
+		ctx.colorPipeline->recordCommandBuffer(cmdBuffer, drawlist.size());
+	}
+
 	// particles
 	{
 		float particleDeltaTime = scene->paused ? 0.0f : deltaTime;
@@ -475,6 +485,12 @@ void Engine::recordSceneContextGraphics(const ScenePipelineContext& ctx, framebu
 
 		ctx.particlePipeline->recordCommandBuffer(cmdBuffer, indexes, systemSizes, particleCounts);
 	}
+
+	// triangles
+	{
+		ctx.trianglesPipelines->recordCommandBuffer(cmdBuffer, ctx.triangleDrawlistCount);
+	}
+	bindQuadMesh(cmdBuffer);
 
 	// text
 	{
@@ -844,23 +860,11 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 		cmdBuffer.setScissor(0, 1, &scissor);
 	}
 
-	{
-		vk::Buffer vertexBuffers[] = { quadMeshBuffer.vertexBuffer };
-		vk::DeviceSize offsets[] = { 0 };
-		cmdBuffer.bindVertexBuffers(0, 1, vertexBuffers, offsets);
-		cmdBuffer.bindIndexBuffer(quadMeshBuffer.indexBuffer, 0, vk::IndexType::eUint16);
-	}
+	bindQuadMesh(cmdBuffer);
 
 	for (auto& ctx : sceneRenderJobs)
 	{
 		runningStats.entity_count = ctx.scene->sceneData.entities.size();
-	}
-
-	// screenspace colored quad
-	{
-		screenSpaceColorPipeline->UploadInstanceData(screenSpaceColorDrawlist);
-		screenSpaceColorPipeline->recordCommandBuffer(cmdBuffer, screenSpaceColorDrawlist.size());
-
 	}
 
 	// screenspace texture
@@ -869,11 +873,18 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 		runningStats.sprite_render_count += screenSpaceTextureGPUIndex;
 	}
 
+	// screenspace quad
+	{
+		screenSpaceColorPipeline->UploadInstanceData(screenSpaceColorDrawlist);
+		screenSpaceColorPipeline->recordCommandBuffer(cmdBuffer, screenSpaceColorDrawlist.size());
+
+	}
+
 	// screenspace text
 	{
 		int memSlot = 0;
 		{
-
+			screenSpaceTextPipeline->ClearTextData(rengine->currentFrame);
 			for (auto& i : screenSpaceTextDrawlist)
 			{
 				Font* f = assetManager->GetFont(i.font);
@@ -917,6 +928,12 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 	screenSpaceTextureGPUIndex = 0;
 
 	firstFrame = false;
+
+	for (auto& [id, ctx] : sceneRenderContextMap) {
+		ctx.pl.triangleGPUBuffer = ctx.pl.trianglesPipelines->GetVertexMappedBuffer(rengine->currentFrame);
+		ctx.pl.triangleColorGPUBuffer = ctx.pl.trianglesPipelines->GetColorMappedBuffer(rengine->currentFrame);
+		ctx.pl.triangleDrawlistCount = 0;
+	}
 
 	FrameMark;
 	return true;

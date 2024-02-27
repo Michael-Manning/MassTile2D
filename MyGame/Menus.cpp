@@ -26,7 +26,7 @@ namespace {
 
 }
 
-void DoSettingsMenu(UIState& state, Engine* engine) {
+void DoSettingsMenu(MenuState& state, Engine* engine) {
 	auto white = vec4(1.0);
 	//engine.addScreenSpaceQuad(vec4(1.0), input->getMousePos(), vec2(50));
 
@@ -37,7 +37,7 @@ void DoSettingsMenu(UIState& state, Engine* engine) {
 	const auto optionA = "fullscreen";
 	engine->addScreenSpaceText(state.medfont, { 200, 300 }, white, "Window mode: %s", options[(int)state.selectedWindowOption]);
 
-	engine->addScreenSpaceQuad(white, vec2(900, 320) + btnSize / 2.0f, btnSize);
+	engine->addScreenSpaceCenteredQuad(white, vec2(900, 320) + btnSize / 2.0f, btnSize);
 	if (Button({ 900, 320 }, state.input)) {
 		state.selectedWindowOption = (WindowMode)(((int)state.selectedWindowOption + 1) % 3);
 	}

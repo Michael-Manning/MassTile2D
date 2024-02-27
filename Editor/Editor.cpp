@@ -636,7 +636,7 @@ void Editor::assetWindow() {
 					selectedPrefabIndex = i;
 					i++;
 					if (ImGui::MenuItem("Instantiate")) {
-						auto newEntity = gameScene->Instantiate(prefab, name);
+						auto newEntity = gameScene->Instantiate(&prefab, name);
 						newEntity->name = gameScene->GetNoneConflictingEntityName(newEntity, nullptr);
 						selectedPrefabIndex = -1;
 						closePreviewWindow();
@@ -795,7 +795,7 @@ void Editor::Initialize(Engine* engine, std::shared_ptr<Scene> gameScene, sceneR
 	this->sceneRenderContext = sceneRenderContext;
 	this->setSceneCallback = onMainSceneLoad;
 
-	entityPreviewScene = make_shared<Scene>(engine->assetManager.get());
+	entityPreviewScene = Scene::MakeScene(engine->assetManager.get()); //make_shared<Scene>(engine->assetManager.get());
 	entityPreviewScene->name = "entity preview scene";
 	entityPrviewFrameSize = vec2(600);
 	entityPreviewsSeneRenderContextID = engine->CreateSceneRenderContext(entityPrviewFrameSize, false, glm::vec4(vec3(0.2), 1.0), false);
@@ -864,7 +864,7 @@ void Editor::mainSceneWindow() {
 		if (prefabDragInStarted) {
 			assert(dragPrefab != nullptr);
 
-			auto newEntity = gameScene->Instantiate(*dragPrefab, dragPrefab->name, gameSceneSreenToWorldPos(mpos));
+			auto newEntity = gameScene->Instantiate(dragPrefab, dragPrefab->name, gameSceneSreenToWorldPos(mpos));
 			newEntity->name = gameScene->GetNoneConflictingEntityName(newEntity, nullptr);
 			selectedPrefabIndex = -1;
 
@@ -1007,7 +1007,7 @@ void Editor::OpenPreviewWindowWithPrefab(Prefab& prefab) {
 
 	entityPreviewScene->ClearScene();
 	entityPreviewScene->paused = false;
-	topLevelPrefabPreview = entityPreviewScene->Instantiate(prefab);
+	topLevelPrefabPreview = entityPreviewScene->Instantiate(&prefab);
 
 	selectedEntity = nullptr;
 }
@@ -1405,6 +1405,7 @@ bool Editor::drawInspector<SpriteRenderer>(SpriteRenderer& r) {
 			SetCursorPos(pos);
 			if (InvisibleButton((string("invbtn") + to_string(i)).c_str(), displaySize)) {
 				rendererSelectedSprite = sprite.first;
+				selectedScene->sceneData.spriteRenderers.at(selectedEntity->ID)._spriteCache = engine->assetManager->GetSprite(rendererSelectedSprite);
 				ImGui::CloseCurrentPopup();
 			}
 			i++;
@@ -1486,6 +1487,7 @@ bool Editor::drawInspector(ParticleSystemRenderer& r) {
 
 
 	Checkbox("Burst mode", &ps.burstMode);
+	Checkbox("Burst repeate", &ps.burstRepeat);
 	InputFloatClamp("Spawn rate", &ps.spawnRate, 0.001);
 	InputFloatClamp("Life span", &ps.particleLifeSpan, 0);
 	InputFloat("Gravity acceleration", &ps.gravity);

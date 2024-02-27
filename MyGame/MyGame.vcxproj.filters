@@ -42,6 +42,18 @@
     <ClCompile Include="global.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Collision.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Player.cpp">
+      <Filter>Behaviours</Filter>
+    </ClCompile>
+    <ClCompile Include="demon.cpp">
+      <Filter>Behaviours</Filter>
+    </ClCompile>
+    <ClCompile Include="Inventory.cpp">
+      <Filter>Source Files\Items</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CopyFileToFolders Include="..\lib\FastNoise2\lib\FastNoiseD.dll">
@@ -90,6 +102,12 @@
     </ClInclude>
     <ClInclude Include="TestScript.h">
       <Filter>Behaviours</Filter>
+    </ClInclude>
+    <ClInclude Include="Collision.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Tool.h">
+      <Filter>Source Files\Items</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

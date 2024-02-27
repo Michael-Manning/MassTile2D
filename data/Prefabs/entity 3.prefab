@@ -1,0 +1,49 @@
+{
+    "name": "entity 3",
+    "sceneData": {
+        "entities": [
+            {
+                "id": 3,
+                "name": "entity 3",
+                "transform": {
+                    "position": [
+                        -9.265111923217773,
+                        81.67485809326172
+                    ],
+                    "rotation": 0.0,
+                    "scale": [
+                        1.0,
+                        1.0
+                    ]
+                }
+            }
+        ],
+        "particleSystemRenderers": [
+            {
+                "configuration": {
+                    "burstMode": false,
+                    "endColor": [
+                        1.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ],
+                    "endSize": 0.0,
+                    "gravity": -10.0,
+                    "particleCount": 200,
+                    "particleLifeSpan": 1.0,
+                    "spawnRate": 100.0,
+                    "startColor": [
+                        0.27941179275512695,
+                        0.04930796101689339,
+                        0.04930796101689339,
+                        1.0
+                    ],
+                    "startSize": 0.30000001192092896
+                },
+                "entityID": 3,
+                "size": 0
+            }
+        ]
+    }
+}

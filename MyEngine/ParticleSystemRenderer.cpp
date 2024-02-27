@@ -41,18 +41,36 @@ void ParticleSystemRenderer::runSimulation(float deltaTime, glm::vec2 spawnOrigi
 	const auto& con = configuration;
 	auto& ps = hostParticleBuffer->particles;
 
+	if (configuration.burstMode && spawntimer == 0.0f && deltaTime > 0) {
+		for (size_t id = 0; id < con.particleCount; id++) {
+			ps[id].life = 1.0f;
+			ps[id].position = spawnOrigin;
+			//ps[id].velocity = (randomNormal2() - 0.5f) * lerp(con.spawnMinVelocity, con.spawnMaxVelocity, randomNormal());
+			ps[id].velocity = (randomNormal2() - 0.5f) * 4.0f;
+			particlesToSpawn--;
+		}
+	}
+
 	spawntimer += deltaTime;
 
 
-	// math is hard
-	float step = (1.0f / con.spawnRate);
-	int particlesToSpawn = static_cast<int>(spawntimer / step);
-	spawntimer -= particlesToSpawn * step;
 
+	// math is hard
+	if (configuration.burstMode == false) {
+		float step = (1.0f / con.spawnRate);
+		particlesToSpawn = static_cast<int>(spawntimer / step);
+		spawntimer -= particlesToSpawn * step;
+	}
+	else {
+		if (spawntimer > configuration.particleLifeSpan && configuration.burstRepeat) {
+			spawntimer = 0.0f;
+			return;
+		}
+	}
 
 	for (size_t id = 0; id < con.particleCount; id++)
 	{
-		if (particlesToSpawn > 0 && ps[id].life <= 0.0f) {
+		if (configuration.burstMode == false && (particlesToSpawn > 0 && ps[id].life <= 0.0f)) {
 			ps[id].life = 1.0f;
 			ps[id].position = spawnOrigin;
 			//ps[id].velocity = (randomNormal2() - 0.5f) * lerp(con.spawnMinVelocity, con.spawnMaxVelocity, randomNormal());
@@ -68,6 +86,7 @@ void ParticleSystemRenderer::runSimulation(float deltaTime, glm::vec2 spawnOrigi
 			ps[id].position += ps[id].velocity * deltaTime;
 		}
 	}
+
 }
 
 nlohmann::json ParticleSystemRenderer::serializeJson(entityID ID) const {

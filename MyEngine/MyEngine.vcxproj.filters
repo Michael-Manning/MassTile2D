@@ -138,6 +138,9 @@
     <ClCompile Include="Behaviour.cpp">
       <Filter>Source Files\Engine\ECS</Filter>
     </ClCompile>
+    <ClCompile Include="ColoredTrianglesPL.cpp">
+      <Filter>Source Files\vulkan\piplines</Filter>
+    </ClCompile>
     <ClCompile Include="Sprite.cpp">
       <Filter>Source Files\Engine\ECS\Assets</Filter>
     </ClCompile>
@@ -322,6 +325,9 @@
     </ClInclude>
     <ClInclude Include="GlobalImageDescriptor.h">
       <Filter>Source Files\vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="ColoredTrianglesPL.h">
+      <Filter>Source Files\vulkan\piplines</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -24,7 +24,7 @@
 #include "BindingManager.h"
 #include "globalBufferDefinitions.h"
 
-constexpr int TEXTPL_maxTextObjects = 10;
+constexpr int TEXTPL_maxTextObjects = 100;
 constexpr int TEXTPL_maxTextLength = 128;
 
 class TextPL :public  Pipeline {
@@ -68,6 +68,7 @@ public:
 		textDataDB.buffersMapped[frame]->headers[memorySlot] = header;
 		textDataDB.buffersMapped[frame]->textData[memorySlot] = text;
 	};
+
 
 private:
 	GlobalImageDescriptor* textureDescriptor = nullptr;

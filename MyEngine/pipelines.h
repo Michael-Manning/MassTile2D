@@ -7,3 +7,4 @@
 #include "TextPL.h"
 #include "ParticleSystemPL.h"
 #include "ParticleComputePL.h"
+#include "ColoredTrianglesPL.h"

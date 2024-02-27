@@ -66,6 +66,11 @@ struct ScenePipelineContext {
 	std::unique_ptr<TextPL> textPipeline = nullptr;
 	std::unique_ptr<ParticleSystemPL> particlePipeline = nullptr;
 
+	std::unique_ptr<ColoredTrianglesPL> trianglesPipelines = nullptr;
+	int triangleDrawlistCount = 0;
+	Vertex* triangleGPUBuffer = nullptr;
+	ColoredTrianglesPL::InstanceBufferData* triangleColorGPUBuffer = nullptr;
+
 	std::unique_ptr<TileWorld> worldMap = nullptr;
 
 	texID tilemapTextureAtlas;
@@ -79,7 +84,7 @@ private:
 
 public:
 
-	struct SceneRenderJob{
+	struct SceneRenderJob {
 		std::shared_ptr<Scene> scene = nullptr;
 		Camera camera = {};
 		sceneRenderContextID sceneRenderCtxID = 0;
@@ -119,6 +124,7 @@ public:
 		else
 			Behaviour::deltaTime = deltaTime;
 
+		scene->ProcessDeferredDeletions(deltaTime);
 		for (auto& [id, behaviour] : scene->sceneData.behaviours) {
 			behaviour->_runStartUpdate();
 		}
@@ -196,7 +202,7 @@ public:
 		screenSpaceTransformUploader.Invalidate();
 	};
 
-	inline void addScreenSpaceQuad(glm::vec4 color, glm::vec2 pos, glm::vec2 scale, float rotation = 0.0f) {
+	inline void addScreenSpaceCenteredQuad(glm::vec4 color, glm::vec2 pos, glm::vec2 scale, float rotation = 0.0f) {
 		ColoredQuadPL::InstanceBufferData item;
 		item.color = color;
 		item.position = pos;
@@ -204,6 +210,28 @@ public:
 		item.rotation = rotation;
 		item.circle = 0;
 		screenSpaceColorDrawlist.push_back(item);
+	}
+
+	inline void SceneTriangles(sceneRenderContextID ctxID, std::vector <glm::vec2>& vertices, std::vector<glm::vec4>& triangleColors) {
+
+		auto ctx = &sceneRenderContextMap.at(ctxID);
+		
+		assert(vertices.size() % 3 == 0);
+		assert((ctx->pl.triangleDrawlistCount + vertices.size()) / ColoredTrianglesPL::verticesPerMesh < ColoredTrianglesPL_MAX_OBJECTS);
+		assert(triangleColors.size() == vertices.size() / ColoredTrianglesPL::verticesPerMesh);
+
+		int triangleIndex = ctx->pl.triangleDrawlistCount / ColoredTrianglesPL::verticesPerMesh;
+		for (auto& c : triangleColors)
+		{
+			ctx->pl.triangleColorGPUBuffer[triangleIndex].color = c;
+			triangleIndex++;
+		}
+
+		for (auto& v : vertices)
+		{
+			ctx->pl.triangleGPUBuffer[ctx->pl.triangleDrawlistCount] = Vertex{ .pos = v, .texCoord = {0, 0} };
+			ctx->pl.triangleDrawlistCount++;
+		}
 	}
 
 	inline void addScreenCenteredSpaceTexture(Sprite* sprite, int atlasIndex, glm::vec2 pos, float height, float rotation = 0.0f) {
@@ -224,7 +252,7 @@ public:
 
 		//screenSpaceTextureDrawlist.push_back(item);
 	}
-	inline void addScreenCenteredSpaceTexture(spriteID sprID, int atlasIndex, glm::vec2 pos, float height, float rotation = 0.0f){
+	inline void addScreenCenteredSpaceTexture(spriteID sprID, int atlasIndex, glm::vec2 pos, float height, float rotation = 0.0f) {
 		auto s = assetManager->GetSprite(sprID);
 		addScreenCenteredSpaceTexture(s, atlasIndex, pos, height, rotation);
 	}
@@ -315,7 +343,7 @@ public:
 
 		sceneRenderContextID id = renderContextGenerator.GenerateID();
 		sceneRenderContextMap[id] = {};
-		
+
 		sceneRenderContextMap.find(id)->second.fb = fbID;
 
 		createScenePLContext(&sceneRenderContextMap.find(id)->second.pl, allocateTileWorld, fb->renderpass, transparentFramebufferBlending);
@@ -364,6 +392,8 @@ private:
 	std::vector<ColoredQuadPL::InstanceBufferData> screenSpaceColorDrawlist;
 	//std::vector<TexturedQuadPL::ssboObjectInstanceData> screenSpaceTextureDrawlist;
 
+
+
 	struct screenSpaceTextDrawItem {
 		TextPL::textHeader header;
 		std::string text;
@@ -373,7 +403,7 @@ private:
 	std::vector<screenSpaceTextDrawItem> screenSpaceTextDrawlist;
 
 	IDGenerator<sceneRenderContextID> renderContextGenerator;
-	struct sceneFB_PL{
+	struct sceneFB_PL {
 		framebufferID fb;
 		ScenePipelineContext pl;
 	};
@@ -394,6 +424,13 @@ private:
 	void createScenePLContext(ScenePipelineContext* ctx, bool allocateTileWorld, vk::RenderPass renderpass, bool transparentFramebufferBlending);
 
 	void recordSceneContextGraphics(const ScenePipelineContext& ctx, framebufferID framebuffer, std::shared_ptr<Scene> scene, const Camera& camera, vk::CommandBuffer& cmdBuffer);
+
+	void bindQuadMesh(vk::CommandBuffer cmdBuffer) {
+		vk::Buffer vertexBuffers[] = { quadMeshBuffer.vertexBuffer };
+		vk::DeviceSize offsets[] = { 0 };
+		cmdBuffer.bindVertexBuffers(0, 1, vertexBuffers, offsets);
+		cmdBuffer.bindIndexBuffer(quadMeshBuffer.indexBuffer, 0, vk::IndexType::eUint16);
+	}
 
 	ScenePipelineContext tmp_sceneContext;
 

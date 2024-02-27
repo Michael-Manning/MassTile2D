@@ -17,6 +17,8 @@
 #include "Input.h"
 #include "serialization.h"
 
+#include "Scene.h"
+
 #include <assetPack/common_generated.h>
 
 #include "Behaviour.h"
@@ -118,3 +120,7 @@ Rigidbody* Behaviour::getComponent() {
 
 Input* Behaviour::input = nullptr;
 float Behaviour::deltaTime = 0.0f;
+
+void Behaviour::Destory() {
+	accessor->scene->DeleteEntity(entity->ID, true);
+}
