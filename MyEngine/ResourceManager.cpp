@@ -13,6 +13,9 @@
 #include "AssetManager.h"
 #include "typedefs.h"
 #include "ResourceManager.h"
+#include "VKEngine.h"
+
+#include <stb_image.h>
 
 texID ResourceManager::GenerateTexture(int w, int h, std::vector<uint8_t>& data, FilterMode filterMode, bool imGuiTexure) {
 
@@ -43,16 +46,16 @@ texID ResourceManager::LoadTexture(std::string imagePath, FilterMode filterMode,
 	textureFileNameMap.insert({ fileName, id });
 	fileNameTextureMap.insert({ id, fileName });
 	//texID id = TextureIDGenerator.GenerateID(filename);
-	
-	if (imGuiTexure) 
+
+	if (imGuiTexure)
 		tex.imTexture = ImGui_ImplVulkan_AddTexture(tex.sampler, tex.imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-	
+
 	setTextureResource(id, tex);
 	changeFlags->_flagTexturesAdded();
 	return id;
 }
 
-texID ResourceManager::LoadTexture(uint8_t * imageFileData, int dataLength, std::string fileName, FilterMode filterMode, bool imGuiTexure) {
+texID ResourceManager::LoadTexture(uint8_t* imageFileData, int dataLength, std::string fileName, FilterMode filterMode, bool imGuiTexure) {
 
 	//assert(TextureIDGenerator.ContainsHash(fileName) == false);
 	assert(textureFileNameMap.contains(fileName) == false);
@@ -132,24 +135,31 @@ void ResourceManager::uploadThreadFunc(ConcurrentQueue<textureJob>& asyncQueue) 
 	}
 }
 
+glm::ivec2 ResourceManager::GetImageFileResolution(std::string filepath)
+{
+	int width, height, channels;
+	assert(stbi_info(filepath.c_str(), &width, &height, &channels));
+	return glm::ivec2(width, height);
+}
+
 framebufferID ResourceManager::CreateFramebuffer(glm::ivec2 size, glm::vec4 clearColor) {
 	framebufferID id = fbIDGenerator.GenerateID();
 	DoubleFrameBufferContext dfb;
-	
+
 	// store the empty textures here first, then populate them after
 	for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++)
 	{
 		texID id;
 		//id = TextureIDGenerator.GenerateID();
 		id = textureIDSlotManager.GetAvailableSlot();
-		dfb.textureIDs[i] = id; 
+		dfb.textureIDs[i] = id;
 		setTextureResource(id, {});
 		dfb.textures[i] = GetTexture(id);
 	}
-	
+
 	rengine->CreateDoubleFrameBuffer(size, dfb, rengine->defaultThreadContext, clearColor);
 
-	
+
 	changeFlags->_flagTexturesAdded();
 
 	framebufferRefMap.insert(std::pair<framebufferID, DoubleFrameBufferContext>(id, dfb));
@@ -166,7 +176,7 @@ DoubleFrameBufferContext* ResourceManager::GetFramebuffer(framebufferID id) {
 }
 
 void ResourceManager::ResizeFramebuffer(framebufferID framebuffer, glm::ivec2 size) {
-	
+
 	auto fb = GetFramebuffer(framebuffer);
 	for (size_t i = 0; i < fb->resizeDirtyFlags.size(); i++)
 		fb->resizeDirtyFlags[i] = true;

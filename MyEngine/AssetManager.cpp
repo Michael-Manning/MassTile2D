@@ -26,6 +26,7 @@ void AssetManager::LoadAllSprites(bool loadResources) {
 	assert(allLoadedSprites == false);
 	allLoadedSprites = true;
 
+
 #ifdef USE_PACKED_ASSETS
 	if (packageAssets->sprites() == nullptr)
 		return;
@@ -90,6 +91,7 @@ void AssetManager::LoadSprite(spriteID spriteID, bool loadResources) {
 	sprite->textureID = resourceManager->GetTextureID(sprite->imageFileName);
 
 	loadedSpritesByName[sprite->name] = sprite->ID;
+//	SpriteIDGenerator.Input(sprite->ID);
 }
 
 // slowest method since sprite must be coppied to read ID before inserting into asset map (at least for json?)
@@ -123,6 +125,7 @@ void AssetManager::LoadSprite(std::string name, bool loadResources) {
 	sprite->textureID = resourceManager->GetTextureID(sprite->imageFileName);
 
 	loadedSpritesByName[sprite->name] = sprite->ID;
+	SpriteIDGenerator.Input(sprite->ID);
 }
 
 void AssetManager::UnloadSprite(spriteID spriteID, bool freeResources) {
@@ -324,18 +327,18 @@ void AssetManager::loadSceneResources(SceneData & sceneData) {
 spriteID AssetManager::ExportSprite(std::string spriteAssetExportPath, std::string imageSourcePath, Sprite unidentified_sprite) {
 
 	// could replace with a function that only grabs metadata from image but who cares since this is an editor only utility
-	texID id = resourceManager->LoadTexture(imageSourcePath, FilterMode::Nearest, 0);
-	auto texture = resourceManager->GetTexture(id);
+	//texID id = resourceManager->LoadTexture(imageSourcePath, FilterMode::Nearest, 0);
+	//auto texture = resourceManager->GetTexture(id);
 
 	checkAppend(spriteAssetExportPath, Sprite_extension);
 
 	unidentified_sprite.imageFileName = getFileName(imageSourcePath);
-	unidentified_sprite.textureID = id;
-	unidentified_sprite.resolution = glm::vec2(texture->resolutionX, texture->resolutionY);
+	//unidentified_sprite.textureID = id;
+	unidentified_sprite.resolution = resourceManager->GetImageFileResolution(imageSourcePath); //glm::vec2(texture->resolutionX, texture->resolutionY);
 	unidentified_sprite.ID = SpriteIDGenerator.GenerateID(unidentified_sprite.name);
 	unidentified_sprite.serializeJson(spriteAssetExportPath);
 
-	resourceManager->SetTextureFreeable(id);
+	//resourceManager->SetTextureFreeable(id);
 	//resourceManager->FreeTexture(id);
 
 	createAssetLookups();

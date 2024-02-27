@@ -723,6 +723,8 @@ Texture VKEngine::genTexture(string imagePath, FilterMode filterMode, const Thre
 
 	Texture tex = {};
 
+	assert(std::filesystem::exists(std::filesystem::path(imagePath)));
+
 	{
 		int texChannels;
 		stbi_uc* pixels = stbi_load(imagePath.c_str(), &tex.resolutionX, &tex.resolutionY, &texChannels, STBI_rgb_alpha);

@@ -2,7 +2,7 @@
 Near roadmap:
 - adding textures at runtime, create sprite/font maybe broken.
 
-- verity if direct GPU map access when doing screen space drawlists breaks synchronization rules
+- direct GPU map access when doing screen space drawlists breaks synchronization rules. Must go back to buffering a drawlist or flush ranges manually?
 
 Create serializable "map/grid entity" structure which represents an entity placed on top of the tile world which can be serialized.
 Should be stored within a map keyed by each check for update/draw culling and instantiate a prefab on load. Start with a chest/storage entity

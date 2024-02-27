@@ -279,15 +279,12 @@ public:
 		assert(screenSpaceTextureGPUIndex < TexturedQuadPL_MAX_OBJECTS);
 		TexturedQuadPL::ssboObjectInstanceData* item = screenSpaceTextureGPUBuffer + screenSpaceTextureGPUIndex++;
 
-	//	TexturedQuadPL::ssboObjectInstanceData item;
 		item->uvMin = glm::vec2(0.0f);
-		item->uvMax = glm::vec2(1.0f, -1.0f); // I don't actually know why this has to be flipped
+		item->uvMax = glm::vec2(1.0f);
 		item->translation = pos;
 		item->scale = glm::vec2((w / h) * height, height);
 		item->rotation = rotation;
 		item->tex = fb->textureIDs[rengine->currentFrame];
-
-		//screenSpaceTextureDrawlist.push_back(item);
 	}
 
 

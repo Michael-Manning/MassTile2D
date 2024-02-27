@@ -116,6 +116,7 @@ namespace {
 vec2 Editor::DrawSprite(spriteID id, glm::vec2 maxSize) {
 	const auto& sprite = engine->assetManager->GetSprite(id);
 	const auto& imTexture = engine->assetManager->getSpriteImTextureID(sprite->ID);
+	assert(imTexture.has_value());
 
 	if (imTexture.has_value() == false) {
 		Text("Could not display texture in Editor");
