@@ -74,7 +74,19 @@ namespace Inventory {
 
 	void MoveMergeStack(InventoryContainer* srcContainer, int srcSlot, InventoryContainer* dstContainer, int dstSLot, int count) {
 		assert(srcContainer->slots[srcSlot].InUse() == true);
-		
+		assert(srcContainer->slots[srcSlot].InUse() == true);
+		assert(dstContainer->slots[dstSLot].item == srcContainer->slots[srcSlot].item || dstContainer->slots[dstSLot].InUse() == false);
+
+		dstContainer->slots[dstSLot].item = srcContainer->slots[srcSlot].item;
+		dstContainer->slots[dstSLot].count += count;
+
+		srcContainer->slots[srcSlot].count -= count;
+		if (srcContainer->slots[srcSlot].count == 0)
+			srcContainer->slots[srcSlot].item = NULL_itemID;
+
+
+
+
 #ifdef _DEBUG
 		// vreify  if moving to none-empty stack, that the itemIDs are the same and the max stack is not exceeded. Maybe return actual items moved?
 #endif

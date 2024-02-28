@@ -401,7 +401,7 @@ void worldDebug() {
 }
 
 
-constexpr bool useTileWorld = false;
+constexpr bool useTileWorld = true;
 
 #ifdef  PUBLISH
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
@@ -496,7 +496,11 @@ int main() {
 	};
 	global::playerInventory.slots[33] = ItemStack{
 		.item = 200,
-		.count = 7
+		.count = 9
+	};
+	global::playerInventory.slots[34] = ItemStack{
+	.item = 200,
+	.count = 49
 	};
 
 	bool firstFrame = true;
@@ -560,7 +564,7 @@ int main() {
 
 			engine->addScreenSpaceText(UI.smallfont, { 4, 4 }, vec4(1.0), "fps: %d", (int)engine->_getAverageFramerate());
 
-		//	UI::DoUI(uiState);
+			UI::DoUI(uiState);
 
 
 

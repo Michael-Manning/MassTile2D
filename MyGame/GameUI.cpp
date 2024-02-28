@@ -66,21 +66,40 @@ namespace UI {
 			if (within(pos - InvSlotGap / 1.5f, pos + InvSlotSize + InvSlotGap / 1.5f, mpos)) {
 
 
-				if (global::playerInventory.slots[i].InUse()) {
 
-					if (state.dragSrcContainer == nullptr && input->getMouseBtnDown(MouseBtn::Left)) {
-						state.dragSrcContainer = &global::playerInventory;
-						state.dragSrcSlot = i;
 
-						Inventory::MoveStack(state.dragSrcContainer, state.dragSrcSlot, &global::cursorInventory, 0);
+
+				if(input->getMouseBtnDown(MouseBtn::Left)) {
+					if (global::cursorInventory.slots[0].InUse()) {
+						// move if same time or empty
+						// clear drag source
+					}
+					else {
+						// place in cursor inventory
 					}
 				}
 
-				if (input->getMouseBtnUp(MouseBtn::Left) && state.dragSrcContainer != nullptr && global::playerInventory.slots[i].InUse() == false) {
-					Inventory::MoveStack(&global::cursorInventory, 0, &global::playerInventory, i);
-					state.dragSrcContainer = nullptr;
-					state.dragSrcSlot = -1;
-				}
+
+				//if (global::playerInventory.slots[i].InUse()) {
+
+				//	if (state.dragSrcContainer == nullptr && input->getMouseBtnDown(MouseBtn::Left)) {
+				//		state.dragSrcContainer = &global::playerInventory;
+				//		state.dragSrcSlot = i;
+
+				//		Inventory::MoveStack(state.dragSrcContainer, state.dragSrcSlot, &global::cursorInventory, 0);
+				//	}
+				//}
+
+				//if (input->getMouseBtnUp(MouseBtn::Left) && state.dragSrcContainer != nullptr &&
+				//	(global::playerInventory.slots[i].InUse() == false || global::playerInventory.slots[i].item == global::cursorInventory.slots[0].item)) {
+
+				//	int count = global::cursorInventory.slots[0].count;
+				//	if (global::playerInventory.slots[i].InUse() == true)
+				//		count = glm::min(count, itemLibrary.GetItem(global::playerInventory.slots[i].item).maxStack - global::playerInventory.slots[i].count);
+				//	Inventory::MoveMergeStack(&global::cursorInventory, 0, &global::playerInventory, i, count);
+				//	state.dragSrcContainer = nullptr;
+				//	state.dragSrcSlot = -1;
+				//}
 
 				state.engine->addScreenSpaceCenteredQuad(glm::vec4(1, 1, 1, 0.4f), pos + InvSlotSize / 2.0f, vec2(InvSlotSize));
 				break;
@@ -103,11 +122,11 @@ namespace UI {
 			}
 		}
 
-		if (input->getMouseBtnUp(MouseBtn::Left) && state.dragSrcContainer) {
-			Inventory::MoveStack(&global::cursorInventory, 0, state.dragSrcContainer, state.dragSrcSlot);
-			state.dragSrcContainer = nullptr;
-			state.dragSrcSlot = -1;
-		}
+		//if (input->getMouseBtnUp(MouseBtn::Left) && state.dragSrcContainer) {
+		//	Inventory::MoveStack(&global::cursorInventory, 0, state.dragSrcContainer, state.dragSrcSlot);
+		//	state.dragSrcContainer = nullptr;
+		//	state.dragSrcSlot = -1;
+		//}
 
 		//if (state.dragSrcContainer != nullptr) {
 		if (global::cursorInventory.slots[0].InUse()) {
