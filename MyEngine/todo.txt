@@ -13,6 +13,10 @@ Should be stored within a map keyed by each check for update/draw culling and in
 - full serialization setup and publish build
 
 
+-investigate or measure mouse latency. At high framerates, work computer has imperceptible mouse latency, while home computer it is percetpable
+
+- support glfw raw mouse motion. Add custom cursor icon for in-game 
+
 - move all serialize function to source files instead of ecs.cpp
 
 - switch all deserialization functions to constructors for uniformity, simplicity, as well as slight performance boost as components could all

@@ -401,7 +401,7 @@ void worldDebug() {
 }
 
 
-constexpr bool useTileWorld = true;
+constexpr bool useTileWorld = false;
 
 #ifdef  PUBLISH
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {

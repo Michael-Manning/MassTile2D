@@ -7,18 +7,19 @@
 
 #include "Input.h"
 
-using enum KeyCode;
+// cannot use as "Escape" conflics with wingdi.h
+//using enum KeyCode;
 
 namespace {
 	static std::unordered_map<KeyCode, int> keyInputMap = {
-			{LeftControl, GLFW_KEY_LEFT_CONTROL},
-			{RightControl, GLFW_KEY_RIGHT_CONTROL},
-			{LeftArrow, GLFW_KEY_LEFT},
-			{RightArrow, GLFW_KEY_RIGHT},
-			{UpArrow, GLFW_KEY_UP},
-			{DownArrow, GLFW_KEY_DOWN},
-			{DownArrow, GLFW_KEY_DOWN},
-			{Spacebar, GLFW_KEY_SPACE}
+			{KeyCode::LeftControl, GLFW_KEY_LEFT_CONTROL},
+			{KeyCode::RightControl, GLFW_KEY_RIGHT_CONTROL},
+			{KeyCode::LeftArrow, GLFW_KEY_LEFT},
+			{KeyCode::RightArrow, GLFW_KEY_RIGHT},
+			{KeyCode::UpArrow, GLFW_KEY_UP},
+			{KeyCode::DownArrow, GLFW_KEY_DOWN},
+			{KeyCode::Spacebar, GLFW_KEY_SPACE},
+			{KeyCode::Escape, GLFW_KEY_ESCAPE}
 	};
 
 	static std::unordered_map<MouseBtn, int> mouseInputMap = {

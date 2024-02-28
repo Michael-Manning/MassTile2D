@@ -1,7 +1,7 @@
 #pragma once
 
 #include <glm/glm.hpp>
-#include <GLFW/glfw3.h>
+//#include <GLFW/glfw3.h>
 
 //for input rollover and events
 struct inputDescription {
@@ -22,7 +22,8 @@ enum class KeyCode {
 	RightArrow,
 	UpArrow,
 	DownArrow,
-	Spacebar
+	Spacebar,
+	Escape
 };
 
 enum class MouseBtn {
