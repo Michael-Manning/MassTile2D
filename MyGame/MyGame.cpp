@@ -67,10 +67,10 @@ using namespace glm;
 using namespace nlohmann;
 
 
-const BehaviourFactoryMap BehaviorMap = {
-	REG_BEHAVIOR(Player),
-	REG_BEHAVIOR(Demon),
-	REG_BEHAVIOR(TestScript)
+const DerivedClassFactoryMap BehaviorMap = {
+	REG_DERIVED(Player),
+	REG_DERIVED(Demon),
+	REG_DERIVED(TestScript)
 };
 
 

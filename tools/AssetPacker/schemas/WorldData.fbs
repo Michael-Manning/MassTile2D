@@ -1,0 +1,13 @@
+include "common.fbs";
+include "SceneEntities.fbs";
+
+namespace AssetPack;
+
+
+table WorldData{
+
+   chunks:[ChunkData];
+
+}
+
+root_type WorldData;

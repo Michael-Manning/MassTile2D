@@ -19,6 +19,9 @@
     <Filter Include="Behaviours">
       <UniqueIdentifier>{80152dd7-31c5-4d17-a292-2bcfe944d72c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Items\MapEntities">
+      <UniqueIdentifier>{6a20a89c-12a7-4c82-8e41-9cbcc8611036}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MyGame.cpp">
@@ -109,10 +112,21 @@
     <ClInclude Include="Tool.h">
       <Filter>Source Files\Items</Filter>
     </ClInclude>
+    <ClInclude Include="MapEntity.h">
+      <Filter>Source Files\Items</Filter>
+    </ClInclude>
+    <ClInclude Include="WorldData.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="MyGame.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Chest.h">
+      <Filter>Source Files\Items\MapEntities</Filter>
+    </None>
   </ItemGroup>
 </Project>

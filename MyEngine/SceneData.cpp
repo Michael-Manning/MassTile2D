@@ -92,7 +92,7 @@ void SceneData::deserializeJson(nlohmann::json& j, SceneData* sceneData) {
 
 	for (auto& e : j["behaviours"]) {
 		entityID entID = e["entityID"];
-		behavioiurHash hash = e["hash"];
+		classHash hash = e["hash"];
 
 		auto [iter, inserted] = sceneData->behaviours.emplace(entID, BehaviorMap.at(hash).second(hash, &sceneData->entities.at(entID)));
 
@@ -162,7 +162,7 @@ SceneData::SceneData(const AssetPack::SceneData* sceneData) {
 		{
 			auto pack = sceneData->behaviours()->Get(i);
 			entityID entID = pack->entityID();
-			behavioiurHash hash = pack->hash();
+			classHash hash = pack->hash();
 
 			auto [iter, inserted] = behaviours.emplace(entID, BehaviorMap.at(hash).second(hash, &entities.at(entID)));
 

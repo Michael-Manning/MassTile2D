@@ -72,7 +72,7 @@ class Behaviour {
 
 public:
 
-	Behaviour(behavioiurHash classHash, Entity* entityCache) : Hash(classHash){
+	Behaviour(classHash classHash, Entity* entityCache) : Hash(classHash){
 		this->startRan = false;
 		_setEntity(entityCache);
 	};
@@ -80,7 +80,7 @@ public:
 
 	virtual std::unique_ptr<Behaviour> clone(Entity* entity, ComponentAccessor * accessor) const = 0;
 
-	const behavioiurHash Hash;
+	const classHash Hash;
 
 	virtual void Start() = 0;
 	virtual void Update() = 0;
@@ -151,7 +151,7 @@ private:
 	ComponentAccessor* accessor = nullptr;
 };
 
-#define BEHAVIOUR_CONSTUCTOR(c) c(behavioiurHash b, Entity* e) : Behaviour(b, e)
+#define BEHAVIOUR_CONSTUCTOR(c) c(classHash b, Entity* e) : Behaviour(b, e)
 
 #define BEHAVIOUR_CLONE(c)     std::unique_ptr<Behaviour> clone(Entity* entity, ComponentAccessor * accessor) const override { \
 auto copy = std::make_unique<c>(*this); \

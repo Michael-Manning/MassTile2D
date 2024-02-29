@@ -32,7 +32,7 @@ Scene::Scene(AssetManager* assetManager) : assetManager(assetManager), bworld(gr
 	for (auto& [hash, stringPair] : BehaviorMap)
 	{
 
-		stringBehaviourMap.insert({ stringPair.first, std::pair<behavioiurHash, BehaviourFactoryFunc>(hash, stringPair.second) });
+		stringBehaviourMap.insert({ stringPair.first, std::pair<classHash, BehaviourFactoryFunc>(hash, stringPair.second) });
 		//stringBehaviourMap.insert({ stringPair.first, stringPair.second });
 	}
 
@@ -248,7 +248,7 @@ Behaviour* Scene::AddBehaviour(Entity* entity, std::string behaviourName) {
 	iter->second->_SetComponentAccessor(componentAccessor.get());
 	return iter->second.get();
 }
-Behaviour* Scene::AddBehaviour(Entity* entity, behavioiurHash hash) {
+Behaviour* Scene::AddBehaviour(Entity* entity, classHash hash) {
 	assert(BehaviorMap.contains(hash));
 	auto [iter, inserted] = sceneData.behaviours.emplace(entity->ID, BehaviorMap.at(hash).second(hash, entity));
 	iter->second->_SetComponentAccessor(componentAccessor.get());

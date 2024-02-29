@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+#include <assetPack/SceneEntities_generated.h>
+
 #include "typedefs.h"
 
 //#include "robin_hood.h"
@@ -68,6 +70,13 @@ struct ItemStack
 		count = 0;
 		item = NULL_itemID;
 	}
+
+	ItemStack(const AssetPack::ItemStack* itemStack) : item(itemStack->item()), count(itemStack->count()), dynmicIdentifier(itemStack->dynmicIdentifier())
+	{}
+
+	AssetPack::ItemStack  Serialize() {
+		return AssetPack::ItemStack(item, count, dynmicIdentifier);
+	}
 };
 
 
@@ -78,6 +87,12 @@ struct InventoryContainer {
 
 	const int size;
 	std::vector<ItemStack> slots;
+
+	InventoryContainer(const AssetPack::InventoryContainer* container) : size(container->size()) {
+		slots.resize(container->slots()->size());
+		for (size_t i = 0; i < slots.size(); i++) 
+			slots[i] = ItemStack(container->slots()->Get(i));	
+	}
 };
 
 namespace Inventory {

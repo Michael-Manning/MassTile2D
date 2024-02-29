@@ -1,0 +1,29 @@
+include "common.fbs";
+
+namespace AssetPack;
+
+struct MapEntityBase{
+   position:ivec2;
+   size:ivec2;
+}
+
+struct ItemStack{
+   item:uint;
+   count:int;
+   dynmicIdentifier:uint;
+}
+
+table InventoryContainer{
+   size:int;
+   slots:[ItemStack];
+}
+
+
+table Chest{
+   MapeEntity:MapEntityBase;
+   container:InventoryContainer;
+}
+
+table ChunkData{
+   chests:[Chest];
+}

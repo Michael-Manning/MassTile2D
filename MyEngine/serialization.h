@@ -5,6 +5,8 @@
 #include <nlohmann/json.hpp>
 #include <initializer_list>
 
+#include <assetPack/common_generated.h>
+
 template <typename T>
 static T fromJson(nlohmann::json j);
 
@@ -29,6 +31,14 @@ static glm::vec2 fromJson(nlohmann::json j) {
 
 #include <flatbuffers/flatbuffers.h>
 #include <assetPack/common_generated.h>
+
+inline glm::ivec2 fromAP(const AssetPack::ivec2* v) {
+	return glm::ivec2(v->x(), v->y());
+};
+
+inline glm::ivec2 fromAP(const AssetPack::ivec2 v) {
+	return glm::ivec2(v.x(), v.y());
+};
 
 inline glm::vec2 fromAP(const AssetPack::vec2* v) {
 	return glm::vec2(v->x(), v->y());

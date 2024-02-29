@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 
-typedef uint32_t behavioiurHash;
+typedef uint32_t classHash;
 
 typedef int32_t framebufferID;
 typedef int32_t sceneRenderContextID;

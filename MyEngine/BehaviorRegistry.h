@@ -13,17 +13,17 @@
 
 
 template<typename T>
-static std::unique_ptr<Behaviour> factory_ptr(behavioiurHash h, Entity* e)
+static std::unique_ptr<Behaviour> factory_ptr(classHash h, Entity* e)
 {
 	return std::make_unique<T>(h, e);
 }
 
-using BehaviourFactoryFunc = std::unique_ptr<Behaviour>(*)(behavioiurHash, Entity*);
+using BehaviourFactoryFunc = std::unique_ptr<Behaviour>(*)(classHash, Entity*);
 
 
-#define REG_BEHAVIOR(classname) {cHash(#classname), {#classname, &factory_ptr<classname> }}
+#define REG_DERIVED(classname) {cHash(#classname), {#classname, &factory_ptr<classname> }}
 
-using BehaviourFactoryMap = robin_hood::unordered_flat_map<behavioiurHash, std::pair<std::string, BehaviourFactoryFunc>>;
+using DerivedClassFactoryMap = robin_hood::unordered_flat_map<classHash, std::pair<std::string, BehaviourFactoryFunc>>;
 
-const extern BehaviourFactoryMap BehaviorMap;
+const extern DerivedClassFactoryMap BehaviorMap;
 

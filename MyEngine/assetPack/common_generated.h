@@ -17,6 +17,8 @@ namespace AssetPack {
 
 struct vec2;
 
+struct ivec2;
+
 struct vec4;
 
 struct Transform;
@@ -256,6 +258,29 @@ FLATBUFFERS_MANUALLY_ALIGNED_STRUCT(4) vec2 FLATBUFFERS_FINAL_CLASS {
   }
 };
 FLATBUFFERS_STRUCT_END(vec2, 8);
+
+FLATBUFFERS_MANUALLY_ALIGNED_STRUCT(4) ivec2 FLATBUFFERS_FINAL_CLASS {
+ private:
+  int32_t x_;
+  int32_t y_;
+
+ public:
+  ivec2()
+      : x_(0),
+        y_(0) {
+  }
+  ivec2(int32_t _x, int32_t _y)
+      : x_(::flatbuffers::EndianScalar(_x)),
+        y_(::flatbuffers::EndianScalar(_y)) {
+  }
+  int32_t x() const {
+    return ::flatbuffers::EndianScalar(x_);
+  }
+  int32_t y() const {
+    return ::flatbuffers::EndianScalar(y_);
+  }
+};
+FLATBUFFERS_STRUCT_END(ivec2, 8);
 
 FLATBUFFERS_MANUALLY_ALIGNED_STRUCT(4) vec4 FLATBUFFERS_FINAL_CLASS {
  private:

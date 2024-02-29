@@ -63,7 +63,7 @@ public:
 	Entity* CreateEntity(Transform transform = {}, std::string name = "", bool persistent = false);
 
 	Behaviour* AddBehaviour(Entity* entity, std::string behaviourName);
-	Behaviour* AddBehaviour(Entity* entity, behavioiurHash hash);
+	Behaviour* AddBehaviour(Entity* entity, classHash hash);
 	//Behaviour* AddBehaviour(entityID, std::string behaviourName);
 
 	void SetEntityAsChild(Entity* parent, Entity* child);
@@ -126,7 +126,7 @@ private:
 
 	void gatherChildIDsRecurse(std::vector<entityID>& IDs, Entity* entity);
 
-	robin_hood::unordered_flat_map<std::string, std::pair<behavioiurHash, BehaviourFactoryFunc>> stringBehaviourMap;
+	robin_hood::unordered_flat_map<std::string, std::pair<classHash, BehaviourFactoryFunc>> stringBehaviourMap;
 	// 
 	// copy of behaviour map, but directly hashable by name
 

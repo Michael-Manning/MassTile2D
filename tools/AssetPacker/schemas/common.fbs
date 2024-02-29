@@ -5,6 +5,11 @@ struct vec2 {
     y:float;
 }
 
+struct ivec2{
+   x:int;
+   y:int;
+}
+
 struct vec4 {
     r:float;
     g:float;
