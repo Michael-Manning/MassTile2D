@@ -2,28 +2,48 @@
 
 
 #include <vector>
+#include <utility>
 
-
-#include "Scene.h"
+//#include "Scene.h"
+#include "MapEntity.h"
 #include "Chest.h"
 
 #include <assetPack/SceneEntities_generated.h>
 #include <assetPack/WorldData_generated.h>
 
+#define GLM_ENABLE_EXPERIMENTAL
+#include "glm/gtx/hash.hpp"
+
+#include <robin_hood.h>
+
+
 class ChunkData {
 	
 public:
+
+	robin_hood::unordered_flat_set<MapEntity*> mapEntities;
+
+	template<typename T>
+	robin_hood::unordered_node_map <glm::ivec2, T>& getMap();
 	
-	std::vector<Chest> chests;
-
-
+	template<>
+	robin_hood::unordered_node_map<glm::ivec2, Chest>& getMap<>() { return chests; }
+	robin_hood::unordered_node_map<glm::ivec2, Chest> chests;
+	
+	template<typename T>
+	void Add(T&& item) {
+		static_assert(std::is_base_of<MapEntity, T>::value, "T must be derived from MapEntity");
+		auto [iter, inserted] = getMap<T>().emplace(item.position, std::move(item));
+	}
 };
 
 class WorldData {
 
 public:
 
-	WorldData(){}
+	WorldData(){
+		chunks.push_back(ChunkData());
+	}
 
 	std::vector<ChunkData> chunks;
 
@@ -32,15 +52,13 @@ public:
 		chunks.resize(worldData->chunks()->size());
 		for (size_t i = 0; i < chunks.size(); i++)
 		{
-
 			ChunkData& chunk = chunks.emplace_back();
 			
 			auto pack = worldData->chunks()->Get(i);
 
-			for (size_t j = 0; j < pack->chests()->size(); j++)
-			{
-				chunk.chests.push_back()
-			}
+			chunk.chests.reserve(pack->chests()->size());
+			for (size_t j = 0; j < chunk.chests.size(); j++)
+				chunk.Add(Chest(pack->chests()->Get(i)));
 
 		}
 	}

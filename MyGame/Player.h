@@ -48,31 +48,31 @@ static glm::vec2 decellerate(const glm::vec2& A, const glm::vec2& B) {
 }
 
 
-struct serializableProperty {
-	
-	enum class serializableType {
-		INT,
-		FLOAT
-	};
-
-	serializableType type;
-	std::string name;
-	void* value;
-};
-
-
-class serializable {
-	virtual std::vector<serializableProperty> getProperties() = 0;
-};
-
-class myClass : public serializable{
-
-	int myNumber;
-	float myFloat;
-
-	// usage somthing like this. Should expand to an implimentation of getProperties
-	// PROPERTY_EXPORT({serializableType::INT, myNumber}, {serializableType::INT, myFloat});
-};
+//struct serializableProperty {
+//	
+//	enum class serializableType {
+//		INT,
+//		FLOAT
+//	};
+//
+//	serializableType type;
+//	std::string name;
+//	void* value;
+//};
+//
+//
+//class serializable {
+//	virtual std::vector<serializableProperty> getProperties() = 0;
+//};
+//
+//class myClass : public serializable{
+//
+//	int myNumber;
+//	float myFloat;
+//
+//	// usage somthing like this. Should expand to an implimentation of getProperties
+//	// PROPERTY_EXPORT({serializableType::INT, myNumber}, {serializableType::INT, myFloat});
+//};
 
 
 class Player : public Behaviour {

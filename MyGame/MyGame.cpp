@@ -54,6 +54,7 @@
 #include "player.h"
 #include "demon.h"
 #include "TestScript.h"
+#include "WorldData.h"
 
 #include <FastNoise/FastNoise.h>
 #include <FastNoise/SmartNode.h>
@@ -401,7 +402,7 @@ void worldDebug() {
 }
 
 
-constexpr bool useTileWorld = false;
+constexpr bool useTileWorld = true;
 
 #ifdef  PUBLISH
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
@@ -441,8 +442,19 @@ int main() {
 	engine->assetManager->LoadAllFonts();
 	engine->assetManager->LoadAllPrefabs(false);
 
-	if (useTileWorld)
+	unique_ptr<WorldData> worldData = nullptr;
+
+	if (useTileWorld) {
 		createTileWorld();
+		worldData = make_unique<WorldData>();
+		
+		worldData->chunks[0].Add(Chest(14, { 6, 8 }));
+
+		//Chest myhes = Chest(12, { 2, 3 });
+		//Chest chtesss = myhes;
+		//worldData->chunks[10].chests()
+	}
+	//const auto& myTest = worldData->chunks[0].chests.at(glm::ivec2(6, 8));
 
 	engine->ShowWindow();
 
@@ -482,26 +494,30 @@ int main() {
 	itemLibrary.PopulateTools(AssetDirectories.assetDir + "Tools.csv");
 	itemLibrary.PopulateConsumables(AssetDirectories.assetDir + "Consumables.csv");
 
-	global::playerInventory.slots[4] = ItemStack{
-		.item = 100,
-		.count = 1
-	};
-	global::playerInventory.slots[15] = ItemStack{
-		.item = 101,
-		.count = 1
-	};
-	global::playerInventory.slots[16] = ItemStack{
-		.item = 200,
-		.count = 40
-	};
-	global::playerInventory.slots[33] = ItemStack{
-		.item = 200,
-		.count = 9
-	};
-	global::playerInventory.slots[34] = ItemStack{
-	.item = 200,
-	.count = 49
-	};
+	global::playerInventory.slots[4] = ItemStack(
+		100,
+		1
+	);
+	global::playerInventory.slots[15] = ItemStack(
+		101,
+		1
+	);
+	global::playerInventory.slots[16] = ItemStack(
+		200,
+		40
+	);
+	global::playerInventory.slots[33] = ItemStack(
+		200,
+		9
+	);
+	global::playerInventory.slots[34] = ItemStack(
+		200,
+		49
+	);
+
+	if (useTileWorld) {
+
+	}
 
 	bool firstFrame = true;
 	while (!engine->ShouldClose())

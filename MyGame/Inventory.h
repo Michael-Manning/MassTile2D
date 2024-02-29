@@ -60,7 +60,7 @@ struct ItemBase
 struct ItemStack
 {
 	itemID item = NULL_itemID;
-	int count;
+	int count = 0;
 	uint32_t dynmicIdentifier = 0;
 
 	bool InUse() const {
@@ -70,6 +70,9 @@ struct ItemStack
 		count = 0;
 		item = NULL_itemID;
 	}
+
+	ItemStack() {}
+	ItemStack(itemID item, int count) : item(item), count(count) {}
 
 	ItemStack(const AssetPack::ItemStack* itemStack) : item(itemStack->item()), count(itemStack->count()), dynmicIdentifier(itemStack->dynmicIdentifier())
 	{}

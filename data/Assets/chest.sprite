@@ -1,0 +1,14 @@
+{
+    "ID": 922130966,
+    "filterMode": 0,
+    "imageFileName": "chest.png",
+    "name": "chest",
+    "resolution": [
+        256.0,
+        256.0
+    ],
+	"atlasLayout":{
+		"xCount": 2,
+		"yCount": 2
+	}
+}
