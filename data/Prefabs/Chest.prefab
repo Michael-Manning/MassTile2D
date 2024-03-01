@@ -1,0 +1,29 @@
+{
+    "name": "Chest",
+    "sceneData": {
+        "entities": [
+            {
+                "id": 1,
+                "name": "Chest",
+                "transform": {
+                    "position": [
+                        -18.5,
+                        68.4000015258789
+                    ],
+                    "rotation": 0.0,
+                    "scale": [
+                        0.5,
+                        0.5
+                    ]
+                }
+            }
+        ],
+        "spriteRenderers": [
+            {
+                "atlasIndex": 0,
+                "entityID": 1,
+                "spriteID": 922130966
+            }
+        ]
+    }
+}

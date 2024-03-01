@@ -118,15 +118,13 @@
     <ClInclude Include="WorldData.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="Chest.h">
+      <Filter>Source Files\Items\MapEntities</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="MyGame.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Chest.h">
-      <Filter>Source Files\Items\MapEntities</Filter>
-    </None>
   </ItemGroup>
 </Project>

@@ -367,6 +367,7 @@
   <ItemGroup>
     <ClInclude Include="Benchmarking.h" />
     <ClInclude Include="boidTestes.h" />
+    <ClInclude Include="Chest.h" />
     <ClInclude Include="Collision.h" />
     <ClInclude Include="demon.h" />
     <ClInclude Include="GameUI.h" />
@@ -395,9 +396,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release-Tracy|x64'">true</ExcludedFromBuild>
     </ResourceCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Chest.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

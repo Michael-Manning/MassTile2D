@@ -310,6 +310,13 @@ void queueRenderTasks() {
 	engine->QueueNextFrame(sceneRenderJobs, showingEditor);
 }
 
+glm::ivec2 GetMouseTile() {
+	vec2 mpos = gameSceneSreenToWorldPos(input->getMousePos());
+	int tileX = mpos.x / tileWorldSize + mapW / 2;
+	int tileY = mpos.y / tileWorldSize + mapH / 2;
+	return { tileX, tileY };
+}
+
 void worldDebug() {
 
 #if 0
@@ -603,6 +610,21 @@ int main() {
 				editor.Run();
 			}
 #endif
+
+			// debug window
+			if (showingEditor) 
+			{
+				using namespace ImGui;
+
+				ivec2 tile = GetMouseTile();
+
+				if (Begin("Debug")) {
+
+				Text("x%d y%d", tile.x, tile.y);
+				Text("chunk: %d", worldMap->GetChunk(tile));
+				End();
+				}
+			}
 
 
 

@@ -136,6 +136,12 @@ public:
 		return mapData[index] & 0xFFFF;
 	};
 
+	uint32_t GetChunk(glm::ivec2 tile) {
+		uint32_t cx = (tile.x / chunkSize);
+		uint32_t cy = (tile.y / chunkSize);
+		return cy* chunksX + cx;
+	}
+
 	void setTile(uint32_t x, uint32_t y, tileID block) {
 		uint32_t cx = (x / chunkSize);
 		uint32_t cy = (y / chunkSize);
