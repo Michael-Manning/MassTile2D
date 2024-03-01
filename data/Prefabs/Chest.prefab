@@ -1,10 +1,10 @@
 {
-    "name": "Chest",
+    "name": "chest",
     "sceneData": {
         "entities": [
             {
                 "id": 1,
-                "name": "Chest",
+                "name": "chest",
                 "transform": {
                     "position": [
                         -18.5,

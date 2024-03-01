@@ -8,6 +8,8 @@
 #include "MapEntity.h"
 #include "Chest.h"
 
+#include "global.h"
+
 #include <assetPack/SceneEntities_generated.h>
 #include <assetPack/WorldData_generated.h>
 
@@ -34,6 +36,7 @@ public:
 	void Add(T&& item) {
 		static_assert(std::is_base_of<MapEntity, T>::value, "T must be derived from MapEntity");
 		auto [iter, inserted] = getMap<T>().emplace(item.position, std::move(item));
+		mapEntities.insert(&iter->second);
 	}
 };
 
@@ -42,7 +45,7 @@ class WorldData {
 public:
 
 	WorldData(){
-		chunks.push_back(ChunkData());
+		chunks.resize(chunkCount);
 	}
 
 	std::vector<ChunkData> chunks;
@@ -61,5 +64,11 @@ public:
 				chunk.Add(Chest(pack->chests()->Get(i)));
 
 		}
+	}
+
+	template<typename T>
+	inline void Add(T&& item) {
+		static_assert(std::is_base_of<MapEntity, T>::value, "T must be derived from MapEntity");
+		chunks.at(global::tileWorld->GetChunk(item.position)).Add<T>(std::forward<T>(item));
 	}
 };

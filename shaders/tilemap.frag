@@ -127,7 +127,16 @@ void main() {
          brightness = sampleBrightnessGrid(xi, yi);
     }
     vec3 col = mix(bgCol.rgb, fgCol.rgb, fgCol.a);
+
+   ////debug grid
+   //if(localUV.x < 0.1 || localUV.y < 0.1){
+   //    col = mix(col, vec3(1.0), 0.5);
+   //   outColor = vec4( col.rgb * brightness, mix(bgCol.a, 1.0, fgCol.a));
+   //   outColor.a = 1.0;
+   //}
+   //else{
     outColor = vec4( col.rgb * brightness, mix(bgCol.a, 1.0, fgCol.a));
+   //}
 
     //outColor = vec4( col.rgb * brightness, col.a);
 }

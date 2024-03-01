@@ -9,7 +9,7 @@
 class MapEntity {
 public :
 
-	// anchored top left tile
+	// anchored bottom left tile
 	glm::ivec2 position = glm::ivec2(0, 0);
 	glm::ivec2 size = glm::ivec2(0, 0); // in tiles (does this actually need to be serialized? And if so, should that be manditory and not done in derived class instead if needed?)
 
@@ -29,5 +29,5 @@ public :
 
 	//virtual flatbuffer serialize()
 
-	virtual void OnClilck() {};
+	virtual void OnRightClick() {};
 };

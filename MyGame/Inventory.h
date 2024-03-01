@@ -77,7 +77,7 @@ struct ItemStack
 	ItemStack(const AssetPack::ItemStack* itemStack) : item(itemStack->item()), count(itemStack->count()), dynmicIdentifier(itemStack->dynmicIdentifier())
 	{}
 
-	AssetPack::ItemStack  Serialize() {
+	AssetPack::ItemStack  Serialize() const {
 		return AssetPack::ItemStack(item, count, dynmicIdentifier);
 	}
 };
@@ -95,6 +95,18 @@ struct InventoryContainer {
 		slots.resize(container->slots()->size());
 		for (size_t i = 0; i < slots.size(); i++) 
 			slots[i] = ItemStack(container->slots()->Get(i));	
+	}
+
+	auto Serialize(flatbuffers::FlatBufferBuilder& builder) const {
+		auto pack = AssetPack::InventoryContainerBuilder(builder);
+		pack.add_size(size);
+
+		std::vector<AssetPack::ItemStack> stackVec;
+		for (auto& stack : slots)
+			stackVec.push_back(stack.Serialize()); 
+		
+		pack.add_slots(builder.CreateVectorOfStructs(stackVec.data(), stackVec.size()));
+		return pack.Finish();
 	}
 };
 

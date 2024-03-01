@@ -76,7 +76,9 @@ const DerivedClassFactoryMap BehaviorMap = {
 
 
 static vec2 GcameraPos;
-TileWorld* tileWolrdGlobalRef = nullptr;
+namespace global {
+	TileWorld* tileWorld = nullptr;
+}
 
 #ifdef USING_EDITOR
 bool showingEditor = false;
@@ -133,29 +135,6 @@ namespace {
 	AppState appState = AppState::PlayingGame;
 }
 
-void CalcTileVariation(uint32_t x, uint32_t y) {
-	if (x > 1 && x < mapW - 1 && y > 1 && y < mapH - 1) {
-
-		tileID curTile = tileWolrdGlobalRef->getTile(x, y) & 0xFFFF;
-
-		if (curTile == Tiles::Air)
-			return;
-
-		blockID tileType = curTile / tilesPerBlock;
-
-		uint8_t hash = tileWolrdGlobalRef->getAdjacencyHash(x, y);
-
-		uint32_t curHash = (curTile % tilesPerBlock) / tileVariations;
-		if (curHash == hash)
-			return;
-
-
-		tileID tile = hash * tileVariations + tilesPerBlock * tileType + ran(0, 2);
-		tileWolrdGlobalRef->setTile(x, y, tile);
-	}
-}
-
-
 // globals
 std::unique_ptr<Engine> engine = nullptr;
 Input* input = nullptr;
@@ -164,10 +143,32 @@ sceneRenderContextID sceneRenderCtx = 0;
 AssetManager::AssetPaths AssetDirectories = {};
 TileWorld* worldMap;
 Camera mainCamera{
-	glm::vec2(0.0f),
+	glm::vec2(-15.0f, 84.0f),
 	0.25f
 };
 bool editorToggledThisFrame = false;
+
+void CalcTileVariation(uint32_t x, uint32_t y) {
+	if (x > 1 && x < mapW - 1 && y > 1 && y < mapH - 1) {
+
+		tileID curTile = worldMap->getTile(x, y) & 0xFFFF;
+
+		if (curTile == Tiles::Air)
+			return;
+
+		blockID tileType = curTile / tilesPerBlock;
+
+		uint8_t hash = worldMap->getAdjacencyHash(x, y);
+
+		uint32_t curHash = (curTile % tilesPerBlock) / tileVariations;
+		if (curHash == hash)
+			return;
+
+
+		tileID tile = hash * tileVariations + tilesPerBlock * tileType + ran(0, 2);
+		worldMap->setTile(x, y, tile);
+	}
+}
 
 
 const vec2 btnSize(60, 30);
@@ -269,7 +270,7 @@ void createTileWorld() {
 
 	engine->setTilemapAtlasTexture(sceneRenderCtx, engine->assetManager->GetSprite("tilemapSprites")->textureID);
 
-	tileWolrdGlobalRef = worldMap;
+	global::tileWorld = worldMap;
 }
 
 void queueRenderTasks() {
@@ -312,9 +313,7 @@ void queueRenderTasks() {
 
 glm::ivec2 GetMouseTile() {
 	vec2 mpos = gameSceneSreenToWorldPos(input->getMousePos());
-	int tileX = mpos.x / tileWorldSize + mapW / 2;
-	int tileY = mpos.y / tileWorldSize + mapH / 2;
-	return { tileX, tileY };
+	return worldMap->WorldPosTile(mpos);
 }
 
 void worldDebug() {
@@ -442,6 +441,7 @@ int main() {
 			global::mainScene = newScene.get();
 		}
 	);
+	editor.editorCamera = mainCamera;
 #endif
 
 	// load all resources 
@@ -454,13 +454,14 @@ int main() {
 	if (useTileWorld) {
 		createTileWorld();
 		worldData = make_unique<WorldData>();
-		
-		worldData->chunks[0].Add(Chest(14, { 6, 8 }));
+
+		worldData->Add(Chest(30, { 962, 846 }));
 
 		//Chest myhes = Chest(12, { 2, 3 });
 		//Chest chtesss = myhes;
 		//worldData->chunks[10].chests()
 	}
+
 	//const auto& myTest = worldData->chunks[0].chests.at(glm::ivec2(6, 8));
 
 	engine->ShowWindow();
@@ -591,6 +592,24 @@ int main() {
 
 
 
+			// trigger map entity click
+			{
+				if (input->getMouseBtnDown(MouseBtn::Right)) {
+					ivec2 tile = GetMouseTile();
+					int chunk = worldMap->GetChunk(tile);
+
+					for (auto& ent : worldData->chunks[chunk].mapEntities)
+					{
+						if (tile.x >= ent->position.x && tile.x < ent->position.x + ent->size.x &&
+							tile.y >= ent->position.y && tile.y < ent->position.y + ent->size.y) {
+							ent->OnRightClick();
+							break; // map entities shouldn't overlap
+						}
+					}
+				}
+			}
+
+
 			GcameraPos = mainCamera.position;
 			engine->EntityStartUpdate(scene);
 			mainCamera.position = GcameraPos;
@@ -612,7 +631,7 @@ int main() {
 #endif
 
 			// debug window
-			if (showingEditor) 
+			if (showingEditor)
 			{
 				using namespace ImGui;
 
@@ -620,9 +639,9 @@ int main() {
 
 				if (Begin("Debug")) {
 
-				Text("x%d y%d", tile.x, tile.y);
-				Text("chunk: %d", worldMap->GetChunk(tile));
-				End();
+					Text("x%d y%d", tile.x, tile.y);
+					Text("chunk: %d", worldMap->GetChunk(tile));
+					End();
 				}
 			}
 

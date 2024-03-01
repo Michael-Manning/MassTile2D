@@ -22,6 +22,8 @@ namespace UI {
 	constexpr int invSlotsY = 4;
 	constexpr int invSlotCount = invSlotsX * invSlotsY;
 
+	constexpr int inspectedInventoryRows = 10;
+
 	struct State {
 		Engine* engine;
 

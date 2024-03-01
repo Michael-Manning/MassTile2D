@@ -44,4 +44,5 @@ namespace global {
 	AssetManager* assetManager;
 	InventoryContainer playerInventory = InventoryContainer(PlayerInventorySize);
 	InventoryContainer cursorInventory = InventoryContainer(1);
+	InventoryContainer* inspectedInventory = nullptr; 
 }

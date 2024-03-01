@@ -119,7 +119,7 @@ public:
 
 			tileY = mapH - tileY - 1;
 
-			blockID block = tileWolrdGlobalRef->getTile(tileX, tileY);
+			blockID block = global::tileWorld->getTile(tileX, tileY);
 
 			return block != Tiles::Air;
 		}
@@ -127,7 +127,7 @@ public:
 	}
 
 	bool queryTile(ivec2 coord) {
-		return tileWolrdGlobalRef->getTile(coord.x, coord.y);
+		return global::tileWorld->getTile(coord.x, coord.y);
 	}
 
 	ivec2 getTileXY(vec2 pos) {

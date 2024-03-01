@@ -75,7 +75,7 @@ public:
 	Entity* DuplicateEntity(Entity* original);
 
 
-	Entity* Instantiate(Prefab* prefab, std::string name = "prefab", glm::vec2 position = glm::vec2(0.0f), float rotation = 0.0f);
+	Entity* Instantiate(Prefab* prefab, std::string name = "", glm::vec2 position = glm::vec2(0.0f), float rotation = 0.0f);
 
 	double physicsTimer = 0.0;
 	bool paused = true;
@@ -109,6 +109,8 @@ private:
 	};
 	std::vector<DeferredEntityDelete> defferedDeletions;
 
+	// Scene is coupled to assetmanager as a performance optimisation to link certain assets and componenets on registration 
+	// which would otherwise have to be linked at draw time
 	AssetManager* assetManager;
 
 	void deletechildRecurse(Entity* entity);

@@ -93,8 +93,10 @@ namespace {
 			return 10;
 		if (zoomLevel < 0.1)
 			return 1.0;
-		if (zoomLevel < 0.5)
+		if (zoomLevel < 0.3)
 			return 1.0f / 2.0f;
+		if (zoomLevel < 0.6)
+			return 1.0f / 4.0f;
 		else
 			return 1.0f / 10.0f;
 	}
@@ -426,6 +428,8 @@ void Editor::controlWindow() {
 	}
 	SameLine();
 	Text("zoom: %.2f", editorCamera.zoom);
+	SameLine();
+	Text("Camera: %.2f, %.2f", editorCamera.position.x, editorCamera.position.y);
 
 	End();
 }

@@ -126,7 +126,7 @@ public:
 		maxDirtyLightingIndex = chunkCount - 1;
 	};
 
-	inline tileID getTile(uint32_t x, uint32_t y) {
+	inline tileID getTile(uint32_t x, uint32_t y) const {
 		int cx = (x / chunkSize);
 		int cy = (y / chunkSize);
 		int chunk = cy * chunksX + cx;
@@ -136,10 +136,24 @@ public:
 		return mapData[index] & 0xFFFF;
 	};
 
-	uint32_t GetChunk(glm::ivec2 tile) {
+	inline uint32_t GetChunk(const glm::ivec2 tile) const {
 		uint32_t cx = (tile.x / chunkSize);
 		uint32_t cy = (tile.y / chunkSize);
 		return cy* chunksX + cx;
+	}
+
+	inline glm::ivec2 WorldPosTile(const glm::vec2 pos) const {
+		return 	{
+			pos.x / tileWorldSize + mapW / 2,
+			pos.y / tileWorldSize + mapH / 2
+		};
+	}
+
+	inline glm::vec2 TileWorldPos(const glm::ivec2 tile) const {
+		return{
+			(tile.x - mapW / 2) * tileWorldSize,
+			(tile.y - mapH / 2) * tileWorldSize
+		};
 	}
 
 	void setTile(uint32_t x, uint32_t y, tileID block) {

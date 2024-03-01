@@ -26,7 +26,6 @@ glm::vec2 gameSceneSreenToWorldPos(glm::vec2 pos);
 
 
 
-extern TileWorld* tileWolrdGlobalRef;
 
 extern glm::vec2 GcameraPos; // remove
 
@@ -45,4 +44,7 @@ namespace global {
 
 	extern InventoryContainer playerInventory;
 	extern InventoryContainer cursorInventory;
+	extern InventoryContainer* inspectedInventory; // chests or any other additional inventory space you can open
+
+	extern TileWorld* tileWorld;
 }

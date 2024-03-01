@@ -67,8 +67,6 @@ namespace UI {
 
 
 
-
-
 				if (input->getMouseBtnDown(MouseBtn::Left)) {
 					// move as much of cursor stack that will fit into inventory
 					if (global::cursorInventory.slots[0].InUse()) {
@@ -166,6 +164,19 @@ namespace UI {
 			if (itemHeader.maxStack > 1) {
 				state.engine->addScreenSpaceText(state.smallfont, mpos - vec2(InvSlotSize / 4.0f, 0.0f), vec4(1.0), to_string(global::cursorInventory.slots[0].count));
 			}
+		}
+
+		if (global::inspectedInventory == nullptr)
+			return;
+
+		int invRows = global::inspectedInventory->size / inspectedInventoryRows + (int)(global::inspectedInventory->size % inspectedInventoryRows > 0);
+		int slots = global::inspectedInventory->size;
+		vec2 startPos = vec2(invPos.x, state.engine->winH - (invRows * InvSlotSize) - (invRows * InvSlotGap) + InvSlotGap);
+		for (size_t i = 0; i < global::inspectedInventory->size; i++)
+		{
+			vec2 slotPos = startPos + vec2((i % inspectedInventoryRows) * (InvSlotSize + InvSlotGap), (i / inspectedInventoryRows) * (InvSlotSize + InvSlotGap));
+
+			state.engine->addScreenSpaceTexture("invSlot", 0, slotPos, InvSlotSize);
 		}
 	}
 }
