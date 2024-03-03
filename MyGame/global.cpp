@@ -40,9 +40,13 @@ namespace global {
 	}
 
 	Player* player = nullptr;
-	Scene* mainScene;
-	AssetManager* assetManager;
+	Scene* mainScene = nullptr;
+	AssetManager* assetManager = nullptr;
+	Input* input = nullptr;
 	InventoryContainer playerInventory = InventoryContainer(PlayerInventorySize);
 	InventoryContainer cursorInventory = InventoryContainer(1);
 	InventoryContainer* inspectedInventory = nullptr; 
+	glm::vec2 inspectedInventoryLocation;
+	
+	TileWorld* tileWorld = nullptr;
 }

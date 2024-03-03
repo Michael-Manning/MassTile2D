@@ -1,0 +1,5 @@
+itemID,name,description,maxStack,blockID
+1,"grass","Itchy but smells nice",99,0
+2,"dirt","",99,1
+3,"stone","",99,2
+4,"iron","",99,3

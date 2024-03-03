@@ -16,6 +16,8 @@
 
 #include "worldGen.h"
 
+#include "global.h"
+
 
 namespace {
 	std::random_device rd; // obtain a random number from hardware
@@ -27,6 +29,36 @@ namespace {
 }
 
 using namespace std;
+
+void CalcTileVariation(uint32_t x, uint32_t y) {
+	if (x > 1 && x < mapW - 1 && y > 1 && y < mapH - 1) {
+
+		tileID curTile = global::tileWorld->getTile(x, y);
+
+		if (curTile == Blocks::Air)
+			return;
+
+		blockID tileType = GetBlock(curTile);
+
+		uint8_t hash = global::tileWorld->getAdjacencyHash(x, y);
+
+		uint32_t curHash = (curTile % tilesPerBlock) / tileVariations;
+		if (curHash == hash)
+			return;
+
+
+		tileID tile = hash * tileVariations + tilesPerBlock * tileType + ran(0, 2);
+		global::tileWorld->setTile(x, y, tile);
+	}
+}
+
+void UpdateTextureVariations(glm::ivec2 centerTile) {
+	for (int i = -1; i < 2; i++)
+		for (int j = -1; j < 2; j++)
+			CalcTileVariation(centerTile.x + i, centerTile.y + j);
+}
+
+
 
 void WorldGenerator::GenerateTiles(WorldGenSettings& settings) {
 
@@ -53,7 +85,8 @@ void WorldGenerator::GenerateTiles(WorldGenSettings& settings) {
 		int y = i / mapW;
 		int x = i % mapW;
 
-		int j = x + ((mapH - y - 1) * mapW);
+		int j = x + (y * mapW);
+		//int j = x + ((mapH - y - 1) * mapW);
 		float f = glm::clamp(noiseOutput[j], -1.0f, 1.0f);
 		//float f = noiseOutput[j];
 		uint8_t val = (f + 1.0f) / 2.0f * 255;
@@ -80,12 +113,12 @@ void WorldGenerator::GenerateTiles(WorldGenSettings& settings) {
 		int y = i / mapW;
 		int x = i % mapW;
 
-		blockID id = Tiles::Air;
+		blockID id = Blocks::Air;
 
 		if ((y < mapH - 1 && y > 1 && x > 1 && x < mapW - 1)) {
 			if (blockPresence[y * mapW + x]) {
 
-				id = Tiles::Dirt;
+				id = Blocks::Dirt;
 
 				//if (y < (mapH - 1) && y >(mapH - 205) && blockPresence[(y + 1) * mapW + x] == false) {
 				if (y < (mapH - 1) && y >(mapH - 205)) {
@@ -97,20 +130,22 @@ void WorldGenerator::GenerateTiles(WorldGenSettings& settings) {
 					airCount += blockPresence[(y)*mapW + (x - 1)] == true;
 
 					if (airCount != 4)
-						id = Tiles::Grass;
+						id = Blocks::Grass;
 				}
 				if (y < mapH - 195) {
-					id = Tiles::Stone;
+					id = Blocks::Stone;
 
 					if (ironPresence[y * mapW + x]) {
-						id = Tiles::Iron;
+						id = Blocks::Iron;
 					}
 				}
 			}
 		}
 
-		tworld->preloadTile(x, mapH - y - 1, id);
-		tworld->preloadBGTile(x, mapH - y - 1, y > (mapH - 205) ? 1023 : 1022);
+		tworld->preloadTile(x, y, id);
+		//tworld->preloadTile(x, mapH - y - 1, id);
+		tworld->preloadBGTile(x, y, y > (mapH - 205) ? 1023 : 1022);
+		//tworld->preloadBGTile(x, mapH - y - 1, y > (mapH - 205) ? 1023 : 1022);
 
 
 		});
@@ -134,16 +169,20 @@ void WorldGenerator::PostProcess() {
 
 		//if (y < mapH - 3 && y > 3 && x > 3 && x < mapW - 3)
 		{
-			blockID tileType = world->getTile(x, mapH - y - 1);
-			if (tileType != Tiles::Air)
+			blockID tileType = world->getTile(x, y);
+			//blockID tileType = world->getTile(x, mapH - y - 1);
+			if (tileType != Blocks::Air)
 			{
 
-				uint8_t hash = world->getAdjacencyHash(x, mapH - y - 1);
+				uint8_t hash = world->getAdjacencyHash(x, y);
+				//uint8_t hash = world->getAdjacencyHash(x, mapH - y - 1);
 				tileID tile = hash * 3 + 16 * 3 * tileType + ran(0, 2);
 
-				world->preloadTile(x, mapH - y - 1, tile);
+				world->preloadTile(x, y, tile);
+				//world->preloadTile(x, mapH - y - 1, tile);
 			}
-			world->preloadBrightness(x, mapH - y - 1, 255 * ambiantLight);
+			world->preloadBrightness(x, y, 255 * ambiantLight);
+			//world->preloadBrightness(x, mapH - y - 1, 255 * ambiantLight);
 		}
 
 	};

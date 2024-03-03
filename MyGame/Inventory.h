@@ -4,13 +4,15 @@
 #include <string>
 #include <vector>
 
+#include <robin_hood.h>
+
 #include <assetPack/SceneEntities_generated.h>
 
 #include "typedefs.h"
+#include "ItemIDs.h"
 
 //#include "robin_hood.h"
 
-typedef uint32_t itemID;
 constexpr itemID NULL_itemID = 0;
 constexpr itemID MAX_itemID = 300;
 
@@ -26,15 +28,25 @@ public:
 
 	void PopulateTools(std::string filepath);
 	void PopulateConsumables(std::string filepath);
-	//void PopulateBlocks(std::string csvData);
+	void PopulateBlocks(std::string filepath);
 
 	const ItemBase& GetItem(itemID ID) const {
 		return itemBaseLookup.at(ID);
 	}
 
+	blockID GetBlock(itemID ID) const {
+		return blockLookup.at(ID);
+	}
+	itemID GetBlockItemID(blockID ID) const {
+		return blockItemLookup.at(ID);
+	}
+
 private:
 	//robin_hood::unordered_flat_map<itemID, ItemBase> itemBaseLookup;
 	std::vector<ItemBase> itemBaseLookup;
+
+	robin_hood::unordered_flat_map<itemID, blockID> blockLookup;
+	robin_hood::unordered_flat_map<blockID, itemID> blockItemLookup;
 
 };
 
@@ -82,31 +94,44 @@ struct ItemStack
 	}
 };
 
+template<typename T, typename PackT>
+static void deserializeVector(std::vector<T>& vec, PackT getf) {
+	vec.resize(getf->size());
+	for (size_t i = 0; i < vec.size(); i++)
+		vec[i] = T(getf->Get(i));
+}
+
 
 struct InventoryContainer {
 
-	InventoryContainer(int size) : size(size), slots(size) 
+	InventoryContainer(int size) : size(size), slots(size)
 	{}
 
 	const int size;
 	std::vector<ItemStack> slots;
 
 	InventoryContainer(const AssetPack::InventoryContainer* container) : size(container->size()) {
-		slots.resize(container->slots()->size());
-		for (size_t i = 0; i < slots.size(); i++) 
-			slots[i] = ItemStack(container->slots()->Get(i));	
+		deserializeVector(slots, container->slots());
+		//slots.resize(container->slots()->size());
+		//for (size_t i = 0; i < slots.size(); i++) 
+		//	slots[i] = ItemStack(container->slots()->Get(i));	
 	}
 
 	auto Serialize(flatbuffers::FlatBufferBuilder& builder) const {
-		auto pack = AssetPack::InventoryContainerBuilder(builder);
-		pack.add_size(size);
 
 		std::vector<AssetPack::ItemStack> stackVec;
 		for (auto& stack : slots)
-			stackVec.push_back(stack.Serialize()); 
-		
-		pack.add_slots(builder.CreateVectorOfStructs(stackVec.data(), stackVec.size()));
-		return pack.Finish();
+			stackVec.push_back(stack.Serialize());
+
+		return AssetPack::CreateInventoryContainer(builder,
+			size,
+			builder.CreateVectorOfStructs(stackVec.data(), stackVec.size())
+		);
+
+		//auto pack = AssetPack::InventoryContainerBuilder(builder);
+		//pack.add_size(size);	
+		//pack.add_slots(builder.CreateVectorOfStructs(stackVec.data(), stackVec.size()));
+		//return pack.Finish();
 	}
 };
 

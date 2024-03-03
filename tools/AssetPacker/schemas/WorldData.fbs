@@ -7,7 +7,7 @@ namespace AssetPack;
 table WorldData{
 
    chunks:[ChunkData];
-
+   chunkIndex:[int];
 }
 
 root_type WorldData;

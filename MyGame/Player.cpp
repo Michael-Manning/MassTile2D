@@ -7,6 +7,8 @@
 using namespace std;
 using namespace glm;
 
+std::unique_ptr<Tool> heldTool = nullptr;
+
 void Player::damageEnemiesTriangles(std::vector<glm::vec2> vertices, float knockback, int damage) {
 
 	for (auto& callback : enemyColliderList)

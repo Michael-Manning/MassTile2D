@@ -1,3 +1,4 @@
 holdSpriteAtlasIndex,itemID,name,description,maxStack,inventorySpriteAtlasIndex
 0,100,Sword,cool weapon,1,0
 2,101,Bow,ranged weapon,1,2
+3,102,Pickaxe,dig tool,1,3

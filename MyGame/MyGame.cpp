@@ -76,9 +76,6 @@ const DerivedClassFactoryMap BehaviorMap = {
 
 
 static vec2 GcameraPos;
-namespace global {
-	TileWorld* tileWorld = nullptr;
-}
 
 #ifdef USING_EDITOR
 bool showingEditor = false;
@@ -147,28 +144,6 @@ Camera mainCamera{
 	0.25f
 };
 bool editorToggledThisFrame = false;
-
-void CalcTileVariation(uint32_t x, uint32_t y) {
-	if (x > 1 && x < mapW - 1 && y > 1 && y < mapH - 1) {
-
-		tileID curTile = worldMap->getTile(x, y) & 0xFFFF;
-
-		if (curTile == Tiles::Air)
-			return;
-
-		blockID tileType = curTile / tilesPerBlock;
-
-		uint8_t hash = worldMap->getAdjacencyHash(x, y);
-
-		uint32_t curHash = (curTile % tilesPerBlock) / tileVariations;
-		if (curHash == hash)
-			return;
-
-
-		tileID tile = hash * tileVariations + tilesPerBlock * tileType + ran(0, 2);
-		worldMap->setTile(x, y, tile);
-	}
-}
 
 
 const vec2 btnSize(60, 30);
@@ -261,6 +236,7 @@ void createTileWorld() {
 		settings.ironOre = NoiseParams::fromJson(j["ironDist"]);
 
 		generator.GenerateTiles(settings);
+		worldMap->saveToDisk(AssetDirectories.assetDir + "world.dat");
 #else
 		worldMap->loadFromDisk(AssetDirectories.assetDir + "world.dat");
 #endif
@@ -423,13 +399,25 @@ int main() {
 
 	// create or load main scene
 	scene = Scene::MakeScene(engine->assetManager.get()); /*make_shared<Scene>(engine->assetManager.get());*/
-	global::mainScene = scene.get();
 	global::assetManager = engine->assetManager.get();
+	global::input = engine->GetInput();
 	global::SetEngine(engine.get());
 
 	scene->name = "main scene";
-	sceneRenderCtx = engine->CreateSceneRenderContext(engine->getWindowSize(), useTileWorld, vec4(0, 0, 0, 1));
-	//sceneRenderCtx = engine->CreateSceneRenderContext(engine->getWindowSize(), useTileWorld, { 0.2, 0.3, 1.0, 1 });
+	//sceneRenderCtx = engine->CreateSceneRenderContext(engine->getWindowSize(), useTileWorld, vec4(0, 0, 0, 1));
+	sceneRenderCtx = engine->CreateSceneRenderContext(engine->getWindowSize(), useTileWorld, { 0.2, 0.3, 1.0, 1 });
+
+	// load all resources 
+	engine->assetManager->LoadAllSprites();
+	engine->assetManager->LoadAllFonts();
+	engine->assetManager->LoadAllPrefabs(false);
+
+
+	engine->assetManager->LoadScene("game_test");
+	scene = engine->assetManager->GetScene("game_test");
+
+	global::mainScene = scene.get();
+
 #ifdef USING_EDITOR
 	editor.Initialize(
 		engine.get(),
@@ -444,10 +432,7 @@ int main() {
 	editor.editorCamera = mainCamera;
 #endif
 
-	// load all resources 
-	engine->assetManager->LoadAllSprites();
-	engine->assetManager->LoadAllFonts();
-	engine->assetManager->LoadAllPrefabs(false);
+
 
 	unique_ptr<WorldData> worldData = nullptr;
 
@@ -455,7 +440,7 @@ int main() {
 		createTileWorld();
 		worldData = make_unique<WorldData>();
 
-		worldData->Add(Chest(30, { 962, 846 }));
+		//worldData->Add(Chest(30, { 962, 846 }));
 
 		//Chest myhes = Chest(12, { 2, 3 });
 		//Chest chtesss = myhes;
@@ -496,14 +481,21 @@ int main() {
 	//engine->assetManager->LoadScene("serial_demo");
 	//scene = engine->assetManager->GetScene("serial_demo");
 
+	
+
 	//auto ent = scene->CreateEntity();
 	//scene->DeleteEntity(ent->ID, false);
 
 	itemLibrary.PopulateTools(AssetDirectories.assetDir + "Tools.csv");
 	itemLibrary.PopulateConsumables(AssetDirectories.assetDir + "Consumables.csv");
+	itemLibrary.PopulateBlocks(AssetDirectories.assetDir + "Blocks.csv");
 
 	global::playerInventory.slots[4] = ItemStack(
 		100,
+		1
+	);
+	global::playerInventory.slots[3] = ItemStack(
+		102,
 		1
 	);
 	global::playerInventory.slots[15] = ItemStack(
@@ -547,7 +539,7 @@ int main() {
 			if (input->getKeyDown('p')) {
 				scene->paused = !scene->paused;
 			}
-			if (input->getKeyDown('l')) {
+			if (input->getKeyDown('l') && useTileWorld) {
 				worldMap->FullLightingUpdate();
 			}
 			if (input->getKeyDown('m')) {
@@ -641,6 +633,15 @@ int main() {
 
 					Text("x%d y%d", tile.x, tile.y);
 					Text("chunk: %d", worldMap->GetChunk(tile));
+
+					if (Button("Save world")) {
+						worldData->Serialize();
+					}
+
+					if (Button("Load world")) {
+						worldData->LoadAndInstantiateContents();
+					}
+
 					End();
 				}
 			}
@@ -657,6 +658,19 @@ int main() {
 			engine->SceneTriangles(sceneRenderCtx, debugTriangles, debugColors);
 
 			debugTriangles.clear();
+
+
+			if (useTileWorld) {
+
+				if (input->getKey('u')) {
+					vec2 worldClick = gameSceneSreenToWorldPos(input->getMousePos());
+					float tileXf = worldClick.x / tileWorldSize + mapW / 2.0f;
+					float tileYf = worldClick.y / tileWorldSize + mapH / 2.0f;
+
+					worldMap->setMovingTorch(vec2(tileXf, tileYf), true);
+				}
+				worldMap->updateLighing();
+			}
 
 			//worldDebug();
 		}

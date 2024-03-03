@@ -20,11 +20,13 @@ private:
 	Chest(const Chest& other) = default;
 	Chest& operator=(const Chest& other) = default;
 
+	Entity* entityRef = nullptr;
+
 	void placeSelf() {
 
 		auto pos = global::tileWorld->TileWorldPos(position);
 
-		global::mainScene->Instantiate(global::assetManager->GetPrefab("chest"), "", 
+		entityRef = global::mainScene->Instantiate(global::assetManager->GetPrefab("chest"), "",
 			global::tileWorld->TileWorldPos(position) + (glm::vec2(size / 2) * tileWorldSize));
 	}
 
@@ -50,10 +52,31 @@ public:
 		placeSelf();
 	}
 
-#include <iostream>
+	auto Serialize(flatbuffers::FlatBufferBuilder& builder) const {
+
+		auto baseData = SerializeBase();
+
+		return AssetPack::CreateChest(builder,
+			&baseData,
+			container.Serialize(builder)
+		);
+
+
+		/*auto pack = AssetPack::ChestBuilder(builder);
+
+		pack.add_MapeEntity(&baseData);
+
+		pack.add_container(container.Serialize(builder));
+
+		return pack.Finish();*/
+	}
+
 	void OnRightClick() override {
+		assert(entityRef != nullptr);
+
 		//std::cout << "click" << std::endl;
 		global::inspectedInventory = &container;
+		global::inspectedInventoryLocation = entityRef->transform.position;
 	}
 
 };

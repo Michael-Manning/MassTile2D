@@ -3,6 +3,7 @@
 #include <glm/glm.hpp>
 
 #include <assetPack/SceneEntities_generated.h>
+#include <assetPack/WorldData_generated.h>
 
 #include "serialization.h"
 
@@ -27,7 +28,11 @@ public :
 	// Actually I think this will be a base class to a different category of classes which
 	// may include a prefab, but hold there own state which must be individually serialized
 
-	//virtual flatbuffer serialize()
+	//virtual void serialize(AssetPack::ChunkDataBuilder) = 0;
+
+	auto SerializeBase() const {
+		return AssetPack::MapEntityBase(toAP(position), toAP(size));
+	}
 
 	virtual void OnRightClick() {};
 };

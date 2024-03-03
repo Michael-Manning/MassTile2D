@@ -24,7 +24,7 @@ glm::vec2 gameSceneWorldToScreenPos(glm::vec2 pos);
 
 glm::vec2 gameSceneSreenToWorldPos(glm::vec2 pos);
 
-
+glm::ivec2 GetMouseTile();
 
 
 extern glm::vec2 GcameraPos; // remove
@@ -41,10 +41,11 @@ namespace global {
 	extern Scene* mainScene;
 
 	extern AssetManager* assetManager;
-
+	extern Input* input;
 	extern InventoryContainer playerInventory;
 	extern InventoryContainer cursorInventory;
 	extern InventoryContainer* inspectedInventory; // chests or any other additional inventory space you can open
+	extern glm::vec2 inspectedInventoryLocation;
 
 	extern TileWorld* tileWorld;
 }

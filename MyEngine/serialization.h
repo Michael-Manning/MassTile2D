@@ -55,3 +55,7 @@ inline glm::vec4 fromAP(const AssetPack::vec4* v) {
 inline glm::vec4 fromAP(const AssetPack::vec4 v) {
 	return glm::vec4(v.r(), v.g(), v.b(), v.a());
 };
+
+inline AssetPack::ivec2 toAP(const glm::ivec2 v) {
+	return AssetPack::ivec2(v.x, v.y);
+};

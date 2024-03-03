@@ -30,14 +30,15 @@ void ItemLibrary::PopulateTools(std::string filepath)
 		//	.inventorySpriteAtlasIndex = inventorySpriteAtlasIndex
 		//};
 
-		itemBaseLookup.emplace(itemBaseLookup.begin() + ID, ItemBase{
+		//itemBaseLookup.emplace(itemBaseLookup.begin() + ID, ItemBase{
+		itemBaseLookup[ID] = ItemBase{
 			.ID = ID,
 			.type = ItemBase::Type::Tool,
 			.name = name,
 			.description = description,
 			.maxStack = maxStack,
 			.inventorySpriteAtlasIndex = inventorySpriteAtlasIndex
-			});
+			};
 	}
 }
 
@@ -47,14 +48,34 @@ void ItemLibrary::PopulateConsumables(std::string filepath)
 	in.read_header(io::ignore_extra_column, "itemID", "name", "description", "maxStack", "inventorySpriteAtlasIndex");
 	itemID ID; std::string name; std::string description; int maxStack; int inventorySpriteAtlasIndex;
 	while (in.read_row(ID, name, description, maxStack, inventorySpriteAtlasIndex)) {
-		itemBaseLookup.emplace(itemBaseLookup.begin() + ID, ItemBase{
+		//itemBaseLookup.emplace(itemBaseLookup.begin() + ID, ItemBase{
+		itemBaseLookup[ID] = ItemBase{
 			.ID = ID,
 			.type = ItemBase::Type::Consumable,
 			.name = name,
 			.description = description,
 			.maxStack = maxStack,
 			.inventorySpriteAtlasIndex = inventorySpriteAtlasIndex
-			});
+			};
+	}
+}
+
+void ItemLibrary::PopulateBlocks(std::string filepath) {
+	io::CSVReader<5> in(filepath);
+	in.read_header(io::ignore_extra_column, "itemID", "name", "description", "maxStack", "blockID");
+	itemID ID; std::string name; std::string description; int maxStack; blockID block;
+	while (in.read_row(ID, name, description, maxStack, block)) {
+		//itemBaseLookup.emplace(itemBaseLookup.begin() + ID, ItemBase{
+		itemBaseLookup[ID] = ItemBase{
+			.ID = ID,
+			.type = ItemBase::Type::Block,
+			.name = name,
+			.description = description,
+			.maxStack = maxStack,
+			.inventorySpriteAtlasIndex = static_cast<int>(GetFloatingTile(block))
+			};
+		blockLookup.insert({ ID, block });
+		blockItemLookup.insert({ block, ID });
 	}
 }
 

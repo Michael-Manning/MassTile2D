@@ -342,6 +342,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Publish|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="Tool.cpp" />
     <ClCompile Include="worldGen.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -373,11 +374,14 @@
     <ClInclude Include="GameUI.h" />
     <ClInclude Include="global.h" />
     <ClInclude Include="Inventory.h" />
+    <ClInclude Include="ItemIDs.h" />
     <ClInclude Include="MapEntity.h" />
     <ClInclude Include="Menus.h" />
+    <ClInclude Include="Pickaxe.h" />
     <ClInclude Include="Player.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="stdafx.h" />
+    <ClInclude Include="Sword.h" />
     <ClInclude Include="TestScript.h" />
     <ClInclude Include="Tool.h" />
     <ClInclude Include="WorldData.h" />

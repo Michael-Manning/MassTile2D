@@ -138,7 +138,7 @@ void ResourceManager::uploadThreadFunc(ConcurrentQueue<textureJob>& asyncQueue) 
 glm::ivec2 ResourceManager::GetImageFileResolution(std::string filepath)
 {
 	int width, height, channels;
-	assert(stbi_info(filepath.c_str(), &width, &height, &channels));
+	stbi_info(filepath.c_str(), &width, &height, &channels);
 	return glm::ivec2(width, height);
 }
 

@@ -7,32 +7,32 @@
 
 #include "TileWorld.h"
 
-namespace Tiles {
+namespace Blocks {
 	constexpr blockID Grass = 0;
 	constexpr blockID Dirt = 1;
 	constexpr blockID Stone = 2;
 	constexpr blockID Iron = 3;
-	constexpr blockID Air = 1023;
+	constexpr tileID Air = 1023;
 }
 
 constexpr int typesPerTile = 16;
 constexpr int tileVariations = 3;
 constexpr int tilesPerBlock = typesPerTile * tileVariations;
 
-static tileID getTileID(blockID block) {
-	switch (block) {
-	case Tiles::Grass:
-		return 0;
-	case Tiles::Dirt:
-		return 1;
-	case Tiles::Stone:
-		return 2;
-	case Tiles::Iron:
-		return 3;
-	default:
-		return 0;
-	}
-}
+//static tileID getTileID(blockID block) {
+//	switch (block) {
+//	case Blocks::Grass:
+//		return 0;
+//	case Blocks::Dirt:
+//		return 1;
+//	case Blocks::Stone:
+//		return 2;
+//	case Blocks::Iron:
+//		return 3;
+//	default:
+//		return 0;
+//	}
+//}
 
 struct NoiseParams {
 	std::string nodeTree;
@@ -66,7 +66,20 @@ private:
 	TileWorld* world;
 };
 
-
-static void loadWorld() {
-
+inline blockID GetBlock(tileID tile) {
+	return tile / tilesPerBlock;
 }
+
+inline tileID GetFloatingTile(blockID block){
+	return block* tilesPerBlock;
+}
+
+void CalcTileVariation(uint32_t x, uint32_t y);
+inline void CalcTileVariation(glm::ivec2 tile) { return CalcTileVariation(tile.x, tile.y); }
+
+// updates the 9 texture variations around a center tile
+void UpdateTextureVariations(glm::ivec2 centerTile);
+
+//static void loadWorld() {
+//
+//}

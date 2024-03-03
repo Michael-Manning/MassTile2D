@@ -22,6 +22,9 @@
     <Filter Include="Source Files\Items\MapEntities">
       <UniqueIdentifier>{6a20a89c-12a7-4c82-8e41-9cbcc8611036}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\tools">
+      <UniqueIdentifier>{8c11bcfd-ec63-4965-ae33-4c56333ace8d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MyGame.cpp">
@@ -55,6 +58,9 @@
       <Filter>Behaviours</Filter>
     </ClCompile>
     <ClCompile Include="Inventory.cpp">
+      <Filter>Source Files\Items</Filter>
+    </ClCompile>
+    <ClCompile Include="Tool.cpp">
       <Filter>Source Files\Items</Filter>
     </ClCompile>
   </ItemGroup>
@@ -120,6 +126,15 @@
     </ClInclude>
     <ClInclude Include="Chest.h">
       <Filter>Source Files\Items\MapEntities</Filter>
+    </ClInclude>
+    <ClInclude Include="Sword.h">
+      <Filter>Source Files\tools</Filter>
+    </ClInclude>
+    <ClInclude Include="ItemIDs.h">
+      <Filter>Source Files\Items</Filter>
+    </ClInclude>
+    <ClInclude Include="Pickaxe.h">
+      <Filter>Source Files\tools</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

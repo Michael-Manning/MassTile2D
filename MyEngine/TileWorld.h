@@ -34,7 +34,7 @@ constexpr float tileWorldSize = 0.25f;
 static_assert(mapW% chunkSize == 0);
 static_assert(mapH% chunkSize == 0);
 
-constexpr float ambiantLight = 1.0f;
+constexpr float ambiantLight = 0.1f;
 
 const static int maxChunkUpdatesPerFrame = 16;
 const static int maxLightsPerChunk = 100;
@@ -135,6 +135,7 @@ public:
 		index %= mapCount;
 		return mapData[index] & 0xFFFF;
 	};
+	inline tileID getTile(glm::ivec2 tile) const { return getTile(tile.x, tile.y); }
 
 	inline uint32_t GetChunk(const glm::ivec2 tile) const {
 		uint32_t cx = (tile.x / chunkSize);
@@ -156,7 +157,9 @@ public:
 		};
 	}
 
+	inline void setTile(glm::ivec2 tile, tileID block) { setTile(tile.x, tile.y, block); }
 	void setTile(uint32_t x, uint32_t y, tileID block) {
+		//y = mapH - y - 1;
 		uint32_t cx = (x / chunkSize);
 		uint32_t cy = (y / chunkSize);
 		uint32_t chunk = cy * chunksX + cx;

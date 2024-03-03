@@ -47,11 +47,9 @@ public:
 
 		if (tileX > 0 && tileX < mapW && tileY > 0 && tileY < mapH) {
 
-			tileY = mapH - tileY - 1;
-
 			blockID block = global::tileWorld->getTile(tileX, tileY);
 
-			return block != Tiles::Air;
+			return block != Blocks::Air;
 		}
 		return false;
 	}

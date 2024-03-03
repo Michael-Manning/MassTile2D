@@ -23,6 +23,7 @@ namespace UI {
 	constexpr int invSlotCount = invSlotsX * invSlotsY;
 
 	constexpr int inspectedInventoryRows = 10;
+	constexpr float maxInspectedInventoryViewDistance = 2.5f;
 
 	struct State {
 		Engine* engine;

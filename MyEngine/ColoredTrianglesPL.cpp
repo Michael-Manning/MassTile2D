@@ -21,7 +21,7 @@
 #include "VKengine.h"
 #include "typedefs.h"
 #include "vulkan_util.h"
-#include "globalBufferDefinitions.h"n
+#include "globalBufferDefinitions.h"
 #include "Vertex.h"
 #include "GraphicsTemplate.h"
 

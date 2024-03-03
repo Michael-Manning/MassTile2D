@@ -14,6 +14,8 @@
 #include "TileWorld.h"
 #include "Behaviour.h"
 #include "Collision.h"
+#include "inventory.h"
+#include "Tool.h"
 
 using namespace glm;
 using namespace std;
@@ -47,33 +49,11 @@ static glm::vec2 decellerate(const glm::vec2& A, const glm::vec2& B) {
 	return result;
 }
 
+// treat as private to player
+extern std::unique_ptr<Tool> heldTool;
 
-//struct serializableProperty {
-//	
-//	enum class serializableType {
-//		INT,
-//		FLOAT
-//	};
-//
-//	serializableType type;
-//	std::string name;
-//	void* value;
-//};
-//
-//
-//class serializable {
-//	virtual std::vector<serializableProperty> getProperties() = 0;
-//};
-//
-//class myClass : public serializable{
-//
-//	int myNumber;
-//	float myFloat;
-//
-//	// usage somthing like this. Should expand to an implimentation of getProperties
-//	// PROPERTY_EXPORT({serializableType::INT, myNumber}, {serializableType::INT, myFloat});
-//};
 
+// eventually should not be part of the behaviour ecs system
 
 class Player : public Behaviour {
 
@@ -81,21 +61,21 @@ class Player : public Behaviour {
 public:
 
 	BEHAVIOUR_CONSTUCTOR(Player) {
-	
+
 	}
 	BEHAVIOUR_CLONE(Player)
 
-	//std::string GetEditorName() override { // deprecate
-	//	return "Player";
-	//};
+		//std::string GetEditorName() override { // deprecate
+		//	return "Player";
+		//};
 
-	//uint32_t getBehaviorHash() const override {
-	//	return cHash("Player");
-	//};
+		//uint32_t getBehaviorHash() const override {
+		//	return cHash("Player");
+		//};
 
 
-	// settings
-	const float groundAccel = 30.0f;
+		// settings
+		const float groundAccel = 30.0f;
 	const float airAccel = 20.0f;
 	const float topMoveSpeed = 7.0f; // max speed achieved through self movement
 	const float terminalVelocity = 12.0f; // maximum speed achieved through gravity acceleration
@@ -110,6 +90,27 @@ public:
 
 	float facingX = 1.0f;;
 
+	ItemStack* selectedItemStack = nullptr;
+	void SetSelectedItem(ItemStack* selectedItem) {
+
+		this->selectedItemStack = selectedItem;
+
+		if (selectedItem == nullptr) {
+			heldTool = nullptr;
+			return;
+		}
+
+		auto base = itemLibrary.GetItem(selectedItem->item).type;
+		if (base == ItemBase::Type::Tool) {
+			heldTool = ToolFactoryMap.at(selectedItem->item)();
+		}
+		else {
+			heldTool = nullptr;
+		}
+		/*else if (base == ItemBase::Type::Block) {
+
+		}*/
+	}
 
 	bool queryTile(vec2 pos) {
 		int tileX = pos.x / tileWorldSize + mapW / 2;
@@ -117,11 +118,11 @@ public:
 
 		if (tileX > 0 && tileX < mapW && tileY > 0 && tileY < mapH) {
 
-			tileY = mapH - tileY - 1;
+			//tileY = mapH - tileY - 1;
 
 			blockID block = global::tileWorld->getTile(tileX, tileY);
 
-			return block != Tiles::Air;
+			return block != Blocks::Air;
 		}
 		return false;
 	}
@@ -141,7 +142,7 @@ public:
 
 	SpriteRenderer* renderer;
 
-	vector<vec2> fanPoints;
+	//	vector<vec2> fanPoints;
 
 	vector<vec2> tpoints;
 	float sx = 0;
@@ -167,7 +168,7 @@ public:
 
 		global::player = this;
 
-		fanPoints = CreateTriangleFan(-0.5f, 0.5f, 4, 1.5f, vec2(0.0));
+		//fanPoints = CreateTriangleFan(-0.5f, 0.5f, 4, 1.5f, vec2(0.0));
 	};
 
 	float animationTimer = 0;
@@ -207,7 +208,7 @@ public:
 
 		if (left && !right)
 			facingX = -1;
-		else if(!left &&  right)
+		else if (!left && right)
 			facingX = 1;
 
 		if (left && !right && !leftCast) {
@@ -428,21 +429,63 @@ public:
 			}
 		}
 
-		for (auto& p : fanPoints)
-		{
-			debugTriangles.push_back(p * facingX + transform->position);
+		//for (auto& p : fanPoints)
+		//{
+		//	debugTriangles.push_back(p * facingX + transform->position);
+		//}
+
+		//if (input->getMouseBtnDown(MouseBtn::Left)) {
+
+		//	std::vector<glm::vec2> swordTriangles;
+		//	swordTriangles.reserve(fanPoints.size());
+		//	for (auto& p : fanPoints)
+		//	{
+		//		swordTriangles.push_back(p * facingX + transform->position);
+		//	}
+
+		//	damageEnemiesTriangles(swordTriangles, 10.0f, 5);
+		//}
+
+
+		if (heldTool != nullptr) {
+
+			Tool::PlayerCtx ctx{
+			.position = transform->position,
+			.facingX = facingX
+			};
+
+			heldTool->Update(ctx);
 		}
+		else if (selectedItemStack != nullptr && selectedItemStack->count > 0) {
 
-		if (input->getMouseBtnDown(MouseBtn::Left)) {
+			const auto& base = itemLibrary.GetItem(selectedItemStack->item);
+			if (base.type == ItemBase::Type::Block) {
 
-			std::vector<glm::vec2> swordTriangles;
-			swordTriangles.reserve(fanPoints.size());
-			for (auto& p : fanPoints)
-			{
-				swordTriangles.push_back(p * facingX + transform->position);
+				if (input->getMouseBtn(MouseBtn::Left)) {
+					glm::ivec2 mouseTile = GetMouseTile();
+
+					if (global::tileWorld->getTile(mouseTile) == Blocks::Air) {
+
+						// make sure there's an adjacent block
+						bool adjacent = false;
+						adjacent |= global::tileWorld->getTile(mouseTile + glm::ivec2(0, 1)) != Blocks::Air;
+						adjacent |= global::tileWorld->getTile(mouseTile + glm::ivec2(0, -1)) != Blocks::Air;
+						adjacent |= global::tileWorld->getTile(mouseTile + glm::ivec2(1, 0)) != Blocks::Air;
+						adjacent |= global::tileWorld->getTile(mouseTile + glm::ivec2(-1, 0)) != Blocks::Air;
+
+						if (adjacent) {
+
+							global::tileWorld->setTile(mouseTile, GetFloatingTile(itemLibrary.GetBlock(selectedItemStack->item)));
+							UpdateTextureVariations(mouseTile);
+
+							selectedItemStack->count--;
+							if (selectedItemStack->count == 0) {
+								selectedItemStack = nullptr;
+							}
+						}
+					}
+				}
 			}
-
-			damageEnemiesTriangles(swordTriangles, 10.0f, 5);
 		}
 	};
 
