@@ -6,7 +6,7 @@ projDir = root_directory = os.path.dirname(os.path.dirname(current_directory))
 assetSrcDir = os.path.join(os.path.join(projDir, "data"), "Assets")
 headerDstDir = os.path.join(projDir, "MyGame")
 
-srcCSVs = ["Tools.csv", "Consumables.csv", "Blocks.csv"]
+srcCSVs = ["Tools.csv", "Consumables.csv", "Blocks.csv", "MapEntities.csv"]
 
 outHeaderName = "ItemIDs.h"
 

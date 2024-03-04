@@ -12,3 +12,4 @@ constexpr itemID grass_ItemID = 1;
 constexpr itemID dirt_ItemID = 2;
 constexpr itemID stone_ItemID = 3;
 constexpr itemID iron_ItemID = 4;
+constexpr itemID Chest_ItemID = 400;
