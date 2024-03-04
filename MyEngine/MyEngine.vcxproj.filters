@@ -329,6 +329,9 @@
     <ClInclude Include="ColoredTrianglesPL.h">
       <Filter>Source Files\vulkan\piplines</Filter>
     </ClInclude>
+    <ClInclude Include="Camera.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="notes.txt" />

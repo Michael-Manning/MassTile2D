@@ -12,6 +12,7 @@
 
 ItemLibrary itemLibrary;
 
+#if false
 void ItemLibrary::PopulateTools(std::string filepath)
 {
 	io::CSVReader<6> in(filepath);
@@ -78,7 +79,7 @@ void ItemLibrary::PopulateBlocks(std::string filepath) {
 		blockItemLookup.insert({ block, ID });
 	}
 }
-
+#endif
 
 namespace Inventory {
 

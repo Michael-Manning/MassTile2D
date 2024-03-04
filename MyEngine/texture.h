@@ -19,3 +19,8 @@ struct Texture {
 
 	std::optional<vk::DescriptorSet> imTexture;
 };
+
+enum class FilterMode {
+	Nearest,
+	Linear
+};

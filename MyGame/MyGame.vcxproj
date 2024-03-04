@@ -335,6 +335,7 @@
     <ClCompile Include="GameUI.cpp" />
     <ClCompile Include="global.cpp" />
     <ClCompile Include="Inventory.cpp" />
+    <ClCompile Include="ItemIDs.cpp" />
     <ClCompile Include="Menus.cpp" />
     <ClCompile Include="MyGame.cpp" />
     <ClCompile Include="Player.cpp" />

@@ -4,5 +4,15 @@
 			"path": "."
 		}
    ],
-   "settings": {}
+   "settings": {
+      "files.associations": {
+         "memory": "cpp",
+         "optional": "cpp",
+         "system_error": "cpp",
+         "thread": "cpp",
+         "type_traits": "cpp",
+         "vector": "cpp",
+         "xstring": "cpp"
+      }
+   }
 }

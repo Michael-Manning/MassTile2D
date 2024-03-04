@@ -16,15 +16,37 @@
 constexpr itemID NULL_itemID = 0;
 constexpr itemID MAX_itemID = 300;
 
-class ItemBase;
+struct ItemBase
+{
+	enum class Type {
+		Empty = 0,
+		Tool,
+		Block,
+		Consumable,
+	};
+
+	const itemID ID = NULL_itemID;
+	const Type type = Type::Empty;
+	const std::string name = "";
+	const std::string description = "";
+	const int maxStack = 0;
+	const spriteID sprite = 0;
+	const int atlasIndex = 0;
+
+	ItemBase(itemID ID, Type type, std::string name, std::string description, int maxStack, spriteID sprite, int atlasIndex) :
+		ID(ID), type(type), name(name), description(description), maxStack(maxStack), sprite(sprite), atlasIndex(atlasIndex) {}
+};
+
 
 class ItemLibrary {
 
 public:
 
-	ItemLibrary() {
+	/*ItemLibrary() {
 		itemBaseLookup.resize(MAX_itemID);
-	}
+	}*/
+
+	ItemLibrary();
 
 	void PopulateTools(std::string filepath);
 	void PopulateConsumables(std::string filepath);
@@ -43,7 +65,7 @@ public:
 
 private:
 	//robin_hood::unordered_flat_map<itemID, ItemBase> itemBaseLookup;
-	std::vector<ItemBase> itemBaseLookup;
+	const std::vector<ItemBase> itemBaseLookup;
 
 	robin_hood::unordered_flat_map<itemID, blockID> blockLookup;
 	robin_hood::unordered_flat_map<blockID, itemID> blockItemLookup;
@@ -51,23 +73,6 @@ private:
 };
 
 extern ItemLibrary itemLibrary;
-
-struct ItemBase
-{
-	enum class Type {
-		Empty = 0,
-		Tool,
-		Block,
-		Consumable,
-	};
-
-	itemID ID = NULL_itemID;
-	Type type = Type::Empty;
-	std::string name = "";
-	std::string description = "";
-	int maxStack = 0;
-	int inventorySpriteAtlasIndex = -1;
-};
 
 struct ItemStack
 {

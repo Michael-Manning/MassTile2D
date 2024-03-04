@@ -63,6 +63,9 @@
     <ClCompile Include="Tool.cpp">
       <Filter>Source Files\Items</Filter>
     </ClCompile>
+    <ClCompile Include="ItemIDs.cpp">
+      <Filter>Source Files\Items</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CopyFileToFolders Include="..\lib\FastNoise2\lib\FastNoiseD.dll">

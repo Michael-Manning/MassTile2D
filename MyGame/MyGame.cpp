@@ -46,6 +46,7 @@
 #include "Menus.h"
 #include "GameUI.h"
 #include "Behaviour.h"
+#include "Camera.h"
 
 #include "Benchmarking.h"
 #include "Collision.h"
@@ -486,9 +487,9 @@ int main() {
 	//auto ent = scene->CreateEntity();
 	//scene->DeleteEntity(ent->ID, false);
 
-	itemLibrary.PopulateTools(AssetDirectories.assetDir + "Tools.csv");
-	itemLibrary.PopulateConsumables(AssetDirectories.assetDir + "Consumables.csv");
-	itemLibrary.PopulateBlocks(AssetDirectories.assetDir + "Blocks.csv");
+	//itemLibrary.PopulateTools(AssetDirectories.assetDir + "Tools.csv");
+	//itemLibrary.PopulateConsumables(AssetDirectories.assetDir + "Consumables.csv");
+	//itemLibrary.PopulateBlocks(AssetDirectories.assetDir + "Blocks.csv");
 
 	global::playerInventory.slots[4] = ItemStack(
 		100,

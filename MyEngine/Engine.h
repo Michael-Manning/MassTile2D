@@ -21,6 +21,7 @@
 #include "IDGenerator.h"
 #include "typedefs.h"
 #include "Physics.h"
+#include "Camera.h"
 
 #include "imgui.h"
 #include "imgui_impl_glfw.h"

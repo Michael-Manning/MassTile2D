@@ -10,6 +10,14 @@ srcCSVs = ["Tools.csv", "Consumables.csv", "Blocks.csv", "MapEntities.csv"]
 
 outHeaderName = "ItemIDs.h"
 
+
+import hash_extension
+
+hashed_value = hash_extension.hash_string("demon.png")
+print(hashed_value)
+hashed_value = hash_extension.hash_string("demon")
+print(hashed_value)
+
 # Function to read CSV and extract required data
 def read_csv_and_extract_data(file_name):
     data = []
