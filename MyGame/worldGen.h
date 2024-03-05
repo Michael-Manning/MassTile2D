@@ -66,11 +66,11 @@ private:
 	TileWorld* world;
 };
 
-inline blockID GetBlock(tileID tile) {
+static constexpr blockID GetBlock(tileID tile) {
 	return tile / tilesPerBlock;
 }
 
-inline tileID GetFloatingTile(blockID block){
+static constexpr tileID GetFloatingTile(blockID block){
 	return block* tilesPerBlock;
 }
 

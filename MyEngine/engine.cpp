@@ -110,7 +110,7 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 	app->GetInput()->_onScroll(xoffset, yoffset);
 }
 
-void Engine::createScenePLContext(ScenePipelineContext* ctx, bool allocateTileWorld, vk::RenderPass renderpass, bool transparentFramebufferBlending) {
+void Engine::createScenePLContext(ScenePipelineContext* ctx, bool allocateTileWorld, vk::RenderPass renderpass, vk::RenderPass lightingPass, bool transparentFramebufferBlending) {
 
 	rengine->createMappedBuffer(sizeof(cameraUBO_s), vk::BufferUsageFlagBits::eUniformBuffer, ctx->cameraBuffers);
 
@@ -124,6 +124,7 @@ void Engine::createScenePLContext(ScenePipelineContext* ctx, bool allocateTileWo
 		if (allocateTileWorld) {
 			ctx->lightingPipeline = make_unique<LightingComputePL>(rengine.get(), ctx->worldMap.get());
 			ctx->tilemapPipeline = make_unique<TilemapPL>(rengine.get(), ctx->worldMap.get());
+			ctx->tilemapLightRasterPipeline = make_unique<TilemapLightRasterPL>(rengine.get(), ctx->worldMap.get());
 		}
 		ctx->texturePipeline = make_unique<TexturedQuadPL>(rengine.get());
 		ctx->colorPipeline = make_unique<ColoredQuadPL>(rengine.get());
@@ -138,9 +139,7 @@ void Engine::createScenePLContext(ScenePipelineContext* ctx, bool allocateTileWo
 	ctx->colorPipeline->CreateInstancingBuffer();
 	ctx->textPipeline->createSSBOBuffer();
 
-	{
 
-	}
 	{
 		vector<uint8_t> vert, frag;
 		assetManager->LoadShaderFile("color_vert.spv", vert);
@@ -171,6 +170,12 @@ void Engine::createScenePLContext(ScenePipelineContext* ctx, bool allocateTileWo
 			assetManager->LoadShaderFile("tilemap_vert.spv", vert);
 			assetManager->LoadShaderFile("tilemap_frag.spv", frag);
 			ctx->tilemapPipeline->CreateGraphicsPipeline(vert, frag, renderpass, &GlobalTextureDesc, ctx->cameraBuffers);
+		}
+		{
+			vector<uint8_t> vert, frag;
+			assetManager->LoadShaderFile("tilemapLightRaster_vert.spv", vert);
+			assetManager->LoadShaderFile("tilemapLightRaster_frag.spv", frag);
+			ctx->tilemapLightRasterPipeline->CreateGraphicsPipeline(vert, frag, lightingPass, &GlobalTextureDesc, ctx->cameraBuffers);
 		}
 	}
 	{
@@ -313,9 +318,10 @@ void Engine::ApplyNewVideoSettings(const VideoSettings settings) {
 	requestedSettings = settings;
 }
 
-void Engine::recordSceneContextGraphics(const ScenePipelineContext& ctx, framebufferID framebuffer, std::shared_ptr<Scene> scene, const Camera& camera, vk::CommandBuffer& cmdBuffer) {
+void Engine::recordSceneContextGraphics(const ScenePipelineContext& ctx, framebufferID framebuffer, framebufferID lightingPass, std::shared_ptr<Scene> scene, const Camera& camera, vk::CommandBuffer& cmdBuffer) {
 
 	auto fb = resourceManager->GetFramebuffer(framebuffer);
+	auto lightingPass_fb = resourceManager->GetFramebuffer(lightingPass);
 
 	// update camera transform for scene
 	{
@@ -349,14 +355,24 @@ void Engine::recordSceneContextGraphics(const ScenePipelineContext& ctx, framebu
 		cmdBuffer.bindIndexBuffer(quadMeshBuffer.indexBuffer, 0, vk::IndexType::eUint16);
 	}
 
-	rengine->beginRenderpass(fb, cmdBuffer);
-
-	// tilemap
+	// tile map lighting pass
 	if (ctx.tilemapPipeline != nullptr)
 	{
 		ZoneScopedN("tilemap PL");
-		ctx.tilemapPipeline->recordCommandBuffer(cmdBuffer, ctx.tilemapTextureAtlas);
+		rengine->beginRenderpass(lightingPass_fb, cmdBuffer);
+		ctx.tilemapLightRasterPipeline->recordCommandBuffer(cmdBuffer, ctx.tilemapTextureAtlas);
+		cmdBuffer.endRenderPass();
+		rengine->insertFramebufferTransitionBarrier(cmdBuffer, lightingPass_fb);
 	}
+
+	rengine->beginRenderpass(fb, cmdBuffer);
+
+	// tilemap
+	//if (ctx.tilemapPipeline != nullptr)
+	//{
+	//	ZoneScopedN("tilemap PL");
+	//	ctx.tilemapPipeline->recordCommandBuffer(cmdBuffer, ctx.tilemapTextureAtlas);
+	//}
 
 	// Textured quad
 	{
@@ -768,7 +784,7 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 		resourceChangeFlags->ClearTexturesAdded();
 		resourceChangeFlags->ClearTextureFilterschanged();
 
-		if(textureDescriptorDirtyFlags[rengine->currentFrame])
+		if (textureDescriptorDirtyFlags[rengine->currentFrame])
 		{
 			std::vector<int> indexes;
 			std::vector <const Texture*> textures;
@@ -799,7 +815,13 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 
 	for (auto& ctx : sceneRenderJobs)
 	{
-		recordSceneContextGraphics(sceneRenderContextMap.find(ctx.sceneRenderCtxID)->second.pl, sceneRenderContextMap.find(ctx.sceneRenderCtxID)->second.fb, ctx.scene, ctx.camera, cmdBuffer);
+		recordSceneContextGraphics(
+			sceneRenderContextMap.find(ctx.sceneRenderCtxID)->second.pl, 
+			sceneRenderContextMap.find(ctx.sceneRenderCtxID)->second.fb, 
+			sceneRenderContextMap.find(ctx.sceneRenderCtxID)->second.lightingBuffer, 
+			ctx.scene, 
+			ctx.camera, 
+			cmdBuffer);
 	}
 
 	// we have to wait for the previous frame to finish presenting so we can determine what image the

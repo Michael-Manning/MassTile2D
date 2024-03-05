@@ -62,6 +62,7 @@ struct ScenePipelineContext {
 	std::unique_ptr<LightingComputePL> lightingPipeline = nullptr;
 
 	std::unique_ptr<TilemapPL> tilemapPipeline = nullptr;
+	std::unique_ptr<TilemapLightRasterPL> tilemapLightRasterPipeline = nullptr;
 	std::unique_ptr<ColoredQuadPL> colorPipeline = nullptr;
 	std::unique_ptr<TexturedQuadPL> texturePipeline = nullptr;
 	std::unique_ptr<TextPL> textPipeline = nullptr;
@@ -343,8 +344,14 @@ public:
 		sceneRenderContextMap[id] = {};
 
 		sceneRenderContextMap.find(id)->second.fb = fbID;
+		sceneRenderContextMap.at(id).lightingBuffer = resourceManager->CreateFramebuffer(size, clearColor, lightingPassFormat);
 
-		createScenePLContext(&sceneRenderContextMap.find(id)->second.pl, allocateTileWorld, fb->renderpass, transparentFramebufferBlending);
+		createScenePLContext(
+			&sceneRenderContextMap.find(id)->second.pl, 
+			allocateTileWorld, 
+			fb->renderpass, 
+			resourceManager->GetFramebuffer(sceneRenderContextMap.at(id).lightingBuffer)->renderpass,
+			transparentFramebufferBlending);
 
 		return id;
 	}
@@ -380,6 +387,7 @@ public:
 
 private:
 
+	const vk::Format lightingPassFormat = vk::Format::eR16Unorm; //vk::Format::eR16Unorm;
 	
 	GlobalImageDescriptor GlobalTextureDesc;
 	std::array<bool, FRAMES_IN_FLIGHT> textureDescriptorDirtyFlags = { false, false };
@@ -404,6 +412,7 @@ private:
 	struct sceneFB_PL {
 		framebufferID fb;
 		ScenePipelineContext pl;
+		framebufferID lightingBuffer;
 	};
 	std::unordered_map <sceneRenderContextID, sceneFB_PL> sceneRenderContextMap;
 
@@ -419,9 +428,9 @@ private:
 
 	std::array<ComponentResourceToken, MAX_PARTICLE_SYSTEMS_LARGE> particleSystemResourceTokens;
 
-	void createScenePLContext(ScenePipelineContext* ctx, bool allocateTileWorld, vk::RenderPass renderpass, bool transparentFramebufferBlending);
+	void createScenePLContext(ScenePipelineContext* ctx, bool allocateTileWorld, vk::RenderPass renderpass, vk::RenderPass lightingPass, bool transparentFramebufferBlending);
 
-	void recordSceneContextGraphics(const ScenePipelineContext& ctx, framebufferID framebuffer, std::shared_ptr<Scene> scene, const Camera& camera, vk::CommandBuffer& cmdBuffer);
+	void recordSceneContextGraphics(const ScenePipelineContext& ctx, framebufferID framebuffer, framebufferID lightingPass, std::shared_ptr<Scene> scene, const Camera& camera, vk::CommandBuffer& cmdBuffer);
 
 	void bindQuadMesh(vk::CommandBuffer cmdBuffer) {
 		vk::Buffer vertexBuffers[] = { quadMeshBuffer.vertexBuffer };

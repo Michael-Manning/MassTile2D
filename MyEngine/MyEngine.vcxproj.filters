@@ -144,6 +144,9 @@
     <ClCompile Include="Sprite.cpp">
       <Filter>Source Files\Engine\ECS\Assets</Filter>
     </ClCompile>
+    <ClCompile Include="TilemapLightRasterPL.cpp">
+      <Filter>Source Files\vulkan\piplines</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pipeline.h">
@@ -331,6 +334,9 @@
     </ClInclude>
     <ClInclude Include="Camera.h">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TilemapLightRasterPL.h">
+      <Filter>Source Files\vulkan\piplines</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

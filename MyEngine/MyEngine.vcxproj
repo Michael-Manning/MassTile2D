@@ -374,6 +374,7 @@
     <ClCompile Include="Physics.cpp" />
     <ClCompile Include="pipeline.cpp" />
     <ClCompile Include="Scene.cpp" />
+    <ClCompile Include="TilemapLightRasterPL.cpp" />
     <ClCompile Include="tilemapPL.cpp" />
     <ClCompile Include="TracyClient.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
@@ -433,6 +434,7 @@
     <ClInclude Include="serialization.h" />
     <ClInclude Include="Sprite.h" />
     <ClInclude Include="SpriteRenderer.h" />
+    <ClInclude Include="TilemapLightRasterPL.h" />
     <ClInclude Include="tilemapPL.h" />
     <ClInclude Include="TileWorld.h" />
     <ClInclude Include="Transform.h" />

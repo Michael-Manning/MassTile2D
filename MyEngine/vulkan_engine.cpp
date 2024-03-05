@@ -747,7 +747,7 @@ void VKEngine::freeTexture(Texture& texture) {
 }
 
 // Does not allocate texture pointers! Must provide valid texture pointers
-void VKEngine::CreateDoubleFrameBuffer(glm::ivec2 size, DoubleFrameBufferContext& dfb, const ThreadContext& context, vec4 clearColor) {
+void VKEngine::CreateDoubleFrameBuffer(glm::ivec2 size, DoubleFrameBufferContext& dfb, const ThreadContext& context, vec4 clearColor, vk::Format format) {
 
 	for (uint32_t i = 0; i < FRAMES_IN_FLIGHT; i++) {
 		assert(dfb.textures[i] != nullptr);
@@ -766,7 +766,7 @@ void VKEngine::CreateDoubleFrameBuffer(glm::ivec2 size, DoubleFrameBufferContext
 	// images
 	for (uint32_t i = 0; i < FRAMES_IN_FLIGHT; i++) {
 		createImage(size.x, size.y,
-			framebufferImageFormat,
+			format,
 			vk::ImageTiling::eOptimal,
 			vk::ImageUsageFlagBits::eTransferDst |
 			vk::ImageUsageFlagBits::eSampled |
@@ -779,13 +779,13 @@ void VKEngine::CreateDoubleFrameBuffer(glm::ivec2 size, DoubleFrameBufferContext
 		dfb.textures[i]->resolutionY = size.y;
 
 		vk::CommandBuffer cmdBuffer = beginSingleTimeCommands_gfx(context);
-		transitionImageLayout(cmdBuffer, dfb.textures[i]->textureImage, framebufferImageFormat, vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal);
+		transitionImageLayout(cmdBuffer, dfb.textures[i]->textureImage, format, vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal);
 		endSingleTimeCommands_gfx(cmdBuffer, context);
 	}
 
 	// image views
 	for (uint32_t i = 0; i < FRAMES_IN_FLIGHT; i++) {
-		dfb.textures[i]->imageView = createImageView(dfb.textures[i]->textureImage, framebufferImageFormat);
+		dfb.textures[i]->imageView = createImageView(dfb.textures[i]->textureImage, format);
 	}
 
 	// samplers
@@ -799,7 +799,7 @@ void VKEngine::CreateDoubleFrameBuffer(glm::ivec2 size, DoubleFrameBufferContext
 	}
 
 	// render pass
-	createRenderPass(dfb.renderpass, framebufferImageFormat, vk::ImageLayout::eUndefined, vk::ImageLayout::eShaderReadOnlyOptimal, 1);
+	createRenderPass(dfb.renderpass, format, vk::ImageLayout::eUndefined, vk::ImageLayout::eShaderReadOnlyOptimal, 1);
 
 	// framebuffers
 	for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++) {
@@ -835,7 +835,7 @@ void VKEngine::RecreateFramebuffer(glm::ivec2 size, DoubleFrameBufferContext* df
 
 	// image
 	createImage(size.x, size.y,
-		framebufferImageFormat,
+		dfb->format,
 		vk::ImageTiling::eOptimal,
 		vk::ImageUsageFlagBits::eTransferDst |
 		vk::ImageUsageFlagBits::eSampled |
@@ -848,11 +848,11 @@ void VKEngine::RecreateFramebuffer(glm::ivec2 size, DoubleFrameBufferContext* df
 	dfb->textures[index]->resolutionY = size.y;
 
 	vk::CommandBuffer cmdBuffer = beginSingleTimeCommands_gfx(context);
-	transitionImageLayout(cmdBuffer, dfb->textures[index]->textureImage, framebufferImageFormat, vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal);
+	transitionImageLayout(cmdBuffer, dfb->textures[index]->textureImage, dfb->format, vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal);
 	endSingleTimeCommands_gfx(cmdBuffer, context);
 
 	// image view
-	dfb->textures[index]->imageView = createImageView(dfb->textures[index]->textureImage, framebufferImageFormat);
+	dfb->textures[index]->imageView = createImageView(dfb->textures[index]->textureImage, dfb->format);
 
 	// sampler
 	dfb->textures[index]->sampler = textureSampler_linear;

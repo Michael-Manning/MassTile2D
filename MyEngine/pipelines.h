@@ -3,6 +3,7 @@
 #include "coloredQuadPL.h"
 #include "texturedQuadPL.h"
 #include "tilemapPL.h"
+#include "TilemapLightRasterPL.h"
 #include "LightingComputePL.h"
 #include "TextPL.h"
 #include "ParticleSystemPL.h"

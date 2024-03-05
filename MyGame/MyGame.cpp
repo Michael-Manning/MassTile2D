@@ -51,6 +51,7 @@
 #include "Benchmarking.h"
 #include "Collision.h"
 #include "Inventory.h"
+#include "ItemIDs.h"
 
 #include "player.h"
 #include "demon.h"
@@ -405,8 +406,8 @@ int main() {
 	global::SetEngine(engine.get());
 
 	scene->name = "main scene";
-	//sceneRenderCtx = engine->CreateSceneRenderContext(engine->getWindowSize(), useTileWorld, vec4(0, 0, 0, 1));
-	sceneRenderCtx = engine->CreateSceneRenderContext(engine->getWindowSize(), useTileWorld, { 0.2, 0.3, 1.0, 1 });
+	sceneRenderCtx = engine->CreateSceneRenderContext(engine->getWindowSize(), useTileWorld, vec4(0, 0, 0, 1));
+	//sceneRenderCtx = engine->CreateSceneRenderContext(engine->getWindowSize(), useTileWorld, { 0.2, 0.3, 1.0, 1 });
 
 	// load all resources 
 	engine->assetManager->LoadAllSprites();
@@ -415,7 +416,7 @@ int main() {
 
 
 	engine->assetManager->LoadScene("game_test");
-	scene = engine->assetManager->GetScene("game_test");
+	//scene = engine->assetManager->GetScene("game_test");
 
 	global::mainScene = scene.get();
 
@@ -492,28 +493,33 @@ int main() {
 	//itemLibrary.PopulateBlocks(AssetDirectories.assetDir + "Blocks.csv");
 
 	global::playerInventory.slots[4] = ItemStack(
-		100,
+		Sword_ItemID,
 		1
 	);
 	global::playerInventory.slots[3] = ItemStack(
-		102,
+		Pickaxe_ItemID,
 		1
 	);
 	global::playerInventory.slots[15] = ItemStack(
-		101,
+		Bow_ItemID,
 		1
 	);
 	global::playerInventory.slots[16] = ItemStack(
-		200,
+		Apple_ItemID,
 		40
 	);
 	global::playerInventory.slots[33] = ItemStack(
-		200,
+		Apple_ItemID,
 		9
 	);
 	global::playerInventory.slots[34] = ItemStack(
-		200,
+		Apple_ItemID,
 		49
+	);
+
+	global::playerInventory.slots[36] = ItemStack(
+		Chest_ItemID,
+		1
 	);
 
 	if (useTileWorld) {
@@ -581,7 +587,7 @@ int main() {
 
 			engine->addScreenSpaceText(UI.smallfont, { 4, 4 }, vec4(1.0), "fps: %d", (int)engine->_getAverageFramerate());
 
-			UI::DoUI(uiState);
+			//UI::DoUI(uiState);
 
 
 

@@ -142,7 +142,7 @@ glm::ivec2 ResourceManager::GetImageFileResolution(std::string filepath)
 	return glm::ivec2(width, height);
 }
 
-framebufferID ResourceManager::CreateFramebuffer(glm::ivec2 size, glm::vec4 clearColor) {
+framebufferID ResourceManager::CreateFramebuffer(glm::ivec2 size, glm::vec4 clearColor, vk::Format format) {
 	framebufferID id = fbIDGenerator.GenerateID();
 	DoubleFrameBufferContext dfb;
 
@@ -157,7 +157,7 @@ framebufferID ResourceManager::CreateFramebuffer(glm::ivec2 size, glm::vec4 clea
 		dfb.textures[i] = GetTexture(id);
 	}
 
-	rengine->CreateDoubleFrameBuffer(size, dfb, rengine->defaultThreadContext, clearColor);
+	rengine->CreateDoubleFrameBuffer(size, dfb, rengine->defaultThreadContext, clearColor, format);
 
 
 	changeFlags->_flagTexturesAdded();

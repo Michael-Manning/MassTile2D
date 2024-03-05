@@ -23,6 +23,7 @@ struct ItemBase
 		Tool,
 		Block,
 		Consumable,
+		MapEntity
 	};
 
 	const itemID ID = NULL_itemID;
@@ -32,6 +33,8 @@ struct ItemBase
 	const int maxStack = 0;
 	const spriteID sprite = 0;
 	const int atlasIndex = 0;
+
+	ItemBase() {}; // allow empty item entries
 
 	ItemBase(itemID ID, Type type, std::string name, std::string description, int maxStack, spriteID sprite, int atlasIndex) :
 		ID(ID), type(type), name(name), description(description), maxStack(maxStack), sprite(sprite), atlasIndex(atlasIndex) {}

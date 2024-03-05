@@ -172,6 +172,8 @@ public:
 		maxDirtyIndex = chunk > maxDirtyIndex ? chunk : maxDirtyIndex;
 
 
+		// NOTE: Should only need to update 4 chunks depending on the quadrant within the chunk
+		// which the tile was set. Same for moving torches if the quadrant it moved from is the same as it's destination
 		// update lighting
 		for (int i = -1; i < 2; i++)
 		{

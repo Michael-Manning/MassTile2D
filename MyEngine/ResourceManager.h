@@ -150,7 +150,7 @@ public:
 
 	glm::ivec2 GetImageFileResolution(std::string filepath);
 
-	framebufferID CreateFramebuffer(glm::ivec2 size, glm::vec4 clearColor);
+	framebufferID CreateFramebuffer(glm::ivec2 size, glm::vec4 clearColor, vk::Format format = framebufferImageFormat);
 	DoubleFrameBufferContext* GetFramebuffer(framebufferID id);
 	void ResizeFramebuffer(framebufferID framebuffer, glm::ivec2 size);
 	void HandleFramebufferRecreation();

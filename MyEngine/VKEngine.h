@@ -77,8 +77,10 @@ struct DeviceContext {
 };
 
 const vk::Format framebufferImageFormat = vk::Format::eR8G8B8A8Srgb;
+
 struct DoubleFrameBufferContext {
 	vk::RenderPass renderpass;
+	vk::Format format;
 	std::array<vk::Extent2D, FRAMES_IN_FLIGHT> extents;
 	std::array<vk::Framebuffer, FRAMES_IN_FLIGHT> framebuffers;
 	std::array<Texture*, FRAMES_IN_FLIGHT> textures = { nullptr, nullptr };
@@ -228,7 +230,7 @@ public:
 	void beginSwapchainRenderpass(uint32_t imageIndex, vk::CommandBuffer cmdBuffer, glm::vec4 clearColor);
 	void beginRenderpass(DoubleFrameBufferContext* framebufferContext, vk::CommandBuffer cmdBuffer);
 
-	void CreateDoubleFrameBuffer(glm::ivec2 size, DoubleFrameBufferContext& dfb, const ThreadContext& context, glm::vec4 clearColor);
+	void CreateDoubleFrameBuffer(glm::ivec2 size, DoubleFrameBufferContext& dfb, const ThreadContext& context, glm::vec4 clearColor, vk::Format format);
 	// effectively resizes the framebuffer, modifying the vulkan objects of the specified index
 	void RecreateFramebuffer(glm::ivec2 size, DoubleFrameBufferContext* dfb, int index, const ThreadContext& context);
 

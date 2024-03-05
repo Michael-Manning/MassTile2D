@@ -35,17 +35,22 @@ namespace UI {
 	}
 
 	void drawInventorySprite(State& state, vec2 position, const ItemBase& base) {
-		if (base.type == ItemBase::Type::Tool || base.type == ItemBase::Type::Consumable) {
-			//state.engine->addScreenCenteredSpaceTexture("itemSprites", base.inventorySpriteAtlasIndex, position, InvSlotTextureSize);
-			state.engine->addScreenCenteredSpaceTexture(base.sprite, base.atlasIndex, position, InvSlotTextureSize);
-		}
-		else if(base.type == ItemBase::Type::Block){
-			state.engine->addScreenCenteredSpaceTexture(base.sprite, base.atlasIndex, position, InvSlotTextureSize);
-			//state.engine->addScreenCenteredSpaceTexture("tilemapSprites", base.inventorySpriteAtlasIndex, position, InvSlotTextureSize);
-		}
-		else {
-			assert(false);
-		}
+
+		assert(base.type != ItemBase::Type::Empty);
+		state.engine->addScreenCenteredSpaceTexture(base.sprite, base.atlasIndex, position, InvSlotTextureSize);
+		
+		
+		//if (base.type == ItemBase::Type::Tool || base.type == ItemBase::Type::Consumable) {
+		//	//state.engine->addScreenCenteredSpaceTexture("itemSprites", base.inventorySpriteAtlasIndex, position, InvSlotTextureSize);
+		//	//state.engine->addScreenCenteredSpaceTexture(base.sprite, base.atlasIndex, position, InvSlotTextureSize);
+		//}
+		//else if(base.type == ItemBase::Type::Block){
+		//	//state.engine->addScreenCenteredSpaceTexture(base.sprite, base.atlasIndex, position, InvSlotTextureSize);
+		//	//state.engine->addScreenCenteredSpaceTexture("tilemapSprites", base.inventorySpriteAtlasIndex, position, InvSlotTextureSize);
+		//}
+		//else {
+		//	assert(false);
+		//}
 	}
 
 	void HandleMouseInputForSlot(State& state, InventoryContainer* container, int slot) {
