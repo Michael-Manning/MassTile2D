@@ -406,8 +406,8 @@ int main() {
 	global::SetEngine(engine.get());
 
 	scene->name = "main scene";
-	sceneRenderCtx = engine->CreateSceneRenderContext(engine->getWindowSize(), useTileWorld, vec4(0, 0, 0, 1));
-	//sceneRenderCtx = engine->CreateSceneRenderContext(engine->getWindowSize(), useTileWorld, { 0.2, 0.3, 1.0, 1 });
+	//sceneRenderCtx = engine->CreateSceneRenderContext(engine->getWindowSize(), useTileWorld, vec4(0, 0, 0, 1));
+	sceneRenderCtx = engine->CreateSceneRenderContext(engine->getWindowSize(), useTileWorld, { 0.2, 0.3, 1.0, 1 });
 
 	// load all resources 
 	engine->assetManager->LoadAllSprites();
@@ -416,7 +416,7 @@ int main() {
 
 
 	engine->assetManager->LoadScene("game_test");
-	//scene = engine->assetManager->GetScene("game_test");
+	scene = engine->assetManager->GetScene("game_test");
 
 	global::mainScene = scene.get();
 
@@ -587,7 +587,7 @@ int main() {
 
 			engine->addScreenSpaceText(UI.smallfont, { 4, 4 }, vec4(1.0), "fps: %d", (int)engine->_getAverageFramerate());
 
-			//UI::DoUI(uiState);
+			UI::DoUI(uiState);
 
 
 

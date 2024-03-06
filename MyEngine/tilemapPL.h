@@ -31,7 +31,7 @@ public:
 	}
 
 	void CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc, vk::RenderPass& renderTarget, GlobalImageDescriptor* textureDescriptor, MappedDoubleBuffer<cameraUBO_s>& cameradb);
-	void recordCommandBuffer(vk::CommandBuffer commandBuffer, int textureIndex);
+	void recordCommandBuffer(vk::CommandBuffer commandBuffer, int textureIndex, int lightMapIndex);
 
 private:
 

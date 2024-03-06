@@ -32,6 +32,7 @@ using namespace std;
 namespace {
 	struct pushConstant_s{
 		int32_t textureIndex;
+		int32_t lightMapIndex;
 	};
 }
 
@@ -97,7 +98,7 @@ void TilemapPL::CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc, co
 	descriptorManager.buildDescriptorSets();
 }
 
-void TilemapPL::recordCommandBuffer(vk::CommandBuffer commandBuffer, int textureIndex) {
+void TilemapPL::recordCommandBuffer(vk::CommandBuffer commandBuffer, int textureIndex, int lightMapIndex) {
 
 	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, _pipeline);
 
@@ -109,7 +110,10 @@ void TilemapPL::recordCommandBuffer(vk::CommandBuffer commandBuffer, int texture
 	for (auto& i : descriptorManager.builderDescriptorSetsDetails)
 		commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, i.set, 1, &descriptorManager.builderDescriptorSets[i.set][engine->currentFrame], 0, nullptr);
 
-	pushConstant_s pc{ .textureIndex = textureIndex };
+	pushConstant_s pc{
+		.textureIndex = textureIndex,
+		.lightMapIndex = lightMapIndex
+	};
 	commandBuffer.pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(pushConstant_s), &pc);
 
 	{

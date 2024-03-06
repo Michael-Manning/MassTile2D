@@ -1,6 +1,6 @@
 
 Near roadmap:
-- adding textures at runtime, create sprite/font maybe broken.
+- add "use lightmap" feature to editor and link new parameter to drawlist object
 
 - direct GPU map access when doing screen space drawlists breaks synchronization rules. Must go back to buffering a drawlist or flush ranges manually?
 

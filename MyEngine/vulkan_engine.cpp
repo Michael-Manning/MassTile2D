@@ -755,6 +755,7 @@ void VKEngine::CreateDoubleFrameBuffer(glm::ivec2 size, DoubleFrameBufferContext
 
 	dfb.clearColor = clearColor;
 	dfb.targetSize = size;
+	dfb.format = format;
 
 	for (uint32_t i = 0; i < FRAMES_IN_FLIGHT; i++) {
 		dfb.extents[i] = VkExtent2D{

@@ -110,7 +110,7 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 	app->GetInput()->_onScroll(xoffset, yoffset);
 }
 
-void Engine::createScenePLContext(ScenePipelineContext* ctx, bool allocateTileWorld, vk::RenderPass renderpass, vk::RenderPass lightingPass, bool transparentFramebufferBlending) {
+void Engine::createScenePLContext(ScenePipelineContext* ctx, bool allocateTileWorld, vk::RenderPass renderpass, DoubleFrameBufferContext* lightpass, bool transparentFramebufferBlending) {
 
 	rengine->createMappedBuffer(sizeof(cameraUBO_s), vk::BufferUsageFlagBits::eUniformBuffer, ctx->cameraBuffers);
 
@@ -156,7 +156,8 @@ void Engine::createScenePLContext(ScenePipelineContext* ctx, bool allocateTileWo
 		vector<uint8_t> vert, frag;
 		assetManager->LoadShaderFile("texture_vert.spv", vert);
 		assetManager->LoadShaderFile("texture_frag.spv", frag);
-		ctx->texturePipeline->CreateGraphicsPipeline(vert, frag, renderpass, &GlobalTextureDesc, ctx->cameraBuffers);
+		std::array<int, 2> lightmapTextures = { lightpass->textureIDs[0], lightpass->textureIDs[1] };
+		ctx->texturePipeline->CreateGraphicsPipeline(vert, frag, renderpass, &GlobalTextureDesc, ctx->cameraBuffers, lightmapTextures);
 	}
 	if (allocateTileWorld) {
 		{
@@ -175,7 +176,7 @@ void Engine::createScenePLContext(ScenePipelineContext* ctx, bool allocateTileWo
 			vector<uint8_t> vert, frag;
 			assetManager->LoadShaderFile("tilemapLightRaster_vert.spv", vert);
 			assetManager->LoadShaderFile("tilemapLightRaster_frag.spv", frag);
-			ctx->tilemapLightRasterPipeline->CreateGraphicsPipeline(vert, frag, lightingPass, &GlobalTextureDesc, ctx->cameraBuffers);
+			ctx->tilemapLightRasterPipeline->CreateGraphicsPipeline(vert, frag, lightpass->renderpass, &GlobalTextureDesc, ctx->cameraBuffers);
 		}
 	}
 	{
@@ -282,7 +283,8 @@ void Engine::Start(const VideoSettings& initialSettings, AssetManager::AssetPath
 			vector<uint8_t> vert, frag;
 			assetManager->LoadShaderFile("screenSpaceTexture_vert.spv", vert);
 			assetManager->LoadShaderFile("screenSpaceTexture_frag.spv", frag);
-			screenSpaceTexturePipeline->CreateGraphicsPipeline(vert, frag, rengine->swapchainRenderPass, &GlobalTextureDesc, screenSpaceTransformUploader.transferBuffers, true);
+			std::array<int, 2> unused = { 0, 0 };
+			screenSpaceTexturePipeline->CreateGraphicsPipeline(vert, frag, rengine->swapchainRenderPass, &GlobalTextureDesc, screenSpaceTransformUploader.transferBuffers, unused, true);
 			screenSpaceTextureGPUBuffer = screenSpaceTexturePipeline->getUploadMappedBuffer();
 		}
 		{
@@ -368,11 +370,11 @@ void Engine::recordSceneContextGraphics(const ScenePipelineContext& ctx, framebu
 	rengine->beginRenderpass(fb, cmdBuffer);
 
 	// tilemap
-	//if (ctx.tilemapPipeline != nullptr)
-	//{
-	//	ZoneScopedN("tilemap PL");
-	//	ctx.tilemapPipeline->recordCommandBuffer(cmdBuffer, ctx.tilemapTextureAtlas);
-	//}
+	if (ctx.tilemapPipeline != nullptr)
+	{
+		ZoneScopedN("tilemap PL");
+		ctx.tilemapPipeline->recordCommandBuffer(cmdBuffer, ctx.tilemapTextureAtlas, lightingPass_fb->textureIDs[rengine->currentFrame]);
+	}
 
 	// Textured quad
 	{

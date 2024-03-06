@@ -15,7 +15,7 @@ struct ssboObject{
    vec2 translation;
    vec2 scale;
    float rotation;
-
+   int useLightMap;
    int index; // texture index
 };
 

@@ -350,13 +350,17 @@ public:
 			&sceneRenderContextMap.find(id)->second.pl, 
 			allocateTileWorld, 
 			fb->renderpass, 
-			resourceManager->GetFramebuffer(sceneRenderContextMap.at(id).lightingBuffer)->renderpass,
+			resourceManager->GetFramebuffer(sceneRenderContextMap.at(id).lightingBuffer),
 			transparentFramebufferBlending);
 
 		return id;
 	}
 	void ResizeSceneRenderContext(sceneRenderContextID id, glm::ivec2 size) {
-		resourceManager->ResizeFramebuffer(sceneRenderContextMap.find(id)->second.fb, size);
+		auto& ctx = sceneRenderContextMap.at(id);
+		resourceManager->ResizeFramebuffer(ctx.fb, size);
+		if(ctx.pl.worldMap != nullptr)
+			resourceManager->ResizeFramebuffer(ctx.lightingBuffer, size);
+
 	}
 
 	framebufferID GetSceneRenderContextFramebuffer(sceneRenderContextID id) {
@@ -428,7 +432,7 @@ private:
 
 	std::array<ComponentResourceToken, MAX_PARTICLE_SYSTEMS_LARGE> particleSystemResourceTokens;
 
-	void createScenePLContext(ScenePipelineContext* ctx, bool allocateTileWorld, vk::RenderPass renderpass, vk::RenderPass lightingPass, bool transparentFramebufferBlending);
+	void createScenePLContext(ScenePipelineContext* ctx, bool allocateTileWorld, vk::RenderPass renderpass, DoubleFrameBufferContext* lightpass, bool transparentFramebufferBlending);
 
 	void recordSceneContextGraphics(const ScenePipelineContext& ctx, framebufferID framebuffer, framebufferID lightingPass, std::shared_ptr<Scene> scene, const Camera& camera, vk::CommandBuffer& cmdBuffer);
 

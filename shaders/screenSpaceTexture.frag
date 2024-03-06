@@ -7,9 +7,14 @@ struct ssboObject{
    vec2 translation;
    vec2 scale;
    float rotation;
-
+   int useLightMap;
    int index; // texture index
 };
+
+layout(set = 1, binding = 2) uniform LightMapUBO {
+   int lightMapIndex;
+};
+
 
 layout(std140, set = 1, binding = 0) readonly buffer ObjectInstaceBuffer{
 	ssboObject ssboData[];

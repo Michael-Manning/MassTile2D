@@ -15,7 +15,7 @@ struct ssboObject{
    vec2 translation;
    vec2 scale;
    float rotation;
-
+   int useLightMap;
    int index; // texture index
 };
 
@@ -24,6 +24,7 @@ layout(std140, set = 1, binding = 0) readonly buffer ObjectInstaceBuffer{
 };
 
 layout(location = 1) out vec2 uv;
+layout(location = 3) out vec2 screenSpaceUV; 
 layout(location = 2) out flat int instance_index;
 
 mat4 translate(vec2 v) {
@@ -69,4 +70,5 @@ void main() {
 
    instance_index = gl_InstanceIndex;
    uv = vec2(inFragCoord.x, 1.0 - inFragCoord.y);
+   screenSpaceUV = (gl_Position.xy + vec2(1.0)) / 2.0; // Map from [-1, 1] to [0, 1]
 }

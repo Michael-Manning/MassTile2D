@@ -35,17 +35,23 @@ using namespace glm;
 using namespace std;
 
 
-void TexturedQuadPL::CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc, vk::RenderPass& renderTarget, GlobalImageDescriptor* textureDescriptor, MappedDoubleBuffer<cameraUBO_s>& cameradb, bool flipFaces) {
+void TexturedQuadPL::CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc, vk::RenderPass& renderTarget, GlobalImageDescriptor* textureDescriptor, MappedDoubleBuffer<cameraUBO_s>& cameradb, std::array<int, 2>& lightMapTextureIndexes, bool flipFaces) {
 
 	this->textureDescriptor = textureDescriptor;
 
 	engine->createMappedBuffer(sizeof(ssboObjectInstanceData) * TexturedQuadPL_MAX_OBJECTS, vk::BufferUsageFlagBits::eStorageBuffer, ssboMappedDB);
 
+	engine->createMappedBuffer(sizeof(lightMapIndex_UBO), vk::BufferUsageFlagBits::eUniformBuffer, lightmapIndexDB);
+
+	for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++)
+		lightmapIndexDB.buffersMapped[i]->lightMapIndex = lightMapTextureIndexes[i];
+
 	auto shaderStages = createShaderStages(vertexSrc, fragmentSrc);
 
 	descriptorManager.configureDescriptorSets(vector<DescriptorManager::descriptorSetInfo> {
 		DescriptorManager::descriptorSetInfo(1, 1, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eVertex, &cameradb.buffers, cameradb.size),
-		DescriptorManager::descriptorSetInfo(1, 0, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, &ssboMappedDB.buffers, ssboMappedDB.size)
+		DescriptorManager::descriptorSetInfo(1, 0, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, &ssboMappedDB.buffers, ssboMappedDB.size),
+		DescriptorManager::descriptorSetInfo(1, 2, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eFragment, &lightmapIndexDB.buffers, lightmapIndexDB.size)
 	});
 	descriptorManager.buildDescriptorLayouts();
 
