@@ -119,7 +119,7 @@ void SceneData::deserializeJson(nlohmann::json& j, SceneData* sceneData) {
 	}
 	for (auto& e : j["spriteRenderers"]) {
 		entityID entID = e["entityID"];
-		SpriteRenderer r = SpriteRenderer::deserializeJson(e);
+		SpriteRenderer r = SpriteRenderer(e);
 		sceneData->spriteRenderers.emplace(
 			std::piecewise_construct,
 			std::forward_as_tuple(entID),

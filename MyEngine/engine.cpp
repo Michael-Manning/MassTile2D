@@ -398,6 +398,7 @@ void Engine::recordSceneContextGraphics(const ScenePipelineContext& ctx, framebu
 
 				drawObject->uvMin = vec2(0.0f);
 				drawObject->uvMax = vec2(1.0f);
+				drawObject->useLightMap = renderer.useLightMap;
 				drawObject->tex = s->textureID;
 
 				if (entity->HasParent()) {

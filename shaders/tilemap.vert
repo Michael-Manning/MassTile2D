@@ -11,6 +11,7 @@ layout(location = 0) in vec2 inPosition;
 layout(location = 2) in vec2 inFragCoord;
 
 layout(location = 1) out vec2 uv;
+layout(location = 3) out vec2 screenSpaceUV;
 layout(location = 2) out flat int instance_index;
 
 
@@ -57,5 +58,5 @@ void main() {
 
    instance_index = gl_InstanceIndex;
    uv = vec2(1.0 - inFragCoord.x, inFragCoord.y);
-   // uv = vec2(1.0 - inFragCoord.x, 1.0 - inFragCoord.y);
+   screenSpaceUV = (gl_Position.xy + vec2(1.0)) / 2.0; // Map from [-1, 1] to [0, 1]
 }

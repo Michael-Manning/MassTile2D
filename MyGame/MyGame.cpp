@@ -248,6 +248,8 @@ void createTileWorld() {
 
 	engine->setTilemapAtlasTexture(sceneRenderCtx, engine->assetManager->GetSprite("tilemapSprites")->textureID);
 
+	worldMap->FullLightingUpdate();
+
 	global::tileWorld = worldMap;
 }
 
@@ -387,6 +389,7 @@ void worldDebug() {
 
 
 constexpr bool useTileWorld = true;
+bool showLightMapDebug = false;
 
 #ifdef  PUBLISH
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow) {
@@ -483,7 +486,7 @@ int main() {
 	//engine->assetManager->LoadScene("serial_demo");
 	//scene = engine->assetManager->GetScene("serial_demo");
 
-	
+
 
 	//auto ent = scene->CreateEntity();
 	//scene->DeleteEntity(ent->ID, false);
@@ -564,8 +567,15 @@ int main() {
 
 			// draw main scene full screen
 			if (showingEditor == false) {
-				framebufferID fb = engine->GetSceneRenderContextFramebuffer(sceneRenderCtx);
-				engine->addScreenCenteredSpaceFramebufferTexture(fb, engine->getWindowSize() / 2.0f, engine->winH, 0);
+
+				if (showLightMapDebug) {
+					framebufferID fb = engine->_GetSceneRenderContextLightMapBuffer(sceneRenderCtx);
+					engine->addScreenCenteredSpaceFramebufferTexture(fb, engine->getWindowSize() / 2.0f, engine->winH, 0);
+				}
+				else {
+					framebufferID fb = engine->GetSceneRenderContextFramebuffer(sceneRenderCtx);
+					engine->addScreenCenteredSpaceFramebufferTexture(fb, engine->getWindowSize() / 2.0f, engine->winH, 0);
+				}
 			}
 		}
 
@@ -635,11 +645,13 @@ int main() {
 				using namespace ImGui;
 
 				ivec2 tile = GetMouseTile();
+				int chunk = worldMap->GetChunk(tile);
 
 				if (Begin("Debug")) {
 
 					Text("x%d y%d", tile.x, tile.y);
-					Text("chunk: %d", worldMap->GetChunk(tile));
+					Text("chunk: %d", chunk);
+					Checkbox("Lighting debug", &showLightMapDebug);
 
 					if (Button("Save world")) {
 						worldData->Serialize();
@@ -647,6 +659,10 @@ int main() {
 
 					if (Button("Load world")) {
 						worldData->LoadAndInstantiateContents();
+					}
+
+					if (input->getKeyDown('n')) {
+						worldMap->UpdateChunk(chunk);
 					}
 
 					End();

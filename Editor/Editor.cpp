@@ -39,7 +39,7 @@ using namespace glm;
 
 float objectMatrix[16];
 float viewMatrix[16];
-float projectionMatrix[16];
+float projectionMatrix[16];	
 
 namespace {
 
@@ -803,8 +803,8 @@ void Editor::Initialize(Engine* engine, std::shared_ptr<Scene> gameScene, sceneR
 	entityPreviewScene = Scene::MakeScene(engine->assetManager.get()); //make_shared<Scene>(engine->assetManager.get());
 	entityPreviewScene->name = "entity preview scene";
 	entityPrviewFrameSize = vec2(600);
-	entityPreviewsSeneRenderContextID = engine->CreateSceneRenderContext(entityPrviewFrameSize, false, glm::vec4(vec3(0.2), 1.0), false);
-	entityPreviewsSeneRenderContextID = engine->CreateSceneRenderContext(entityPrviewFrameSize, false, glm::vec4(vec3(0.2), 1.0), false);
+	entityPreviewsSeneRenderContextID = engine->CreateSceneRenderContext(entityPrviewFrameSize, false, glm::vec4(vec3(0.2), 1.0), 1.0f, false);
+	//entityPreviewsSeneRenderContextID = engine->CreateSceneRenderContext(entityPrviewFrameSize, false, glm::vec4(vec3(0.2), 1.0), false);
 	entityPreviewFramebuffer = engine->GetSceneRenderContextFramebuffer(entityPreviewsSeneRenderContextID);
 
 	//const auto& pSys = entityPreviewScene->CreateEntity({}, "myEntity");
@@ -1386,6 +1386,8 @@ bool Editor::drawInspector<ColorRenderer>(ColorRenderer& t) {
 
 template<>
 bool Editor::drawInspector<SpriteRenderer>(SpriteRenderer& r) {
+
+	Checkbox("Use light map", &r.useLightMap);
 
 	if (Button("choose asset")) {
 		assetModel = true;

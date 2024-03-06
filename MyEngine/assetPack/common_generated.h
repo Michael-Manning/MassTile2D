@@ -348,23 +348,32 @@ FLATBUFFERS_STRUCT_END(Transform, 20);
 
 FLATBUFFERS_MANUALLY_ALIGNED_STRUCT(4) SpriteRenderer FLATBUFFERS_FINAL_CLASS {
  private:
-  int32_t atlasIndex_;
   uint32_t entityID_;
   uint32_t spriteID_;
+  int32_t atlasIndex_;
+  uint8_t useLightMap_;
+  int8_t padding0__;  int16_t padding1__;
 
  public:
   SpriteRenderer()
-      : atlasIndex_(0),
-        entityID_(0),
-        spriteID_(0) {
+      : entityID_(0),
+        spriteID_(0),
+        atlasIndex_(0),
+        useLightMap_(0),
+        padding0__(0),
+        padding1__(0) {
+    (void)padding0__;
+    (void)padding1__;
   }
-  SpriteRenderer(int32_t _atlasIndex, uint32_t _entityID, uint32_t _spriteID)
-      : atlasIndex_(::flatbuffers::EndianScalar(_atlasIndex)),
-        entityID_(::flatbuffers::EndianScalar(_entityID)),
-        spriteID_(::flatbuffers::EndianScalar(_spriteID)) {
-  }
-  int32_t atlasIndex() const {
-    return ::flatbuffers::EndianScalar(atlasIndex_);
+  SpriteRenderer(uint32_t _entityID, uint32_t _spriteID, int32_t _atlasIndex, bool _useLightMap)
+      : entityID_(::flatbuffers::EndianScalar(_entityID)),
+        spriteID_(::flatbuffers::EndianScalar(_spriteID)),
+        atlasIndex_(::flatbuffers::EndianScalar(_atlasIndex)),
+        useLightMap_(::flatbuffers::EndianScalar(static_cast<uint8_t>(_useLightMap))),
+        padding0__(0),
+        padding1__(0) {
+    (void)padding0__;
+    (void)padding1__;
   }
   uint32_t entityID() const {
     return ::flatbuffers::EndianScalar(entityID_);
@@ -372,8 +381,14 @@ FLATBUFFERS_MANUALLY_ALIGNED_STRUCT(4) SpriteRenderer FLATBUFFERS_FINAL_CLASS {
   uint32_t spriteID() const {
     return ::flatbuffers::EndianScalar(spriteID_);
   }
+  int32_t atlasIndex() const {
+    return ::flatbuffers::EndianScalar(atlasIndex_);
+  }
+  bool useLightMap() const {
+    return ::flatbuffers::EndianScalar(useLightMap_) != 0;
+  }
 };
-FLATBUFFERS_STRUCT_END(SpriteRenderer, 12);
+FLATBUFFERS_STRUCT_END(SpriteRenderer, 16);
 
 FLATBUFFERS_MANUALLY_ALIGNED_STRUCT(4) ColorRenderer FLATBUFFERS_FINAL_CLASS {
  private:

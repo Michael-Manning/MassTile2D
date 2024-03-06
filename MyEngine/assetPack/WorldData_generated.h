@@ -24,16 +24,22 @@ struct WorldDataBuilder;
 struct WorldData FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   typedef WorldDataBuilder Builder;
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
-    VT_CHUNKS = 4
+    VT_CHUNKS = 4,
+    VT_CHUNKINDEX = 6
   };
   const ::flatbuffers::Vector<::flatbuffers::Offset<AssetPack::ChunkData>> *chunks() const {
     return GetPointer<const ::flatbuffers::Vector<::flatbuffers::Offset<AssetPack::ChunkData>> *>(VT_CHUNKS);
+  }
+  const ::flatbuffers::Vector<int32_t> *chunkIndex() const {
+    return GetPointer<const ::flatbuffers::Vector<int32_t> *>(VT_CHUNKINDEX);
   }
   bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_CHUNKS) &&
            verifier.VerifyVector(chunks()) &&
            verifier.VerifyVectorOfTables(chunks()) &&
+           VerifyOffset(verifier, VT_CHUNKINDEX) &&
+           verifier.VerifyVector(chunkIndex()) &&
            verifier.EndTable();
   }
 };
@@ -44,6 +50,9 @@ struct WorldDataBuilder {
   ::flatbuffers::uoffset_t start_;
   void add_chunks(::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<AssetPack::ChunkData>>> chunks) {
     fbb_.AddOffset(WorldData::VT_CHUNKS, chunks);
+  }
+  void add_chunkIndex(::flatbuffers::Offset<::flatbuffers::Vector<int32_t>> chunkIndex) {
+    fbb_.AddOffset(WorldData::VT_CHUNKINDEX, chunkIndex);
   }
   explicit WorldDataBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -58,19 +67,24 @@ struct WorldDataBuilder {
 
 inline ::flatbuffers::Offset<WorldData> CreateWorldData(
     ::flatbuffers::FlatBufferBuilder &_fbb,
-    ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<AssetPack::ChunkData>>> chunks = 0) {
+    ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<AssetPack::ChunkData>>> chunks = 0,
+    ::flatbuffers::Offset<::flatbuffers::Vector<int32_t>> chunkIndex = 0) {
   WorldDataBuilder builder_(_fbb);
+  builder_.add_chunkIndex(chunkIndex);
   builder_.add_chunks(chunks);
   return builder_.Finish();
 }
 
 inline ::flatbuffers::Offset<WorldData> CreateWorldDataDirect(
     ::flatbuffers::FlatBufferBuilder &_fbb,
-    const std::vector<::flatbuffers::Offset<AssetPack::ChunkData>> *chunks = nullptr) {
+    const std::vector<::flatbuffers::Offset<AssetPack::ChunkData>> *chunks = nullptr,
+    const std::vector<int32_t> *chunkIndex = nullptr) {
   auto chunks__ = chunks ? _fbb.CreateVector<::flatbuffers::Offset<AssetPack::ChunkData>>(*chunks) : 0;
+  auto chunkIndex__ = chunkIndex ? _fbb.CreateVector<int32_t>(*chunkIndex) : 0;
   return AssetPack::CreateWorldData(
       _fbb,
-      chunks__);
+      chunks__,
+      chunkIndex__);
 }
 
 inline const AssetPack::WorldData *GetWorldData(const void *buf) {

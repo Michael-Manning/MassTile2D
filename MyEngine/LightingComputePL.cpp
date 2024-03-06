@@ -80,11 +80,14 @@ void LightingComputePL::recordCommandBuffer(vk::CommandBuffer commandBuffer, int
 	if (chunkUpdateCount == 0)
 		return;
 
+	for (auto& i : descriptorManager.builderDescriptorSetsDetails)
+		commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, pipelineLayout, i.set, 1, &descriptorManager.builderDescriptorSets[i.set][engine->currentFrame], 0, nullptr);
+
 	{
 		commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, firstStagePipeline);
 
-		for (auto& i : descriptorManager.builderDescriptorSetsDetails)
-			commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, pipelineLayout, i.set, 1, &descriptorManager.builderDescriptorSets[i.set][engine->currentFrame], 0, nullptr);
+		//for (auto& i : descriptorManager.builderDescriptorSetsDetails)
+		//	commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, pipelineLayout, i.set, 1, &descriptorManager.builderDescriptorSets[i.set][engine->currentFrame], 0, nullptr);
 
 		{
 			TracyVkZone(engine->tracyComputeContexts[engine->currentFrame], commandBuffer, "Lighting compute");
@@ -92,12 +95,33 @@ void LightingComputePL::recordCommandBuffer(vk::CommandBuffer commandBuffer, int
 		}
 	}
 
+	// first stage writes light values to background layer which second stage reads from. Must synchronize accesss to this buffer.
+	{
+		vk::BufferMemoryBarrier barrier;
+		barrier.srcAccessMask = vk::AccessFlagBits::eShaderWrite;
+		barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
+		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.buffer = world->_worldMapBGDeviceBuffer;
+		barrier.offset = 0;
+		barrier.size = VK_WHOLE_SIZE; // Could be changed to a portion, but I don't know if there would be a benefit
+		
+		commandBuffer.pipelineBarrier(
+			vk::PipelineStageFlagBits::eComputeShader,
+			vk::PipelineStageFlagBits::eComputeShader,
+			static_cast<vk::DependencyFlags>(0),
+			0, nullptr,
+			1, &barrier,
+			0, nullptr
+		);
+	}
+
 	// idk if you have to rebind the same desciptor sets just because you bind a different pipeline. Do you need to unbind descriptor sets?
 	{
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, secondStagePipeline);
 
-		for (auto& i : descriptorManager.builderDescriptorSetsDetails)
-			commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, pipelineLayout, i.set, 1, &descriptorManager.builderDescriptorSets[i.set][engine->currentFrame], 0, nullptr);
+		//for (auto& i : descriptorManager.builderDescriptorSetsDetails)
+		//	commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, pipelineLayout, i.set, 1, &descriptorManager.builderDescriptorSets[i.set][engine->currentFrame], 0, nullptr);
 
 		{
 			TracyVkZone(engine->tracyComputeContexts[engine->currentFrame], commandBuffer, "Lighting blur");

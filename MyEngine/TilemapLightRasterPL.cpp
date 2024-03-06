@@ -132,7 +132,7 @@ void TilemapLightRasterPL::recordCommandBuffer(vk::CommandBuffer commandBuffer, 
 	commandBuffer.pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(pushConstant_s), &pc);
 
 	{
-		TracyVkZone(engine->tracyGraphicsContexts[engine->currentFrame], commandBuffer, "Tilemap render");
+		TracyVkZone(engine->tracyGraphicsContexts[engine->currentFrame], commandBuffer, "Tilemap lighting raster");
 		commandBuffer.drawIndexed(QuadIndices.size(), 1, 0, 0, 0);
 	}
 }

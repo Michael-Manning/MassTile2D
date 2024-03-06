@@ -335,7 +335,7 @@ public:
 	//	return currentScene;
 	//}
 
-	sceneRenderContextID CreateSceneRenderContext(glm::ivec2 size, bool allocateTileWorld, glm::vec4 clearColor = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f), bool transparentFramebufferBlending = false) {
+	sceneRenderContextID CreateSceneRenderContext(glm::ivec2 size, bool allocateTileWorld, glm::vec4 clearColor = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f), float lightClearValue = 0.0f, bool transparentFramebufferBlending = false) {
 
 		auto fbID = resourceManager->CreateFramebuffer(size, clearColor);
 		auto fb = resourceManager->GetFramebuffer(fbID);
@@ -344,7 +344,7 @@ public:
 		sceneRenderContextMap[id] = {};
 
 		sceneRenderContextMap.find(id)->second.fb = fbID;
-		sceneRenderContextMap.at(id).lightingBuffer = resourceManager->CreateFramebuffer(size, clearColor, lightingPassFormat);
+		sceneRenderContextMap.at(id).lightingBuffer = resourceManager->CreateFramebuffer(size, glm::vec4(lightClearValue), lightingPassFormat);
 
 		createScenePLContext(
 			&sceneRenderContextMap.find(id)->second.pl, 
@@ -365,6 +365,10 @@ public:
 
 	framebufferID GetSceneRenderContextFramebuffer(sceneRenderContextID id) {
 		return sceneRenderContextMap.find(id)->second.fb;
+	}
+
+	framebufferID _GetSceneRenderContextLightMapBuffer(sceneRenderContextID id) {
+		return sceneRenderContextMap.find(id)->second.lightingBuffer;
 	}
 
 	glm::ivec2 GetFramebufferSize(framebufferID id) {

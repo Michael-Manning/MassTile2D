@@ -34,9 +34,10 @@ struct Transform{
 }
 
 struct SpriteRenderer{
-    atlasIndex:int;
-    entityID:uint;
-    spriteID:uint;
+   entityID:uint;
+   spriteID:uint;
+   atlasIndex:int;
+   useLightMap:bool;
 }
 
 struct ColorRenderer{

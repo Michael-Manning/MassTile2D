@@ -20,23 +20,29 @@ public:
 		sprite = spr;
 	};
 
-	nlohmann::json serializeJson(entityID entId) const override;
-
-	static SpriteRenderer deserializeJson(nlohmann::json j);
-
 	// data
 	spriteID sprite;
 	int atlasIndex = 0;
+	bool useLightMap = false;
 
-	//SpriteRenderer duplicate() const {
-	//	SpriteRenderer r(sprite);
-	//	return r;
-	//};
+	nlohmann::json serializeJson(entityID entId) const override {
+		nlohmann::json j;
+		j["entityID"] = entId;
+		j["spriteID"] = sprite;
+		j["atlasIndex"] = atlasIndex;
+		return j;
+	}
 
+	SpriteRenderer(nlohmann::json j) :
+		sprite(j["spriteID"].get<uint32_t>()),
+		atlasIndex(j["atlasIndex"]),
+		useLightMap(j["useLightMap"] == nullptr ? false : (bool)j["useLightMap"])
+	{}
 
-	SpriteRenderer (const AssetPack::SpriteRenderer* s, Entity* entityCache) : _entityCache(entityCache){
+	SpriteRenderer(const AssetPack::SpriteRenderer* s, Entity* entityCache) : _entityCache(entityCache) {
 		sprite = s->spriteID();
 		atlasIndex = s->atlasIndex();
+		useLightMap = s->useLightMap();
 	};
 
 	SpriteRenderer(spriteID sprite, int atlasIndex, Entity* entityCache, Sprite* spriteCache) :

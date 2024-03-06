@@ -1,6 +1,13 @@
 
 Near roadmap:
-- add "use lightmap" feature to editor and link new parameter to drawlist object
+- set lightmap to full bright when not using tilemap or in editor prefab preview scene
+- breaking blocks along a chunk border breaks lighting
+
+- for none-moving light sources (lights fixed to the grid), implement this line algorithm for thoeretically faster shadows:
+https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm
+
+- if only one chunk of tile data can be updated per frame, it's possible for 2 chunks to be dirty in one frame, where both get lighting updates,
+but one of the lighting updates performs on out of date tile data as the second chunk tile data hasn't uploaded yet
 
 - direct GPU map access when doing screen space drawlists breaks synchronization rules. Must go back to buffering a drawlist or flush ranges manually?
 

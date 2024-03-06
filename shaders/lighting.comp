@@ -4,7 +4,7 @@
 #define chunkTileCount 1024
 #define chunksX  64 
 #define maxLightsPerChunk 100
-#define ambiantLight 0.1
+#define ambiantLight 0.05
 #define mapOffset 0
 #define mapCount 2097152
 
@@ -18,10 +18,10 @@ layout(std140, set = 0, binding = 0) readonly buffer lightingObjectBuffer{
 	LightingUpdate[] lightingUpdates;
 } ;
 
-layout(std430, set = 1, binding = 0) buffer mapFGObjectBuffer {
+layout(std430, set = 1, binding = 0) readonly buffer mapFGObjectBuffer {
 	int tileMapFGData[];
 } ;
-layout(std430, set = 1, binding = 1) buffer mapBGObjectBuffer {
+layout(std430, set = 1, binding = 1) writeonly buffer mapBGObjectBuffer {
 	int tileMapBGData[];
 } ;
 

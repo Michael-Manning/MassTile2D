@@ -25,6 +25,7 @@ layout(push_constant) uniform constants{
 
 layout(location = 2) in flat int instance_index;
 layout(location = 1) in vec2 uv;
+layout(location = 3) in vec2 screenSpaceUV;
 layout(location = 0) out vec4 outColor;
 
 
@@ -97,7 +98,7 @@ void main() {
     }
 
 
-    float brightness = texture(texSampler[lightingBufferIndex]).r;
+    float brightness = texture(texSampler[lightingBufferIndex], screenSpaceUV).r;
 
    //  //switch to sampling with padding to avoid branching
    //  if(xi > 1 && xi < mapw - 1 && yi > 1 && yi < maph - 1){

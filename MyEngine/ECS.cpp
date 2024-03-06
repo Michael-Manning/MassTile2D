@@ -47,20 +47,6 @@ ColorRenderer ColorRenderer::deserializeJson(nlohmann::json j) {
 	return s;
 }
 
-nlohmann::json SpriteRenderer::serializeJson(entityID entId) const {
-	nlohmann::json j;
-	j["entityID"] = entId;
-	j["spriteID"] = sprite;
-	j["atlasIndex"] = atlasIndex;
-	return j;
-}
-SpriteRenderer SpriteRenderer::deserializeJson(nlohmann::json j){
-	spriteID id = j["spriteID"].get<uint32_t>();
-	SpriteRenderer s(id);
-	s.atlasIndex = j["atlasIndex"];
-	return s;
-}
-
 nlohmann::json TextRenderer::serializeJson(entityID entId) const {
 	nlohmann::json j;
 	j["entityID"] = entId;

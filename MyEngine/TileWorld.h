@@ -34,7 +34,7 @@ constexpr float tileWorldSize = 0.25f;
 static_assert(mapW% chunkSize == 0);
 static_assert(mapH% chunkSize == 0);
 
-constexpr float ambiantLight = 0.1f;
+constexpr float ambiantLight = 0.05f;
 
 const static int maxChunkUpdatesPerFrame = 16;
 const static int maxLightsPerChunk = 100;
@@ -155,6 +155,16 @@ public:
 			(tile.x - mapW / 2) * tileWorldSize,
 			(tile.y - mapH / 2) * tileWorldSize
 		};
+	}
+
+	void UpdateChunk(int chunk) {
+		assert(chunk >= 0 && chunk < chunkCount);
+		chunkDirtyFlags[chunk] = true;
+		minDirtyIndex = chunk < minDirtyIndex ? chunk : minDirtyIndex;
+		maxDirtyIndex = chunk > maxDirtyIndex ? chunk : maxDirtyIndex;
+		chunkLightingDirtyFlags[chunk] = true;
+		minDirtyLightingIndex = chunk < minDirtyLightingIndex ? chunk : minDirtyLightingIndex;
+		maxDirtyLightingIndex = chunk > maxDirtyLightingIndex ? chunk : maxDirtyLightingIndex;
 	}
 
 	inline void setTile(glm::ivec2 tile, tileID block) { setTile(tile.x, tile.y, block); }

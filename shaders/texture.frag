@@ -40,6 +40,11 @@ void main() {
 
    vec4 sampleColor = texture(texSampler[ssboBuffer.ssboData[instance_index].index], vec2( sampleX, sampleY));
 
-   float brightness = texture(texSampler[lightMapIndex], screenSpaceUV).r;
-   outColor = vec4(sampleColor.rgb * brightness, sampleColor.a);
+   if(ssboBuffer.ssboData[instance_index].useLightMap == 1){
+      float brightness = texture(texSampler[lightMapIndex], screenSpaceUV).r;
+      outColor = vec4(sampleColor.rgb * brightness, sampleColor.a);
+   }
+   else{
+      outColor = vec4(sampleColor.rgb, sampleColor.a);
+   }
 }
