@@ -47,8 +47,8 @@ void TilemapLightRasterPL::CreateGraphicsPipeline(const std::vector<uint8_t>& ve
 
 	descriptorManager.configureDescriptorSets(vector<DescriptorManager::descriptorSetInfo> {
 		DescriptorManager::descriptorSetInfo(1, 0, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eVertex, &cameradb.buffers, cameradb.size),
-			DescriptorManager::descriptorSetInfo(1, 1, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eFragment, &worldMapFGDeviceBuferRef, sizeof(TileWorld::ssboObjectData)* (mapCount)),
-			DescriptorManager::descriptorSetInfo(1, 2, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eFragment, &worldMapBGDeviceBuferRef, sizeof(TileWorld::ssboObjectData)* (mapCount))
+			DescriptorManager::descriptorSetInfo(1, 1, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eFragment, &worldMapFGDeviceBuferRef, sizeof(TileWorld::worldTile_ssbo)* (mapCount)),
+			DescriptorManager::descriptorSetInfo(1, 2, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eFragment, &worldMapBGDeviceBuferRef, sizeof(TileWorld::worldTile_ssbo)* (mapCount))
 	});
 	descriptorManager.buildDescriptorLayouts();
 

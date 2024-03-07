@@ -23,3 +23,4 @@ blocks directly as they are placed to limit the complexity of recalculations
 
 
 
+https://github.com/KhronosGroup/Vulkan-Docs/wiki/Synchronization-Examples

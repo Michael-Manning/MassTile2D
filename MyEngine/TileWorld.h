@@ -5,6 +5,7 @@
 #include <cassert>
 #include <memory>
 #include <algorithm>
+#include <iostream>
 
 #include <glm/glm.hpp>
 #include <tracy/Tracy.hpp>
@@ -34,21 +35,36 @@ constexpr float tileWorldSize = 0.25f;
 static_assert(mapW% chunkSize == 0);
 static_assert(mapH% chunkSize == 0);
 
-constexpr float ambiantLight = 0.05f;
+constexpr float ambiantLight = 1.00f;
 
-const static int maxChunkUpdatesPerFrame = 16;
+const static int maxChunkTransfersPerFrame = 16;
+const static int maxChunkBaseLightingUpdatesPerFrame = 16;
 const static int maxLightsPerChunk = 100;
 
 struct chunkLightingUpdateinfo {
 	uint32_t chunkIndex;
 	int lightCount;
-	alignas(16) glm::vec4 lightPositions[maxLightsPerChunk]; // aligned to 16 bytes for vec2
+	alignas(16) glm::vec4 lightPositions[maxLightsPerChunk]; // std140 alignment
 };
 static_assert(sizeof(chunkLightingUpdateinfo) % 16 == 0);
 
 constexpr int coolsize = sizeof(chunkLightingUpdateinfo);
 
 class TileWorld {
+
+private:
+
+	struct chunkDirtyState {
+		uint32_t minIndex = UINT32_MAX;
+		uint32_t maxIndex = 0;
+		std::vector<bool> dirtyFlags; // try replacing with set
+	};
+
+	inline void invalidateWholeState(chunkDirtyState& state) {
+		std::fill(state.dirtyFlags.begin(), state.dirtyFlags.end(), true);
+		state.minIndex = 0;
+		state.maxIndex = chunkCount - 1;
+	}
 
 public:
 
@@ -62,18 +78,16 @@ public:
 	std::vector<blockID> bgMapData;
 
 	// for gpu updating
-	uint32_t minDirtyIndex = UINT32_MAX;
-	uint32_t maxDirtyIndex = 0;
-	uint32_t minDirtyLightingIndex = UINT32_MAX;
-	uint32_t maxDirtyLightingIndex = 0;
-	std::vector<bool> chunkDirtyFlags;
-	std::vector<bool> chunkLightingDirtyFlags;
+	chunkDirtyState tileDirtyState;
+	chunkDirtyState baseLightingDirtyState;
+	chunkDirtyState blurLightingDirtyState;
 
 	TileWorld(VKEngine* engine) : engine(engine) {
 		mapData = std::vector<blockID>(mapCount, 0 | ((int)(ambiantLight * 255) << 16));
 		bgMapData = std::vector<blockID>(mapCount, 0);
-		chunkDirtyFlags = std::vector<bool>(chunkCount, false);
-		chunkLightingDirtyFlags = std::vector<bool>(chunkCount, false);
+		tileDirtyState.dirtyFlags = std::vector<bool>(chunkCount, false);
+		baseLightingDirtyState.dirtyFlags = std::vector<bool>(chunkCount, false);
+		blurLightingDirtyState.dirtyFlags = std::vector<bool>(chunkCount, false);
 		torchPositions.resize(chunkCount);
 	};
 
@@ -91,14 +105,14 @@ public:
 	};
 
 	void copyToLargeChunkTransferbuffer(uint32_t* data) {
-		memcpy(largeChunkBufferMapped, data, sizeof(ssboObjectData) * largeChunkCount);
+		memcpy(largeChunkBufferMapped, data, sizeof(worldTile_ssbo) * largeChunkCount);
 	};
 
 	void copyLargeFGChunkToDevice(int chunkIndex) {
-		engine->copyBuffer(largeChunkBuffer, _worldMapFGDeviceBuffer, sizeof(ssboObjectData) * largeChunkCount, mapOffset * sizeof(ssboObjectData) + chunkIndex * sizeof(ssboObjectData) * largeChunkCount);
+		engine->copyBuffer(largeChunkBuffer, _worldMapFGDeviceBuffer, sizeof(worldTile_ssbo) * largeChunkCount, mapOffset * sizeof(worldTile_ssbo) + chunkIndex * sizeof(worldTile_ssbo) * largeChunkCount);
 	};
 	void copyLargeBGChunkToDevice(int chunkIndex) {
-		engine->copyBuffer(largeChunkBuffer, _worldMapBGDeviceBuffer, sizeof(ssboObjectData) * largeChunkCount, mapOffset * sizeof(ssboObjectData) + chunkIndex * sizeof(ssboObjectData) * largeChunkCount);
+		engine->copyBuffer(largeChunkBuffer, _worldMapBGDeviceBuffer, sizeof(worldTile_ssbo) * largeChunkCount, mapOffset * sizeof(worldTile_ssbo) + chunkIndex * sizeof(worldTile_ssbo) * largeChunkCount);
 	};
 
 	void AllocateVulkanResources() {
@@ -121,9 +135,8 @@ public:
 	};
 
 	void FullLightingUpdate() {
-		std::fill(chunkLightingDirtyFlags.begin(), chunkLightingDirtyFlags.end(), true);
-		minDirtyLightingIndex = 0;
-		maxDirtyLightingIndex = chunkCount - 1;
+		invalidateWholeState(baseLightingDirtyState);
+		invalidateWholeState(blurLightingDirtyState);
 	};
 
 	inline tileID getTile(uint32_t x, uint32_t y) const {
@@ -140,7 +153,7 @@ public:
 	inline uint32_t GetChunk(const glm::ivec2 tile) const {
 		uint32_t cx = (tile.x / chunkSize);
 		uint32_t cy = (tile.y / chunkSize);
-		return cy* chunksX + cx;
+		return cy * chunksX + cx;
 	}
 
 	inline glm::ivec2 WorldPosTile(const glm::vec2 pos) const {
@@ -157,30 +170,39 @@ public:
 		};
 	}
 
+	inline void InvalidateLighting(int chunk) {
+		baseLightingDirtyState.dirtyFlags[chunk] = true;
+		baseLightingDirtyState.minIndex = chunk < baseLightingDirtyState.minIndex ? chunk : baseLightingDirtyState.minIndex;
+		baseLightingDirtyState.maxIndex = chunk > baseLightingDirtyState.maxIndex ? chunk : baseLightingDirtyState.maxIndex;
+		blurLightingDirtyState.dirtyFlags[chunk] = true;
+		blurLightingDirtyState.minIndex = chunk < blurLightingDirtyState.minIndex ? chunk : blurLightingDirtyState.minIndex;
+		blurLightingDirtyState.maxIndex = chunk > blurLightingDirtyState.maxIndex ? chunk : blurLightingDirtyState.maxIndex;
+	}
+
+	inline void FlagChunkForUpload(int chunk) {
+		tileDirtyState.dirtyFlags[chunk] = true;
+		tileDirtyState.minIndex = chunk < tileDirtyState.minIndex ? chunk : tileDirtyState.minIndex;
+		tileDirtyState.maxIndex = chunk > tileDirtyState.maxIndex ? chunk : tileDirtyState.maxIndex;
+	}
+
 	void UpdateChunk(int chunk) {
 		assert(chunk >= 0 && chunk < chunkCount);
-		chunkDirtyFlags[chunk] = true;
-		minDirtyIndex = chunk < minDirtyIndex ? chunk : minDirtyIndex;
-		maxDirtyIndex = chunk > maxDirtyIndex ? chunk : maxDirtyIndex;
-		chunkLightingDirtyFlags[chunk] = true;
-		minDirtyLightingIndex = chunk < minDirtyLightingIndex ? chunk : minDirtyLightingIndex;
-		maxDirtyLightingIndex = chunk > maxDirtyLightingIndex ? chunk : maxDirtyLightingIndex;
+		FlagChunkForUpload(chunk);
+		InvalidateLighting(chunk);
 	}
 
 	inline void setTile(glm::ivec2 tile, tileID block) { setTile(tile.x, tile.y, block); }
 	void setTile(uint32_t x, uint32_t y, tileID block) {
-		//y = mapH - y - 1;
 		uint32_t cx = (x / chunkSize);
 		uint32_t cy = (y / chunkSize);
 		uint32_t chunk = cy * chunksX + cx;
 		uint32_t chunkIndexOffset = chunk * chunkTileCount;
 		uint32_t index = mapOffset + chunkIndexOffset + (y % chunkSize) * chunkSize + (x % chunkSize);
 		index %= mapCount;
-		mapData[index] = (mapData[index] & (0xFFFF << 16)) | block;
-		chunkDirtyFlags[chunk] = true;
-		minDirtyIndex = chunk < minDirtyIndex ? chunk : minDirtyIndex;
-		maxDirtyIndex = chunk > maxDirtyIndex ? chunk : maxDirtyIndex;
 
+		//mapData[index] = (mapData[index] & (0xFFFF << 16)) | block;
+		mapData[index] = block;
+		FlagChunkForUpload(chunk);
 
 		// NOTE: Should only need to update 4 chunks depending on the quadrant within the chunk
 		// which the tile was set. Same for moving torches if the quadrant it moved from is the same as it's destination
@@ -192,12 +214,9 @@ public:
 				uint32_t _cy = cy + j;
 				chunk = _cy * chunksX + _cx;
 				chunk %= chunkCount;
-				chunkLightingDirtyFlags[chunk] = true;
-				minDirtyLightingIndex = chunk < minDirtyLightingIndex ? chunk : minDirtyLightingIndex;
-				maxDirtyLightingIndex = chunk > maxDirtyLightingIndex ? chunk : maxDirtyLightingIndex;
+				InvalidateLighting(chunk);
 			}
 		}
-
 	};
 
 	// same as setTile but does not mark the chunk as dirty
@@ -248,14 +267,11 @@ public:
 		uint32_t index = mapOffset + chunkIndexOffset + (y % chunkSize) * chunkSize + (x % chunkSize);
 		index %= mapCount;
 		mapData[index] = (mapData[index] & 0xFFFF) | (brightness << 16);
-		chunkLightingDirtyFlags[chunk] = true;
 
-		minDirtyLightingIndex = chunk < minDirtyLightingIndex ? chunk : minDirtyLightingIndex;
-		maxDirtyLightingIndex = chunk > maxDirtyLightingIndex ? chunk : maxDirtyLightingIndex;
+		// this function is probably flawed now. Brightness won't be persistent if recalculated by compute
 
-		chunkDirtyFlags[chunk] = true;
-		minDirtyIndex = chunk < minDirtyIndex ? chunk : minDirtyIndex;
-		maxDirtyIndex = chunk > maxDirtyIndex ? chunk : maxDirtyIndex;
+		FlagChunkForUpload(chunk);
+		InvalidateLighting(chunk);
 	};
 
 
@@ -278,9 +294,7 @@ public:
 				uint32_t cy = _cy + j;
 				chunk = cy * chunksX + cx;
 				chunk %= chunkCount;
-				chunkLightingDirtyFlags[chunk] = true;
-				minDirtyLightingIndex = chunk < minDirtyLightingIndex ? chunk : minDirtyLightingIndex;
-				maxDirtyLightingIndex = chunk > maxDirtyLightingIndex ? chunk : maxDirtyLightingIndex;
+				InvalidateLighting(chunk);
 			}
 		}
 
@@ -308,33 +322,29 @@ public:
 				uint32_t cy = _cy + j;
 				chunk = cy * chunksX + cx;
 				chunk %= chunkCount;
-				chunkLightingDirtyFlags[chunk] = true;
-				minDirtyLightingIndex = chunk < minDirtyLightingIndex ? chunk : minDirtyLightingIndex;
-				maxDirtyLightingIndex = chunk > maxDirtyLightingIndex ? chunk : maxDirtyLightingIndex;
-				/*chunkDirtyFlags[chunk] = true;
-				minDirtyIndex = chunk < minDirtyIndex ? chunk : minDirtyIndex;
-				maxDirtyIndex = chunk > maxDirtyIndex ? chunk : maxDirtyIndex;*/
+				InvalidateLighting(chunk);
 			}
 
 		}
 	};
 
-	std::vector<chunkLightingUpdateinfo> chunkLightingJobs;
+	std::vector<chunkLightingUpdateinfo> baseChunkLightingJobs;
+	std::vector<chunkLightingUpdateinfo> blurChunkLightingJobs;
 
-	void updateLighing() {
+	void updateBaseLighting() {
 		ZoneScoped;
 
 		// nothing updated
-		if (minDirtyLightingIndex == UINT32_MAX)
+		if (baseLightingDirtyState.minIndex == UINT32_MAX)
 			return;
 
-		if (chunkLightingJobs.size() >= maxChunkUpdatesPerFrame)
+		if (baseChunkLightingJobs.size() >= maxChunkBaseLightingUpdatesPerFrame)
 			return;
 
 		// could devide each chunk update into quadrents which only check the torches in four surrounding chunks instead of all 9 surrounding chunks
-		for (size_t chunk = minDirtyLightingIndex; chunk <= maxDirtyLightingIndex; chunk++) {
-			if (chunkLightingDirtyFlags[chunk] == true) {
-				chunkLightingDirtyFlags[chunk] = false;
+		for (size_t chunk = baseLightingDirtyState.minIndex; chunk <= baseLightingDirtyState.maxIndex; chunk++) {
+			if (baseLightingDirtyState.dirtyFlags[chunk] == true) {
+				baseLightingDirtyState.dirtyFlags[chunk] = false;
 
 				uint32_t baseIndex = chunk * chunkTileCount;
 
@@ -366,63 +376,105 @@ public:
 					update.lightPositions[t++] = glm::vec4(movingTorch.x, movingTorch.y, 0.0f, 0.0f);
 				}
 				update.lightCount = t;
-				chunkLightingJobs.push_back(update);
+				//std::cout << "light update chunk " << chunk << "\n";
+				baseChunkLightingJobs.push_back(update);
 
-				if (chunkLightingJobs.size() >= maxChunkUpdatesPerFrame)
+				if (baseChunkLightingJobs.size() >= maxChunkBaseLightingUpdatesPerFrame)
 					return;
 			}
 
-			minDirtyLightingIndex = chunk;
+			baseLightingDirtyState.minIndex = chunk;
 		}
 
 		// nothing left to upload, safe to reset dirty indexes
-		minDirtyLightingIndex = UINT32_MAX;
-		maxDirtyLightingIndex = 0;
+		baseLightingDirtyState.minIndex = UINT32_MAX;
+		baseLightingDirtyState.maxIndex = 0;
+	}
+
+	void updateLighing() {
+		updateBaseLighting();
+		//updateBlurLighting();
 	};
 
 	std::vector<chunkLightingUpdateinfo> getLightingUpdateData() {
 		ZoneScoped;
-		return chunkLightingJobs;
+		return baseChunkLightingJobs;
 	}
 
 	void stageChunkUpdates(vk::CommandBuffer commandBuffer) {
 
-		// only able to stage one chunk per frame. Expand to multiple chunks by increasing size of transfer buffer
-
 		// nothing updated
-		if (minDirtyIndex == UINT32_MAX)
+		if (tileDirtyState.minIndex == UINT32_MAX)
 			return;
 
-		//for (size_t i = 0; i < chunkCount; i++) {
-		for (size_t i = minDirtyIndex; i <= maxDirtyIndex; i++) {
-			if (chunkDirtyFlags[i] == true) {
-				memcpy(chunkTransferBuffers.buffersMapped[engine->currentFrame], mapData.data() + mapOffset + i * chunkTileCount, sizeof(ssboObjectData) * chunkTileCount);
-				chunkDirtyFlags[i] = false;
+		std::vector<vk::BufferCopy> copyRegions;
+		copyRegions.reserve(maxChunkTransfersPerFrame);
 
-				{
-					vk::BufferCopy copyRegion{};
-					copyRegion.size = chunkTileCount * sizeof(ssboObjectData);
-					copyRegion.dstOffset = i * chunkTileCount * sizeof(ssboObjectData);
-					copyRegion.srcOffset = 0;
+		for (size_t chunk = tileDirtyState.minIndex; chunk <= tileDirtyState.maxIndex; chunk++) {
+			if (tileDirtyState.dirtyFlags[chunk] == true) {
+				tileDirtyState.dirtyFlags[chunk] = false;
 
-					// expand by increasing size of transfer buffer. Upload multiple chunks by specifying multiple copy regions
-					commandBuffer.copyBuffer(chunkTransferBuffers.buffers[engine->currentFrame], _worldMapFGDeviceBuffer, 1, &copyRegion);
+				//std::cout << "transfering chunk " << i << "\n";
+
+				memcpy(chunkTransferBuffers.buffersMapped[engine->currentFrame] + copyRegions.size() * chunkTileCount,
+					mapData.data() + chunk * chunkTileCount, sizeof(worldTile_ssbo) * chunkTileCount);
+
+				size_t dstOffset = chunk * chunkTileCount;
+
+				vk::BufferCopy& copyRegion = copyRegions.emplace_back();
+				copyRegion.size = chunkTileCount * sizeof(worldTile_ssbo);
+				copyRegion.dstOffset = dstOffset * sizeof(worldTile_ssbo);
+				copyRegion.srcOffset = (copyRegions.size() - 1) * chunkTileCount * sizeof(worldTile_ssbo);
+
+
+				if (copyRegions.size() == maxChunkTransfersPerFrame) {
+					break;
 				}
-
-				return;
 			}
+
+			tileDirtyState.minIndex = chunk;
 		}
 
+		assert(copyRegions.size() > 0);
+
+		commandBuffer.copyBuffer(chunkTransferBuffers.buffers[engine->currentFrame], _worldMapFGDeviceBuffer, copyRegions.size(), copyRegions.data());
+
+
+		//must insure transfer is complete before lighting compute shader can access the world buffer
+		{
+			vk::BufferMemoryBarrier barrier;
+			barrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
+			barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eShaderWrite;
+			barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			barrier.buffer = _worldMapFGDeviceBuffer;
+			barrier.offset = 0;
+			barrier.size = VK_WHOLE_SIZE; // Could be changed to a portion, but I don't know if there would be a benefit
+
+			commandBuffer.pipelineBarrier(
+				vk::PipelineStageFlagBits::eTransfer,
+				vk::PipelineStageFlagBits::eComputeShader,
+				static_cast<vk::DependencyFlags>(0),
+				0, nullptr,
+				1, &barrier,
+				0, nullptr
+			);
+		}
+
+
+
 		// nothing left to upload, safe to reset dirty indexes
-		minDirtyIndex = UINT32_MAX;
-		maxDirtyIndex = 0;
+		if (tileDirtyState.minIndex == tileDirtyState.maxIndex) {
+			tileDirtyState.minIndex = UINT32_MAX;
+			tileDirtyState.maxIndex = 0;
+		}
 	};
 
 	vk::Buffer _worldMapFGDeviceBuffer;
 	vk::Buffer _worldMapBGDeviceBuffer;
 
-	struct ssboObjectData {
-		blockID index;
+	struct worldTile_ssbo {
+		tileID index;
 	};
 
 private:
@@ -431,16 +483,17 @@ private:
 
 	void createWorldBuffer() {
 		// create foreground and background VRAM buffers
-		engine->createBuffer(sizeof(ssboObjectData) * (mapCount), vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eStorageBuffer, VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT, _worldMapFGDeviceBuffer, worldMapFGDeviceBufferAllocation, true);
-		engine->createBuffer(sizeof(ssboObjectData) * (mapCount), vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eStorageBuffer, VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT, _worldMapBGDeviceBuffer, worldMapBGDeviceBufferAllocation, true);
+		engine->createBuffer(sizeof(worldTile_ssbo) * (mapCount), vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eStorageBuffer, VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT, _worldMapFGDeviceBuffer, worldMapFGDeviceBufferAllocation, true);
+		engine->createBuffer(sizeof(worldTile_ssbo) * (mapCount), vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eStorageBuffer, VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT, _worldMapBGDeviceBuffer, worldMapBGDeviceBufferAllocation, true);
 	};
 	void createChunkTransferBuffers() {
+
 		// create large buffer for initial upload
-		engine->createBuffer(sizeof(ssboObjectData) * (largeChunkCount), vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eStorageBuffer, VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT, largeChunkBuffer, largeChunkAllocation);
+		engine->createBuffer(sizeof(worldTile_ssbo) * (largeChunkCount), vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eStorageBuffer, VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT, largeChunkBuffer, largeChunkAllocation);
 		vmaMapMemory(engine->allocator, largeChunkAllocation, &largeChunkBufferMapped);
 
 		// create small buffers for individual chunk updates
-		engine->createMappedBuffer(sizeof(ssboObjectData) * chunkCount, vk::BufferUsageFlagBits::eTransferSrc, chunkTransferBuffers);
+		engine->createMappedBuffer(sizeof(worldTile_ssbo) * chunkTileCount * maxChunkTransfersPerFrame, vk::BufferUsageFlagBits::eTransferSrc, chunkTransferBuffers);
 	};
 
 	VKEngine* engine;
@@ -449,7 +502,7 @@ private:
 	VmaAllocation largeChunkAllocation;
 	void* largeChunkBufferMapped;
 
-	MappedDoubleBuffer<void> chunkTransferBuffers;
+	MappedDoubleBuffer<worldTile_ssbo> chunkTransferBuffers;
 
 	VmaAllocation worldMapFGDeviceBufferAllocation;
 	VmaAllocation worldMapBGDeviceBufferAllocation;

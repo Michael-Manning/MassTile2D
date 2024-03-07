@@ -35,12 +35,16 @@ void LightingComputePL::CreateComputePipeline(const std::vector<uint8_t>& comput
 	auto firstComputeStage = createComputeShaderStage(computeSrc_firstPass);
 	auto secondComputeStage = createComputeShaderStage(computeSrc_secondPass);
 
+	engine->createMappedBuffer(sizeof(chunkLightingUpdateinfo) * maxChunkBaseLightingUpdatesPerFrame, vk::BufferUsageFlagBits::eStorageBuffer, baseLightUpdateDB);
+	engine->createMappedBuffer(sizeof(chunkLightingUpdateinfo) * maxChunkBaseLightingUpdatesPerFrame, vk::BufferUsageFlagBits::eStorageBuffer, blurLightUpdateDB);
+
 	std::array<vk::Buffer, FRAMES_IN_FLIGHT> worldMapFGDeviceBuferRef = { world->_worldMapFGDeviceBuffer, world->_worldMapFGDeviceBuffer };
 	std::array<vk::Buffer, FRAMES_IN_FLIGHT> worldMapBGDeviceBuferRef = { world->_worldMapBGDeviceBuffer, world->_worldMapBGDeviceBuffer };
 	descriptorManager.configureDescriptorSets(vector<DescriptorManager::descriptorSetInfo> {
-		DescriptorManager::descriptorSetInfo(0, 0, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eCompute, &lightPositionsDB.buffers, sizeof(chunkLightingUpdateinfo)* (maxChunkUpdatesPerFrame)),
-		DescriptorManager::descriptorSetInfo(1, 0, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eCompute, &worldMapFGDeviceBuferRef, sizeof(TileWorld::ssboObjectData)* (mapCount)),
-		DescriptorManager::descriptorSetInfo(1, 1, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eCompute, &worldMapBGDeviceBuferRef, sizeof(TileWorld::ssboObjectData)* (mapCount))
+		DescriptorManager::descriptorSetInfo(0, 0, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eCompute, &baseLightUpdateDB.buffers, baseLightUpdateDB.size),
+		DescriptorManager::descriptorSetInfo(0, 1, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eCompute, &blurLightUpdateDB.buffers, blurLightUpdateDB.size),
+		DescriptorManager::descriptorSetInfo(1, 0, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eCompute, &worldMapFGDeviceBuferRef, sizeof(TileWorld::worldTile_ssbo)* (mapCount)),
+		DescriptorManager::descriptorSetInfo(1, 1, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eCompute, &worldMapBGDeviceBuferRef, sizeof(TileWorld::worldTile_ssbo)* (mapCount))
 	});
 	descriptorManager.buildDescriptorLayouts();
 
@@ -71,11 +75,16 @@ void LightingComputePL::CreateComputePipeline(const std::vector<uint8_t>& comput
 	descriptorManager.buildDescriptorSets();
 }
 
-void LightingComputePL::createStagingBuffers() {
-	engine->createMappedBuffer(sizeof(chunkLightingUpdateinfo) * maxChunkUpdatesPerFrame, vk::BufferUsageFlagBits::eStorageBuffer, lightPositionsDB);
-}
-
 void LightingComputePL::recordCommandBuffer(vk::CommandBuffer commandBuffer, int chunkUpdateCount) {
+
+
+
+
+	// Should store two compute template pipelines in this class instead of two pipelines shroing the same pipeline info. Decouple and use a different update info structure for each pipeline?
+
+
+
+
 	ZoneScoped;
 	if (chunkUpdateCount == 0)
 		return;
@@ -84,15 +93,9 @@ void LightingComputePL::recordCommandBuffer(vk::CommandBuffer commandBuffer, int
 		commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, pipelineLayout, i.set, 1, &descriptorManager.builderDescriptorSets[i.set][engine->currentFrame], 0, nullptr);
 
 	{
+		TracyVkZone(engine->tracyComputeContexts[engine->currentFrame], commandBuffer, "Lighting compute");
 		commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, firstStagePipeline);
-
-		//for (auto& i : descriptorManager.builderDescriptorSetsDetails)
-		//	commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, pipelineLayout, i.set, 1, &descriptorManager.builderDescriptorSets[i.set][engine->currentFrame], 0, nullptr);
-
-		{
-			TracyVkZone(engine->tracyComputeContexts[engine->currentFrame], commandBuffer, "Lighting compute");
-			commandBuffer.dispatch(chunkUpdateCount > maxChunkUpdatesPerFrame ? maxChunkUpdatesPerFrame : chunkUpdateCount, 1, 1);
-		}
+		commandBuffer.dispatch(chunkUpdateCount > maxChunkBaseLightingUpdatesPerFrame ? maxChunkBaseLightingUpdatesPerFrame : chunkUpdateCount, 1, 1);
 	}
 
 	// first stage writes light values to background layer which second stage reads from. Must synchronize accesss to this buffer.
@@ -105,7 +108,7 @@ void LightingComputePL::recordCommandBuffer(vk::CommandBuffer commandBuffer, int
 		barrier.buffer = world->_worldMapBGDeviceBuffer;
 		barrier.offset = 0;
 		barrier.size = VK_WHOLE_SIZE; // Could be changed to a portion, but I don't know if there would be a benefit
-		
+
 		commandBuffer.pipelineBarrier(
 			vk::PipelineStageFlagBits::eComputeShader,
 			vk::PipelineStageFlagBits::eComputeShader,
@@ -116,16 +119,9 @@ void LightingComputePL::recordCommandBuffer(vk::CommandBuffer commandBuffer, int
 		);
 	}
 
-	// idk if you have to rebind the same desciptor sets just because you bind a different pipeline. Do you need to unbind descriptor sets?
 	{
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, secondStagePipeline);
-
-		//for (auto& i : descriptorManager.builderDescriptorSetsDetails)
-		//	commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, pipelineLayout, i.set, 1, &descriptorManager.builderDescriptorSets[i.set][engine->currentFrame], 0, nullptr);
-
-		{
-			TracyVkZone(engine->tracyComputeContexts[engine->currentFrame], commandBuffer, "Lighting blur");
-			commandBuffer.dispatch(chunkUpdateCount > maxChunkUpdatesPerFrame ? maxChunkUpdatesPerFrame : chunkUpdateCount, 1, 1);
-		}
+		TracyVkZone(engine->tracyComputeContexts[engine->currentFrame], commandBuffer, "Lighting blur");
+		commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, secondStagePipeline);
+		commandBuffer.dispatch(chunkUpdateCount > maxChunkBaseLightingUpdatesPerFrame ? maxChunkBaseLightingUpdatesPerFrame : chunkUpdateCount, 1, 1);
 	}
 }

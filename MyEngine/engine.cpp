@@ -133,9 +133,6 @@ void Engine::createScenePLContext(ScenePipelineContext* ctx, bool allocateTileWo
 		ctx->trianglesPipelines = make_unique<ColoredTrianglesPL>(rengine.get());
 	}
 
-	if (allocateTileWorld)
-		ctx->lightingPipeline->createStagingBuffers(); // TODO: move to createPipeline() function
-
 	ctx->colorPipeline->CreateInstancingBuffer();
 	ctx->textPipeline->createSSBOBuffer();
 
@@ -634,7 +631,7 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 			auto lightingData = ctx.worldMap->getLightingUpdateData();
 			ctx.lightingPipeline->stageLightingUpdate(lightingData);
 			ctx.lightingPipeline->recordCommandBuffer(computeCmdBuffer, lightingData.size());
-			ctx.worldMap->chunkLightingJobs.clear();
+			ctx.worldMap->baseChunkLightingJobs.clear();
 		}
 
 		// record particle compute for every particle system in every scene

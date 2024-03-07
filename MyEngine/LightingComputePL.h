@@ -33,7 +33,7 @@ public:
 	LightingComputePL(VKEngine* engine, TileWorld* world) : Pipeline(engine), world(world) {
 	}
 
-	void createStagingBuffers();
+	//void createStagingBuffers();
 
 	void CreateComputePipeline(const std::vector<uint8_t>& computeSrc_firstPass, const std::vector<uint8_t>& computeSrc_secondPass);
 	//void CreateComputePipeline(std::string computeSrc_firstPass, std::string computeSrc_secondPass);
@@ -44,7 +44,8 @@ public:
 		ZoneScoped;
 		if (chunkUpdates.size() == 0)
 			return;
-		memcpy(lightPositionsDB.buffersMapped[engine->currentFrame], chunkUpdates.data(), sizeof(chunkLightingUpdateinfo) * chunkUpdates.size());
+		std::copy(chunkUpdates.begin(), chunkUpdates.end(), baseLightUpdateDB.buffersMapped[engine->currentFrame]);
+		//memcpy(lightPositionsDB.buffersMapped[engine->currentFrame], chunkUpdates.data(), sizeof(chunkLightingUpdateinfo) * chunkUpdates.size());
 	}
 
 private:
@@ -52,7 +53,8 @@ private:
 	vk::Pipeline firstStagePipeline;
 	vk::Pipeline secondStagePipeline;
 
-	MappedDoubleBuffer<void> lightPositionsDB;
+	MappedDoubleBuffer<chunkLightingUpdateinfo> baseLightUpdateDB;
+	MappedDoubleBuffer<chunkLightingUpdateinfo> blurLightUpdateDB;
 
 	TileWorld* world = nullptr;
 };

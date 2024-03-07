@@ -4,7 +4,7 @@
 #define chunkTileCount 1024
 #define chunksX  64 
 #define maxLightsPerChunk 100
-#define ambiantLight 0.05
+#define ambiantLight 0.0
 #define mapOffset 0
 #define mapCount 2097152
 
@@ -14,8 +14,11 @@ struct LightingUpdate {
 	vec2 lightPositions[maxLightsPerChunk];
 };
 
-layout(std140, set = 0, binding = 0) readonly buffer lightingObjectBuffer{
-	LightingUpdate[] lightingUpdates;
+layout(std140, set = 0, binding = 0) readonly buffer baseLightingObjectBuffer{
+	LightingUpdate[] baseLightingUpdates;
+} ;
+layout(std140, set = 0, binding = 1) readonly buffer blueLightingObjectBuffer{
+	LightingUpdate[] blurLightingUpdates;
 } ;
 
 layout(std430, set = 1, binding = 0) buffer mapFGObjectBuffer {
@@ -46,7 +49,7 @@ void main()
 
 
 
-    int chunk = lightingUpdates[gl_WorkGroupID.x].chunkIndex;
+    int chunk = baseLightingUpdates[gl_WorkGroupID.x].chunkIndex;
     int chuckIndexOffset = chunk * chunkTileCount;
     uint tilemapIndex = chuckIndexOffset + (y * chunkSize) + x;
 

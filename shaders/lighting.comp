@@ -14,14 +14,17 @@ struct LightingUpdate {
 	vec2 lightPositions[maxLightsPerChunk];
 };
 
-layout(std140, set = 0, binding = 0) readonly buffer lightingObjectBuffer{
-	LightingUpdate[] lightingUpdates;
+layout(std140, set = 0, binding = 0) readonly buffer baseLightingObjectBuffer{
+	LightingUpdate[] baseLightingUpdates;
+} ;
+layout(std140, set = 0, binding = 1) readonly buffer blueLightingObjectBuffer{
+	LightingUpdate[] blurLightingUpdates;
 } ;
 
 layout(std430, set = 1, binding = 0) readonly buffer mapFGObjectBuffer {
 	int tileMapFGData[];
 } ;
-layout(std430, set = 1, binding = 1) writeonly buffer mapBGObjectBuffer {
+layout(std430, set = 1, binding = 1) buffer mapBGObjectBuffer {
 	int tileMapBGData[];
 } ;
 
@@ -54,7 +57,7 @@ void main()
 
     float brightness = 0.0;
     // float brightness = 1.0;
-    int chunk = lightingUpdates[gl_WorkGroupID.x].chunkIndex;
+    int chunk = baseLightingUpdates[gl_WorkGroupID.x].chunkIndex;
     int chuckIndexOffset = chunk * chunkTileCount;
     uint tilemapIndex = mapOffset + chuckIndexOffset + (y * chunkSize) + x;
 
@@ -66,9 +69,9 @@ void main()
 
     int curtile = getTile(int(globX), int(globY)) & 0xFFFF;
 
-    for(int i = 0; i < lightingUpdates[gl_WorkGroupID.x].lightCount; i++)
+    for(int i = 0; i < baseLightingUpdates[gl_WorkGroupID.x].lightCount; i++)
     {
-        vec2 torch = lightingUpdates[gl_WorkGroupID.x].lightPositions[i];
+        vec2 torch = baseLightingUpdates[gl_WorkGroupID.x].lightPositions[i];
         float dist = distance(vec2(globX, globY), torch);
         if(dist < 31){
             
