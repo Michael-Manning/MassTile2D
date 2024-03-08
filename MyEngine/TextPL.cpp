@@ -39,7 +39,7 @@ void TextPL::CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc, const
 
 	this->textureDescriptor = textureDescriptor;
 
-	auto shaderStages = createShaderStages(vertexSrc, fragmentSrc);
+	auto shaderStages = createGraphicsShaderStages(vertexSrc, fragmentSrc);
 
 	descriptorManager.configureDescriptorSets(vector<DescriptorManager::descriptorSetInfo> {
 		DescriptorManager::descriptorSetInfo(1, 1, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eVertex, &cameradb.buffers, cameradb.size),

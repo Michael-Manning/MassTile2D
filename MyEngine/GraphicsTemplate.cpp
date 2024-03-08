@@ -15,7 +15,7 @@ using namespace std;
 
 void GraphicsTemplate::CreateGraphicsPipeline(const ShaderResourceConfig& resourceConfig) {
 	
-	auto shaderStages = createShaderStages(resourceConfig.vertexSrc, resourceConfig.fragmentSrc); 
+	auto shaderStages = createGraphicsShaderStages(resourceConfig.vertexSrc, resourceConfig.fragmentSrc); 
 
 	this->pushInfo = resourceConfig.pushInfo;
 

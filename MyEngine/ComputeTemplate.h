@@ -16,18 +16,19 @@ public:
 	ComputeTemplate(VKEngine* engine) : Pipeline(engine), descriptorManager(engine)
 	{};
 
+	// will create multiple pipelines which are assumed to share the same descriptor sets
 	void CreateComputePipeline(const ShaderResourceConfig& resourceConfig);
 
-	void bindPipelineResources(vk::CommandBuffer& commandBuffer, void* pushConstantData = nullptr);
+	void BindDescriptorSets(vk::CommandBuffer& commandBuffer);
 
-	void updatePushConstant(vk::CommandBuffer& commandBuffer, void* pushConstantData);
+	void UpdatePushConstant(vk::CommandBuffer& commandBuffer, void* pushConstantData);
 
-	void Dispatch(vk::CommandBuffer& commandBuffer, glm::ivec3 workInstanceCounts, glm::ivec3 workGroupSizes);
+	void Dispatch(vk::CommandBuffer& commandBuffer, glm::ivec3 workInstancePerAxis, glm::ivec3 workGroupLocalSize);
 
-	void recordCommandBuffer(vk::CommandBuffer& commandBuffer, glm::ivec3 workInstanceCounts, glm::ivec3 workGroupSizes, void* pushConstantData = nullptr);
+	void BindPipelineStage(vk::CommandBuffer& commandBuffer, int index);
 
 private:
-	vk::Pipeline compPipeline;
+	std::vector<vk::Pipeline> compPipelines;
 	DescriptorManager descriptorManager;
 	std::vector<GlobalDescriptorBinding> globalDescriptors;
 	PushConstantInfo pushInfo;

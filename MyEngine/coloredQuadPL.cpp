@@ -31,7 +31,7 @@ using namespace std;
 
 void ColoredQuadPL::CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc, vk::RenderPass& renderTarget, MappedDoubleBuffer<cameraUBO_s>& cameradb, bool flipFaces) {
 
-	auto shaderStages = createShaderStages(vertexSrc, fragmentSrc);
+	auto shaderStages = createGraphicsShaderStages(vertexSrc, fragmentSrc);
 
 	descriptorManager.configureDescriptorSets(vector<DescriptorManager::descriptorSetInfo> {
 		DescriptorManager::descriptorSetInfo(0, 0, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eVertex, &cameradb.buffers, cameradb.size),

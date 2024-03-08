@@ -39,11 +39,10 @@ void TilemapLightRasterPL::CreateGraphicsPipeline(const std::vector<uint8_t>& ve
 
 	this->textureDescriptor = textureDescriptor;
 
-	auto shaderStages = createShaderStages(vertexSrc, fragmentSrc);
+	auto shaderStages = createGraphicsShaderStages(vertexSrc, fragmentSrc);
 
-	// TODO: replace this pattern with new device buffer structure (see particle system)
-	std::array<vk::Buffer, FRAMES_IN_FLIGHT> worldMapFGDeviceBuferRef = { world->_worldMapFGDeviceBuffer, world->_worldMapFGDeviceBuffer };
-	std::array<vk::Buffer, FRAMES_IN_FLIGHT> worldMapBGDeviceBuferRef = { world->_worldMapBGDeviceBuffer, world->_worldMapBGDeviceBuffer };
+	auto worldMapFGDeviceBuferRef = world->MapFGBuffer.GetDoubleBuffer();
+	auto worldMapBGDeviceBuferRef = world->MapBGBuffer.GetDoubleBuffer();
 
 	descriptorManager.configureDescriptorSets(vector<DescriptorManager::descriptorSetInfo> {
 		DescriptorManager::descriptorSetInfo(1, 0, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eVertex, &cameradb.buffers, cameradb.size),

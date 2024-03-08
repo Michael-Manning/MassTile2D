@@ -34,6 +34,9 @@
     <Filter Include="Source Files\Engine\ECS\Assets">
       <UniqueIdentifier>{f012ce76-9b30-4522-ac49-76881a9b10d2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Util">
+      <UniqueIdentifier>{e552af8c-4238-4a63-8916-881d224cd2c8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="vulkan_setup.cpp">
@@ -176,9 +179,6 @@
     <ClInclude Include="AssetManager.h">
       <Filter>Source Files\Engine</Filter>
     </ClInclude>
-    <ClInclude Include="Utils.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="serialization.h">
       <Filter>Source Files\Engine</Filter>
     </ClInclude>
@@ -205,9 +205,6 @@
     </ClInclude>
     <ClInclude Include="benchmark.h">
       <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="profiling.h">
-      <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="Constants.h">
       <Filter>Source Files</Filter>
@@ -275,12 +272,6 @@
     <ClInclude Include="ComputeTemplate.h">
       <Filter>Source Files\vulkan\piplines</Filter>
     </ClInclude>
-    <ClInclude Include="ConcurrentQueue.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="BindingManager.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="boidsCompute.h">
       <Filter>Source Files\vulkan\piplines</Filter>
     </ClInclude>
@@ -314,9 +305,6 @@
     <ClInclude Include="Transform.h">
       <Filter>Source Files\Engine\ECS</Filter>
     </ClInclude>
-    <ClInclude Include="SlotManager.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="TextRenderer.h">
       <Filter>Source Files\Engine\ECS\Components</Filter>
     </ClInclude>
@@ -337,6 +325,24 @@
     </ClInclude>
     <ClInclude Include="TilemapLightRasterPL.h">
       <Filter>Source Files\vulkan\piplines</Filter>
+    </ClInclude>
+    <ClInclude Include="ConcurrentQueue.h">
+      <Filter>Source Files\Util</Filter>
+    </ClInclude>
+    <ClInclude Include="BindingManager.h">
+      <Filter>Source Files\Util</Filter>
+    </ClInclude>
+    <ClInclude Include="SlotManager.h">
+      <Filter>Source Files\Util</Filter>
+    </ClInclude>
+    <ClInclude Include="profiling.h">
+      <Filter>Source Files\Util</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils.h">
+      <Filter>Source Files\Util</Filter>
+    </ClInclude>
+    <ClInclude Include="RingBuffer.h">
+      <Filter>Source Files\Util</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

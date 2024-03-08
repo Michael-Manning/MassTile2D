@@ -20,7 +20,6 @@
 
 #include <vk_mem_alloc.h>
 
-//#define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
 #include "VKEngine.h"
@@ -31,12 +30,7 @@
 
 using namespace std;
 
-std::vector<vk::PipelineShaderStageCreateInfo> Pipeline::createShaderStages(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc) {
-	/*auto vertShaderCode = readFile(vertexSrc);
-	auto fragShaderCode = readFile(fragmentSrc);*/
-
-	/*vk::ShaderModule vertShaderModule = VKUtil::createShaderModule(vertShaderCode, engine->devContext.device);
-	vk::ShaderModule fragShaderModule = VKUtil::createShaderModule(fragShaderCode, engine->devContext.device);*/
+std::vector<vk::PipelineShaderStageCreateInfo> Pipeline::createGraphicsShaderStages(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc) {
 
 	vk::ShaderModule vertShaderModule = VKUtil::createShaderModule(vertexSrc, engine->devContext.device);
 	vk::ShaderModule fragShaderModule = VKUtil::createShaderModule(fragmentSrc, engine->devContext.device);
@@ -54,17 +48,20 @@ std::vector<vk::PipelineShaderStageCreateInfo> Pipeline::createShaderStages(cons
 	return { vertShaderStageInfo, fragShaderStageInfo };
 }
 
-vk::PipelineShaderStageCreateInfo Pipeline::createComputeShaderStage(const std::vector<uint8_t>& shaderCode) {
-	//auto shaderCode = readFile(computeSrc);
+std::vector<vk::PipelineShaderStageCreateInfo> Pipeline::createComputeShaderStages(const std::vector<std::vector<uint8_t>>& computeSrcs) {
 
-	vk::ShaderModule vertShaderModule = VKUtil::createShaderModule(shaderCode, engine->devContext.device);
+	std::vector<vk::PipelineShaderStageCreateInfo> infos;
+	infos.reserve(computeSrcs.size());
 
-	vk::PipelineShaderStageCreateInfo stageInfo{};
-	stageInfo.stage = vk::ShaderStageFlagBits::eCompute;
-	stageInfo.module = vertShaderModule;
-	stageInfo.pName = "main";
+	for (auto& src : computeSrcs)
+	{
+		vk::PipelineShaderStageCreateInfo& stageInfo = infos.emplace_back();
+		stageInfo.stage = vk::ShaderStageFlagBits::eCompute;
+		stageInfo.module = VKUtil::createShaderModule(src, engine->devContext.device);
+		stageInfo.pName = "main";
+	}
 
-	return stageInfo;
+	return infos;
 }
 
 vk::PipelineInputAssemblyStateCreateInfo Pipeline::defaultInputAssembly() {
@@ -161,48 +158,10 @@ vk::PipelineDynamicStateCreateInfo Pipeline::defaultDynamicState() {
 	return dynamicState;
 }
 
-
-//vk::DescriptorSetLayoutBinding Pipeline::buildSamplerBinding(int binding, int descriptorCount, vk::ShaderStageFlags stageFlags) {
-//	vk::DescriptorSetLayoutBinding samplerLayoutBinding;
-//	samplerLayoutBinding.binding = binding;
-//	samplerLayoutBinding.descriptorCount = descriptorCount;
-//	samplerLayoutBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-//	samplerLayoutBinding.pImmutableSamplers = nullptr;
-//	samplerLayoutBinding.stageFlags = stageFlags;
-//	return samplerLayoutBinding;
-//}
-//
-//vk::DescriptorSetLayoutBinding Pipeline::buildUBOBinding(int binding, vk::ShaderStageFlags stageFlags) {
-//	vk::DescriptorSetLayoutBinding uboLayoutBinding;
-//	uboLayoutBinding.binding = binding;
-//	uboLayoutBinding.descriptorCount = 1;
-//	uboLayoutBinding.descriptorType = vk::DescriptorType::eUniformBuffer;
-//	uboLayoutBinding.pImmutableSamplers = nullptr;
-//	uboLayoutBinding.stageFlags = stageFlags;
-//	return uboLayoutBinding;
-//}
-//
-//vk::DescriptorSetLayoutBinding Pipeline::buildSSBOBinding(int binding, vk::ShaderStageFlags stageFlags) {
-//	vk::DescriptorSetLayoutBinding ssboLayoutBinding;
-//	ssboLayoutBinding.binding = binding;
-//	ssboLayoutBinding.descriptorCount = 1;
-//	ssboLayoutBinding.descriptorType = vk::DescriptorType::eStorageBuffer;
-//	ssboLayoutBinding.pImmutableSamplers = nullptr;
-//	ssboLayoutBinding.stageFlags = stageFlags;
-//	return ssboLayoutBinding;
-//}
-//
-//void Pipeline::buildSetLayout(std::vector<vk::DescriptorSetLayoutBinding>& bindings, vk::DescriptorSetLayout& layout) {
-//	vk::DescriptorSetLayoutCreateInfo setInfo;
-//	setInfo.bindingCount = bindings.size();
-//	setInfo.flags = vk::DescriptorSetLayoutCreateFlags{};
-//	setInfo.pNext = nullptr;
-//	setInfo.pBindings = bindings.data();
-//
-//	layout = engine->devContext.device.createDescriptorSetLayout(setInfo);
-//}
-
 void Pipeline::buildPipelineLayout(descriptorLayoutMap& descriptorSetLayouts, uint32_t pushConstantSize, vk::ShaderStageFlags pushConstantStages) {
+
+	// bind indexes are explicit in shaders, but set indexes are determined by their contiguous order in the layout array.
+	// This function accepts both the bind and set indexes explicitly, then validates and sorts them for the vulkan structures.
 
 	// ensure set numbers start from zero and don't skip any values
 	{
@@ -247,114 +206,3 @@ void Pipeline::buildPipelineLayout(descriptorLayoutMap& descriptorSetLayouts, ui
 
 	pipelineLayout = engine->devContext.device.createPipelineLayout(pipelineLayoutInfo);
 }
-
-//void Pipeline::buidDBDescriptorSet(vk::DescriptorSetLayout& layout, std::array<vk::DescriptorSet, FRAMES_IN_FLIGHT>& sets) {
-//
-//	std::array<vk::DescriptorSetLayout, FRAMES_IN_FLIGHT> layouts = { layout, layout };
-//
-//	vk::DescriptorSetAllocateInfo allocInfo;
-//	allocInfo.descriptorPool = engine->descriptorPool;
-//	allocInfo.descriptorSetCount = static_cast<uint32_t>(FRAMES_IN_FLIGHT);
-//	allocInfo.pSetLayouts = layouts.data();
-//
-//	auto dsV = engine->devContext.device.allocateDescriptorSets(allocInfo);
-//	for (size_t i = 0; i < sets.size(); i++) {
-//		sets[i] = dsV[i];
-//	}
-//}
-//
-//
-//void Pipeline::buildDescriptorLayouts() {
-//
-//	// a layout binding for each set
-//	unordered_map<int, vector<vk::DescriptorSetLayoutBinding>> builderLayoutBindings;
-//
-//	for (auto& i : builderDescriptorSetsDetails) {
-//
-//		vk::DescriptorSetLayoutBinding binding;
-//
-//		switch (i.type)
-//		{
-//		case vk::DescriptorType::eUniformBuffer:
-//			binding = buildUBOBinding(i.binding, i.stageFlags);
-//			break;
-//		case vk::DescriptorType::eStorageBuffer:
-//			binding = buildSSBOBinding(i.binding, i.stageFlags);
-//			break;
-//		case vk::DescriptorType::eCombinedImageSampler:
-//			binding = buildSamplerBinding(i.binding, i.textureCount, i.stageFlags);
-//			break;
-//		default:
-//			assert(false);
-//			break;
-//		}
-//
-//		builderLayoutBindings[i.set].push_back(binding);
-//	}
-//
-//	// iterate builderLayoBindings and build the actual layouts
-//	for (auto& [set, binding] : builderLayoutBindings) {
-//		vk::DescriptorSetLayout layout;
-//		buildSetLayout(binding, layout);
-//		builderLayouts[set] = layout;
-//	}
-//}
-//void Pipeline::buildDescriptorSets() {
-//
-//
-//	for (auto& [set, layout] : builderLayouts) {
-//		buidDBDescriptorSet(layout, builderDescriptorSets[set]);
-//	}
-//
-//	// one time write to every descriptor set
-//	for (auto& info : builderDescriptorSetsDetails)
-//	{
-//		for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++) {
-//
-//			updateDescriptorSet(i, info);
-//		}
-//	}
-//}
-//
-//void Pipeline::updateDescriptorSet(int frame, descriptorSetInfo& info) {
-//	vk::WriteDescriptorSet descriptorWrite;
-//	descriptorWrite.dstSet = builderDescriptorSets[info.set][frame];
-//	descriptorWrite.dstBinding = info.binding;
-//	descriptorWrite.dstArrayElement = 0;
-//	descriptorWrite.descriptorType = info.type;
-//
-//	if (info.type == vk::DescriptorType::eUniformBuffer || info.type == vk::DescriptorType::eStorageBuffer) {
-//		assert(info.doubleBuffer != nullptr);
-//		assert(info.bufferRange != 0);
-//
-//		vk::DescriptorBufferInfo bufferInfo{};
-//		bufferInfo.buffer = (*info.doubleBuffer)[frame];
-//		bufferInfo.offset = 0;
-//		bufferInfo.range = info.bufferRange;
-//		descriptorWrite.descriptorCount = 1;
-//		descriptorWrite.pBufferInfo = &bufferInfo;
-//
-//		engine->devContext.device.updateDescriptorSets(1, &descriptorWrite, 0, nullptr);
-//	}
-//	else if (info.type == vk::DescriptorType::eCombinedImageSampler) {
-//
-//		assert(info.textures != nullptr);
-//
-//		vector<vk::DescriptorImageInfo> imageInfos(info.textureCount);
-//		for (size_t i = 0; i < info.textureCount; i++) {
-//			vk::DescriptorImageInfo imageInfo{};
-//			imageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-//			imageInfo.imageView = info.textures[i].imageView;
-//			imageInfo.sampler = info.textures[i].sampler;
-//			imageInfos[i] = imageInfo;
-//		}
-//
-//		descriptorWrite.descriptorCount = info.textureCount;
-//		descriptorWrite.pImageInfo = imageInfos.data();
-//
-//		engine->devContext.device.updateDescriptorSets(1, &descriptorWrite, 0, nullptr);
-//	}
-//	else {
-//		assert(false);
-//	}
-//}

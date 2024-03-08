@@ -24,7 +24,7 @@ struct PushConstantInfo {
 struct ShaderResourceConfig {
 	std::vector<uint8_t> fragmentSrc;
 	std::vector<uint8_t> vertexSrc;
-	std::vector<uint8_t> computeSrc;
+	std::vector<std::vector<uint8_t>> computeSrcStages;
 	std::vector<DescriptorManager::descriptorSetInfo> descriptorInfos;
 	std::vector<GlobalDescriptorBinding> globalDescriptors;
 	bool flipFaces;
@@ -54,43 +54,8 @@ protected:
 	vk::Pipeline _pipeline;
 	vk::PipelineLayout pipelineLayout;
 
-	// for builder
-	//struct descriptorSetInfo {
-	//	int set;
-	//	int binding;
-	//	vk::DescriptorType type;
-	//	vk::ShaderStageFlags stageFlags;
-	//	std::array<vk::Buffer, FRAMES_IN_FLIGHT> * doubleBuffer = nullptr;
-	//	vk::DeviceSize bufferRange = 0;
-	//	Texture * textures= nullptr;
-	//	int textureCount = 0;
-
-	//	descriptorSetInfo(int set, int binding, vk::DescriptorType type, vk::ShaderStageFlags stageFlags, std::array<vk::Buffer, FRAMES_IN_FLIGHT>* db, vk::DeviceSize bufferRange)
-	//		: set(set), binding(binding), type(type), stageFlags(stageFlags), doubleBuffer(db), bufferRange(bufferRange),  textures(nullptr) {
-	//	};
-	//	descriptorSetInfo(int set, int binding, vk::DescriptorType type, vk::ShaderStageFlags stageFlags, Texture* texture, int textureCount)
-	//		: set(set), binding(binding), type(type), stageFlags(stageFlags), doubleBuffer(nullptr), bufferRange(0), textures(texture), textureCount(textureCount) {
-	//	};
-	//};
-	//
-	//// set number to layout
-	//std::unordered_map<int, vk::DescriptorSetLayout> builderLayouts;
-	//std::unordered_map<int, std::array<vk::DescriptorSet, FRAMES_IN_FLIGHT>> builderDescriptorSets;
-	//
-	//std::vector<descriptorSetInfo> builderDescriptorSetsDetails;
-
-	//void configureDescriptorSets(std::vector< descriptorSetInfo> layoutDetails) {
-	//	builderDescriptorSetsDetails = layoutDetails;
-	//};
-
-	//void buildDescriptorLayouts();
-	//void buildDescriptorSets();
-	//void updateDescriptorSet(int frame, descriptorSetInfo& info);
-
-	//std::vector<vk::PipelineShaderStageCreateInfo> createShaderStages(std::string vertexSrc, std::string fragmentSrc);
-	std::vector<vk::PipelineShaderStageCreateInfo> createShaderStages(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc);
-	vk::PipelineShaderStageCreateInfo createComputeShaderStage(const std::vector<uint8_t>& computeSrc);
-	//vk::PipelineShaderStageCreateInfo createComputeShaderStage(std::string computeSrc);
+	std::vector<vk::PipelineShaderStageCreateInfo> createGraphicsShaderStages(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc);
+	std::vector<vk::PipelineShaderStageCreateInfo> createComputeShaderStages(const std::vector<std::vector<uint8_t>>& computeSrcs);
 
 	vk::PipelineInputAssemblyStateCreateInfo defaultInputAssembly();
 	vk::PipelineViewportStateCreateInfo defaultViewportState();
@@ -116,12 +81,5 @@ protected:
 		return viewport;
 	};
 
-	//vk::DescriptorSetLayoutBinding buildSamplerBinding(int binding, int descriptorCount, vk::ShaderStageFlags stageFlags);
-	//vk::DescriptorSetLayoutBinding buildUBOBinding(int binding, vk::ShaderStageFlags stageFlags);
-	//vk::DescriptorSetLayoutBinding buildSSBOBinding(int binding, vk::ShaderStageFlags stageFlags);
-	//void buildSetLayout(std::vector<vk::DescriptorSetLayoutBinding>& bindings, vk::DescriptorSetLayout& layout);
-
 	void buildPipelineLayout(descriptorLayoutMap& descriptorSetLayouts, uint32_t pushConstantSize = 0, vk::ShaderStageFlags pushConstantStages = vk::ShaderStageFlagBits::eFragment);
-
-	//void buidDBDescriptorSet(vk::DescriptorSetLayout& layout, std::array<vk::DescriptorSet, FRAMES_IN_FLIGHT>& sets);
 };

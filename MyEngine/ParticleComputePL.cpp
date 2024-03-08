@@ -56,7 +56,7 @@ void ParticleComputePL::CreateComputePipeline(const std::vector<uint8_t>& compSr
 
 
 	ShaderResourceConfig con;
-	con.computeSrc = compSrc;
+	con.computeSrcStages = { compSrc };
 	con.descriptorInfos.push_back(DescriptorManager::descriptorSetInfo(0, 0, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eCompute, &sysConfigDB.buffers, sysConfigDB.size));
 	con.descriptorInfos.push_back(DescriptorManager::descriptorSetInfo(0, 1, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eCompute, &deviceDB, particleDataBuffer->size));
 	con.descriptorInfos.push_back(DescriptorManager::descriptorSetInfo(0, 2, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eCompute, &atomicDB, atomicCounterBuffer.size));
@@ -72,7 +72,8 @@ void ParticleComputePL::CreateComputePipeline(const std::vector<uint8_t>& compSr
 void ParticleComputePL::RecordCommandBuffer(vk::CommandBuffer commandBuffer, float deltaTime, std::vector<DispatchInfo>& dispatchInfo) {
 	TracyVkZone(engine->tracyGraphicsContexts[engine->currentFrame], commandBuffer, "particle system compute");
 
-	pipeline.bindPipelineResources(commandBuffer);
+	pipeline.BindPipelineStage(commandBuffer, 0);
+	pipeline.BindDescriptorSets(commandBuffer);
 
 	// reset atomic counter device buffer
 	commandBuffer.fillBuffer(atomicCounterBuffer.buffer, 0, VK_WHOLE_SIZE, 0);
@@ -88,7 +89,7 @@ void ParticleComputePL::RecordCommandBuffer(vk::CommandBuffer commandBuffer, flo
 			.init = info.init ? 1 : 0,
 			.spawnPosition = info.spawnPosition
 		};
-		pipeline.updatePushConstant(commandBuffer, &pc);
+		pipeline.UpdatePushConstant(commandBuffer, &pc);
 
 		pipeline.Dispatch(commandBuffer, { info.particleCount, 1, 1 }, { 32, 1, 1 });
 	}

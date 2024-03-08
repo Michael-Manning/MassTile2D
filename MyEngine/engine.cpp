@@ -628,9 +628,10 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 				ctx.worldMap->stageChunkUpdates(computeCmdBuffer);
 			}
 
-			auto lightingData = ctx.worldMap->getLightingUpdateData();
-			ctx.lightingPipeline->stageLightingUpdate(lightingData);
-			ctx.lightingPipeline->recordCommandBuffer(computeCmdBuffer, lightingData.size());
+			auto baseBightingtUpdates = ctx.worldMap->getBaseLightingUpdateData();
+			auto blurBightingtUpdates = ctx.worldMap->getBlurLightingUpdateData();
+			ctx.lightingPipeline->stageLightingUpdate(baseBightingtUpdates, blurBightingtUpdates);
+			ctx.lightingPipeline->recordCommandBuffer(computeCmdBuffer, baseBightingtUpdates.size(), blurBightingtUpdates.size());
 			ctx.worldMap->baseChunkLightingJobs.clear();
 		}
 

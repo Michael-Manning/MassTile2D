@@ -23,14 +23,16 @@
 #include "vertex.h"
 #include "TileWorld.h"
 #include "vulkan_util.h"
+#include "ComputeTemplate.h"
 #include "globalBufferDefinitions.h"
 
 
-class LightingComputePL :public  Pipeline {
+//class LightingComputePL :public  Pipeline {
+class LightingComputePL {
 
 public:
 
-	LightingComputePL(VKEngine* engine, TileWorld* world) : Pipeline(engine), world(world) {
+	LightingComputePL(VKEngine* engine, TileWorld* world) : engine(engine), world(world), pipelines(engine) {
 	}
 
 	//void createStagingBuffers();
@@ -38,20 +40,25 @@ public:
 	void CreateComputePipeline(const std::vector<uint8_t>& computeSrc_firstPass, const std::vector<uint8_t>& computeSrc_secondPass);
 	//void CreateComputePipeline(std::string computeSrc_firstPass, std::string computeSrc_secondPass);
 
-	void recordCommandBuffer(vk::CommandBuffer commandBuffer, int chunkUpdateCount);
+	void recordCommandBuffer(vk::CommandBuffer commandBuffer, int baseUpdates, int blurUpdates);
 
-	void stageLightingUpdate(std::vector<chunkLightingUpdateinfo>& chunkUpdates) {
+	void stageLightingUpdate(std::vector<chunkLightingUpdateinfo>& baseUpdates, std::vector<chunkLightingUpdateinfo>& blurUpdates) {
 		ZoneScoped;
-		if (chunkUpdates.size() == 0)
-			return;
-		std::copy(chunkUpdates.begin(), chunkUpdates.end(), baseLightUpdateDB.buffersMapped[engine->currentFrame]);
-		//memcpy(lightPositionsDB.buffersMapped[engine->currentFrame], chunkUpdates.data(), sizeof(chunkLightingUpdateinfo) * chunkUpdates.size());
+		if (baseUpdates.size() != 0)
+			std::copy(baseUpdates.begin(), baseUpdates.end(), baseLightUpdateDB.buffersMapped[engine->currentFrame]);
+
+		if (blurUpdates.size() != 0)
+			std::copy(blurUpdates.begin(), blurUpdates.end(), blurLightUpdateDB.buffersMapped[engine->currentFrame]);
 	}
 
 private:
 
-	vk::Pipeline firstStagePipeline;
-	vk::Pipeline secondStagePipeline;
+	/*vk::Pipeline firstStagePipeline;
+	vk::Pipeline secondStagePipeline;*/
+
+	VKEngine* engine;
+
+	ComputeTemplate pipelines;
 
 	MappedDoubleBuffer<chunkLightingUpdateinfo> baseLightUpdateDB;
 	MappedDoubleBuffer<chunkLightingUpdateinfo> blurLightUpdateDB;

@@ -418,6 +418,7 @@
     <ClInclude Include="PrefabGenerator.h" />
     <ClInclude Include="quadComputePL.h" />
     <ClInclude Include="ResourceManager.h" />
+    <ClInclude Include="RingBuffer.h" />
     <ClInclude Include="SceneData.h" />
     <ClInclude Include="Settings.h" />
     <ClInclude Include="SlotManager.h" />

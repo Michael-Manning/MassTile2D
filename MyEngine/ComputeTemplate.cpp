@@ -13,7 +13,10 @@ using namespace glm;
 using namespace std;
 
 void ComputeTemplate::CreateComputePipeline(const ShaderResourceConfig& resourceConfig) {
-	auto computeStage = createComputeShaderStage(resourceConfig.computeSrc);
+
+	assert(resourceConfig.computeSrcStages.size() > 0);
+
+	auto computeStages = createComputeShaderStages(resourceConfig.computeSrcStages);
 
 	this->pushInfo = resourceConfig.pushInfo;
 
@@ -30,17 +33,18 @@ void ComputeTemplate::CreateComputePipeline(const ShaderResourceConfig& resource
 		setLayouts[globalDesc.setNumber] = globalDesc.descriptor->layout;
 
 
-	//assert(false);
 	buildPipelineLayout(setLayouts, pushInfo.pushConstantSize, pushInfo.pushConstantShaderStages);
 
 	vk::ComputePipelineCreateInfo pipelineInfo;
 	pipelineInfo.layout = pipelineLayout;
 
+	compPipelines.reserve(computeStages.size());
+	for (auto& stage : computeStages)
 	{
-		pipelineInfo.stage = computeStage;
+		pipelineInfo.stage = stage;
 		auto ret = engine->devContext.device.createComputePipeline({}, pipelineInfo);
 		assert(ret.result == vk::Result::eSuccess);
-		compPipeline = ret.value;
+		compPipelines.push_back(ret.value);
 	}
 
 	descriptorManager.buildDescriptorSets();
@@ -49,15 +53,8 @@ void ComputeTemplate::CreateComputePipeline(const ShaderResourceConfig& resource
 	globalDescriptors = resourceConfig.globalDescriptors;
 }
 
-void ComputeTemplate::recordCommandBuffer(vk::CommandBuffer& commandBuffer, glm::ivec3 workInstanceCounts, glm::ivec3 workGroupSizes, void* pushConstantData) {
 
-	bindPipelineResources(commandBuffer, pushConstantData);
-
-	Dispatch(commandBuffer, workInstanceCounts, workGroupSizes);
-}
-
-void ComputeTemplate::bindPipelineResources(vk::CommandBuffer& commandBuffer, void* pushConstantData) {
-	commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, compPipeline);
+void ComputeTemplate::BindDescriptorSets(vk::CommandBuffer& commandBuffer) {	
 
 	// handle potential global descriptor
 	for (auto& desc : globalDescriptors)
@@ -75,20 +72,36 @@ void ComputeTemplate::bindPipelineResources(vk::CommandBuffer& commandBuffer, vo
 			0,
 			nullptr);
 	}
-
-	if (pushInfo.pushConstantSize > 0 && pushConstantData != nullptr) {
-		updatePushConstant(commandBuffer, pushConstantData);
-	}
 }
 
-void ComputeTemplate::updatePushConstant(vk::CommandBuffer& commandBuffer, void* pushConstantData) {
+void ComputeTemplate::UpdatePushConstant(vk::CommandBuffer& commandBuffer, void* pushConstantData) {
 	commandBuffer.pushConstants(pipelineLayout, pushInfo.pushConstantShaderStages, 0, pushInfo.pushConstantSize, pushConstantData);
 }
 
-void ComputeTemplate::Dispatch(vk::CommandBuffer& commandBuffer, glm::ivec3 workInstanceCounts, glm::ivec3 workGroupSizes) {
+/*
+
+	Remember, if the layout of a shader is something like (32, 32, 1)
+	and the dispatch call is (10, 1, 1)
+
+	that will create 10 work groups have 1024 threads each which are layed out as 32 by 32.
+
+	The axis in the dispatch call have no relation to the local size of the shader, it's just a multiplication of the two
+
+*/
+
+void ComputeTemplate::Dispatch(vk::CommandBuffer& commandBuffer, glm::ivec3 workInstancePerAxis, glm::ivec3 workGroupLocalSize) {
+
+	int localThreadCount = workGroupLocalSize.x * workGroupLocalSize.y * workGroupLocalSize.z;
+
 	commandBuffer.dispatch(
-		workInstanceCounts.x / workGroupSizes.x + (workInstanceCounts.x % workGroupSizes.x ? 1 : 0),
-		workInstanceCounts.y / workGroupSizes.y + (workInstanceCounts.y % workGroupSizes.y ? 1 : 0),
-		workInstanceCounts.z / workGroupSizes.z + (workInstanceCounts.z % workGroupSizes.z ? 1 : 0)
+		workInstancePerAxis.x / localThreadCount + (workInstancePerAxis.x % localThreadCount ? 1 : 0),
+		workInstancePerAxis.y / localThreadCount + (workInstancePerAxis.y % localThreadCount ? 1 : 0),
+		workInstancePerAxis.z / localThreadCount + (workInstancePerAxis.z % localThreadCount ? 1 : 0)
 	);
+}
+
+void ComputeTemplate::BindPipelineStage(vk::CommandBuffer& commandBuffer, int index)
+{
+	assert(index >= 0 && index < compPipelines.size());
+	commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, compPipelines[index]);
 }

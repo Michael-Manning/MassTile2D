@@ -46,7 +46,7 @@ void TexturedQuadPL::CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSr
 	for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++)
 		lightmapIndexDB.buffersMapped[i]->lightMapIndex = lightMapTextureIndexes[i];
 
-	auto shaderStages = createShaderStages(vertexSrc, fragmentSrc);
+	auto shaderStages = createGraphicsShaderStages(vertexSrc, fragmentSrc);
 
 	descriptorManager.configureDescriptorSets(vector<DescriptorManager::descriptorSetInfo> {
 		DescriptorManager::descriptorSetInfo(1, 1, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eVertex, &cameradb.buffers, cameradb.size),
