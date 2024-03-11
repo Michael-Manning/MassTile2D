@@ -40,9 +40,21 @@ layout(push_constant) uniform constants{
 	int blurEnabled;
 };
 
+//layout (local_size_x = 64, local_size_y = 64, local_size_z = 1) in;
  layout (local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
 
 // todo : use getTile funciton from other shader instead
+
+int getChunkIndex(int x, int y){
+    int cx = (x / chunkSize);
+    int cy = (y / chunkSize);
+    int chunk = cy * chunksX + cx;
+    int chuckIndexOffset = chunk * chunkTileCount;
+    return mapOffset + chuckIndexOffset + (y % chunkSize) * chunkSize + (x % chunkSize);
+}
+
+
+
 
 #define chunkSize2 64
 #define chunkTileCount2 4096
@@ -51,133 +63,97 @@ layout(push_constant) uniform constants{
 #define maph2 2048
 #define mapCount2 8388608
 
-int getChunkIndex(int x, int y){
-    int cx = (x / chunkSize);
-    int cy = (y / chunkSize);
-    int chunk = cy * chunksX + cx;
-    int chuckIndexOffset = chunk * chunkTileCount;
-    return chuckIndexOffset + (y % chunkSize) * chunkSize + (x % chunkSize);
-}
-int getChunkIndex2(int x, int y){
-   int cx = (x / chunkSize2);
-   int cy = (y / chunkSize2);
-   int chunk = cy * chunksX + cx;
-   int chuckIndexOffset = chunk * chunkTileCount2;
-   return  chuckIndexOffset + (y % chunkSize2) * chunkSize2 + (x % chunkSize2);
-}
-
-
-
-
-
-
 void main() 
 {
-   if(upscaleEnabled == 1){
+
+   //  uint x = gl_LocalInvocationID.x;  
+   //  uint y = gl_LocalInvocationID.y;  
+
+
+
+   //  int chunk = blurLightingUpdates[gl_WorkGroupID.x].chunkIndex;
+   //  int chuckIndexOffset = chunk * chunkTileCount;
+   //  uint tilemapIndex = chuckIndexOffset + (y * chunkSize) + x;
+
+   //  uint chunkX = chunk % chunksX;
+   //  uint chunkY = chunk / chunksX;
+   //  uint globX = chunkX * chunkSize + x;
+   //  uint globY = chunkY * chunkSize + y;
+
+   // int index = getChunkIndex(int(globX ), int(globY ));
    
-      uint x = (gl_LocalInvocationID.x + (gl_WorkGroupID.y * 32)) / 2;  
-      uint y = (gl_LocalInvocationID.y + (gl_WorkGroupID.z * 32)) / 2;  
-
-      int chunk = blurLightingUpdates[gl_WorkGroupID.x].chunkIndex;
-      int chuckIndexOffset = chunk * chunkTileCount;
-      uint tilemapIndex = chuckIndexOffset + (y * chunkSize) + x;
-
-      uint chunkX = chunk % chunksX;
-      uint chunkY = chunk / chunksX;
-
-      uint globX = chunkX * chunkSize + x;
-      uint globY = chunkY * chunkSize + y; 
-
-      uint x2 = gl_LocalInvocationID.x + (gl_WorkGroupID.y * 32);  
-      uint y2 = gl_LocalInvocationID.y + (gl_WorkGroupID.z * 32);
-
-      uint globX2 = chunkX * chunkSize2 + x2;
-      uint globY2 = chunkY * chunkSize2 + y2; 
-
-
-      int chuckIndexOffset2 = chunk * chunkTileCount2;
-
-      int index = 0;
-      int index2 = 0;
-
-      index = getChunkIndex(int(globX), int(globY));
-      int curtile = tileMapFGData[index] & 0xFFFF;
-
-
-      float totalBrightness = 0;
-      int sampleCount = 0;
-
-      for(int i = -2; i < 3; i++){
-         for(int j = -2; j < 3; j++){
-
-            index = getChunkIndex(int(globX + i), int(globY + j));
-            index2 = getChunkIndex2(int(globX2 + i), int(globY2 + j));
-
-            int tile = tileMapFGData[index] & 0xFFFF;
-            int brightness = tileMapUpscaleData[index2];
-
-            if(tile == 1023 || curtile != 1023){
-                  sampleCount +=  1;
-                  totalBrightness += brightness;
-            }
-         }
-      }
-
-
-      uint tilemapIndex2 = chuckIndexOffset2 + (y2 * chunkSize2) + x2;
-
-      float brightness = (totalBrightness / float(sampleCount)) / 255.0;
-
-      brightness = clamp(brightness, ambiantLight, 1.0);  
-
-      tileMapBlurData[tilemapIndex2] =  int(brightness * 255); 
-      return;
-   }
-
-   uint x = gl_LocalInvocationID.x;  
-   uint y = gl_LocalInvocationID.y;  
+   uint x = (gl_LocalInvocationID.x + (gl_WorkGroupID.y * 32)) / 2;  
+   uint y = (gl_LocalInvocationID.y + (gl_WorkGroupID.z * 32)) / 2;  
 
 
 
-   int chunk = blurLightingUpdates[gl_WorkGroupID.x].chunkIndex;
+    int chunk = blurLightingUpdates[gl_WorkGroupID.x].chunkIndex;
    int chuckIndexOffset = chunk * chunkTileCount;
    uint tilemapIndex = chuckIndexOffset + (y * chunkSize) + x;
-
 
    uint chunkX = chunk % chunksX;
    uint chunkY = chunk / chunksX;
    uint globX = chunkX * chunkSize + x;
-   uint globY = chunkY * chunkSize + y;
+   uint globY = chunkY * chunkSize + y; 
 
-   int index = getChunkIndex(int(globX ), int(globY ));
-   int curtile = tileMapFGData[index] & 0xFFFF;
+   uint x2 = gl_LocalInvocationID.x + (gl_WorkGroupID.y * 32);  
+   uint y2 = gl_LocalInvocationID.y + (gl_WorkGroupID.z * 32);
+   int chuckIndexOffset2 = chunk * chunkTileCount2;
 
-//  int curBrightness =  tileMapBGData[mapOffset + index] >> 16;
+   int index = getChunkIndex(int(globX), int(globY));
+   int curVal = tileMapBGData[index] >> 16;
 
-   float totalBrightness = 0;
-   int sampleCount = 0;
+   globX += -1 + (x2 % 2);
+   globY += -1 + (y2 % 2);
 
-   for(int i = -1; i < 2; i++){
-      for(int j = -1; j < 2; j++){
+   int vals[4];
+   index = getChunkIndex(int(globX + 0), int(globY + 0));
+   vals[0] = tileMapBGData[index] >> 16;
+   index = getChunkIndex(int(globX + 1), int(globY + 0));
+   vals[1] = tileMapBGData[index] >> 16;
+   index = getChunkIndex(int(globX + 1), int(globY + 1));
+   vals[2] = tileMapBGData[index] >> 16;
+   index = getChunkIndex(int(globX + 0), int(globY + 1));
+   vals[3] = tileMapBGData[index] >> 16;
 
-         index = getChunkIndex(int(globX + i), int(globY + j));
-         int tile = tileMapFGData[ index] & 0xFFFF;
-         int brightness = tileMapBGData[index] >> 16;
+   int minv = vals[0];
+   int maxv = vals[0];
+   minv = min(minv, vals[1]);
+   maxv = max(maxv, vals[1]);
+   minv = min(minv, vals[2]);
+   maxv = max(maxv, vals[2]);
+   minv = min(minv, vals[3]);
+   maxv = max(maxv, vals[3]);
 
-         if(tile == 1023 || curtile != 1023){
-               sampleCount +=  1;
-               totalBrightness += brightness;
-         }
-      }
-   }
+   int mid = (maxv - minv) / 2;
 
-   // float brightness = (totalBrightness / 9.0) / 255.0;
+   int below = 0;
+   below += int(vals[0] < mid);
+   below += int(vals[1] < mid);
+   below += int(vals[2] < mid);
+   below += int(vals[3] < mid);
 
-   float brightness = (totalBrightness / float(sampleCount)) / 255.0;
-   brightness = clamp(brightness, ambiantLight, 1.0);
+   
 
-   //tileMapFGData[tilemapIndex] = (tileMapFGData[tilemapIndex] & 0xFFFF) | int(curBrightness) << 16;
-   tileMapFGData[tilemapIndex] = (tileMapFGData[tilemapIndex] & 0xFFFF) | int(brightness * 255) << 16;
+//   if(below > 2)
+//      curVal = minv;
+  if(below < 2)
+     curVal = maxv;
+   // if(below == 2)
+   //    curVal = mid;
+
+   uint tilemapIndex2 = chuckIndexOffset2 + (y2 * chunkSize2) + x2;
+
+   // if(x2 % 2  == 0 && y2 % 2  == 0){
+   //    tileMapUpscaleData[tilemapIndex2] =  255;
+   // }
+   // else{
+
+   //    tileMapUpscaleData[tilemapIndex2] =  0;
+   // }
+
+   tileMapUpscaleData[tilemapIndex2] = curVal; //tileMapBGData[tilemapIndex] >> 16;
+   tileMapFGData[tilemapIndex] =  (tileMapFGData[tilemapIndex] & 0xFFFF) | (tileMapBGData[tilemapIndex] & 0xFFFF0000);
 }
 
 

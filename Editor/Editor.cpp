@@ -1174,8 +1174,8 @@ void Editor::Run() {
 					selectedScene->sceneData.spriteRenderers.erase(selectedEntity->ID);
 				}
 				else {
-					rendererSelectedSprite = selectedScene->sceneData.spriteRenderers[selectedEntity->ID].sprite;
-					drawInspector(selectedScene->sceneData.spriteRenderers[selectedEntity->ID]);
+					rendererSelectedSprite = selectedScene->sceneData.spriteRenderers.at(selectedEntity->ID).sprite;
+					drawInspector(selectedScene->sceneData.spriteRenderers.at(selectedEntity->ID));
 				}
 			}
 

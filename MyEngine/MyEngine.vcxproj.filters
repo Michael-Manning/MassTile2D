@@ -150,6 +150,9 @@
     <ClCompile Include="TilemapLightRasterPL.cpp">
       <Filter>Source Files\vulkan\piplines</Filter>
     </ClCompile>
+    <ClCompile Include="TileWorld.cpp">
+      <Filter>Source Files\Engine</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pipeline.h">

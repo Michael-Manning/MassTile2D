@@ -47,12 +47,14 @@
             {
                 "atlasIndex": 5,
                 "entityID": 1,
-                "spriteID": 393035407
+                "spriteID": 393035407,
+                "useLightMap": true
             },
             {
                 "atlasIndex": 0,
                 "entityID": 2,
-                "spriteID": 4025101928
+                "spriteID": 4025101928,
+                "useLightMap": true
             }
         ]
     }

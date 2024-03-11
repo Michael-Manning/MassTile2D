@@ -388,7 +388,7 @@ void worldDebug() {
 }
 
 
-constexpr bool useTileWorld = true;
+constexpr bool useTileWorld = false;
 bool showLightMapDebug = false;
 
 #ifdef  PUBLISH
@@ -418,8 +418,8 @@ int main() {
 	engine->assetManager->LoadAllPrefabs(false);
 
 
-	engine->assetManager->LoadScene("game_test");
-	scene = engine->assetManager->GetScene("game_test");
+	//engine->assetManager->LoadScene("game_test");
+	//scene = engine->assetManager->GetScene("game_test");
 
 	global::mainScene = scene.get();
 
@@ -595,28 +595,28 @@ int main() {
 
 		else if (appState == AppState::PlayingGame) {
 
-			engine->addScreenSpaceText(UI.smallfont, { 4, 4 }, vec4(1.0), "fps: %d", (int)engine->_getAverageFramerate());
+			//engine->addScreenSpaceText(UI.smallfont, { 4, 4 }, vec4(1.0), "fps: %d", (int)engine->_getAverageFramerate());
 
-			UI::DoUI(uiState);
+			//UI::DoUI(uiState);
 
 
 
 			// trigger map entity click
-			{
-				if (input->getMouseBtnDown(MouseBtn::Right)) {
-					ivec2 tile = GetMouseTile();
-					int chunk = worldMap->GetChunk(tile);
+			//{
+			//	if (input->getMouseBtnDown(MouseBtn::Right)) {
+			//		ivec2 tile = GetMouseTile();
+			//		int chunk = worldMap->GetChunk(tile);
 
-					for (auto& ent : worldData->chunks[chunk].mapEntities)
-					{
-						if (tile.x >= ent->position.x && tile.x < ent->position.x + ent->size.x &&
-							tile.y >= ent->position.y && tile.y < ent->position.y + ent->size.y) {
-							ent->OnRightClick();
-							break; // map entities shouldn't overlap
-						}
-					}
-				}
-			}
+			//		for (auto& ent : worldData->chunks[chunk].mapEntities)
+			//		{
+			//			if (tile.x >= ent->position.x && tile.x < ent->position.x + ent->size.x &&
+			//				tile.y >= ent->position.y && tile.y < ent->position.y + ent->size.y) {
+			//				ent->OnRightClick();
+			//				break; // map entities shouldn't overlap
+			//			}
+			//		}
+			//	}
+			//}
 
 
 			GcameraPos = mainCamera.position;
@@ -640,7 +640,7 @@ int main() {
 #endif
 
 			// debug window
-			if (showingEditor)
+			if (showingEditor && useTileWorld)
 			{
 				using namespace ImGui;
 
@@ -652,6 +652,9 @@ int main() {
 					Text("x%d y%d", tile.x, tile.y);
 					Text("chunk: %d", chunk);
 					Checkbox("Lighting debug", &showLightMapDebug);
+					Checkbox("Enable interpolation", reinterpret_cast<bool*>(&worldMap->lightingSettings.interpolationEnabled));
+					Checkbox("Enable upscale", reinterpret_cast<bool*>(&worldMap->lightingSettings.upscaleEnabled));
+					Checkbox("Enable blur", reinterpret_cast<bool*>(&worldMap->lightingSettings.blurEnabled));
 
 					if (Button("Save world")) {
 						worldData->Serialize();
@@ -664,6 +667,7 @@ int main() {
 					if (input->getKeyDown('n')) {
 						worldMap->UpdateChunk(chunk);
 					}
+
 
 					End();
 				}

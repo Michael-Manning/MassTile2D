@@ -30,9 +30,9 @@ using namespace glm;
 using namespace std;
 
 namespace {
-	struct pushConstant_s {
-		int32_t textureIndex;
-	};
+	//struct pushConstant_s {
+	//	int32_t textureIndex;
+	//};
 }
 
 void TilemapLightRasterPL::CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc, vk::RenderPass& renderTarget, GlobalImageDescriptor* textureDescriptor, MappedDoubleBuffer<cameraUBO_s>& cameradb) {
@@ -43,11 +43,15 @@ void TilemapLightRasterPL::CreateGraphicsPipeline(const std::vector<uint8_t>& ve
 
 	auto worldMapFGDeviceBuferRef = world->MapFGBuffer.GetDoubleBuffer();
 	auto worldMapBGDeviceBuferRef = world->MapBGBuffer.GetDoubleBuffer();
+	auto  worldMapUpscaleBuferRef = world->MapLightUpscaleBuffer.GetDoubleBuffer();
+	auto  worldMapBlurBuferRef = world->MapLightBlurBuffer.GetDoubleBuffer();
 
 	descriptorManager.configureDescriptorSets(vector<DescriptorManager::descriptorSetInfo> {
 		DescriptorManager::descriptorSetInfo(1, 0, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eVertex, &cameradb.buffers, cameradb.size),
-			DescriptorManager::descriptorSetInfo(1, 1, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eFragment, &worldMapFGDeviceBuferRef, sizeof(TileWorld::worldTile_ssbo)* (mapCount)),
-			DescriptorManager::descriptorSetInfo(1, 2, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eFragment, &worldMapBGDeviceBuferRef, sizeof(TileWorld::worldTile_ssbo)* (mapCount))
+		DescriptorManager::descriptorSetInfo(1, 1, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eFragment, &worldMapFGDeviceBuferRef, sizeof(TileWorld::worldTile_ssbo)* (mapCount)),
+		DescriptorManager::descriptorSetInfo(1, 2, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eFragment, &worldMapBGDeviceBuferRef, sizeof(TileWorld::worldTile_ssbo)* (mapCount)),
+		DescriptorManager::descriptorSetInfo(1, 3, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eFragment, &worldMapUpscaleBuferRef, world->MapLightUpscaleBuffer.size),
+		DescriptorManager::descriptorSetInfo(1, 4, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eFragment, &worldMapBlurBuferRef, world->MapLightBlurBuffer.size)
 	});
 	descriptorManager.buildDescriptorLayouts();
 
@@ -56,7 +60,9 @@ void TilemapLightRasterPL::CreateGraphicsPipeline(const std::vector<uint8_t>& ve
 		setLayouts[set] = layout;
 	setLayouts[0] = textureDescriptor->layout;
 
-	buildPipelineLayout(setLayouts, sizeof(pushConstant_s), vk::ShaderStageFlagBits::eFragment);
+	buildPipelineLayout(setLayouts, sizeof(TileWorld::lightingSettings_pc), vk::ShaderStageFlagBits::eFragment);
+	//buildPipelineLayout(setLayouts, sizeof(pushConstant_s), vk::ShaderStageFlagBits::eFragment);
+	//buildPipelineLayout(setLayouts);
 
 	vk::VertexInputBindingDescription VbindingDescription;
 	dbVertexAtribute Vattribute;
@@ -127,8 +133,9 @@ void TilemapLightRasterPL::recordCommandBuffer(vk::CommandBuffer commandBuffer, 
 	for (auto& i : descriptorManager.builderDescriptorSetsDetails)
 		commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, i.set, 1, &descriptorManager.builderDescriptorSets[i.set][engine->currentFrame], 0, nullptr);
 
-	pushConstant_s pc{ .textureIndex = textureIndex };
-	commandBuffer.pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(pushConstant_s), &pc);
+	//pushConstant_s pc{ .textureIndex = textureIndex };
+	//commandBuffer.pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(pushConstant_s), &pc);
+	commandBuffer.pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(TileWorld::lightingSettings_pc), &world->lightingSettings);
 
 	{
 		TracyVkZone(engine->tracyGraphicsContexts[engine->currentFrame], commandBuffer, "Tilemap lighting raster");

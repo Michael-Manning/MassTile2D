@@ -30,13 +30,14 @@ public:
 		j["entityID"] = entId;
 		j["spriteID"] = sprite;
 		j["atlasIndex"] = atlasIndex;
+		j["useLightMap"] = useLightMap;
 		return j;
 	}
 
 	SpriteRenderer(nlohmann::json j) :
 		sprite(j["spriteID"].get<uint32_t>()),
 		atlasIndex(j["atlasIndex"]),
-		useLightMap(j["useLightMap"] == nullptr ? false : (bool)j["useLightMap"])
+		useLightMap(j.contains("useLightMap") ? (bool)j["useLightMap"] : false)
 	{}
 
 	SpriteRenderer(const AssetPack::SpriteRenderer* s, Entity* entityCache) : _entityCache(entityCache) {
@@ -48,6 +49,7 @@ public:
 	SpriteRenderer(spriteID sprite, int atlasIndex, Entity* entityCache, Sprite* spriteCache) :
 		sprite(sprite),
 		atlasIndex(atlasIndex),
+		useLightMap(useLightMap),
 		_entityCache(entityCache),
 		_spriteCache(spriteCache)
 	{}
@@ -55,6 +57,7 @@ public:
 	SpriteRenderer(const SpriteRenderer& data, Entity* entityCache, Sprite* spriteCache) :
 		sprite(data.sprite),
 		atlasIndex(data.atlasIndex),
+		useLightMap(data.useLightMap),
 		_entityCache(entityCache),
 		_spriteCache(spriteCache)
 	{}
@@ -62,6 +65,7 @@ public:
 	SpriteRenderer(const SpriteRenderer& data, Entity* entityCache) :
 		sprite(data.sprite),
 		atlasIndex(data.atlasIndex),
+		useLightMap(data.useLightMap),
 		_entityCache(entityCache)
 	{}
 

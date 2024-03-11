@@ -158,10 +158,11 @@ void Engine::createScenePLContext(ScenePipelineContext* ctx, bool allocateTileWo
 	}
 	if (allocateTileWorld) {
 		{
-			vector<uint8_t> comp, blur;
+			vector<uint8_t> comp, upscale, blur;
 			assetManager->LoadShaderFile("lighting_comp.spv", comp);
+			assetManager->LoadShaderFile("lightingUpscale_comp.spv", upscale);
 			assetManager->LoadShaderFile("lightingBlur_comp.spv", blur);
-			ctx->lightingPipeline->CreateComputePipeline(comp, blur);
+			ctx->lightingPipeline->CreateComputePipeline(comp, upscale, blur);
 		}
 		{
 			vector<uint8_t> vert, frag;
@@ -633,6 +634,7 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 			ctx.lightingPipeline->stageLightingUpdate(baseBightingtUpdates, blurBightingtUpdates);
 			ctx.lightingPipeline->recordCommandBuffer(computeCmdBuffer, baseBightingtUpdates.size(), blurBightingtUpdates.size());
 			ctx.worldMap->baseChunkLightingJobs.clear();
+			ctx.worldMap->blurChunkLightingJobs.clear();
 		}
 
 		// record particle compute for every particle system in every scene

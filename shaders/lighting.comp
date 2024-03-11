@@ -4,9 +4,12 @@
 #define chunkTileCount 1024
 #define chunksX  64 
 #define maxLightsPerChunk 100
-#define ambiantLight 0.05
+#define ambiantLight 0.001
 #define mapOffset 0
 #define mapCount 2097152
+
+#define rayMarchStep 0.25
+
 
 struct LightingUpdate {
 	int chunkIndex;
@@ -21,13 +24,21 @@ layout(std140, set = 0, binding = 1) readonly buffer blueLightingObjectBuffer{
 	LightingUpdate[] blurLightingUpdates;
 } ;
 
-layout(std430, set = 1, binding = 0) readonly buffer mapFGObjectBuffer {
+layout(std430, set = 1, binding = 0) buffer mapFGObjectBuffer {
 	int tileMapFGData[];
 } ;
 layout(std430, set = 1, binding = 1) buffer mapBGObjectBuffer {
 	int tileMapBGData[];
 } ;
+layout(std430, set = 1, binding = 2) readonly buffer mapUpscaleObjectBuffer {
+	int tileMapUpscaleData[];
+} ;
 
+layout(push_constant) uniform constants{
+	int interpolationEnabled;
+	int upscaleEnabled;
+	int blurEnabled;
+};
 
 layout (local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
 
@@ -78,9 +89,9 @@ void main()
             vec2 lightDir = normalize(torch - vec2(globX, globY));
 
             int hits = 0;
-            for(float j = 0; j < dist; j+= 0.5)
+            for(float j = 0; j < dist; j+= rayMarchStep)
             {
-                int tile = getTile(int(globX + lightDir.x * j), int(globY + lightDir.y * j)) & 0xFFFF;
+                int tile = getTile(int(globX + 0.5 + lightDir.x * j), int(globY + 0.5 + lightDir.y * j)) & 0xFFFF;
                 if(tile != 1023)
                 {
                     hits++;
@@ -94,7 +105,7 @@ void main()
             }
             dist = clamp(pow(1 - (dist / 31), 2.0), 0.0f, 1.0f);
 
-            float penatration = min(1.0, 1.0 - float(hits) / 30.0);
+            float penatration = min(1.0, 1.0 - float(hits) / 16.0);
              brightness += dist * pow(penatration, 5.0);
         }        
     }
@@ -110,11 +121,19 @@ void main()
             }
         }
     }
+    brightness = clamp(brightness, ambiantLight, 1.0);
+
     brightness += max(0.0, pow(1.0 - bgSrc / 20.0, 3));
 
     brightness = clamp(brightness, ambiantLight, 1.0);
 
 
+   if(blurEnabled == 0){
 
-    tileMapBGData[tilemapIndex] = (tileMapBGData[tilemapIndex] & 0xFFFF) | int(brightness * 255) << 16;
+      tileMapFGData[tilemapIndex] = (tileMapFGData[tilemapIndex] & 0xFFFF) | int(brightness * 255) << 16;
+      tileMapBGData[tilemapIndex] = (tileMapBGData[tilemapIndex] & 0xFFFF) | int(brightness * 255) << 16;
+   }
+   else{
+      tileMapBGData[tilemapIndex] = (tileMapBGData[tilemapIndex] & 0xFFFF) | int(brightness * 255) << 16;
+   }
 }

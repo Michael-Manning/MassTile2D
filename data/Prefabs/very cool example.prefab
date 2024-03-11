@@ -9,16 +9,32 @@
                     0.028726786375045776,
                     1.0
                 ],
-                "entityID": 3,
+                "entityID": 2,
                 "shape": 0
             }
         ],
         "entities": [
             {
-                "children": [
-                    3
-                ],
                 "id": 1,
+                "name": "entity 3",
+                "parent": 2,
+                "transform": {
+                    "position": [
+                        3.1086297035217285,
+                        -1.4824132919311523
+                    ],
+                    "rotation": 0.0,
+                    "scale": [
+                        1.0,
+                        1.0
+                    ]
+                }
+            },
+            {
+                "children": [
+                    2
+                ],
+                "id": 3,
                 "name": "very cool example",
                 "transform": {
                     "position": [
@@ -34,33 +50,17 @@
             },
             {
                 "children": [
-                    2
+                    1
                 ],
-                "id": 3,
+                "id": 2,
                 "name": "entity 2",
-                "parent": 1,
+                "parent": 3,
                 "transform": {
                     "position": [
                         4.999999523162842,
                         1.5000001192092896
                     ],
-                    "rotation": -5.610262870788574,
-                    "scale": [
-                        1.0,
-                        1.0
-                    ]
-                }
-            },
-            {
-                "id": 2,
-                "name": "entity 3",
-                "parent": 3,
-                "transform": {
-                    "position": [
-                        -1.446336269378662,
-                        -4.977051258087158
-                    ],
-                    "rotation": 0.0,
+                    "rotation": -7.393120288848877,
                     "scale": [
                         1.0,
                         1.0
@@ -71,7 +71,7 @@
         "particleSystemRenderers": [
             {
                 "configuration": {
-                    "burstMode": true,
+                    "burstMode": false,
                     "endColor": [
                         1.0,
                         1.0,
@@ -91,21 +91,21 @@
                     ],
                     "startSize": 0.30000001192092896
                 },
-                "entityID": 2,
+                "entityID": 1,
                 "size": 0
             }
         ],
         "textRenderers": [
             {
-                "entityID": 1,
+                "color": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "entityID": 3,
                 "fontID": 1253197706,
-                "text": "Very Epic Text",
-				"color": [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0
-                    ]
+                "text": "Very Epic Text"
             }
         ]
     }
