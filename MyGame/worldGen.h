@@ -13,6 +13,7 @@ namespace Blocks {
 	constexpr blockID Stone = 2;
 	constexpr blockID Iron = 3;
 	constexpr tileID Air = 1023;
+	constexpr tileID EntityReserve = 1021;
 }
 
 constexpr int typesPerTile = 16;
@@ -33,6 +34,10 @@ constexpr int tilesPerBlock = typesPerTile * tileVariations;
 //		return 0;
 //	}
 //}
+
+inline bool IsTransparent(tileID tile) {
+	return tile > 1000;
+}
 
 struct NoiseParams {
 	std::string nodeTree;

@@ -39,6 +39,10 @@ public:
 		static_assert(std::is_base_of<MapEntity, T>::value, "T must be derived from MapEntity");
 		auto [iter, inserted] = getMap<T>().emplace(item.position, std::move(item));
 		mapEntities.insert(&iter->second);
+
+		for (size_t i = 0; i < item.size.x; i++)
+			for (size_t j = 0; j < item.size.y; j++)
+				worldMap->setTile(Blocks::EntityReserve, item.position + glm::ivec2(i, j);
 	}
 };
 

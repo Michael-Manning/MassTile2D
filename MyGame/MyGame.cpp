@@ -388,7 +388,7 @@ void worldDebug() {
 }
 
 
-constexpr bool useTileWorld = false;
+constexpr bool useTileWorld = true;
 bool showLightMapDebug = false;
 
 #ifdef  PUBLISH
@@ -418,8 +418,8 @@ int main() {
 	engine->assetManager->LoadAllPrefabs(false);
 
 
-	//engine->assetManager->LoadScene("game_test");
-	//scene = engine->assetManager->GetScene("game_test");
+	engine->assetManager->LoadScene("game_test");
+	scene = engine->assetManager->GetScene("game_test");
 
 	global::mainScene = scene.get();
 
@@ -595,28 +595,28 @@ int main() {
 
 		else if (appState == AppState::PlayingGame) {
 
-			//engine->addScreenSpaceText(UI.smallfont, { 4, 4 }, vec4(1.0), "fps: %d", (int)engine->_getAverageFramerate());
+			engine->addScreenSpaceText(UI.smallfont, { 4, 4 }, vec4(1.0), "fps: %d", (int)engine->_getAverageFramerate());
 
-			//UI::DoUI(uiState);
+			UI::DoUI(uiState);
 
 
 
 			// trigger map entity click
-			//{
-			//	if (input->getMouseBtnDown(MouseBtn::Right)) {
-			//		ivec2 tile = GetMouseTile();
-			//		int chunk = worldMap->GetChunk(tile);
+			{
+				if (input->getMouseBtnDown(MouseBtn::Right)) {
+					ivec2 tile = GetMouseTile();
+					int chunk = worldMap->GetChunk(tile);
 
-			//		for (auto& ent : worldData->chunks[chunk].mapEntities)
-			//		{
-			//			if (tile.x >= ent->position.x && tile.x < ent->position.x + ent->size.x &&
-			//				tile.y >= ent->position.y && tile.y < ent->position.y + ent->size.y) {
-			//				ent->OnRightClick();
-			//				break; // map entities shouldn't overlap
-			//			}
-			//		}
-			//	}
-			//}
+					for (auto& ent : worldData->chunks[chunk].mapEntities)
+					{
+						if (tile.x >= ent->position.x && tile.x < ent->position.x + ent->size.x &&
+							tile.y >= ent->position.y && tile.y < ent->position.y + ent->size.y) {
+							ent->OnRightClick();
+							break; // map entities shouldn't overlap
+						}
+					}
+				}
+			}
 
 
 			GcameraPos = mainCamera.position;
