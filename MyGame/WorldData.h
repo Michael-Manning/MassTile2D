@@ -42,7 +42,7 @@ public:
 
 		for (size_t i = 0; i < item.size.x; i++)
 			for (size_t j = 0; j < item.size.y; j++)
-				worldMap->setTile(Blocks::EntityReserve, item.position + glm::ivec2(i, j);
+				global::tileWorld->setTile(item.position + glm::ivec2(i, j), Blocks::EntityReserve);
 	}
 };
 

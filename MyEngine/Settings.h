@@ -1,6 +1,10 @@
 #pragma once
 
 #include <string>
+#include <stdint>
+#include <vector>
+
+#include <glm/glm.hpp>
 
 // Video settings notes:
 // resolution and window size are independent because the engine will support rendering at a downscaled resolution
@@ -32,6 +36,44 @@ struct VideoSettings {
 	SwapChainSetting swapChainSetting;
 };
 
-struct MemoryAllocationConfiguration {
-	int LargeParticlesystemCount;
+// populated with some common sense default values for reference
+
+struct DrawlistAllocationConfiguration {
+	uint32_t ColoredQuad_MaxInstances = 1024;
+	uint32_t ColoredTriangle_MaxInstances = 1024;
+	uint32_t TexturedQuad_MaxInstances = 1024;
+	uint32_t Text_MaxStrings = 32;
+	uint32_t Text_MaxStringLength = 128;
+};
+
+struct SceneGraphicsAllocationConfiguration {
+	uint32_t ColoredQuad_MaxInstances = 2048;
+	uint32_t TexturedQuad_MaxInstances = 2048;
+	uint32_t Text_MaxStrings = 128;
+	uint32_t Text_MaxStringLength = 128;
+
+	uint32_t ParticleSystem_MaxSmallSystems = 20;
+	uint32_t ParticleSystem_MaxSmallSystemParticles = 200; 
+	uint32_t ParticleSystem_MaxLargeSystems = 4; 
+	uint32_t ParticleSystem_MaxLargeSystemParticles = 100000;
+
+	glm::vec4 Framebuffer_ClearColor = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+	bool transparentFramebufferBlending = false;
+
+	bool AllocateTileWorld = true;
+	float Lightmap_ClearValue = 0.0f;
+};
+
+struct EngineMemoryAllocationConfiguration {
+
+	// layers which appear behind scene graphics components
+	int Worldspace_Background_DrawlistLayerCount = 1;
+	std::vector<DrawlistAllocationConfiguration> Worldspace_Background_LayerAllocations;
+
+	// layers which appear in front of scene graphics components
+	int Worldspace_Forground_DrawlistLayerCount = 1;
+	std::vector<DrawlistAllocationConfiguration> Worldspace_Background_LayerAllocations;
+
+	int Screenspace_DrawlistLayerCount = 1;
+	std::vector<DrawlistAllocationConfiguration> DrawlistLayerAllocations;
 };

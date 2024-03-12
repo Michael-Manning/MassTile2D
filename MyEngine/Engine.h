@@ -56,7 +56,14 @@ struct debugStats {
 };
 
 
-struct ScenePipelineContext {
+class SceneGraphicsContext {
+public:
+
+	SceneGraphicsContext(SceneGraphicsAllocationConfiguration allocationSettings)
+		: allocationSettings(allocationSettings) {}
+
+	const SceneGraphicsAllocationConfiguration allocationSettings;
+
 	MappedDoubleBuffer<cameraUBO_s> cameraBuffers;
 
 	std::unique_ptr<LightingComputePL> lightingPipeline = nullptr;
@@ -68,16 +75,57 @@ struct ScenePipelineContext {
 	std::unique_ptr<TextPL> textPipeline = nullptr;
 	std::unique_ptr<ParticleSystemPL> particlePipeline = nullptr;
 
-	std::unique_ptr<ColoredTrianglesPL> trianglesPipelines = nullptr;
-	int triangleDrawlistCount = 0;
-	Vertex* triangleGPUBuffer = nullptr;
-	ColoredTrianglesPL::InstanceBufferData* triangleColorGPUBuffer = nullptr;
+	// move to world space drawlist layers
+
+	//std::unique_ptr<ColoredTrianglesPL> trianglesPipelines = nullptr;
+	//int triangleDrawlistCount = 0;
+	//Vertex* triangleGPUBuffer = nullptr;
+	//ColoredTrianglesPL::InstanceBufferData* triangleColorGPUBuffer = nullptr;
 
 	std::unique_ptr<TileWorld> worldMap = nullptr;
 
 	texID tilemapTextureAtlas;
+
+	framebufferID drawFramebuffer;
+	framebufferID lightingFramebuffer;
 };
 
+// This won't need an ID system. Just create required resources for these layers at engine initialization according to allocation settings
+// use this class for each layer, like screenspace layers, background/foreground layers
+class DrawlistGraphicsContext {
+public:
+
+	DrawlistGraphicsContext(DrawlistAllocationConfiguration allocationSettings)
+		: allocationSettings(allocationSettings) {}
+
+	const DrawlistAllocationConfiguration allocationSettings;
+
+	std::unique_ptr<ColoredQuadPL> coloredQuadPipeline = nullptr;
+	std::unique_ptr<ColoredTrianglesPL> coloredTrianglesPipeline = nullptr;
+	std::unique_ptr<TexturedQuadPL> texturedQuadPipeline = nullptr;
+	std::unique_ptr<TextPL> textPipeline = nullptr;
+	std::unique_ptr<ParticleComputePL> particleComputePipeline = nullptr;
+
+
+	// TODO: Maybe impliment addScreenSpaceCenteredQuad and similar functions here?
+	// Or maybe move the actual drawlist data to a different class and allow user to retrieve them like
+	// imgui and impliment those function there?
+	// std::vector<ColoredQuadPL::InstanceBufferData> screenSpaceColorDrawlist;
+	// std::vector<screenSpaceTextDrawItem> screenSpaceTextDrawlist;
+};
+
+
+// just an idea
+class Engine;
+class Drawlist {
+
+	inline void addScreenSpaceCenteredQuad(glm::vec4 color, glm::vec2 pos, glm::vec2 scale, float rotation = 0.0f); // impliment in drawlist.cpp
+
+private:
+	friend Engine;
+	std::vector<ColoredQuadPL::InstanceBufferData> screenSpaceColorDrawlist;
+	std::vector<screenSpaceTextDrawItem> screenSpaceTextDrawlist;
+};
 
 class Engine {
 
@@ -89,7 +137,7 @@ public:
 	struct SceneRenderJob {
 		std::shared_ptr<Scene> scene = nullptr;
 		Camera camera = {};
-		sceneRenderContextID sceneRenderCtxID = 0;
+		sceneGraphicsContextID sceneRenderCtxID = 0;
 	};
 
 
@@ -159,28 +207,6 @@ public:
 
 	std::unique_ptr<AssetManager> assetManager;
 
-	//Camera tmp_camera;
-
-	//// convert from normalized coordinates to pixels from top left
-	//glm::vec2 worldToScreenPos(glm::vec2 pos) {
-	//	pos *= glm::vec2(1.0f, -1.0f);
-	//	pos += glm::vec2(-tmp_camera.position.x, tmp_camera.position.y);
-	//	pos *= tmp_camera.zoom;
-	//	pos += glm::vec2((float)winW / winH, 1.0f);
-	//	pos *= glm::vec2(winH / 2.0f);
-	//	return pos;
-	//}
-
-	//glm::vec2 screenToWorldPos(glm::vec2 pos) {
-
-	//	pos /= glm::vec2(winH / 2.0f);
-	//	pos -= glm::vec2((float)winW / winH, 1.0f);
-	//	pos /= tmp_camera.zoom;
-	//	pos -= glm::vec2(-tmp_camera.position.x, tmp_camera.position.y);
-	//	pos /= glm::vec2(1.0f, -1.0f);
-
-	//	return pos;
-	//}
 
 	debugStats& _getDebugStats() {
 		return runningStats;
@@ -193,9 +219,9 @@ public:
 		return sum / (float)frameTimeBufferCount;
 	}
 
-	void setTilemapAtlasTexture(sceneRenderContextID contextID, texID texture) {
-
-		sceneRenderContextMap.find(contextID)->second.pl.tilemapTextureAtlas = texture;
+	void setTilemapAtlasTexture(sceneGraphicsContextID contextID, texID texture) {
+		assert(sceneRenderContextMap.at(contextID).allocationSettings.AllocateTileWorld);
+		sceneRenderContextMap.at(contextID).tilemapTextureAtlas = texture;
 	};
 
 	int winW = 0, winH = 0;
@@ -214,27 +240,27 @@ public:
 		screenSpaceColorDrawlist.push_back(item);
 	}
 
-	inline void SceneTriangles(sceneRenderContextID ctxID, std::vector <glm::vec2>& vertices, std::vector<glm::vec4>& triangleColors) {
+	//inline void SceneTriangles(sceneGraphicsContextID ctxID, std::vector <glm::vec2>& vertices, std::vector<glm::vec4>& triangleColors) {
 
-		auto ctx = &sceneRenderContextMap.at(ctxID);
-		
-		assert(vertices.size() % 3 == 0);
-		assert((ctx->pl.triangleDrawlistCount + vertices.size()) / ColoredTrianglesPL::verticesPerMesh < ColoredTrianglesPL_MAX_OBJECTS);
-		assert(triangleColors.size() == vertices.size() / ColoredTrianglesPL::verticesPerMesh);
+	//	auto ctx = &sceneRenderContextMap.at(ctxID);
+	//	
+	//	assert(vertices.size() % 3 == 0);
+	//	assert((ctx->pl.triangleDrawlistCount + vertices.size()) / ColoredTrianglesPL::verticesPerMesh < ColoredTrianglesPL_MAX_OBJECTS);
+	//	assert(triangleColors.size() == vertices.size() / ColoredTrianglesPL::verticesPerMesh);
 
-		int triangleIndex = ctx->pl.triangleDrawlistCount / ColoredTrianglesPL::verticesPerMesh;
-		for (auto& c : triangleColors)
-		{
-			ctx->pl.triangleColorGPUBuffer[triangleIndex].color = c;
-			triangleIndex++;
-		}
+	//	int triangleIndex = ctx->pl.triangleDrawlistCount / ColoredTrianglesPL::verticesPerMesh;
+	//	for (auto& c : triangleColors)
+	//	{
+	//		ctx->pl.triangleColorGPUBuffer[triangleIndex].color = c;
+	//		triangleIndex++;
+	//	}
 
-		for (auto& v : vertices)
-		{
-			ctx->pl.triangleGPUBuffer[ctx->pl.triangleDrawlistCount] = Vertex{ .pos = v, .texCoord = {0, 0} };
-			ctx->pl.triangleDrawlistCount++;
-		}
-	}
+	//	for (auto& v : vertices)
+	//	{
+	//		ctx->pl.triangleGPUBuffer[ctx->pl.triangleDrawlistCount] = Vertex{ .pos = v, .texCoord = {0, 0} };
+	//		ctx->pl.triangleDrawlistCount++;
+	//	}
+	//}
 
 	inline void addScreenCenteredSpaceTexture(Sprite* sprite, int atlasIndex, glm::vec2 pos, float height, float rotation = 0.0f) {
 		assert(screenSpaceTextureGPUIndex < TexturedQuadPL_MAX_OBJECTS);
@@ -244,7 +270,7 @@ public:
 		item->translation = pos;
 		item->scale = glm::vec2(sprite->resolution.x / sprite->resolution.y * height, height);
 		item->rotation = rotation;
-		item->tex = sprite->textureID; 
+		item->tex = sprite->textureID;
 
 		if (sprite->atlas.size() > 0) {
 			auto atEntry = sprite->atlas[atlasIndex];
@@ -335,49 +361,58 @@ public:
 	//	return currentScene;
 	//}
 
-	sceneRenderContextID CreateSceneRenderContext(glm::ivec2 size, bool allocateTileWorld, glm::vec4 clearColor = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f), float lightClearValue = 0.0f, bool transparentFramebufferBlending = false) {
+	sceneGraphicsContextID CreateSceneRenderContext(glm::ivec2 framebufferSize, SceneGraphicsAllocationConfiguration allocationSettings) {
 
-		auto fbID = resourceManager->CreateFramebuffer(size, clearColor);
-		auto fb = resourceManager->GetFramebuffer(fbID);
+		sceneGraphicsContextID id = renderContextGenerator.GenerateID();
+		auto [iter, inserted] = sceneRenderContextMap.emplace(id, allocationSettings);
 
-		sceneRenderContextID id = renderContextGenerator.GenerateID();
-		sceneRenderContextMap[id] = {};
-
-		sceneRenderContextMap.find(id)->second.fb = fbID;
-		sceneRenderContextMap.at(id).lightingBuffer = resourceManager->CreateFramebuffer(size, glm::vec4(lightClearValue), lightingPassFormat);
-
-		createScenePLContext(
-			&sceneRenderContextMap.find(id)->second.pl, 
-			allocateTileWorld, 
-			fb->renderpass, 
-			resourceManager->GetFramebuffer(sceneRenderContextMap.at(id).lightingBuffer),
-			transparentFramebufferBlending);
+		initializeSceneGraphicsContext(iter->second, framebufferSize);
 
 		return id;
+
+
+		//auto fbID = resourceManager->CreateFramebuffer(size, clearColor);
+		//auto fb = resourceManager->GetFramebuffer(fbID);
+
+		//sceneGraphicsContextID id = renderContextGenerator.GenerateID();
+		//sceneRenderContextMap[id] = SceneGraphicsContext;
+
+		//sceneRenderContextMap.find(id)->second.fb = fbID;
+		//sceneRenderContextMap.at(id).lightingBuffer = resourceManager->CreateFramebuffer(size, glm::vec4(lightClearValue), lightingPassFormat);
+		//sceneRenderContextMap.at(id).pl.memoryConfig = allocationSettings;
+
+		//createScenePLContext(
+		//	&sceneRenderContextMap.find(id)->second.pl, 
+		//	allocateTileWorld, 
+		//	fb->renderpass, 
+		//	resourceManager->GetFramebuffer(sceneRenderContextMap.at(id).lightingBuffer),
+		//	transparentFramebufferBlending);
+
+		//return id;
 	}
-	void ResizeSceneRenderContext(sceneRenderContextID id, glm::ivec2 size) {
+	void ResizeSceneRenderContext(sceneGraphicsContextID id, glm::ivec2 size) {
 		auto& ctx = sceneRenderContextMap.at(id);
-		resourceManager->ResizeFramebuffer(ctx.fb, size);
-		if(ctx.pl.worldMap != nullptr)
-			resourceManager->ResizeFramebuffer(ctx.lightingBuffer, size);
+		resourceManager->ResizeFramebuffer(ctx.drawFramebuffer, size);
+		if (ctx.allocationSettings.AllocateTileWorld)
+			resourceManager->ResizeFramebuffer(ctx.lightingFramebuffer, size);
 
 	}
 
-	framebufferID GetSceneRenderContextFramebuffer(sceneRenderContextID id) {
-		return sceneRenderContextMap.find(id)->second.fb;
+	framebufferID GetSceneRenderContextFramebuffer(sceneGraphicsContextID id) {
+		return sceneRenderContextMap.find(id)->second.drawFramebuffer;
 	}
 
-	framebufferID _GetSceneRenderContextLightMapBuffer(sceneRenderContextID id) {
-		return sceneRenderContextMap.find(id)->second.lightingBuffer;
+	framebufferID _GetSceneRenderContextLightMapBuffer(sceneGraphicsContextID id) {
+		return sceneRenderContextMap.find(id)->second.lightingFramebuffer;
 	}
 
 	glm::ivec2 GetFramebufferSize(framebufferID id) {
 		return resourceManager->GetFramebuffer(id)->targetSize;
 	}
 
-	TileWorld* GetSceneRenderContextTileWorld(sceneRenderContextID id) {
-		assert(sceneRenderContextMap.find(id)->second.pl.worldMap != nullptr);
-		return sceneRenderContextMap.find(id)->second.pl.worldMap.get();
+	TileWorld* GetSceneRenderContextTileWorld(sceneGraphicsContextID id) {
+		assert(sceneRenderContextMap.at(id).allocationSettings.AllocateTileWorld);
+		return sceneRenderContextMap.at(id).worldMap.get();
 	}
 
 	glm::vec4 GetFramebufferClearColor(framebufferID id) {
@@ -396,7 +431,7 @@ public:
 private:
 
 	const vk::Format lightingPassFormat = vk::Format::eR16Unorm; //vk::Format::eR16Unorm;
-	
+
 	GlobalImageDescriptor GlobalTextureDesc;
 	std::array<bool, FRAMES_IN_FLIGHT> textureDescriptorDirtyFlags = { false, false };
 
@@ -416,13 +451,9 @@ private:
 	};
 	std::vector<screenSpaceTextDrawItem> screenSpaceTextDrawlist;
 
-	IDGenerator<sceneRenderContextID> renderContextGenerator;
-	struct sceneFB_PL {
-		framebufferID fb;
-		ScenePipelineContext pl;
-		framebufferID lightingBuffer;
-	};
-	std::unordered_map <sceneRenderContextID, sceneFB_PL> sceneRenderContextMap;
+	IDGenerator<sceneGraphicsContextID> renderContextGenerator;
+
+	std::unordered_map <sceneGraphicsContextID, SceneGraphicsContext> sceneRenderContextMap;
 
 	VertexMeshBuffer quadMeshBuffer;
 
@@ -436,9 +467,9 @@ private:
 
 	std::array<ComponentResourceToken, MAX_PARTICLE_SYSTEMS_LARGE> particleSystemResourceTokens;
 
-	void createScenePLContext(ScenePipelineContext* ctx, bool allocateTileWorld, vk::RenderPass renderpass, DoubleFrameBufferContext* lightpass, bool transparentFramebufferBlending);
+	void initializeSceneGraphicsContext(SceneGraphicsContext& ctx, glm::ivec2 framebufferSize);
 
-	void recordSceneContextGraphics(const ScenePipelineContext& ctx, framebufferID framebuffer, framebufferID lightingPass, std::shared_ptr<Scene> scene, const Camera& camera, vk::CommandBuffer& cmdBuffer);
+	void recordSceneContextGraphics(const SceneGraphicsContext& ctx, std::shared_ptr<Scene> scene, const Camera& camera, vk::CommandBuffer& cmdBuffer);
 
 	void bindQuadMesh(vk::CommandBuffer cmdBuffer) {
 		vk::Buffer vertexBuffers[] = { quadMeshBuffer.vertexBuffer };
@@ -446,8 +477,6 @@ private:
 		cmdBuffer.bindVertexBuffers(0, 1, vertexBuffers, offsets);
 		cmdBuffer.bindIndexBuffer(quadMeshBuffer.indexBuffer, 0, vk::IndexType::eUint16);
 	}
-
-	ScenePipelineContext tmp_sceneContext;
 
 	std::unique_ptr<ColoredQuadPL> screenSpaceColorPipeline = nullptr;
 	std::unique_ptr<TexturedQuadPL> screenSpaceTexturePipeline = nullptr;
@@ -458,7 +487,7 @@ private:
 	int screenSpaceTextureGPUIndex = 0;
 
 	//VKUtil::BufferUploader<cameraUBO_s> cameraUploader;
-	VKUtil::BufferUploader<cameraUBO_s> screenSpaceTransformUploader;
+	VKUtil::BufferUploader<cameraUBO_s> screenSpaceTransformUploader; // TODO: replace with plain mapped double buffer
 
 	uint32_t frameCounter = 0;
 	bool firstFrame = true;

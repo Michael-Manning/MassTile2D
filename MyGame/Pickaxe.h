@@ -26,7 +26,7 @@ public:
 
 				tileID tileid = global::tileWorld->getTile(tile);
 
-				if (tileid != Blocks::Air) {
+				if (IsMineable(tileid)) {
 
 					blockID block = GetBlock(tileid);
 					global::tileWorld->setTile(tile, Blocks::Air);

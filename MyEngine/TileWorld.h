@@ -232,6 +232,8 @@ public:
 		// NOTE: Should only need to update 4 chunks depending on the quadrant within the chunk
 		// which the tile was set. Same for moving torches if the quadrant it moved from is the same as it's destination
 		// update lighting
+		// NOTE: Should only update lighting if the tile is changed from/to a tile that affects lighting. 
+		// Shouldn't update lighting going between solids, or from air to entity reserve tile which are both invisible.
 		for (int i = -1; i < 2; i++)
 		{
 			for (int j = -1; j < 2; j++) {

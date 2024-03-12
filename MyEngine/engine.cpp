@@ -110,88 +110,94 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 	app->GetInput()->_onScroll(xoffset, yoffset);
 }
 
-void Engine::createScenePLContext(ScenePipelineContext* ctx, bool allocateTileWorld, vk::RenderPass renderpass, DoubleFrameBufferContext* lightpass, bool transparentFramebufferBlending) {
+void Engine::initializeSceneGraphicsContext(SceneGraphicsContext& ctx, glm::ivec2 framebufferSize) {
 
-	rengine->createMappedBuffer(sizeof(cameraUBO_s), vk::BufferUsageFlagBits::eUniformBuffer, ctx->cameraBuffers);
+	ctx.drawFramebuffer = resourceManager->CreateFramebuffer(framebufferSize, ctx.allocationSettings.Framebuffer_ClearColor);
+	ctx.lightingFramebuffer = resourceManager->CreateFramebuffer(framebufferSize, glm::vec4(ctx.allocationSettings.Lightmap_ClearValue), lightingPassFormat);
 
-	if (allocateTileWorld) {
-		ctx->worldMap = make_unique<TileWorld>(rengine.get());
-		ctx->worldMap->AllocateVulkanResources();
+	rengine->createMappedBuffer(sizeof(cameraUBO_s), vk::BufferUsageFlagBits::eUniformBuffer, ctx.cameraBuffers);
+
+	if (ctx.allocationSettings.AllocateTileWorld) {
+		ctx.worldMap = make_unique<TileWorld>(rengine.get());
+		ctx.worldMap->AllocateVulkanResources();
 	}
 
 	// section can be done in parrallel
 	{
-		if (allocateTileWorld) {
-			ctx->lightingPipeline = make_unique<LightingComputePL>(rengine.get(), ctx->worldMap.get());
-			ctx->tilemapPipeline = make_unique<TilemapPL>(rengine.get(), ctx->worldMap.get());
-			ctx->tilemapLightRasterPipeline = make_unique<TilemapLightRasterPL>(rengine.get(), ctx->worldMap.get());
+		if (ctx.allocationSettings.AllocateTileWorld) {
+			ctx.lightingPipeline = make_unique<LightingComputePL>(rengine.get(), ctx.worldMap.get());
+			ctx.tilemapPipeline = make_unique<TilemapPL>(rengine.get(), ctx.worldMap.get());
+			ctx.tilemapLightRasterPipeline = make_unique<TilemapLightRasterPL>(rengine.get(), ctx.worldMap.get());
 		}
-		ctx->texturePipeline = make_unique<TexturedQuadPL>(rengine.get());
-		ctx->colorPipeline = make_unique<ColoredQuadPL>(rengine.get());
-		ctx->textPipeline = make_unique<TextPL>(rengine.get());
-		ctx->particlePipeline = make_unique<ParticleSystemPL>(rengine.get());
-		ctx->trianglesPipelines = make_unique<ColoredTrianglesPL>(rengine.get());
+		ctx.texturePipeline = make_unique<TexturedQuadPL>(rengine.get());
+		ctx.colorPipeline = make_unique<ColoredQuadPL>(rengine.get());
+		ctx.textPipeline = make_unique<TextPL>(rengine.get());
+		ctx.particlePipeline = make_unique<ParticleSystemPL>(rengine.get());
+		//ctx.trianglesPipelines = make_unique<ColoredTrianglesPL>(rengine.get());
 	}
 
-	ctx->colorPipeline->CreateInstancingBuffer();
-	ctx->textPipeline->createSSBOBuffer();
+	ctx.colorPipeline->CreateInstancingBuffer();
+	ctx.textPipeline->createSSBOBuffer();
 
+	auto drawRenderpass = resourceManager->GetFramebuffer(ctx.drawFramebuffer)->renderpass;
+	auto lightingFramebuffer = resourceManager->GetFramebuffer(ctx.lightingFramebuffer);
 
 	{
 		vector<uint8_t> vert, frag;
 		assetManager->LoadShaderFile("color_vert.spv", vert);
 		assetManager->LoadShaderFile("color_frag.spv", frag);
-		ctx->colorPipeline->CreateGraphicsPipeline(vert, frag, renderpass, ctx->cameraBuffers);
+		ctx.colorPipeline->CreateGraphicsPipeline(vert, frag, drawRenderpass, ctx.cameraBuffers);
 	}
-	{
-		vector<uint8_t> vert, frag;
-		assetManager->LoadShaderFile("triangles_vert.spv", vert);
-		assetManager->LoadShaderFile("triangles_frag.spv", frag);
-		ctx->trianglesPipelines->CreateGraphicsPipeline(vert, frag, renderpass, ctx->cameraBuffers, true);
-	}
+	//{
+	//	vector<uint8_t> vert, frag;
+	//	assetManager->LoadShaderFile("triangles_vert.spv", vert);
+	//	assetManager->LoadShaderFile("triangles_frag.spv", frag);
+	//	ctx.trianglesPipelines->CreateGraphicsPipeline(vert, frag, drawRenderpass, ctx.cameraBuffers, true);
+	//}
 	{
 		vector<uint8_t> vert, frag;
 		assetManager->LoadShaderFile("texture_vert.spv", vert);
 		assetManager->LoadShaderFile("texture_frag.spv", frag);
-		std::array<int, 2> lightmapTextures = { lightpass->textureIDs[0], lightpass->textureIDs[1] };
-		ctx->texturePipeline->CreateGraphicsPipeline(vert, frag, renderpass, &GlobalTextureDesc, ctx->cameraBuffers, lightmapTextures);
+		std::array<int, 2> lightmapTextures = { lightingFramebuffer->textureIDs[0], lightingFramebuffer->textureIDs[1] };
+		ctx.texturePipeline->CreateGraphicsPipeline(vert, frag, drawRenderpass, &GlobalTextureDesc, ctx.cameraBuffers, lightmapTextures);
 	}
-	if (allocateTileWorld) {
+
+	if (ctx.allocationSettings.AllocateTileWorld) {
 		{
 			vector<uint8_t> comp, upscale, blur;
 			assetManager->LoadShaderFile("lighting_comp.spv", comp);
 			assetManager->LoadShaderFile("lightingUpscale_comp.spv", upscale);
 			assetManager->LoadShaderFile("lightingBlur_comp.spv", blur);
-			ctx->lightingPipeline->CreateComputePipeline(comp, upscale, blur);
+			ctx.lightingPipeline->CreateComputePipeline(comp, upscale, blur);
 		}
 		{
 			vector<uint8_t> vert, frag;
 			assetManager->LoadShaderFile("tilemap_vert.spv", vert);
 			assetManager->LoadShaderFile("tilemap_frag.spv", frag);
-			ctx->tilemapPipeline->CreateGraphicsPipeline(vert, frag, renderpass, &GlobalTextureDesc, ctx->cameraBuffers);
+			ctx.tilemapPipeline->CreateGraphicsPipeline(vert, frag, drawRenderpass, &GlobalTextureDesc, ctx.cameraBuffers);
 		}
 		{
 			vector<uint8_t> vert, frag;
 			assetManager->LoadShaderFile("tilemapLightRaster_vert.spv", vert);
 			assetManager->LoadShaderFile("tilemapLightRaster_frag.spv", frag);
-			ctx->tilemapLightRasterPipeline->CreateGraphicsPipeline(vert, frag, lightpass->renderpass, &GlobalTextureDesc, ctx->cameraBuffers);
+			ctx.tilemapLightRasterPipeline->CreateGraphicsPipeline(vert, frag, lightingFramebuffer->renderpass, &GlobalTextureDesc, ctx.cameraBuffers);
 		}
 	}
 	{
 		vector<uint8_t> vert, frag;
 		assetManager->LoadShaderFile("text_vert.spv", vert);
 		assetManager->LoadShaderFile("text_frag.spv", frag);
-		ctx->textPipeline->CreateGraphicsPipeline(vert, frag, renderpass, &GlobalTextureDesc, ctx->cameraBuffers);
+		ctx.textPipeline->CreateGraphicsPipeline(vert, frag, drawRenderpass, &GlobalTextureDesc, ctx.cameraBuffers);
 	}
 	{
 		vector<uint8_t> vert, frag;
 		assetManager->LoadShaderFile("particleSystem_vert.spv", vert);
 		assetManager->LoadShaderFile("particleSystem_frag.spv", frag);
-		ctx->particlePipeline->CreateGraphicsPipeline(vert, frag, renderpass, ctx->cameraBuffers, &computerParticleBuffer, false, transparentFramebufferBlending);
+		ctx.particlePipeline->CreateGraphicsPipeline(vert, frag, drawRenderpass, ctx.cameraBuffers, &computerParticleBuffer, false, ctx.allocationSettings.transparentFramebufferBlending);
 	}
 
-	ctx->triangleGPUBuffer = ctx->trianglesPipelines->GetVertexMappedBuffer(rengine->currentFrame);
-	ctx->triangleColorGPUBuffer = ctx->trianglesPipelines->GetColorMappedBuffer(rengine->currentFrame);
+	//ctx.triangleGPUBuffer = ctx.trianglesPipelines->GetVertexMappedBuffer(rengine->currentFrame);
+	//ctx.triangleColorGPUBuffer = ctx.trianglesPipelines->GetColorMappedBuffer(rengine->currentFrame);
 }
 
 void Engine::Start(const VideoSettings& initialSettings, AssetManager::AssetPaths assetPaths) {
@@ -318,10 +324,10 @@ void Engine::ApplyNewVideoSettings(const VideoSettings settings) {
 	requestedSettings = settings;
 }
 
-void Engine::recordSceneContextGraphics(const ScenePipelineContext& ctx, framebufferID framebuffer, framebufferID lightingPass, std::shared_ptr<Scene> scene, const Camera& camera, vk::CommandBuffer& cmdBuffer) {
+void Engine::recordSceneContextGraphics(const SceneGraphicsContext& ctx, std::shared_ptr<Scene> scene, const Camera& camera, vk::CommandBuffer& cmdBuffer) {
 
-	auto fb = resourceManager->GetFramebuffer(framebuffer);
-	auto lightingPass_fb = resourceManager->GetFramebuffer(lightingPass);
+	auto fb = resourceManager->GetFramebuffer(ctx.drawFramebuffer);
+	auto lightingPass_fb = resourceManager->GetFramebuffer(ctx.lightingFramebuffer);
 
 	// update camera transform for scene
 	{
@@ -503,11 +509,11 @@ void Engine::recordSceneContextGraphics(const ScenePipelineContext& ctx, framebu
 		ctx.particlePipeline->recordCommandBuffer(cmdBuffer, indexes, systemSizes, particleCounts);
 	}
 
-	// triangles
-	{
-		ctx.trianglesPipelines->recordCommandBuffer(cmdBuffer, ctx.triangleDrawlistCount);
-	}
-	bindQuadMesh(cmdBuffer);
+	//// triangles
+	//{
+	//	ctx.trianglesPipelines->recordCommandBuffer(cmdBuffer, ctx.triangleDrawlistCount);
+	//}
+	//bindQuadMesh(cmdBuffer);
 
 	// text
 	{
@@ -612,6 +618,9 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 	rengine->WaitForComputeCompletion();
 
 
+	// TODO: move block to new "recordSceneComputeContext" function. Doesn't have to have the same parameters as 
+	// the graphics context function, but it should still be sectioned out to a function
+	
 	// record compute command buffer without submmiting it
 	{
 		ZoneScopedN("Record compute shaders");
@@ -619,7 +628,8 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 
 		// lighting compute
 		for (auto& job : sceneRenderJobs) {
-			const auto& ctx = sceneRenderContextMap.find(job.sceneRenderCtxID)->second.pl;
+			//const auto& ctx = sceneRenderContextMap.find(job.sceneRenderCtxID)->second.pl; 
+			const auto& ctx = sceneRenderContextMap.at(job.sceneRenderCtxID);
 			if (ctx.worldMap == nullptr)
 				continue;
 
@@ -816,16 +826,8 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 
 	auto cmdBuffer = rengine->getNextGfxCommandBuffer();
 
-	for (auto& ctx : sceneRenderJobs)
-	{
-		recordSceneContextGraphics(
-			sceneRenderContextMap.find(ctx.sceneRenderCtxID)->second.pl, 
-			sceneRenderContextMap.find(ctx.sceneRenderCtxID)->second.fb, 
-			sceneRenderContextMap.find(ctx.sceneRenderCtxID)->second.lightingBuffer, 
-			ctx.scene, 
-			ctx.camera, 
-			cmdBuffer);
-	}
+	for (auto& job : sceneRenderJobs)
+		recordSceneContextGraphics(sceneRenderContextMap.at(job.sceneRenderCtxID), job.scene, job.camera, cmdBuffer);
 
 	// we have to wait for the previous frame to finish presenting so we can determine what image the
 	// next swapchain renderpass will be using
@@ -954,11 +956,11 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 
 	firstFrame = false;
 
-	for (auto& [id, ctx] : sceneRenderContextMap) {
-		ctx.pl.triangleGPUBuffer = ctx.pl.trianglesPipelines->GetVertexMappedBuffer(rengine->currentFrame);
-		ctx.pl.triangleColorGPUBuffer = ctx.pl.trianglesPipelines->GetColorMappedBuffer(rengine->currentFrame);
-		ctx.pl.triangleDrawlistCount = 0;
-	}
+	//for (auto& [id, ctx] : sceneRenderContextMap) {
+	//	ctx.pl.triangleGPUBuffer = ctx.pl.trianglesPipelines->GetVertexMappedBuffer(rengine->currentFrame);
+	//	ctx.pl.triangleColorGPUBuffer = ctx.pl.trianglesPipelines->GetColorMappedBuffer(rengine->currentFrame);
+	//	ctx.pl.triangleDrawlistCount = 0;
+	//}
 
 	FrameMark;
 	return true;

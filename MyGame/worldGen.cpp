@@ -35,7 +35,7 @@ void CalcTileVariation(uint32_t x, uint32_t y) {
 
 		tileID curTile = global::tileWorld->getTile(x, y);
 
-		if (curTile == Blocks::Air)
+		if (IsTransparent(curTile))
 			return;
 
 		blockID tileType = GetBlock(curTile);

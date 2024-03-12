@@ -91,6 +91,7 @@ void ParticleComputePL::RecordCommandBuffer(vk::CommandBuffer commandBuffer, flo
 		};
 		pipeline.UpdatePushConstant(commandBuffer, &pc);
 
-		pipeline.Dispatch(commandBuffer, { info.particleCount, 1, 1 }, { 32, 1, 1 });
+		//pipeline.Dispatch(commandBuffer, { info.particleCount, 1, 1 }, { 32, 1, 1 });
+		pipeline.DispatchGrid(commandBuffer, { info.particleCount, 1, 1 }, { 32, 1, 1 });
 	}
 }

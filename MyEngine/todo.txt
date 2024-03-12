@@ -1,7 +1,13 @@
 
 Near roadmap:
+- get building again
+- remove pipelines from engine class and switch to new drawlistGraphicsContext class
+- switch away from using hardcoded buffer sizes and use memory allocation settings in pipeline classes
+- split up text pipeline ssbo structure into two structures so that the text data can have different allocation sizes per instance of the 
+pipeline.
+
 - set lightmap to full bright when not using tilemap or in editor prefab preview scene
-- breaking blocks along a chunk border breaks lighting
+
 
 - for none-moving light sources (lights fixed to the grid), implement this line algorithm for thoeretically faster shadows:
 https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm
@@ -21,6 +27,9 @@ Should be stored within a map keyed by each check for update/draw culling and in
 - nested prefab with all component types
 - full serialization setup and publish build
 
+
+- change indexing in text pipeline to include an map of instance index to textObject index to avoid looping and nonlinear complexity
+with increasing text object counts
 
 -investigate or measure mouse latency. At high framerates, work computer has imperceptible mouse latency, while home computer it is percetpable
 

@@ -47,16 +47,15 @@ public:
 
 		if (tileX > 0 && tileX < mapW && tileY > 0 && tileY < mapH) {
 
-			blockID block = global::tileWorld->getTile(tileX, tileY);
-
-			return block != Blocks::Air;
+			tileID tile = global::tileWorld->getTile(tileX, tileY);
+			return IsSolid(tile);
 		}
 		return false;
 	}
 
-	bool queryTile(ivec2 coord) {
-		return global::tileWorld->getTile(coord.x, coord.y);
-	}
+	//bool queryTile(ivec2 coord) {
+	//	return global::tileWorld->getTile(coord.x, coord.y);
+	//}
 
 	ivec2 getTileXY(vec2 pos) {
 		int tileX = pos.x / tileWorldSize + mapW / 2;

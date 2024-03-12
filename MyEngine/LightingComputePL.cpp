@@ -79,7 +79,8 @@ void LightingComputePL::recordCommandBuffer(vk::CommandBuffer commandBuffer, int
 	{
 		TracyVkZone(engine->tracyComputeContexts[engine->currentFrame], commandBuffer, "Lighting compute");
 		pipelines.BindPipelineStage(commandBuffer, 0);
-		pipelines.Dispatch(commandBuffer, { baseUpdates * chunkTileCount, 1, 1 }, { 32, 32, 1 });
+		//pipelines.Dispatch(commandBuffer, { baseUpdates * chunkTileCount, 1, 1 }, { 32, 32, 1 });
+		pipelines.DispatchGroups(commandBuffer, { baseUpdates, 1, 1 });
 	}
 
 	// first stage writes light values to background layer which second stage reads from. Must synchronize accesss to this buffer.
@@ -111,7 +112,8 @@ void LightingComputePL::recordCommandBuffer(vk::CommandBuffer commandBuffer, int
 		{
 			TracyVkZone(engine->tracyComputeContexts[engine->currentFrame], commandBuffer, "Lighting up");
 			pipelines.BindPipelineStage(commandBuffer, 1);
-			pipelines.Dispatch(commandBuffer, { blurUpdates * chunkTileCount, 2 * chunkTileCount, 2 * chunkTileCount }, { 32, 32, 1 });
+			//pipelines.Dispatch(commandBuffer, { blurUpdates * chunkTileCount, 2 * chunkTileCount, 2 * chunkTileCount }, { 32, 32, 1 });
+			pipelines.DispatchGroups(commandBuffer, { blurUpdates, 2, 2 });
 		}
 
 
@@ -139,9 +141,11 @@ void LightingComputePL::recordCommandBuffer(vk::CommandBuffer commandBuffer, int
 			pipelines.BindPipelineStage(commandBuffer, 2);
 
 			if (world->lightingSettings.upscaleEnabled)
-				pipelines.Dispatch(commandBuffer, { blurUpdates * chunkTileCount, 2 * chunkTileCount, 2 * chunkTileCount }, { 32, 32, 1 });
+				pipelines.DispatchGroups(commandBuffer, { blurUpdates, 2, 2 });
+				//pipelines.Dispatch(commandBuffer, { blurUpdates * chunkTileCount, 2 * chunkTileCount, 2 * chunkTileCount }, { 32, 32, 1 });
 			else
-				pipelines.Dispatch(commandBuffer, { blurUpdates * chunkTileCount, 1, 1}, { 32, 32, 1 });
+				pipelines.DispatchGroups(commandBuffer, { blurUpdates, 1, 1 });
+				//pipelines.Dispatch(commandBuffer, { blurUpdates * chunkTileCount, 1, 1}, { 32, 32, 1 });
 		}
 	}
 }

@@ -118,18 +118,15 @@ public:
 
 		if (tileX > 0 && tileX < mapW && tileY > 0 && tileY < mapH) {
 
-			//tileY = mapH - tileY - 1;
-
-			blockID block = global::tileWorld->getTile(tileX, tileY);
-
-			return block != Blocks::Air;
+			tileID tile = global::tileWorld->getTile(tileX, tileY);
+			return IsSolid(tile);
 		}
 		return false;
 	}
 
-	bool queryTile(ivec2 coord) {
+	/*bool queryTile(ivec2 coord) {
 		return global::tileWorld->getTile(coord.x, coord.y);
-	}
+	}*/
 
 	ivec2 getTileXY(vec2 pos) {
 		int tileX = pos.x / tileWorldSize + mapW / 2;
@@ -468,10 +465,10 @@ public:
 
 						// make sure there's an adjacent block
 						bool adjacent = false;
-						adjacent |= global::tileWorld->getTile(mouseTile + glm::ivec2(0, 1)) != Blocks::Air;
-						adjacent |= global::tileWorld->getTile(mouseTile + glm::ivec2(0, -1)) != Blocks::Air;
-						adjacent |= global::tileWorld->getTile(mouseTile + glm::ivec2(1, 0)) != Blocks::Air;
-						adjacent |= global::tileWorld->getTile(mouseTile + glm::ivec2(-1, 0)) != Blocks::Air;
+						adjacent |= IsSolid(global::tileWorld->getTile(mouseTile + glm::ivec2(0, 1)));
+						adjacent |= IsSolid(global::tileWorld->getTile(mouseTile + glm::ivec2(0, -1))); 
+						adjacent |= IsSolid(global::tileWorld->getTile(mouseTile + glm::ivec2(1, 0))); 
+						adjacent |= IsSolid(global::tileWorld->getTile(mouseTile + glm::ivec2(-1, 0))); 
 
 						if (adjacent) {
 

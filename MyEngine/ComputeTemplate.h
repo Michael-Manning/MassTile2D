@@ -23,7 +23,11 @@ public:
 
 	void UpdatePushConstant(vk::CommandBuffer& commandBuffer, void* pushConstantData);
 
-	void Dispatch(vk::CommandBuffer& commandBuffer, glm::ivec3 workInstancePerAxis, glm::ivec3 workGroupLocalSize);
+	// dispatch a grid of threads. Will create the minimum number of groups in each axis to cover the grid size
+	void DispatchGrid(vk::CommandBuffer& commandBuffer, glm::ivec3 gridSize, glm::ivec3 local_size);
+
+	// wraps standard dispatch command
+	void DispatchGroups(vk::CommandBuffer& commandBuffer, glm::ivec3 workGroupCounts);
 
 	void BindPipelineStage(vk::CommandBuffer& commandBuffer, int index);
 
