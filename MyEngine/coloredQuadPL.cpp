@@ -33,6 +33,8 @@ void ColoredQuadPL::CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc
 
 	auto shaderStages = createGraphicsShaderStages(vertexSrc, fragmentSrc);
 
+	engine->createMappedBuffer(sizeof(InstanceBufferData) * ColoredQuadPL_MAX_OBJECTS, vk::BufferUsageFlagBits::eStorageBuffer, ssboMappedDB);
+
 	descriptorManager.configureDescriptorSets(vector<DescriptorManager::descriptorSetInfo> {
 		DescriptorManager::descriptorSetInfo(0, 0, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eVertex, &cameradb.buffers, cameradb.size),
 		DescriptorManager::descriptorSetInfo(1, 0, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, &ssboMappedDB.buffers, ssboMappedDB.size)
@@ -88,14 +90,16 @@ void ColoredQuadPL::CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc
 	descriptorManager.buildDescriptorSets();
 }
 
-void ColoredQuadPL::CreateInstancingBuffer() {
-	engine->createMappedBuffer(sizeof(InstanceBufferData) * ColoredQuadPL_MAX_OBJECTS, vk::BufferUsageFlagBits::eStorageBuffer, ssboMappedDB);
-}
+//void ColoredQuadPL::CreateInstancingBuffer() {
+//	engine->createMappedBuffer(sizeof(InstanceBufferData) * ColoredQuadPL_MAX_OBJECTS, vk::BufferUsageFlagBits::eStorageBuffer, ssboMappedDB);
+//}
 
-void ColoredQuadPL::UploadInstanceData(std::vector<InstanceBufferData>& drawlist) {
-	assert(drawlist.size() <= ColoredQuadPL_MAX_OBJECTS);
-	memcpy(ssboMappedDB.buffersMapped[engine->currentFrame], drawlist.data(), sizeof(InstanceBufferData) * drawlist.size());
-}
+
+
+//void ColoredQuadPL::UploadInstanceData(std::vector<InstanceBufferData>& drawlist) {
+//	assert(drawlist.size() <= ColoredQuadPL_MAX_OBJECTS);
+//	memcpy(ssboMappedDB.buffersMapped[engine->currentFrame], drawlist.data(), sizeof(InstanceBufferData) * drawlist.size());
+//}
 
 void ColoredQuadPL::recordCommandBuffer(vk::CommandBuffer commandBuffer, int instanceCount) {
 

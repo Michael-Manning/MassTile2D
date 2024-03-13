@@ -25,7 +25,7 @@ inline void Drawlist::AddCenteredQuad(glm::vec4 color, glm::vec2 pos, glm::vec2 
 	coloredQuadInstanceIndex++;
 }
 
-inline void Drawlist::AddScreenCenteredSpaceTexture(Sprite* sprite, int atlasIndex, glm::vec2 pos, float height, float rotation) {
+inline void Drawlist::AddCenteredSprite(Sprite* sprite, int atlasIndex, glm::vec2 pos, float height, float rotation) {
 
 	assert(texturedQuadInstanceIndex < allocationSettings.TexturedQuad_MaxInstances);
 
@@ -45,55 +45,53 @@ inline void Drawlist::AddScreenCenteredSpaceTexture(Sprite* sprite, int atlasInd
 
 	texturedQuadInstanceIndex++;
 }
-inline void Drawlist::AddScreenCenteredSpaceTexture(spriteID sprID, int atlasIndex, glm::vec2 pos, float height, float rotation) {
+inline void Drawlist::AddCenteredSprite(spriteID sprID, int atlasIndex, glm::vec2 pos, float height, float rotation) {
 	auto s = assetManager->GetSprite(sprID);
-	AddScreenCenteredSpaceTexture(s, atlasIndex, pos, height, rotation);
+	AddCenteredSprite(s, atlasIndex, pos, height, rotation);
 }
-inline void Drawlist::AddScreenCenteredSpaceTexture(std::string sprite, int atlasIndex, glm::vec2 pos, float height, float rotation) {
+inline void Drawlist::AddCenteredSprite(std::string sprite, int atlasIndex, glm::vec2 pos, float height, float rotation) {
 	auto s = assetManager->GetSprite(sprite);
-	AddScreenCenteredSpaceTexture(s, atlasIndex, pos, height, rotation);
+	AddCenteredSprite(s, atlasIndex, pos, height, rotation);
 }
-inline void Drawlist::AddScreenSpaceTexture(spriteID sprID, int atlasIndex, glm::vec2 pos, float height, float rotation) {
+inline void Drawlist::AddSprite(spriteID sprID, int atlasIndex, glm::vec2 pos, float height, float rotation) {
 	auto s = assetManager->GetSprite(sprID);
-	AddScreenCenteredSpaceTexture(s, atlasIndex, pos + (s->resolution / 2.0f) * (height / s->resolution.y), height, rotation);
+	AddCenteredSprite(s, atlasIndex, pos + (s->resolution / 2.0f) * (height / s->resolution.y), height, rotation);
 }
-inline void Drawlist::AddScreenSpaceTexture(std::string sprite, int atlasIndex, glm::vec2 pos, float height, float rotation) {
+inline void Drawlist::AddSprite(std::string sprite, int atlasIndex, glm::vec2 pos, float height, float rotation) {
 	auto s = assetManager->GetSprite(sprite);
-	AddScreenCenteredSpaceTexture(s, atlasIndex, pos + (s->resolution / 2.0f) * (height / s->resolution.y), height, rotation);
+	AddCenteredSprite(s, atlasIndex, pos + (s->resolution / 2.0f) * (height / s->resolution.y), height, rotation);
 }
 
 // idk what to do about this
-inline void AddScreenCenteredSpaceFramebufferTexture(framebufferID fbID, glm::vec2 pos, float height, float rotation = 0.0f) {
+inline void Drawlist::AddCenteredFramebufferTexture(framebufferID fbID, glm::vec2 pos, float height, float rotation = 0.0f) {
 
-	auto fb = resourceManager->GetFramebuffer(fbID);
+	FramebufferDrawItem item;
 
-	float w = fb->extents[rengine->currentFrame].width;
-	float h = fb->extents[rengine->currentFrame].height;
+	item.fb = fbID;
+	item.pos = pos;
+	item.height = height;
+	item.rotation = rotation;
 
-	assert(screenSpaceTextureGPUIndex < TexturedQuadPL_MAX_OBJECTS);
-	TexturedQuadPL::ssboObjectInstanceData* item = screenSpaceTextureGPUBuffer + screenSpaceTextureGPUIndex++;
-
-	item->uvMin = glm::vec2(0.0f);
-	item->uvMax = glm::vec2(1.0f);
-	item->translation = pos;
-	item->scale = glm::vec2((w / h) * height, height);
-	item->rotation = rotation;
-	item->tex = fb->textureIDs[rengine->currentFrame];
+	framebufferDrawData.push_back(item);
 }
 
 
-inline void addScreenSpaceText(fontID font, glm::vec2 position, glm::vec4 color, std::string text) {
-	screenSpaceTextDrawItem item;
+inline void Drawlist::AddScreenSpaceText(fontID font, glm::vec2 position, glm::vec4 color, std::string text) {
+
+	assert(textInstanceIndex < allocationSettings.Text_MaxStrings);
+
+	screenSpaceTextDrawItem& item = textInstanceData[textInstanceIndex % allocationSettings.Text_MaxStrings];
 	item.font = font;
 	item.text = text;
 	item.header.color = color;
 	item.header.position = position;
 	item.header.rotation = 0.0f;
 	item.header.textLength = text.length();
-	screenSpaceTextDrawlist.push_back(item);
+
+	textInstanceIndex++;
 };
 
-void addScreenSpaceText(fontID font, glm::vec2 position, glm::vec4 color, const char* fmt, ...) {
+inline void Drawlist::AddScreenSpaceText(fontID font, glm::vec2 position, glm::vec4 color, const char* fmt, ...) {
 
 	char buffer[TEXTPL_maxTextLength];
 
@@ -102,14 +100,5 @@ void addScreenSpaceText(fontID font, glm::vec2 position, glm::vec4 color, const 
 	vsnprintf(buffer, sizeof(buffer), fmt, args);
 	va_end(args);
 
-	std::string result = buffer;
-
-	screenSpaceTextDrawItem item;
-	item.font = font;
-	item.text = result;
-	item.header.color = color;
-	item.header.position = position;
-	item.header.rotation = 0.0f;
-	item.header.textLength = result.length();
-	screenSpaceTextDrawlist.push_back(item);
+	AddScreenSpaceText(font, position, color, std::string(buffer));
 };

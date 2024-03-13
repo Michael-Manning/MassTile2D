@@ -7,6 +7,7 @@
 #include "pipelines.h"
 #include "Settings.h"
 #include "AssetManager.h"
+#include "ResourceManager.h"
 
 class Engine;
 
@@ -20,17 +21,22 @@ public:
 
 		coloredQuadInstanceData.resize(allocationSettings.ColoredQuad_MaxInstances);
 		texturedQuadInstanceData.resize(allocationSettings.TexturedQuad_MaxInstances);
-
+		textInstanceData.resize(allocationSettings.Text_MaxStrings);
 	}
 
 	inline void AddCenteredQuad(glm::vec4 color, glm::vec2 pos, glm::vec2 scale, float rotation = 0.0f);
-	inline void AddScreenCenteredSpaceTexture(Sprite* sprite, int atlasIndex, glm::vec2 pos, float height, float rotation = 0.0f);
-	inline void AddScreenCenteredSpaceTexture(spriteID sprID, int atlasIndex, glm::vec2 pos, float height, float rotation = 0.0f);
-	inline void AddScreenCenteredSpaceTexture(std::string sprite, int atlasIndex, glm::vec2 pos, float height, float rotation = 0.0f);
-	inline void AddScreenSpaceTexture(spriteID sprID, int atlasIndex, glm::vec2 pos, float height, float rotation = 0.0f);
-	inline void AddScreenSpaceTexture(std::string sprite, int atlasIndex, glm::vec2 pos, float height, float rotation = 0.0f);
 
-	inline void AddScreenCenteredSpaceFramebufferTexture(framebufferID fbID, glm::vec2 pos, float height, float rotation = 0.0f);
+	inline void AddCenteredSprite(Sprite* sprite, int atlasIndex, glm::vec2 pos, float height, float rotation = 0.0f);
+	inline void AddCenteredSprite(spriteID sprID, int atlasIndex, glm::vec2 pos, float height, float rotation = 0.0f);
+	inline void AddCenteredSprite(std::string sprite, int atlasIndex, glm::vec2 pos, float height, float rotation = 0.0f);
+
+	inline void AddSprite(spriteID sprID, int atlasIndex, glm::vec2 pos, float height, float rotation = 0.0f);
+	inline void AddSprite(std::string sprite, int atlasIndex, glm::vec2 pos, float height, float rotation = 0.0f);
+
+	inline void AddScreenSpaceText(fontID font, glm::vec2 position, glm::vec4 color, std::string text);
+	inline void AddScreenSpaceText(fontID font, glm::vec2 position, glm::vec4 color, const char* fmt, ...);
+
+	inline void AddCenteredFramebufferTexture(framebufferID fbID, glm::vec2 pos, float height, float rotation = 0.0f);
 
 private:
 	friend Engine;
@@ -38,18 +44,20 @@ private:
 	void ResetIndexes() {
 		coloredQuadInstanceIndex = 0;
 		texturedQuadInstanceIndex = 0;
+		textInstanceIndex;
+
+		framebufferDrawData.clear();
 	}
 
 	const DrawlistAllocationConfiguration allocationSettings;
 	AssetManager* assetManager;
 
-	std::vector<ColoredQuadPL::InstanceBufferData> coloredQuadInstanceData;
-	int coloredQuadInstanceIndex = 0;
-
-	std::vector<TexturedQuadPL::ssboObjectInstanceData> texturedQuadInstanceData;
-	int texturedQuadInstanceIndex = 0;
-
-	std::vector<screenSpaceTextDrawItem> screenSpaceTextDrawlist;
+	struct FramebufferDrawItem {
+		framebufferID fb;
+		glm::vec2 pos;
+		float height;
+		float rotation;
+	};
 
 	struct screenSpaceTextDrawItem {
 		TextPL::textHeader header;
@@ -57,5 +65,19 @@ private:
 		fontID font;
 		float scaleFactor = 1.0f;
 	};
-	std::vector<screenSpaceTextDrawItem> screenSpaceTextDrawlist;
+
+	// drawlist data
+	std::vector<ColoredQuadPL::InstanceBufferData> coloredQuadInstanceData;
+	int coloredQuadInstanceIndex = 0;
+
+	std::vector<TexturedQuadPL::ssboObjectInstanceData> texturedQuadInstanceData;
+	int texturedQuadInstanceIndex = 0;
+
+	std::vector<screenSpaceTextDrawItem> textInstanceData;
+	int textInstanceIndex = 0;
+
+
+	// doesn't contribute to texture draw limit because I'm assuming I'll create a dedicated pipeline for this which includes effects
+	std::vector<FramebufferDrawItem> framebufferDrawData;
+
 };

@@ -149,7 +149,7 @@ public:
 	void LoadSprite(std::string name, bool loadResources = true);
 	void UnloadSprite(spriteID spriteID, bool freeResources = true);
 	Sprite* GetSprite(spriteID id) { return &spriteAssets.at(id); };
-	Sprite* GetSprite(std::string name) { return &spriteAssets[loadedSpritesByName[name]]; }; // TODO: add debug assertiong 
+	Sprite* GetSprite(std::string name) { return &spriteAssets.at(loadedSpritesByName.at(name)); }; // TODO: add debug assertiong 
 	std::optional<ImTextureID> getSpriteImTextureID(spriteID id) {
 		return resourceManager->GetTexture(spriteAssets[id].textureID)->imTexture;
 	};

@@ -54,3 +54,4 @@
 #include "IDGenerator.h"
 #include "BehaviorRegistry.h"
 //#include "GlobalImageDescriptor.h"
+#include "Drawlist.h"

@@ -148,14 +148,14 @@ void ComputeTemplate::UpdatePushConstant(vk::CommandBuffer& commandBuffer, void*
 	is used to fit the shape of the data being operated on.
 */
 
-void ComputeTemplate::DispatchGrid(vk::CommandBuffer& commandBuffer, glm::ivec3 GridSize, glm::ivec3 local_size) {
+void ComputeTemplate::DispatchGrid(vk::CommandBuffer& commandBuffer, glm::ivec3 gridSize, glm::ivec3 local_size) {
 	commandBuffer.dispatch(
-		GridSize.x / local_size.x + (GridSize.x % local_size.x ? 1 : 0),
-		GridSize.y / local_size.y + (GridSize.y % local_size.y ? 1 : 0),
-		GridSize.z / local_size.z + (GridSize.z % local_size.z ? 1 : 0)
+		gridSize.x / local_size.x + (gridSize.x % local_size.x ? 1 : 0),
+		gridSize.y / local_size.y + (gridSize.y % local_size.y ? 1 : 0),
+		gridSize.z / local_size.z + (gridSize.z % local_size.z ? 1 : 0)
 	);
 }
 
-void ComputeTemplate::DispatchGroups(vk::CommandBuffer& commandBuffer, glm::ivec3 WorkGroupCounts) {
-	commandBuffer.dispatch(WorkGroupCounts.x, WorkGroupCounts.y, WorkGroupCounts.z);
+void ComputeTemplate::DispatchGroups(vk::CommandBuffer& commandBuffer, glm::ivec3 workGroupCounts) {
+	commandBuffer.dispatch(workGroupCounts.x, workGroupCounts.y, workGroupCounts.z);
 }

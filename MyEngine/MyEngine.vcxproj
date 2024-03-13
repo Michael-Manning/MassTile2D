@@ -339,10 +339,12 @@
     <ClCompile Include="ComputeTemplate.cpp" />
     <ClCompile Include="descriptorManager.cpp" />
     <ClCompile Include="boidsCompute.cpp" />
+    <ClCompile Include="Drawlist.cpp" />
     <ClCompile Include="Entity.cpp" />
     <ClCompile Include="Font.cpp" />
     <ClCompile Include="FontGenerator.cpp" />
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="Drawlist.h" />
     <ClInclude Include="globalBufferDefinitions.h">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
     </ClInclude>
