@@ -14,7 +14,7 @@ public:
 	void Initialize(
 		Engine* engine, 
 		std::shared_ptr<Scene> gameScene, 
-		sceneRenderContextID sceneRenderContext, 
+		sceneGraphicsContextID sceneRenderContext, 
 		std::function<void(std::shared_ptr<Scene>)> onMainSceneLoad);
 
 	std::vector<Engine::SceneRenderJob> GetAdditionalRenderJobs() {
@@ -52,13 +52,13 @@ private:
 	Camera previewCamera;
 	std::shared_ptr<Scene> entityPreviewScene;
 	Engine::SceneRenderJob entityPreviewRenderJob;
-	sceneRenderContextID entityPreviewsSeneRenderContextID;
+	sceneGraphicsContextID entityPreviewsSeneRenderContextID;
 	glm::vec2 entityPrviewFrameSize;
 	framebufferID entityPreviewFramebuffer;
 	glm::vec2 previewSceneViewerScreenLocation;
 
 	std::shared_ptr<Scene> gameScene = nullptr;
-	sceneRenderContextID sceneRenderContext;
+	sceneGraphicsContextID sceneRenderContext;
 	framebufferID sceneFramebuffer;
 
 	template<typename T>

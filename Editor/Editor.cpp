@@ -793,7 +793,7 @@ void Editor::debugDataWindow() {
 	}
 }
 
-void Editor::Initialize(Engine* engine, std::shared_ptr<Scene> gameScene, sceneRenderContextID sceneRenderContext, std::function<void(std::shared_ptr<Scene>)> onMainSceneLoad) {
+void Editor::Initialize(Engine* engine, std::shared_ptr<Scene> gameScene, sceneGraphicsContextID sceneRenderContext, std::function<void(std::shared_ptr<Scene>)> onMainSceneLoad) {
 	this->engine = engine;
 	this->gameScene = gameScene;
 	selectedScene = gameScene.get();
@@ -803,7 +803,15 @@ void Editor::Initialize(Engine* engine, std::shared_ptr<Scene> gameScene, sceneR
 	entityPreviewScene = Scene::MakeScene(engine->assetManager.get()); //make_shared<Scene>(engine->assetManager.get());
 	entityPreviewScene->name = "entity preview scene";
 	entityPrviewFrameSize = vec2(600);
-	entityPreviewsSeneRenderContextID = engine->CreateSceneRenderContext(entityPrviewFrameSize, false, glm::vec4(vec3(0.2), 1.0), 1.0f, false);
+
+	SceneGraphicsAllocationConfiguration sceneConfig;
+	sceneConfig.AllocateTileWorld = false;
+	sceneConfig.Framebuffer_ClearColor = glm::vec4(vec3(0.2), 1.0);
+	sceneConfig.Lightmap_ClearValue = 1.0f;
+
+	entityPreviewsSeneRenderContextID = engine->CreateSceneRenderContext(entityPrviewFrameSize, sceneConfig);
+
+	//entityPreviewsSeneRenderContextID = engine->CreateSceneRenderContext(entityPrviewFrameSize, false, glm::vec4(vec3(0.2), 1.0), 1.0f, false);
 	//entityPreviewsSeneRenderContextID = engine->CreateSceneRenderContext(entityPrviewFrameSize, false, glm::vec4(vec3(0.2), 1.0), false);
 	entityPreviewFramebuffer = engine->GetSceneRenderContextFramebuffer(entityPreviewsSeneRenderContextID);
 

@@ -5,7 +5,7 @@
 typedef uint32_t classHash;
 
 typedef int32_t framebufferID;
-typedef int32_t sceneRenderContextID;
+typedef int32_t sceneGraphicsContextID;
 typedef int32_t texID;
 typedef uint32_t entityID;
 typedef uint32_t spriteID;

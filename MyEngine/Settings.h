@@ -1,7 +1,7 @@
 #pragma once
 
 #include <string>
-#include <stdint>
+#include <stdint.h>
 #include <vector>
 
 #include <glm/glm.hpp>
@@ -66,13 +66,13 @@ struct SceneGraphicsAllocationConfiguration {
 
 struct EngineMemoryAllocationConfiguration {
 
-	// layers which appear behind scene graphics components
-	int Worldspace_Background_DrawlistLayerCount = 1;
-	std::vector<DrawlistAllocationConfiguration> Worldspace_Background_LayerAllocations;
+	//// layers which appear behind scene graphics components
+	//int Worldspace_Background_DrawlistLayerCount = 1;
+	//std::vector<DrawlistAllocationConfiguration> Worldspace_Background_LayerAllocations;
 
-	// layers which appear in front of scene graphics components
-	int Worldspace_Forground_DrawlistLayerCount = 1;
-	std::vector<DrawlistAllocationConfiguration> Worldspace_Background_LayerAllocations;
+	//// layers which appear in front of scene graphics components
+	//int Worldspace_Forground_DrawlistLayerCount = 1;
+	//std::vector<DrawlistAllocationConfiguration> Worldspace_Foreground_LayerAllocations;
 
 	int Screenspace_DrawlistLayerCount = 1;
 	std::vector<DrawlistAllocationConfiguration> DrawlistLayerAllocations;

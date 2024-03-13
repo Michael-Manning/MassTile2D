@@ -38,6 +38,7 @@
 #include "AssetManager.h"
 #include "ResourceManager.h"
 #include "GlobalImageDescriptor.h"
+#include "Drawlist.h"
 
 #ifdef NDEBUG
 
@@ -75,6 +76,9 @@ public:
 	std::unique_ptr<TextPL> textPipeline = nullptr;
 	std::unique_ptr<ParticleSystemPL> particlePipeline = nullptr;
 
+
+	std::array<ComponentResourceToken, MAX_PARTICLE_SYSTEMS_LARGE> particleSystemResourceTokens;
+
 	// move to world space drawlist layers
 
 	//std::unique_ptr<ColoredTrianglesPL> trianglesPipelines = nullptr;
@@ -88,43 +92,6 @@ public:
 
 	framebufferID drawFramebuffer;
 	framebufferID lightingFramebuffer;
-};
-
-// This won't need an ID system. Just create required resources for these layers at engine initialization according to allocation settings
-// use this class for each layer, like screenspace layers, background/foreground layers
-class DrawlistGraphicsContext {
-public:
-
-	DrawlistGraphicsContext(DrawlistAllocationConfiguration allocationSettings)
-		: allocationSettings(allocationSettings) {}
-
-	const DrawlistAllocationConfiguration allocationSettings;
-
-	std::unique_ptr<ColoredQuadPL> coloredQuadPipeline = nullptr;
-	std::unique_ptr<ColoredTrianglesPL> coloredTrianglesPipeline = nullptr;
-	std::unique_ptr<TexturedQuadPL> texturedQuadPipeline = nullptr;
-	std::unique_ptr<TextPL> textPipeline = nullptr;
-	std::unique_ptr<ParticleComputePL> particleComputePipeline = nullptr;
-
-
-	// TODO: Maybe impliment addScreenSpaceCenteredQuad and similar functions here?
-	// Or maybe move the actual drawlist data to a different class and allow user to retrieve them like
-	// imgui and impliment those function there?
-	// std::vector<ColoredQuadPL::InstanceBufferData> screenSpaceColorDrawlist;
-	// std::vector<screenSpaceTextDrawItem> screenSpaceTextDrawlist;
-};
-
-
-// just an idea
-class Engine;
-class Drawlist {
-
-	inline void addScreenSpaceCenteredQuad(glm::vec4 color, glm::vec2 pos, glm::vec2 scale, float rotation = 0.0f); // impliment in drawlist.cpp
-
-private:
-	friend Engine;
-	std::vector<ColoredQuadPL::InstanceBufferData> screenSpaceColorDrawlist;
-	std::vector<screenSpaceTextDrawItem> screenSpaceTextDrawlist;
 };
 
 class Engine {
@@ -441,15 +408,38 @@ private:
 	std::vector<ColoredQuadPL::InstanceBufferData> screenSpaceColorDrawlist;
 	//std::vector<TexturedQuadPL::ssboObjectInstanceData> screenSpaceTextureDrawlist;
 
+	// This won't need an ID system. Just create required resources for these layers at engine initialization according to allocation settings
+// use this class for each layer, like screenspace layers, background/foreground layers
+	class DrawlistGraphicsContext {
+	public:
+
+		DrawlistGraphicsContext(DrawlistAllocationConfiguration allocationSettings)
+			: allocationSettings(allocationSettings) {}
+
+		const DrawlistAllocationConfiguration allocationSettings;
+
+		std::unique_ptr<ColoredQuadPL> coloredQuadPipeline = nullptr;
+		std::unique_ptr<ColoredTrianglesPL> coloredTrianglesPipeline = nullptr;
+		std::unique_ptr<TexturedQuadPL> texturedQuadPipeline = nullptr;
+		std::unique_ptr<TextPL> textPipeline = nullptr;
+		std::unique_ptr<ParticleComputePL> particleComputePipeline = nullptr;
 
 
-	struct screenSpaceTextDrawItem {
-		TextPL::textHeader header;
-		std::string text;
-		fontID font;
-		float scaleFactor = 1.0f;
+		// TODO: Maybe impliment addScreenSpaceCenteredQuad and similar functions here?
+		// Or maybe move the actual drawlist data to a different class and allow user to retrieve them like
+		// imgui and impliment those function there?
+		// std::vector<ColoredQuadPL::InstanceBufferData> screenSpaceColorDrawlist;
+		// std::vector<screenSpaceTextDrawItem> screenSpaceTextDrawlist;
 	};
-	std::vector<screenSpaceTextDrawItem> screenSpaceTextDrawlist;
+
+
+	//struct screenSpaceTextDrawItem {
+	//	TextPL::textHeader header;
+	//	std::string text;
+	//	fontID font;
+	//	float scaleFactor = 1.0f;
+	//};
+	//std::vector<screenSpaceTextDrawItem> screenSpaceTextDrawlist;
 
 	IDGenerator<sceneGraphicsContextID> renderContextGenerator;
 
@@ -464,8 +454,9 @@ private:
 
 	texID texNotFoundID; // displayed when indexing incorrectly 
 
+	std::vector<DrawlistGraphicsContext> screenSpaceDrawlistGraphicsContexts;
+	std::vector<Drawlist> screenSpaceDrawlists;
 
-	std::array<ComponentResourceToken, MAX_PARTICLE_SYSTEMS_LARGE> particleSystemResourceTokens;
 
 	void initializeSceneGraphicsContext(SceneGraphicsContext& ctx, glm::ivec2 framebufferSize);
 
@@ -478,10 +469,10 @@ private:
 		cmdBuffer.bindIndexBuffer(quadMeshBuffer.indexBuffer, 0, vk::IndexType::eUint16);
 	}
 
-	std::unique_ptr<ColoredQuadPL> screenSpaceColorPipeline = nullptr;
-	std::unique_ptr<TexturedQuadPL> screenSpaceTexturePipeline = nullptr;
-	std::unique_ptr<TextPL> screenSpaceTextPipeline = nullptr;
-	std::unique_ptr<ParticleComputePL> particleComputePipeline = nullptr;
+	//std::unique_ptr<ColoredQuadPL> screenSpaceColorPipeline = nullptr;
+	//std::unique_ptr<TexturedQuadPL> screenSpaceTexturePipeline = nullptr;
+	//std::unique_ptr<TextPL> screenSpaceTextPipeline = nullptr;
+	//std::unique_ptr<ParticleComputePL> particleComputePipeline = nullptr;
 
 	TexturedQuadPL::ssboObjectInstanceData* screenSpaceTextureGPUBuffer = nullptr;
 	int screenSpaceTextureGPUIndex = 0;

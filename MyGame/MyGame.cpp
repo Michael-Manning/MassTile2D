@@ -138,7 +138,7 @@ namespace {
 std::unique_ptr<Engine> engine = nullptr;
 Input* input = nullptr;
 shared_ptr<Scene> scene = nullptr;
-sceneRenderContextID sceneRenderCtx = 0;
+sceneGraphicsContextID sceneRenderCtx = 0;
 AssetManager::AssetPaths AssetDirectories = {};
 TileWorld* worldMap;
 Camera mainCamera{
@@ -410,7 +410,14 @@ int main() {
 
 	scene->name = "main scene";
 	//sceneRenderCtx = engine->CreateSceneRenderContext(engine->getWindowSize(), useTileWorld, vec4(0, 0, 0, 1));
-	sceneRenderCtx = engine->CreateSceneRenderContext(engine->getWindowSize(), useTileWorld, { 0.2, 0.3, 1.0, 1 });
+	//sceneRenderCtx = engine->CreateSceneRenderContext(engine->getWindowSize(), useTileWorld, { 0.2, 0.3, 1.0, 1 });
+
+	SceneGraphicsAllocationConfiguration sceneConfig;
+	sceneConfig.AllocateTileWorld = useTileWorld;
+	sceneConfig.Framebuffer_ClearColor = { 0.2, 0.3, 1.0, 1 };
+
+	sceneRenderCtx = engine->CreateSceneRenderContext(engine->getWindowSize(), sceneConfig);
+
 
 	// load all resources 
 	engine->assetManager->LoadAllSprites();
@@ -675,16 +682,16 @@ int main() {
 
 
 
-			vector<vec4> debugColors;
+			//vector<vec4> debugColors;
 
-			for (size_t i = 0; i < debugTriangles.size() / 3; i++)
-			{
-				debugColors.push_back(vec4(1.0, 0.0, 0.0, 0.5));
-			}
+			//for (size_t i = 0; i < debugTriangles.size() / 3; i++)
+			//{
+			//	debugColors.push_back(vec4(1.0, 0.0, 0.0, 0.5));
+			//}
 
-			engine->SceneTriangles(sceneRenderCtx, debugTriangles, debugColors);
+			//engine->SceneTriangles(sceneRenderCtx, debugTriangles, debugColors);
 
-			debugTriangles.clear();
+			//debugTriangles.clear();
 
 
 			if (useTileWorld) {
