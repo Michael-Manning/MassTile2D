@@ -202,7 +202,11 @@ public:
 		buffer.size = size;
 	};
 
-	
+	template<typename T>
+	void createMappedBuffer(vk::BufferUsageFlags usage, MappedDoubleBuffer<T>& buffer) {
+		createMappedBuffer(sizeof(T), usage, buffer);
+	}
+
 	void WaitForComputeSubmission();
 	void WaitForComputeCompletion();
 	

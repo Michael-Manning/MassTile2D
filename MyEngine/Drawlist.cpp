@@ -1,17 +1,18 @@
 #include "stdafx.h"
 
 #include <vector>
+#include <string>
 
 #include <glm/glm.hpp>
 
 #include "pipelines.h"
+#include "Settings.h"
+#include "AssetManager.h"
 
 #include "Drawlist.h"
 
 
-
-
-inline void Drawlist::AddCenteredQuad(glm::vec4 color, glm::vec2 pos, glm::vec2 scale, float rotation) {
+void Drawlist::AddCenteredQuad(glm::vec4 color, glm::vec2 pos, glm::vec2 scale, float rotation) {
 
 	assert(coloredQuadInstanceIndex < allocationSettings.ColoredQuad_MaxInstances);
 
@@ -25,7 +26,29 @@ inline void Drawlist::AddCenteredQuad(glm::vec4 color, glm::vec2 pos, glm::vec2 
 	coloredQuadInstanceIndex++;
 }
 
-inline void Drawlist::AddCenteredSprite(Sprite* sprite, int atlasIndex, glm::vec2 pos, float height, float rotation) {
+//inline void SceneTriangles(sceneGraphicsContextID ctxID, std::vector <glm::vec2>& vertices, std::vector<glm::vec4>& triangleColors) {
+
+//	auto ctx = &sceneRenderContextMap.at(ctxID);
+//	
+//	assert(vertices.size() % 3 == 0);
+//	assert((ctx->pl.triangleDrawlistCount + vertices.size()) / ColoredTrianglesPL::verticesPerMesh < ColoredTrianglesPL_MAX_OBJECTS);
+//	assert(triangleColors.size() == vertices.size() / ColoredTrianglesPL::verticesPerMesh);
+
+//	int triangleIndex = ctx->pl.triangleDrawlistCount / ColoredTrianglesPL::verticesPerMesh;
+//	for (auto& c : triangleColors)
+//	{
+//		ctx->pl.triangleColorGPUBuffer[triangleIndex].color = c;
+//		triangleIndex++;
+//	}
+
+//	for (auto& v : vertices)
+//	{
+//		ctx->pl.triangleGPUBuffer[ctx->pl.triangleDrawlistCount] = Vertex{ .pos = v, .texCoord = {0, 0} };
+//		ctx->pl.triangleDrawlistCount++;
+//	}
+//}
+
+void Drawlist::AddCenteredSprite(Sprite* sprite, int atlasIndex, glm::vec2 pos, float height, float rotation) {
 
 	assert(texturedQuadInstanceIndex < allocationSettings.TexturedQuad_MaxInstances);
 
@@ -45,24 +68,24 @@ inline void Drawlist::AddCenteredSprite(Sprite* sprite, int atlasIndex, glm::vec
 
 	texturedQuadInstanceIndex++;
 }
-inline void Drawlist::AddCenteredSprite(spriteID sprID, int atlasIndex, glm::vec2 pos, float height, float rotation) {
+void Drawlist::AddCenteredSprite(spriteID sprID, int atlasIndex, glm::vec2 pos, float height, float rotation) {
 	auto s = assetManager->GetSprite(sprID);
 	AddCenteredSprite(s, atlasIndex, pos, height, rotation);
 }
-inline void Drawlist::AddCenteredSprite(std::string sprite, int atlasIndex, glm::vec2 pos, float height, float rotation) {
+void Drawlist::AddCenteredSprite(std::string sprite, int atlasIndex, glm::vec2 pos, float height, float rotation) {
 	auto s = assetManager->GetSprite(sprite);
 	AddCenteredSprite(s, atlasIndex, pos, height, rotation);
 }
-inline void Drawlist::AddSprite(spriteID sprID, int atlasIndex, glm::vec2 pos, float height, float rotation) {
+void Drawlist::AddSprite(spriteID sprID, int atlasIndex, glm::vec2 pos, float height, float rotation) {
 	auto s = assetManager->GetSprite(sprID);
 	AddCenteredSprite(s, atlasIndex, pos + (s->resolution / 2.0f) * (height / s->resolution.y), height, rotation);
 }
-inline void Drawlist::AddSprite(std::string sprite, int atlasIndex, glm::vec2 pos, float height, float rotation) {
+void Drawlist::AddSprite(std::string sprite, int atlasIndex, glm::vec2 pos, float height, float rotation) {
 	auto s = assetManager->GetSprite(sprite);
 	AddCenteredSprite(s, atlasIndex, pos + (s->resolution / 2.0f) * (height / s->resolution.y), height, rotation);
 }
 
-inline void Drawlist::AddCenteredFramebufferTexture(framebufferID fbID, glm::vec2 pos, float height, float rotation) {
+void Drawlist::AddCenteredFramebufferTexture(framebufferID fbID, glm::vec2 pos, float height, float rotation) {
 
 	FramebufferDrawItem item;
 
@@ -75,9 +98,10 @@ inline void Drawlist::AddCenteredFramebufferTexture(framebufferID fbID, glm::vec
 }
 
 
-inline void Drawlist::AddScreenSpaceText(fontID font, glm::vec2 position, glm::vec4 color, std::string text) {
+void Drawlist::AddText(fontID font, glm::vec2 position, glm::vec4 color, std::string text) {
 
 	assert(textInstanceIndex < allocationSettings.Text_MaxStrings);
+	assert(text.length() < allocationSettings.Text_MaxStringLength);
 
 	screenSpaceTextDrawItem& item = textInstanceData[textInstanceIndex % allocationSettings.Text_MaxStrings];
 	item.font = font;
@@ -85,12 +109,12 @@ inline void Drawlist::AddScreenSpaceText(fontID font, glm::vec2 position, glm::v
 	item.header.color = color;
 	item.header.position = position;
 	item.header.rotation = 0.0f;
-	item.header.textLength = text.length();
+	item.header.textLength = glm::min(allocationSettings.Text_MaxStringLength, (uint32_t)text.length());
 
 	textInstanceIndex++;
 };
 
-inline void Drawlist::AddScreenSpaceText(fontID font, glm::vec2 position, glm::vec4 color, const char* fmt, ...) {
+void Drawlist::AddText(fontID font, glm::vec2 position, glm::vec4 color, const char* fmt, ...) {
 
 	char buffer[TEXTPL_maxTextLength];
 
@@ -99,5 +123,5 @@ inline void Drawlist::AddScreenSpaceText(fontID font, glm::vec2 position, glm::v
 	vsnprintf(buffer, sizeof(buffer), fmt, args);
 	va_end(args);
 
-	AddScreenSpaceText(font, position, color, std::string(buffer));
+	AddText(font, position, color, std::string(buffer));
 };

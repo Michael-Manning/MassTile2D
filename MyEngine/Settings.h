@@ -56,7 +56,7 @@ struct SceneGraphicsAllocationConfiguration {
 	uint32_t ParticleSystem_MaxSmallSystemParticles = 200; 
 
 	glm::vec4 Framebuffer_ClearColor = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-	bool transparentFramebufferBlending = false;
+	//bool transparentFramebufferBlending = false;
 
 	bool AllocateTileWorld = true;
 	float Lightmap_ClearValue = 0.0f;
@@ -76,5 +76,5 @@ struct EngineMemoryAllocationConfiguration {
 	uint32_t ParticleSystem_MaxLargeSystemParticles = 100000;
 
 	int Screenspace_DrawlistLayerCount = 1;
-	std::vector<DrawlistAllocationConfiguration> DrawlistLayerAllocations;
+	std::vector<DrawlistAllocationConfiguration> Screenspace_DrawlistLayerAllocations;
 };

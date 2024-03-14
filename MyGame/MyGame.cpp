@@ -46,6 +46,7 @@
 #include "Menus.h"
 #include "GameUI.h"
 #include "Behaviour.h"
+#include "Drawlist.h"
 #include "Camera.h"
 
 #include "Benchmarking.h"
@@ -216,7 +217,21 @@ bool initializeEngine(std::unique_ptr<Engine>& engine) {
 	videoSettings.windowSetting = windowSetting;
 	videoSettings.swapChainSetting = swapchainSettings;
 
-	engine->Start(videoSettings, AssetDirectories);
+	DrawlistAllocationConfiguration drawlistMemoryConfig;
+	drawlistMemoryConfig.ColoredQuad_MaxInstances = 1024;
+	drawlistMemoryConfig.ColoredTriangle_MaxInstances = 64;
+	drawlistMemoryConfig.TexturedQuad_MaxInstances = 1024;
+	drawlistMemoryConfig.Text_MaxStringLength = 128;
+	drawlistMemoryConfig.Text_MaxStrings = 100;
+
+	EngineMemoryAllocationConfiguration engineMemoryConfig;
+	engineMemoryConfig.ParticleSystem_MaxLargeSystems = 4;
+	engineMemoryConfig.ParticleSystem_MaxLargeSystemParticles = 100000;
+	engineMemoryConfig.Screenspace_DrawlistLayerCount = 1;
+	engineMemoryConfig.Screenspace_DrawlistLayerAllocations.push_back(drawlistMemoryConfig);
+
+
+	engine->Start(videoSettings, AssetDirectories, engineMemoryConfig);
 	input = engine->GetInput();
 
 	return true;
@@ -543,7 +558,7 @@ int main() {
 
 		editorToggledThisFrame = false;
 
-		engine->clearScreenSpaceDrawlist();
+		//engine->clearScreenSpaceDrawlist();
 
 
 		if (ImGui::GetIO().WantTextInput == false) {
@@ -575,13 +590,15 @@ int main() {
 			// draw main scene full screen
 			if (showingEditor == false) {
 
+				auto drawlist = engine->GetScreenspaceDrawlist();
+
 				if (showLightMapDebug) {
 					framebufferID fb = engine->_GetSceneRenderContextLightMapBuffer(sceneRenderCtx);
-					engine->addScreenCenteredSpaceFramebufferTexture(fb, engine->getWindowSize() / 2.0f, engine->winH, 0);
+					drawlist->AddCenteredFramebufferTexture(fb, engine->getWindowSize() / 2.0f, engine->winH, 0);
 				}
 				else {
 					framebufferID fb = engine->GetSceneRenderContextFramebuffer(sceneRenderCtx);
-					engine->addScreenCenteredSpaceFramebufferTexture(fb, engine->getWindowSize() / 2.0f, engine->winH, 0);
+					drawlist->AddCenteredFramebufferTexture(fb, engine->getWindowSize() / 2.0f, engine->winH, 0);
 				}
 			}
 		}
@@ -602,7 +619,9 @@ int main() {
 
 		else if (appState == AppState::PlayingGame) {
 
-			engine->addScreenSpaceText(UI.smallfont, { 4, 4 }, vec4(1.0), "fps: %d", (int)engine->_getAverageFramerate());
+			auto drawlist = engine->GetScreenspaceDrawlist();
+
+			drawlist->AddText(UI.smallfont, { 4, 4 }, vec4(1.0), "fps: %d", (int)engine->_getAverageFramerate());
 
 			UI::DoUI(uiState);
 

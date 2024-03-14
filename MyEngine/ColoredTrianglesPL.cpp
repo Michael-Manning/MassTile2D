@@ -30,22 +30,16 @@
 using namespace glm;
 using namespace std;
 
-void ColoredTrianglesPL::CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc, vk::RenderPass& renderTarget, MappedDoubleBuffer<cameraUBO_s>& cameradb, bool flipFaces) {
+void ColoredTrianglesPL::CreateGraphicsPipeline(PipelineParameters& params) {
 
 	engine->createMappedBuffer(sizeof(Vertex) * verticesPerMesh * ColoredTrianglesPL_MAX_OBJECTS, vk::BufferUsageFlagBits::eVertexBuffer, vertexDB);
 	engine->createMappedBuffer(sizeof(InstanceBufferData) * ColoredTrianglesPL_MAX_OBJECTS, vk::BufferUsageFlagBits::eStorageBuffer, instanceDB);
 
-	ShaderResourceConfig con;
-	con.vertexSrc = vertexSrc;
-	con.fragmentSrc = fragmentSrc;
-	con.flipFaces = flipFaces;
-	con.transparentFramebuffer = false;
-	con.renderTarget = renderTarget;
-
-	con.descriptorInfos.push_back(DescriptorManager::descriptorSetInfo(0, 0, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eVertex, &cameradb.buffers, cameradb.size));
+	PipelineResourceConfig con;
+	con.descriptorInfos.push_back(DescriptorManager::descriptorSetInfo(0, 0, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eVertex, &params.cameradb.buffers, params.cameradb.size));
 	con.descriptorInfos.push_back(DescriptorManager::descriptorSetInfo(0, 1, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eFragment, &instanceDB.buffers, instanceDB.size));
 
-	pipeline.CreateGraphicsPipeline(con);
+	pipeline.CreateGraphicsPipeline(params, con);
 }
 
 

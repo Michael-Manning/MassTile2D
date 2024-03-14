@@ -54,9 +54,10 @@ void ParticleComputePL::CreateComputePipeline(const std::vector<uint8_t>& compSr
 	auto deviceDB = particleDataBuffer->GetDoubleBuffer();
 	auto atomicDB = atomicCounterBuffer.GetDoubleBuffer();
 
+	PipelineParameters params;
+	params.computeSrcStages = { compSrc };
 
-	ShaderResourceConfig con;
-	con.computeSrcStages = { compSrc };
+	PipelineResourceConfig con;
 	con.descriptorInfos.push_back(DescriptorManager::descriptorSetInfo(0, 0, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eCompute, &sysConfigDB.buffers, sysConfigDB.size));
 	con.descriptorInfos.push_back(DescriptorManager::descriptorSetInfo(0, 1, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eCompute, &deviceDB, particleDataBuffer->size));
 	con.descriptorInfos.push_back(DescriptorManager::descriptorSetInfo(0, 2, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eCompute, &atomicDB, atomicCounterBuffer.size));
@@ -66,7 +67,7 @@ void ParticleComputePL::CreateComputePipeline(const std::vector<uint8_t>& compSr
 		.pushConstantShaderStages = vk::ShaderStageFlagBits::eCompute
 	};
 
-	pipeline.CreateComputePipeline(con);
+	pipeline.CreateComputePipeline(params, con);
 }
 
 void ParticleComputePL::RecordCommandBuffer(vk::CommandBuffer commandBuffer, float deltaTime, std::vector<DispatchInfo>& dispatchInfo) {

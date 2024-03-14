@@ -1,10 +1,13 @@
 
 Near roadmap:
-- get building again
-- remove pipelines from engine class and switch to new drawlistGraphicsContext class
 - switch away from using hardcoded buffer sizes and use memory allocation settings in pipeline classes
 - split up text pipeline ssbo structure into two structures so that the text data can have different allocation sizes per instance of the 
 pipeline.
+- use pipeline params for all pipeline
+- replace screenspace versions of pipelines with specialization constants
+- bring back up triangle pipeline
+- either flip screen space coordinates Y, or find way to unify UV coordinates accross all pipelines
+- glm aligned types
 
 - set lightmap to full bright when not using tilemap or in editor prefab preview scene
 
@@ -17,7 +20,8 @@ https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm
 - if only one chunk of tile data can be updated per frame, it's possible for 2 chunks to be dirty in one frame, where both get lighting updates,
 but one of the lighting updates performs on out of date tile data as the second chunk tile data hasn't uploaded yet
 
-- direct GPU map access when doing screen space drawlists breaks synchronization rules. Must go back to buffering a drawlist or flush ranges manually?
+- could triple buffer drawlist data to allow direct gpu map insertion and avoid copy when recording commandbuffers. Oy maybe manually flushing
+memory ranges could also allow this with current 2 buffers without breaking synchronization?
 
 Create serializable "map/grid entity" structure which represents an entity placed on top of the tile world which can be serialized.
 Should be stored within a map keyed by each check for update/draw culling and instantiate a prefab on load. Start with a chest/storage entity

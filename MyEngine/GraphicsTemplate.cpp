@@ -13,9 +13,12 @@
 using namespace glm;
 using namespace std;
 
-void GraphicsTemplate::CreateGraphicsPipeline(const ShaderResourceConfig& resourceConfig) {
+void GraphicsTemplate::CreateGraphicsPipeline(const PipelineParameters& params, const PipelineResourceConfig& resourceConfig) {
 	
-	auto shaderStages = createGraphicsShaderStages(resourceConfig.vertexSrc, resourceConfig.fragmentSrc); 
+	assert(init == false);
+	init = true;
+	
+	auto shaderStages = createGraphicsShaderStages(params.vertexSrc, params.fragmentSrc);
 
 	this->pushInfo = resourceConfig.pushInfo;
 
@@ -46,7 +49,7 @@ void GraphicsTemplate::CreateGraphicsPipeline(const ShaderResourceConfig& resour
 	auto colorBlending = defaultColorBlending(&colorBlendAttachment);
 	auto dynamicState = defaultDynamicState();
 
-	if (resourceConfig.flipFaces)
+	if (params.flipFaces)
 		rasterizer.frontFace = vk::FrontFace::eClockwise;
 
 	vk::GraphicsPipelineCreateInfo pipelineInfo;
@@ -60,7 +63,7 @@ void GraphicsTemplate::CreateGraphicsPipeline(const ShaderResourceConfig& resour
 	pipelineInfo.pColorBlendState = &colorBlending;
 	pipelineInfo.pDynamicState = &dynamicState;
 	pipelineInfo.layout = pipelineLayout;
-	pipelineInfo.renderPass = resourceConfig.renderTarget;
+	pipelineInfo.renderPass = params.renderTarget;
 	pipelineInfo.subpass = 0;
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
@@ -80,6 +83,8 @@ void GraphicsTemplate::CreateGraphicsPipeline(const ShaderResourceConfig& resour
 }
 
 void GraphicsTemplate::bindPipelineResources(vk::CommandBuffer& commandBuffer, void* pushConstantData){
+
+	assert(init == true);
 
 	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, _pipeline);
 

@@ -1,26 +1,19 @@
 #pragma once
 
-#include <vector>
-#include <string>
-#include <memory>
 #include <stdint.h>
-#include <unordered_map>
 #include <string>
-#include <utility>
 
 #include <vulkan/vulkan.hpp>
 #include <glm/glm.hpp>
-#include <vk_mem_alloc.h>
 
 #include "VKEngine.h"
 #include "pipeline.h"
 #include "typedefs.h"
-#include "Constants.h"
+#include "Vertex.h"
+#include "GraphicsTemplate.h"
 #include "globalBufferDefinitions.h"
 
-constexpr int ColoredQuadPL_MAX_OBJECTS = 1000000;
-
-class ColoredQuadPL :public  Pipeline {
+class ColoredQuadPL {
 public:
 
 	struct InstanceBufferData {
@@ -34,19 +27,31 @@ public:
 	};
 	static_assert(sizeof(InstanceBufferData) % 16 == 0);
 
-	ColoredQuadPL(VKEngine* engine) : Pipeline(engine) {
+	ColoredQuadPL(VKEngine* engine) : pipeline(engine), engine(engine) { }
+
+	void CreateGraphicsPipeline(const PipelineParameters& params, int maxInstances) {
+		engine->createMappedBuffer(sizeof(InstanceBufferData) * maxInstances, vk::BufferUsageFlagBits::eStorageBuffer, instanceDataDB);
+
+		PipelineResourceConfig con;
+		con.descriptorInfos.push_back(DescriptorManager::descriptorSetInfo(0, 0, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eVertex, &params.cameradb.buffers, params.cameradb.size));
+		con.descriptorInfos.push_back(DescriptorManager::descriptorSetInfo(1, 0, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, &instanceDataDB.buffers, instanceDataDB.size));
+
+		pipeline.CreateGraphicsPipeline(params, con);
 	}
 
-	void CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc, vk::RenderPass& renderTarget, MappedDoubleBuffer<cameraUBO_s>& cameradb, bool flipFaces = false);
-	void CreateInstancingBuffer();
-	/*void UploadInstanceData(std::vector<InstanceBufferData>& drawlist);*/
-	void recordCommandBuffer(vk::CommandBuffer commandBuffer, int instanceCount);
+	void recordCommandBuffer(vk::CommandBuffer commandBuffer, int instanceCount) {
+		TracyVkZone(engine->tracyGraphicsContexts[engine->currentFrame], commandBuffer, "Colored quad render");
+
+		pipeline.bindPipelineResources(commandBuffer);
+		commandBuffer.drawIndexed(QuadIndices.size(), instanceCount, 0, 0, 0);
+	}
 
 	InstanceBufferData* getUploadMappedBuffer() {
-		return ssboMappedDB.buffersMapped[engine->currentFrame];
+		return instanceDataDB.buffersMapped[engine->currentFrame];
 	}
 
-
 private:
-	MappedDoubleBuffer<InstanceBufferData> ssboMappedDB;
+	MappedDoubleBuffer<InstanceBufferData> instanceDataDB;
+	GraphicsTemplate pipeline;
+	VKEngine* engine;
 };

@@ -12,11 +12,11 @@
 using namespace glm;
 using namespace std;
 
-void ComputeTemplate::CreateComputePipeline(const ShaderResourceConfig& resourceConfig) {
+void ComputeTemplate::CreateComputePipeline(const PipelineParameters& params, const PipelineResourceConfig& resourceConfig) {
 
-	assert(resourceConfig.computeSrcStages.size() > 0);
+	assert(params.computeSrcStages.size() > 0);
 
-	auto computeStages = createComputeShaderStages(resourceConfig.computeSrcStages);
+	auto computeStages = createComputeShaderStages(params.computeSrcStages);
 
 	this->pushInfo = resourceConfig.pushInfo;
 

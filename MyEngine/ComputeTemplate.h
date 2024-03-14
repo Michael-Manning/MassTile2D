@@ -17,7 +17,7 @@ public:
 	{};
 
 	// will create multiple pipelines which are assumed to share the same descriptor sets
-	void CreateComputePipeline(const ShaderResourceConfig& resourceConfig);
+	void CreateComputePipeline(const PipelineParameters& params, const PipelineResourceConfig& resourceConfig);
 
 	void BindDescriptorSets(vk::CommandBuffer& commandBuffer);
 

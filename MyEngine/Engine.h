@@ -2,16 +2,11 @@
 
 #include <vector>
 #include <stdint.h>
-#include <unordered_map>
-#include <set>
 #include <memory>
 #include <string>
 
 #include <vulkan/vulkan.hpp>
 #include <glm/glm.hpp>
-#include<box2d/box2d.h>
-
-#include <vk_mem_alloc.h>
 
 #include "texture.h"
 #include "VKEngine.h"
@@ -20,18 +15,14 @@
 
 #include "IDGenerator.h"
 #include "typedefs.h"
-#include "Physics.h"
 #include "Camera.h"
 
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_vulkan.h"
 
-#include "ECS.h"
-#include "BehaviorRegistry.h"
 #include "Input.h"
 #include "Scene.h"
-#include "vulkan_util.h"
 #include "globalBufferDefinitions.h"
 #include "TileWorld.h"
 #include "Settings.h"
@@ -84,7 +75,7 @@ private:
 
 		const SceneGraphicsAllocationConfiguration allocationSettings;
 
-		MappedDoubleBuffer<cameraUBO_s> cameraBuffers;
+		MappedDoubleBuffer<coodinateTransformUBO_s> cameraBuffers;
 
 		std::unique_ptr<LightingComputePL> lightingPipeline = nullptr;
 
@@ -94,13 +85,6 @@ private:
 		std::unique_ptr<TexturedQuadPL> texturePipeline = nullptr;
 		std::unique_ptr<TextPL> textPipeline = nullptr;
 		std::unique_ptr<ParticleSystemPL> particlePipeline = nullptr;
-
-		// move to world space drawlist layers
-
-		//std::unique_ptr<ColoredTrianglesPL> trianglesPipelines = nullptr;
-		//int triangleDrawlistCount = 0;
-		//Vertex* triangleGPUBuffer = nullptr;
-		//ColoredTrianglesPL::InstanceBufferData* triangleColorGPUBuffer = nullptr;
 
 		std::unique_ptr<TileWorld> worldMap = nullptr;
 
@@ -123,11 +107,7 @@ public:
 		rengine(std::make_unique<VKEngine>()),
 		resourceChangeFlags(std::make_unique<ResourceManager::ChangeFlags>()),
 		GlobalTextureDesc(rengine.get())
-		//globalTextureBindingManager(MAX_TEXTURE_RESOURCES)
 	{
-		//bworld = std::make_shared<b2World>(gravity);
-		//currentScene = std::make_shared<Scene>(bworld);
-
 		DebugLog("Engine created");
 	}
 
@@ -176,8 +156,6 @@ public:
 	};
 
 
-	//std::shared_ptr<b2World> bworld = nullptr;
-
 	double deltaTime = 0.0;
 	//double paused_deltaTime = 0.0; // delta time, but unaffected by pausing
 	double framerate;
@@ -205,139 +183,8 @@ public:
 	int winW = 0, winH = 0;
 
 	void _onWindowResize() {
-		screenSpaceTransformUploader.Invalidate();
+		//screenSpaceTransformUploader.Invalidate();
 	};
-
-	//inline void addScreenSpaceCenteredQuad(glm::vec4 color, glm::vec2 pos, glm::vec2 scale, float rotation = 0.0f) {
-	//	ColoredQuadPL::InstanceBufferData item;
-	//	item.color = color;
-	//	item.position = pos;
-	//	item.scale = scale;
-	//	item.rotation = rotation;
-	//	item.circle = 0;
-	//	screenSpaceColorDrawlist.push_back(item);
-	//}
-
-	//inline void SceneTriangles(sceneGraphicsContextID ctxID, std::vector <glm::vec2>& vertices, std::vector<glm::vec4>& triangleColors) {
-
-	//	auto ctx = &sceneRenderContextMap.at(ctxID);
-	//	
-	//	assert(vertices.size() % 3 == 0);
-	//	assert((ctx->pl.triangleDrawlistCount + vertices.size()) / ColoredTrianglesPL::verticesPerMesh < ColoredTrianglesPL_MAX_OBJECTS);
-	//	assert(triangleColors.size() == vertices.size() / ColoredTrianglesPL::verticesPerMesh);
-
-	//	int triangleIndex = ctx->pl.triangleDrawlistCount / ColoredTrianglesPL::verticesPerMesh;
-	//	for (auto& c : triangleColors)
-	//	{
-	//		ctx->pl.triangleColorGPUBuffer[triangleIndex].color = c;
-	//		triangleIndex++;
-	//	}
-
-	//	for (auto& v : vertices)
-	//	{
-	//		ctx->pl.triangleGPUBuffer[ctx->pl.triangleDrawlistCount] = Vertex{ .pos = v, .texCoord = {0, 0} };
-	//		ctx->pl.triangleDrawlistCount++;
-	//	}
-	//}
-
-	//inline void addScreenCenteredSpaceTexture(Sprite* sprite, int atlasIndex, glm::vec2 pos, float height, float rotation = 0.0f) {
-	//	assert(screenSpaceTextureGPUIndex < TexturedQuadPL_MAX_OBJECTS);
-	//	TexturedQuadPL::ssboObjectInstanceData* item = screenSpaceTextureGPUBuffer + screenSpaceTextureGPUIndex++;
-	//	item->uvMin = glm::vec2(0.0f);
-	//	item->uvMax = glm::vec2(1.0f);
-	//	item->translation = pos;
-	//	item->scale = glm::vec2(sprite->resolution.x / sprite->resolution.y * height, height);
-	//	item->rotation = rotation;
-	//	item->tex = sprite->textureID;
-
-	//	if (sprite->atlas.size() > 0) {
-	//		auto atEntry = sprite->atlas[atlasIndex];
-	//		item->uvMin = atEntry.uv_min;
-	//		item->uvMax = atEntry.uv_max;
-	//	}
-
-	//	//screenSpaceTextureDrawlist.push_back(item);
-	//}
-	//inline void addScreenCenteredSpaceTexture(spriteID sprID, int atlasIndex, glm::vec2 pos, float height, float rotation = 0.0f) {
-	//	auto s = assetManager->GetSprite(sprID);
-	//	addScreenCenteredSpaceTexture(s, atlasIndex, pos, height, rotation);
-	//}
-	//inline void addScreenCenteredSpaceTexture(std::string sprite, int atlasIndex, glm::vec2 pos, float height, float rotation = 0.0f) {
-	//	auto s = assetManager->GetSprite(sprite);
-	//	addScreenCenteredSpaceTexture(s, atlasIndex, pos, height, rotation);
-	//}
-	//inline void addScreenSpaceTexture(spriteID sprID, int atlasIndex, glm::vec2 pos, float height, float rotation = 0.0f) {
-	//	auto s = assetManager->GetSprite(sprID);
-	//	addScreenCenteredSpaceTexture(s, atlasIndex, pos + (s->resolution / 2.0f) * (height / s->resolution.y), height, rotation);
-	//}
-	//inline void addScreenSpaceTexture(std::string sprite, int atlasIndex, glm::vec2 pos, float height, float rotation = 0.0f) {
-	//	auto s = assetManager->GetSprite(sprite);
-	//	addScreenCenteredSpaceTexture(s, atlasIndex, pos + (s->resolution / 2.0f) * (height / s->resolution.y), height, rotation);
-	//}
-
-	//inline void addScreenCenteredSpaceFramebufferTexture(framebufferID fbID, glm::vec2 pos, float height, float rotation = 0.0f) {
-
-	//	auto fb = resourceManager->GetFramebuffer(fbID);
-
-	//	float w = fb->extents[rengine->currentFrame].width;
-	//	float h = fb->extents[rengine->currentFrame].height;
-
-	//	assert(screenSpaceTextureGPUIndex < TexturedQuadPL_MAX_OBJECTS);
-	//	TexturedQuadPL::ssboObjectInstanceData* item = screenSpaceTextureGPUBuffer + screenSpaceTextureGPUIndex++;
-
-	//	item->uvMin = glm::vec2(0.0f);
-	//	item->uvMax = glm::vec2(1.0f);
-	//	item->translation = pos;
-	//	item->scale = glm::vec2((w / h) * height, height);
-	//	item->rotation = rotation;
-	//	item->tex = fb->textureIDs[rengine->currentFrame];
-	//}
-
-
-	//inline void addScreenSpaceText(fontID font, glm::vec2 position, glm::vec4 color, std::string text) {
-	//	screenSpaceTextDrawItem item;
-	//	item.font = font;
-	//	item.text = text;
-	//	item.header.color = color;
-	//	item.header.position = position;
-	//	item.header.rotation = 0.0f;
-	//	item.header.textLength = text.length();
-	//	screenSpaceTextDrawlist.push_back(item);
-	//};
-
-	//void addScreenSpaceText(fontID font, glm::vec2 position, glm::vec4 color, const char* fmt, ...) {
-
-	//	char buffer[TEXTPL_maxTextLength];
-
-	//	va_list args;
-	//	va_start(args, fmt);
-	//	vsnprintf(buffer, sizeof(buffer), fmt, args);
-	//	va_end(args);
-
-	//	std::string result = buffer;
-
-	//	screenSpaceTextDrawItem item;
-	//	item.font = font;
-	//	item.text = result;
-	//	item.header.color = color;
-	//	item.header.position = position;
-	//	item.header.rotation = 0.0f;
-	//	item.header.textLength = result.length();
-	//	screenSpaceTextDrawlist.push_back(item);
-	//};
-
-	//void clearScreenSpaceDrawlist() {
-	//	screenSpaceColorDrawlist.clear();
-	//	screenSpaceTextDrawlist.clear();
-	//	//screenSpaceTextureDrawlist.clear();
-	//}
-
-	//void SetScene(std::shared_ptr<Scene> scene) {
-	//	currentScene = scene;
-	//}
-	//std::shared_ptr<Scene> GetCurrentScene() {
-	//	return currentScene;
-	//}
 
 	sceneGraphicsContextID CreateSceneRenderContext(glm::ivec2 framebufferSize, SceneGraphicsAllocationConfiguration allocationSettings) {
 
@@ -347,26 +194,6 @@ public:
 		initializeSceneGraphicsContext(iter->second, framebufferSize);
 
 		return id;
-
-
-		//auto fbID = resourceManager->CreateFramebuffer(size, clearColor);
-		//auto fb = resourceManager->GetFramebuffer(fbID);
-
-		//sceneGraphicsContextID id = renderContextGenerator.GenerateID();
-		//sceneRenderContextMap[id] = SceneGraphicsContext;
-
-		//sceneRenderContextMap.find(id)->second.fb = fbID;
-		//sceneRenderContextMap.at(id).lightingBuffer = resourceManager->CreateFramebuffer(size, glm::vec4(lightClearValue), lightingPassFormat);
-		//sceneRenderContextMap.at(id).pl.memoryConfig = allocationSettings;
-
-		//createScenePLContext(
-		//	&sceneRenderContextMap.find(id)->second.pl, 
-		//	allocateTileWorld, 
-		//	fb->renderpass, 
-		//	resourceManager->GetFramebuffer(sceneRenderContextMap.at(id).lightingBuffer),
-		//	transparentFramebufferBlending);
-
-		//return id;
 	}
 
 	void ResizeSceneRenderContext(sceneGraphicsContextID id, glm::ivec2 size) {
@@ -407,9 +234,14 @@ public:
 		ImGui::Image((ImTextureID)tex->imTexture.value(), ImVec2(displaySize.x, displaySize.y));
 	};
 
+	Drawlist* GetScreenspaceDrawlist(int layer = 0) {
+		assert(screenspaceDrawlistLayers.size() >= layer);
+		return &screenspaceDrawlistLayers[layer];
+	}
+
 private:
 
-	DrawlistGraphicsContext createDrawlistGraphicsContext(DrawlistAllocationConfiguration allocationSettings, MappedDoubleBuffer<cameraUBO_s> cameraBuffers);
+	DrawlistGraphicsContext createDrawlistGraphicsContext(DrawlistAllocationConfiguration allocationSettings, MappedDoubleBuffer<coodinateTransformUBO_s> cameraBuffers);
 
 	const vk::Format lightingPassFormat = vk::Format::eR16Unorm; //vk::Format::eR16Unorm;
 
@@ -419,21 +251,6 @@ private:
 	std::queue<texID> textureBindingDeletionQueue;
 	std::unique_ptr<ResourceManager::ChangeFlags> resourceChangeFlags;
 	std::unique_ptr<ResourceManager> resourceManager = nullptr;
-	//std::vector<ColoredQuadPL::InstanceBufferData> screenSpaceColorDrawlist;
-	//std::vector<TexturedQuadPL::ssboObjectInstanceData> screenSpaceTextureDrawlist;
-
-	// This won't need an ID system. Just create required resources for these layers at engine initialization according to allocation settings
-// use this class for each layer, like screenspace layers, background/foreground layers
-
-
-
-	//struct screenSpaceTextDrawItem {
-	//	TextPL::textHeader header;
-	//	std::string text;
-	//	fontID font;
-	//	float scaleFactor = 1.0f;
-	//};
-	//std::vector<screenSpaceTextDrawItem> screenSpaceTextDrawlist;
 
 	IDGenerator<sceneGraphicsContextID> renderContextGenerator;
 
@@ -462,22 +279,14 @@ private:
 		cmdBuffer.bindIndexBuffer(quadMeshBuffer.indexBuffer, 0, vk::IndexType::eUint16);
 	}
 
-	//std::unique_ptr<ColoredQuadPL> screenSpaceColorPipeline = nullptr;
-	//std::unique_ptr<TexturedQuadPL> screenSpaceTexturePipeline = nullptr;
-	//std::unique_ptr<TextPL> screenSpaceTextPipeline = nullptr;
-
 	std::array<ComponentResourceToken, MAX_PARTICLE_SYSTEMS_LARGE> particleSystemResourceTokens;
 	std::unique_ptr<ParticleComputePL> particleComputePipeline = nullptr;
-
-	//TexturedQuadPL::ssboObjectInstanceData* screenSpaceTextureGPUBuffer = nullptr;
-	//int screenSpaceTextureGPUIndex = 0;
-
 
 	std::vector<DrawlistGraphicsContext> screenspaceDrawlistContexts;
 	std::vector<Drawlist> screenspaceDrawlistLayers;
 
-	//VKUtil::BufferUploader<cameraUBO_s> cameraUploader;
-	VKUtil::BufferUploader<cameraUBO_s> screenSpaceTransformUploader; // TODO: replace with plain mapped double buffer
+	MappedDoubleBuffer<coodinateTransformUBO_s> screenSpaceTransformCameraBuffer;
+	//VKUtil::BufferUploader<coodinateTransformUBO_s> screenSpaceTransformUploader; // TODO: replace with plain mapped double buffer
 
 	uint32_t frameCounter = 0;
 	bool firstFrame = true;

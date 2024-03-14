@@ -21,7 +21,7 @@ struct std140Mat3 {
 	}
 };
 
-struct cameraUBO_s {
+struct coodinateTransformUBO_s {
 	glm::vec2 position;
 	float zoom;
 	float aspectRatio = 1.0f;

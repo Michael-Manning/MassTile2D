@@ -369,7 +369,6 @@
     </ClCompile>
     <ClCompile Include="TextPL.cpp" />
     <ClCompile Include="texturedQuadPL.cpp" />
-    <ClCompile Include="coloredQuadPL.cpp" />
     <ClCompile Include="ECS.cpp" />
     <ClCompile Include="engine.cpp" />
     <ClCompile Include="Input.cpp" />

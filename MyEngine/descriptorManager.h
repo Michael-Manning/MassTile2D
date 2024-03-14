@@ -30,12 +30,12 @@ public:
 		int binding;
 		vk::DescriptorType type;
 		vk::ShaderStageFlags stageFlags;
-		std::array<vk::Buffer, FRAMES_IN_FLIGHT>* doubleBuffer = nullptr;
+		const std::array<vk::Buffer, FRAMES_IN_FLIGHT>* doubleBuffer = nullptr;
 		vk::DeviceSize bufferRange = 0;
 		Texture* textures = nullptr;
 		int textureCount = 0;
 
-		descriptorSetInfo(int set, int binding, vk::DescriptorType type, vk::ShaderStageFlags stageFlags, std::array<vk::Buffer, FRAMES_IN_FLIGHT>* db, vk::DeviceSize bufferRange)
+		descriptorSetInfo(int set, int binding, vk::DescriptorType type, vk::ShaderStageFlags stageFlags, const std::array<vk::Buffer, FRAMES_IN_FLIGHT>* db, vk::DeviceSize bufferRange)
 			: set(set), binding(binding), type(type), stageFlags(stageFlags), doubleBuffer(db), bufferRange(bufferRange), textures(nullptr) {
 		};
 		descriptorSetInfo(int set, int binding, vk::DescriptorType type, vk::ShaderStageFlags stageFlags, Texture* texture, int textureCount)

@@ -115,7 +115,7 @@ void Engine::initializeSceneGraphicsContext(SceneGraphicsContext& ctx, glm::ivec
 	ctx.drawFramebuffer = resourceManager->CreateFramebuffer(framebufferSize, ctx.allocationSettings.Framebuffer_ClearColor);
 	ctx.lightingFramebuffer = resourceManager->CreateFramebuffer(framebufferSize, glm::vec4(ctx.allocationSettings.Lightmap_ClearValue), lightingPassFormat);
 
-	rengine->createMappedBuffer(sizeof(cameraUBO_s), vk::BufferUsageFlagBits::eUniformBuffer, ctx.cameraBuffers);
+	rengine->createMappedBuffer(sizeof(coodinateTransformUBO_s), vk::BufferUsageFlagBits::eUniformBuffer, ctx.cameraBuffers);
 
 	if (ctx.allocationSettings.AllocateTileWorld) {
 		ctx.worldMap = make_unique<TileWorld>(rengine.get());
@@ -130,7 +130,6 @@ void Engine::initializeSceneGraphicsContext(SceneGraphicsContext& ctx, glm::ivec
 			ctx.tilemapLightRasterPipeline = make_unique<TilemapLightRasterPL>(rengine.get(), ctx.worldMap.get());
 		}
 		ctx.texturePipeline = make_unique<TexturedQuadPL>(rengine.get());
-		ctx.colorPipeline = make_unique<ColoredQuadPL>(rengine.get());
 		ctx.textPipeline = make_unique<TextPL>(rengine.get());
 		ctx.particlePipeline = make_unique<ParticleSystemPL>(rengine.get());
 		//ctx.trianglesPipelines = make_unique<ColoredTrianglesPL>(rengine.get());
@@ -143,10 +142,13 @@ void Engine::initializeSceneGraphicsContext(SceneGraphicsContext& ctx, glm::ivec
 	auto lightingFramebuffer = resourceManager->GetFramebuffer(ctx.lightingFramebuffer);
 
 	{
-		vector<uint8_t> vert, frag;
-		assetManager->LoadShaderFile("color_vert.spv", vert);
-		assetManager->LoadShaderFile("color_frag.spv", frag);
-		ctx.colorPipeline->CreateGraphicsPipeline(vert, frag, drawRenderpass, ctx.cameraBuffers);
+		ctx.colorPipeline = make_unique<ColoredQuadPL>(rengine.get());
+		PipelineParameters prm;
+		assetManager->LoadShaderFile("coloredQuad_vert.spv", prm.vertexSrc);
+		assetManager->LoadShaderFile("coloredQuad_frag.spv", prm.fragmentSrc);
+		prm.renderTarget = drawRenderpass;
+		prm.cameradb = ctx.cameraBuffers;
+		ctx.colorPipeline->CreateGraphicsPipeline(prm, ctx.allocationSettings.ColoredQuad_MaxInstances);
 	}
 	//{
 	//	vector<uint8_t> vert, frag;
@@ -190,28 +192,31 @@ void Engine::initializeSceneGraphicsContext(SceneGraphicsContext& ctx, glm::ivec
 		ctx.textPipeline->CreateGraphicsPipeline(vert, frag, drawRenderpass, &GlobalTextureDesc, ctx.cameraBuffers);
 	}
 	{
-		vector<uint8_t> vert, frag;
-		assetManager->LoadShaderFile("particleSystem_vert.spv", vert);
-		assetManager->LoadShaderFile("particleSystem_frag.spv", frag);
-		ctx.particlePipeline->CreateGraphicsPipeline(vert, frag, drawRenderpass, ctx.cameraBuffers, &computerParticleBuffer, false, ctx.allocationSettings.transparentFramebufferBlending);
+		PipelineParameters prm;
+		assetManager->LoadShaderFile("particleSystem_vert.spv", prm.vertexSrc);
+		assetManager->LoadShaderFile("particleSystem_frag.spv", prm.fragmentSrc);
+		prm.renderTarget = drawRenderpass;
+		prm.cameradb = ctx.cameraBuffers;
+		ctx.particlePipeline->CreateGraphicsPipeline(prm, &computerParticleBuffer);
 	}
 
 	//ctx.triangleGPUBuffer = ctx.trianglesPipelines->GetVertexMappedBuffer(rengine->currentFrame);
 	//ctx.triangleColorGPUBuffer = ctx.trianglesPipelines->GetColorMappedBuffer(rengine->currentFrame);
 }
 
-Engine::DrawlistGraphicsContext Engine::createDrawlistGraphicsContext(DrawlistAllocationConfiguration allocationSettings, MappedDoubleBuffer<cameraUBO_s> cameraBuffers) {
+Engine::DrawlistGraphicsContext Engine::createDrawlistGraphicsContext(DrawlistAllocationConfiguration allocationSettings, MappedDoubleBuffer<coodinateTransformUBO_s> cameraBuffers) {
 
 	DrawlistGraphicsContext ctx = DrawlistGraphicsContext(allocationSettings);
 
 	{
 		ctx.coloredQuadPipeline = make_unique<ColoredQuadPL>(rengine.get());
-		ctx.coloredQuadPipeline->CreateInstancingBuffer();
-
-		vector<uint8_t> vert, frag;
-		assetManager->LoadShaderFile("screenSpaceShape_vert.spv", vert);
-		assetManager->LoadShaderFile("screenSpaceShape_frag.spv", frag);
-		ctx.coloredQuadPipeline->CreateGraphicsPipeline(vert, frag, rengine->swapchainRenderPass, cameraBuffers, true);
+		PipelineParameters prm;
+		assetManager->LoadShaderFile("coloredQuad_vert.spv", prm.vertexSrc);
+		assetManager->LoadShaderFile("coloredQuad_frag.spv", prm.fragmentSrc);
+		prm.renderTarget = rengine->swapchainRenderPass;
+		prm.cameradb = cameraBuffers;
+		prm.flipFaces = true;
+		ctx.coloredQuadPipeline->CreateGraphicsPipeline(prm, allocationSettings.ColoredQuad_MaxInstances);
 
 	}
 
@@ -278,10 +283,9 @@ void Engine::Start(const VideoSettings& initialSettings, AssetManager::AssetPath
 
 	// create some buffers
 	{
-		//cameraUploader.CreateBuffers(rengine);
-		screenSpaceTransformUploader.CreateBuffers(rengine.get());
+		//screenSpaceTransformUploader.CreateBuffers(rengine.get());
+		rengine->createMappedBuffer(vk::BufferUsageFlagBits::eUniformBuffer, screenSpaceTransformCameraBuffer);
 		AllocateQuad(rengine.get(), quadMeshBuffer);
-
 
 		// allocated dedicated device memory for compute driven particle systems
 		{
@@ -296,14 +300,6 @@ void Engine::Start(const VideoSettings& initialSettings, AssetManager::AssetPath
 		}
 	}
 
-	// contruct pipelines
-	{
-		//screenSpaceColorPipeline = make_unique<ColoredQuadPL>(rengine.get());
-		//screenSpaceTexturePipeline = make_unique<TexturedQuadPL>(rengine.get());
-		//screenSpaceTextPipeline = make_unique<TextPL>(rengine.get());
-		particleComputePipeline = make_unique<ParticleComputePL>(rengine.get());
-	}
-
 	InitImgui(); // imgui needs to be initialized to register textures with it
 
 	{
@@ -311,42 +307,21 @@ void Engine::Start(const VideoSettings& initialSettings, AssetManager::AssetPath
 		GlobalTextureDesc.CreateDescriptors();
 	}
 
-	// section can be done in parrallel
+	// this will not be scene agnostic once tilmap particle collisions are added
 	{
-		/*screenSpaceColorPipeline->CreateInstancingBuffer();
-		screenSpaceTextPipeline->createSSBOBuffer();*/
-
-		{
-			vector<uint8_t> comp;
-			assetManager->LoadShaderFile("particleSystem_comp.spv", comp);
-			particleComputePipeline->CreateComputePipeline(comp, &computerParticleBuffer);
-		}
-		//{
-		//	vector<uint8_t> vert, frag;
-		//	assetManager->LoadShaderFile("screenSpaceTexture_vert.spv", vert);
-		//	assetManager->LoadShaderFile("screenSpaceTexture_frag.spv", frag);
-		//	std::array<int, 2> unused = { 0, 0 };
-		//	screenSpaceTexturePipeline->CreateGraphicsPipeline(vert, frag, rengine->swapchainRenderPass, &GlobalTextureDesc, screenSpaceTransformUploader.transferBuffers, unused, true);
-		//	screenSpaceTextureGPUBuffer = screenSpaceTexturePipeline->getUploadMappedBuffer();
-		//}
-		//{
-		//	vector<uint8_t> vert, frag;
-		//	assetManager->LoadShaderFile("screenSpaceShape_vert.spv", vert);
-		//	assetManager->LoadShaderFile("screenSpaceShape_frag.spv", frag);
-		//	screenSpaceColorPipeline->CreateGraphicsPipeline(vert, frag, rengine->swapchainRenderPass, screenSpaceTransformUploader.transferBuffers, true);
-		//}
-		//{
-		//	vector<uint8_t> vert, frag;
-		//	assetManager->LoadShaderFile("screenSpaceText_vert.spv", vert);
-		//	assetManager->LoadShaderFile("screenSpaceText_frag.spv", frag);
-		//	screenSpaceTextPipeline->CreateGraphicsPipeline(vert, frag, rengine->swapchainRenderPass, &GlobalTextureDesc, screenSpaceTransformUploader.transferBuffers, true);
-		//}
+		particleComputePipeline = make_unique<ParticleComputePL>(rengine.get());
+		vector<uint8_t> comp;
+		assetManager->LoadShaderFile("particleSystem_comp.spv", comp);
+		particleComputePipeline->CreateComputePipeline(comp, &computerParticleBuffer);
 	}
 
-	assert(allocationSettings.Screenspace_DrawlistLayerCount == allocationSettings.DrawlistLayerAllocations.size());
-	for (auto& setting : allocationSettings.DrawlistLayerAllocations)
-		screenspaceDrawlistContexts.push_back(createDrawlistGraphicsContext(setting, screenSpaceTransformUploader.transferBuffers));
-	
+
+	assert(allocationSettings.Screenspace_DrawlistLayerCount == allocationSettings.Screenspace_DrawlistLayerAllocations.size());
+	for (auto& setting : allocationSettings.Screenspace_DrawlistLayerAllocations) {
+		screenspaceDrawlistContexts.push_back(createDrawlistGraphicsContext(setting, screenSpaceTransformCameraBuffer));
+		screenspaceDrawlistLayers.push_back(Drawlist(setting, assetManager.get()));
+	}
+
 
 	vector<uint8_t> checkerData;
 	genCheckerboard(400, vec4(1, 1, 0, 1), vec4(0, 0, 1, 1), 6, checkerData);
@@ -375,17 +350,18 @@ void Engine::recordSceneContextGraphics(const SceneGraphicsContext& ctx, std::sh
 	// update camera transform for scene
 	{
 		ctx.cameraBuffers.buffersMapped[rengine->currentFrame]->aspectRatio = (float)fb->extents[rengine->currentFrame].height / (float)fb->extents[rengine->currentFrame].width;
-		ctx.cameraBuffers.buffersMapped[rengine->currentFrame]->position = camera.position;
+		ctx.cameraBuffers.buffersMapped[rengine->currentFrame]->position = -camera.position;
 		ctx.cameraBuffers.buffersMapped[rengine->currentFrame]->zoom = camera.zoom;
 	}
 
 	// viewport for camera
 	{
+		// invert defualt vulkan coordinates. Set bottom of screen to 0 and top of screen to 1
 		vk::Viewport viewport;
 		viewport.x = 0.0f;
-		viewport.y = 0.0f;
-		viewport.width = fb->extents[rengine->currentFrame].width;
-		viewport.height = fb->extents[rengine->currentFrame].height;
+		viewport.y = static_cast<float>(fb->extents[rengine->currentFrame].height);
+		viewport.width = static_cast<float>(fb->extents[rengine->currentFrame].width);
+		viewport.height = -static_cast<float>(fb->extents[rengine->currentFrame].height);
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
 		cmdBuffer.setViewport(0, 1, &viewport);
@@ -476,11 +452,12 @@ void Engine::recordSceneContextGraphics(const SceneGraphicsContext& ctx, std::sh
 	}
 
 	// colored quad
+	if(scene->sceneData.colorRenderers.size() > 0)
 	{
 		ZoneScopedN("Colored quad PL");
 
-		vector<ColoredQuadPL::InstanceBufferData> drawlist;
-		drawlist.reserve(scene->sceneData.colorRenderers.size());
+		//vector<ColoredQuadPL::InstanceBufferData> drawlist;
+		//drawlist.reserve(scene->sceneData.colorRenderers.size());
 
 		auto buffer = ctx.colorPipeline->getUploadMappedBuffer();
 
@@ -505,13 +482,13 @@ void Engine::recordSceneContextGraphics(const SceneGraphicsContext& ctx, std::sh
 				instanceData.rotation = entity.transform.rotation;
 			}
 
-			drawlist.push_back(instanceData);
+			//drawlist.push_back(instanceData);
 		}
 
 		//ctx.colorPipeline->UploadInstanceData(drawlist);
 
 
-		ctx.colorPipeline->recordCommandBuffer(cmdBuffer, drawlist.size());
+		ctx.colorPipeline->recordCommandBuffer(cmdBuffer, bufferIndex);
 	}
 
 	// particles
@@ -619,12 +596,11 @@ void Engine::recordSceneContextGraphics(const SceneGraphicsContext& ctx, std::sh
 }
 
 void Engine::recordDrawlistContextGraphics(const DrawlistGraphicsContext& ctx, Drawlist& drawData, vk::CommandBuffer cmdBuffer) {
-	
+
 	// screenspace texture
 	{
-		auto buffer = ctx.texturedQuadPipeline->getUploadMappedBuffer();
-		std::copy(drawData.textInstanceData.begin(), drawData.textInstanceData.end(), buffer);
 
+		auto buffer = ctx.texturedQuadPipeline->getUploadMappedBuffer();
 
 		// slap on the fb textures here
 		for (size_t i = 0; i < drawData.framebufferDrawData.size(); i++)
@@ -632,16 +608,28 @@ void Engine::recordDrawlistContextGraphics(const DrawlistGraphicsContext& ctx, D
 			auto item = drawData.framebufferDrawData[i];
 			auto fb = resourceManager->GetFramebuffer(item.fb);
 
-			buffer[drawData.textInstanceIndex + i].uvMax = 
+			float w = fb->extents[rengine->currentFrame].width;
+			float h = fb->extents[rengine->currentFrame].height;
+
+			buffer[i].uvMin = vec2(0);
+			buffer[i].uvMax = vec2(1);
+			buffer[i].translation = item.pos;
+			buffer[i].scale = glm::vec2((w / h) * item.height, item.height);
+			buffer[i].rotation = item.rotation;
+			buffer[i].tex = fb->textureIDs[rengine->currentFrame];
+
 		}
 
-		ctx.texturedQuadPipeline->recordCommandBuffer(cmdBuffer, drawData.textInstanceIndex);
+		std::copy(drawData.texturedQuadInstanceData.begin(), drawData.texturedQuadInstanceData.begin() + drawData.texturedQuadInstanceIndex, buffer + drawData.framebufferDrawData.size());
+
+		ctx.texturedQuadPipeline->recordCommandBuffer(cmdBuffer, drawData.texturedQuadInstanceIndex + drawData.framebufferDrawData.size());
 	}
 
 	// screenspace quad
+	if(drawData.coloredQuadInstanceIndex > 0)
 	{
 		auto buffer = ctx.coloredQuadPipeline->getUploadMappedBuffer();
-		std::copy(drawData.coloredQuadInstanceData.begin(), drawData.coloredQuadInstanceData.end(), buffer);
+		std::copy(drawData.coloredQuadInstanceData.begin(), drawData.coloredQuadInstanceData.begin() + drawData.coloredQuadInstanceIndex, buffer);
 
 		ctx.coloredQuadPipeline->recordCommandBuffer(cmdBuffer, drawData.coloredQuadInstanceIndex);
 	}
@@ -651,7 +639,7 @@ void Engine::recordDrawlistContextGraphics(const DrawlistGraphicsContext& ctx, D
 		int memSlot = 0;
 		{
 			ctx.textPipeline->ClearTextData(rengine->currentFrame);
-			for(int i = 0; i < drawData.textInstanceIndex; i++)
+			for (int i = 0; i < drawData.textInstanceIndex; i++)
 			{
 				Drawlist::screenSpaceTextDrawItem& item = drawData.textInstanceData[i];
 				Font* f = assetManager->GetFont(item.font);
@@ -963,11 +951,11 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 
 	// screen space transformer
 	{
-		cameraUBO_s screenSpaceData;
-		screenSpaceData.aspectRatio = (float)winH / (float)winW;
-		screenSpaceData.position = vec2((float)winW / 2.0f, -(float)winH / 2.0f);
-		screenSpaceData.zoom = 2.0f / (float)winH;
-		screenSpaceTransformUploader.SyncBufferData(screenSpaceData, rengine->currentFrame);
+		coodinateTransformUBO_s* transform = screenSpaceTransformCameraBuffer.buffersMapped[rengine->currentFrame];
+
+		transform->aspectRatio = (float)winH / (float)winW;
+		transform->position = vec2(-(float)winW / 2.0f, -(float)winH / 2.0f);
+		transform->zoom = 2.0f / (float)winH;
 	}
 
 	// swap chain full screen viewport for screenspace
@@ -975,8 +963,8 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 		vk::Viewport viewport;
 		viewport.x = 0.0f;
 		viewport.y = 0.0f;
-		viewport.width = (float)rengine->swapChainExtent.width;
-		viewport.height = (float)rengine->swapChainExtent.height;
+		viewport.width = static_cast<float>(rengine->swapChainExtent.width);
+		viewport.height = static_cast<float>(rengine->swapChainExtent.height);
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
 		cmdBuffer.setViewport(0, 1, &viewport);
@@ -996,43 +984,6 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 
 	for (size_t i = 0; i < screenspaceDrawlistContexts.size(); i++)
 		recordDrawlistContextGraphics(screenspaceDrawlistContexts[i], screenspaceDrawlistLayers[i], cmdBuffer);
-	
-
-	//// screenspace texture
-	//{
-	//	screenSpaceTexturePipeline->recordCommandBuffer(cmdBuffer, screenSpaceTextureGPUIndex);
-	//	runningStats.sprite_render_count += screenSpaceTextureGPUIndex;
-	//}
-
-	//// screenspace quad
-	//{
-	//	screenSpaceColorPipeline->UploadInstanceData(screenSpaceColorDrawlist);
-	//	screenSpaceColorPipeline->recordCommandBuffer(cmdBuffer, screenSpaceColorDrawlist.size());
-
-	//}
-
-	//// screenspace text
-	//{
-	//	int memSlot = 0;
-	//	{
-	//		screenSpaceTextPipeline->ClearTextData(rengine->currentFrame);
-	//		for (auto& i : screenSpaceTextDrawlist)
-	//		{
-	//			Font* f = assetManager->GetFont(i.font);
-	//			auto sprite = assetManager->GetSprite(f->atlas);
-
-	//			TextPL::textObject textData;
-
-	//			CalculateQuads(f, i.text, textData.quads);
-
-	//			i.header.scale = vec2(f->fontHeight * 2) * i.scaleFactor;
-	//			i.header._textureIndex = sprite->textureID;
-
-	//			screenSpaceTextPipeline->UploadTextData(rengine->currentFrame, memSlot++, i.header, i.font, textData);
-	//		}
-	//	}
-	//	screenSpaceTextPipeline->recordCommandBuffer(cmdBuffer);
-	//}
 
 	if (drawImgui) {
 		ImGui::Render();
@@ -1057,18 +1008,10 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 
 	for (auto& list : screenspaceDrawlistLayers)
 		list.ResetIndexes();
-	
 
-	//screenSpaceTextureGPUBuffer = screenSpaceTexturePipeline->getUploadMappedBuffer();
-	//screenSpaceTextureGPUIndex = 0;
 
 	firstFrame = false;
 
-	//for (auto& [id, ctx] : sceneRenderContextMap) {
-	//	ctx.pl.triangleGPUBuffer = ctx.pl.trianglesPipelines->GetVertexMappedBuffer(rengine->currentFrame);
-	//	ctx.pl.triangleColorGPUBuffer = ctx.pl.trianglesPipelines->GetColorMappedBuffer(rengine->currentFrame);
-	//	ctx.pl.triangleDrawlistCount = 0;
-	//}
 
 	FrameMark;
 	return true;
@@ -1126,7 +1069,7 @@ void Engine::InitImgui() {
 		{ vk::DescriptorType::eUniformBufferDynamic, 1000 },
 		{ vk::DescriptorType::eStorageBufferDynamic, 1000 },
 		{ vk::DescriptorType::eInputAttachment, 1000 }
-	};
+};
 
 
 	vk::DescriptorPoolCreateInfo pool_info;
@@ -1180,9 +1123,3 @@ void Engine::InitImgui() {
 
 
 }
-
-//void stageChunkUpdates() {
-//
-//}
-//
-

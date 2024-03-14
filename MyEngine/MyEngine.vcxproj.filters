@@ -45,9 +45,6 @@
     <ClCompile Include="pipeline.cpp">
       <Filter>Source Files\vulkan</Filter>
     </ClCompile>
-    <ClCompile Include="coloredQuadPL.cpp">
-      <Filter>Source Files\vulkan\piplines</Filter>
-    </ClCompile>
     <ClCompile Include="vulkan_util.cpp">
       <Filter>Source Files\vulkan</Filter>
     </ClCompile>

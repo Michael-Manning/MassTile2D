@@ -14,6 +14,7 @@
 #include "VKEngine.h"
 #include "descriptorManager.h"
 #include "GlobalImageDescriptor.h"
+#include "globalBufferDefinitions.h"
 
 
 struct PushConstantInfo {
@@ -21,16 +22,25 @@ struct PushConstantInfo {
 	vk::ShaderStageFlags pushConstantShaderStages;
 };
 
-struct ShaderResourceConfig {
-	std::vector<uint8_t> fragmentSrc;
+struct PipelineParameters {
 	std::vector<uint8_t> vertexSrc;
+	std::vector<uint8_t> fragmentSrc;
 	std::vector<std::vector<uint8_t>> computeSrcStages;
+	vk::RenderPass renderTarget;
+	MappedDoubleBuffer<coodinateTransformUBO_s> cameradb;
+	bool flipFaces = false;
+};
+
+struct PipelineResourceConfig {
+	//std::vector<uint8_t> fragmentSrc;
+	//std::vector<uint8_t> vertexSrc;
+	//std::vector<std::vector<uint8_t>> computeSrcStages;
 	std::vector<DescriptorManager::descriptorSetInfo> descriptorInfos;
 	std::vector<GlobalDescriptorBinding> globalDescriptors;
-	bool flipFaces;
-	bool transparentFramebuffer;
-	vk::RenderPass renderTarget;
-	PushConstantInfo pushInfo;
+	//bool flipFaces;
+	bool transparentFramebuffer = false;
+	//vk::RenderPass renderTarget;
+	PushConstantInfo pushInfo = {};
 };
 
 // keyed by set number

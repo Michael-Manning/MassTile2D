@@ -37,14 +37,16 @@ void LightingComputePL::CreateComputePipeline(const std::vector<uint8_t>& comput
 	engine->createMappedBuffer(sizeof(chunkLightingUpdateinfo) * maxChunkBaseLightingUpdatesPerFrame, vk::BufferUsageFlagBits::eStorageBuffer, baseLightUpdateDB);
 	engine->createMappedBuffer(sizeof(chunkLightingUpdateinfo) * maxChunkBaseLightingUpdatesPerFrame, vk::BufferUsageFlagBits::eStorageBuffer, blurLightUpdateDB);
 
-	ShaderResourceConfig con;
-	con.computeSrcStages = { computeSrc_firstPass, computeSrc_secondPass, computeSrc_thirdPass };
+
+	PipelineParameters params;
+	params.computeSrcStages = { computeSrc_firstPass, computeSrc_secondPass, computeSrc_thirdPass };
 
 	auto  worldMapFGDeviceBuferRef = world->MapFGBuffer.GetDoubleBuffer();
 	auto  worldMapBGDeviceBuferRef = world->MapBGBuffer.GetDoubleBuffer();
 	auto  worldMapUpscaleBuferRef = world->MapLightUpscaleBuffer.GetDoubleBuffer();
 	auto  worldMapBlurBuferRef = world->MapLightBlurBuffer.GetDoubleBuffer();
 
+	PipelineResourceConfig con;
 	con.descriptorInfos.reserve(6);
 	con.descriptorInfos.push_back(DescriptorManager::descriptorSetInfo(0, 0, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eCompute, &baseLightUpdateDB.buffers, baseLightUpdateDB.size));
 	con.descriptorInfos.push_back(DescriptorManager::descriptorSetInfo(0, 1, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eCompute, &blurLightUpdateDB.buffers, blurLightUpdateDB.size));
@@ -58,7 +60,7 @@ void LightingComputePL::CreateComputePipeline(const std::vector<uint8_t>& comput
 		.pushConstantShaderStages = vk::ShaderStageFlagBits::eCompute
 	};
 
-	pipelines.CreateComputePipeline(con);
+	pipelines.CreateComputePipeline(params, con);
 
 }
 

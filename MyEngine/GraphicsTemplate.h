@@ -16,7 +16,7 @@ public:
 	GraphicsTemplate(VKEngine* engine) : Pipeline(engine), descriptorManager(engine)
 	{};
 
-	void CreateGraphicsPipeline(const ShaderResourceConfig& resourceConfig);
+	void CreateGraphicsPipeline(const PipelineParameters& params, const PipelineResourceConfig& resourceConfig);
 
 	void bindPipelineResources(vk::CommandBuffer& commandBuffer, void* pushConstantData = nullptr);
 
@@ -27,4 +27,5 @@ private:
 	DescriptorManager descriptorManager;
 	std::vector<GlobalDescriptorBinding> globalDescriptors;
 	PushConstantInfo pushInfo;
+	bool init = false;
 };

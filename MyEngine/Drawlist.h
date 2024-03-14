@@ -1,13 +1,13 @@
 #pragma once
 
 #include <vector>
+#include <string>
 
 #include <glm/glm.hpp>
 
 #include "pipelines.h"
 #include "Settings.h"
 #include "AssetManager.h"
-#include "ResourceManager.h"
 
 class Engine;
 
@@ -24,19 +24,19 @@ public:
 		textInstanceData.resize(allocationSettings.Text_MaxStrings);
 	}
 
-	inline void AddCenteredQuad(glm::vec4 color, glm::vec2 pos, glm::vec2 scale, float rotation = 0.0f);
+	 void AddCenteredQuad(glm::vec4 color, glm::vec2 pos, glm::vec2 scale, float rotation = 0.0f);
 
-	inline void AddCenteredSprite(Sprite* sprite, int atlasIndex, glm::vec2 pos, float height, float rotation = 0.0f);
-	inline void AddCenteredSprite(spriteID sprID, int atlasIndex, glm::vec2 pos, float height, float rotation = 0.0f);
-	inline void AddCenteredSprite(std::string sprite, int atlasIndex, glm::vec2 pos, float height, float rotation = 0.0f);
+	 void AddCenteredSprite(Sprite* sprite, int atlasIndex, glm::vec2 pos, float height, float rotation = 0.0f);
+	 void AddCenteredSprite(spriteID sprID, int atlasIndex, glm::vec2 pos, float height, float rotation = 0.0f);
+	 void AddCenteredSprite(std::string sprite, int atlasIndex, glm::vec2 pos, float height, float rotation = 0.0f);
 
-	inline void AddSprite(spriteID sprID, int atlasIndex, glm::vec2 pos, float height, float rotation = 0.0f);
-	inline void AddSprite(std::string sprite, int atlasIndex, glm::vec2 pos, float height, float rotation = 0.0f);
+	 void AddSprite(spriteID sprID, int atlasIndex, glm::vec2 pos, float height, float rotation = 0.0f);
+	 void AddSprite(std::string sprite, int atlasIndex, glm::vec2 pos, float height, float rotation = 0.0f);
 
-	inline void AddScreenSpaceText(fontID font, glm::vec2 position, glm::vec4 color, std::string text);
-	inline void AddScreenSpaceText(fontID font, glm::vec2 position, glm::vec4 color, const char* fmt, ...);
+	 void AddText(fontID font, glm::vec2 position, glm::vec4 color, std::string text);
+	 void AddText(fontID font, glm::vec2 position, glm::vec4 color, const char* fmt, ...);
 
-	inline void AddCenteredFramebufferTexture(framebufferID fbID, glm::vec2 pos, float height, float rotation = 0.0f);
+	 void AddCenteredFramebufferTexture(framebufferID fbID, glm::vec2 pos, float height, float rotation = 0.0f);
 
 private:
 	friend Engine;
@@ -44,7 +44,7 @@ private:
 	void ResetIndexes() {
 		coloredQuadInstanceIndex = 0;
 		texturedQuadInstanceIndex = 0;
-		textInstanceIndex;
+		textInstanceIndex = 0;
 
 		framebufferDrawData.clear();
 	}

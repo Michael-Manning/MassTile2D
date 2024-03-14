@@ -45,8 +45,7 @@ void main() {
    
    mat4 view = mat4(1.0);
    view *= scale(vec2(camera.zoom));
-   view *= translate(vec2(-camera.position.x, camera.position.y));
-   view *= scale(vec2(1.0, -1.0));
+   view *= translate(camera.position);
 
    mat4 model = mat4(1.0);
    model *= translate(vec2(0.0));
@@ -56,6 +55,6 @@ void main() {
    gl_Position = view * model  * vec4(inPosition, 0.0, 1.0) * vec4(vec2( camera.aspectRatio, 1.0), 1.0, 1.0);
 
    instance_index = gl_InstanceIndex;
-   uv = vec2(1.0 - inFragCoord.x, inFragCoord.y);
+   uv = vec2(1.0 - inFragCoord.x,  inFragCoord.y);
    // uv = vec2(1.0 - inFragCoord.x, 1.0 - inFragCoord.y);
 }

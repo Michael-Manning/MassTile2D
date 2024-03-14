@@ -4,6 +4,7 @@
 
 #include "Utils.h"
 #include "GameUI.h"
+#include "Drawlist.h"
 
 #include "global.h"
 
@@ -37,20 +38,7 @@ namespace UI {
 	void drawInventorySprite(State& state, vec2 position, const ItemBase& base) {
 
 		assert(base.type != ItemBase::Type::Empty);
-		state.engine->addScreenCenteredSpaceTexture(base.sprite, base.atlasIndex, position, InvSlotTextureSize);
-		
-		
-		//if (base.type == ItemBase::Type::Tool || base.type == ItemBase::Type::Consumable) {
-		//	//state.engine->addScreenCenteredSpaceTexture("itemSprites", base.inventorySpriteAtlasIndex, position, InvSlotTextureSize);
-		//	//state.engine->addScreenCenteredSpaceTexture(base.sprite, base.atlasIndex, position, InvSlotTextureSize);
-		//}
-		//else if(base.type == ItemBase::Type::Block){
-		//	//state.engine->addScreenCenteredSpaceTexture(base.sprite, base.atlasIndex, position, InvSlotTextureSize);
-		//	//state.engine->addScreenCenteredSpaceTexture("tilemapSprites", base.inventorySpriteAtlasIndex, position, InvSlotTextureSize);
-		//}
-		//else {
-		//	assert(false);
-		//}
+		state.engine->GetScreenspaceDrawlist()->AddCenteredSprite(base.sprite, base.atlasIndex, position, InvSlotTextureSize);
 	}
 
 	void HandleMouseInputForSlot(State& state, InventoryContainer* container, int slot) {
@@ -158,14 +146,16 @@ namespace UI {
 			}
 		}
 
-		state.engine->addScreenSpaceTexture("hotbar", 0, hotBarPos, 127.0f * UIScale);
+		auto drawlist = state.engine->GetScreenspaceDrawlist();
+
+		drawlist->AddSprite("hotbar", 0, hotBarPos, 127.0f * UIScale);
 		if (state.showingInventory) {
-			state.engine->addScreenSpaceTexture("inventory", 0, invPos, 550.0f * UIScale);
+			drawlist->AddSprite("inventory", 0, invPos, 550.0f * UIScale);
 		}
 
 		{
 			auto pos = getInvSlotPos(state.selectedHotBarSlot);
-			state.engine->addScreenSpaceCenteredQuad(glm::vec4(0.3, 0.3, 1.0, 0.3f), pos + InvSlotSize / 2.0f, vec2(InvSlotSize));
+			drawlist->AddCenteredQuad(glm::vec4(0.3, 0.3, 1.0, 0.3f), pos + InvSlotSize / 2.0f, vec2(InvSlotSize));
 		}
 
 		for (size_t i = 0; i < hotBarSlots + invSlotCount; i++) {
@@ -180,7 +170,7 @@ namespace UI {
 
 				HandleMouseInputForSlot(state, &global::playerInventory, i);
 
-				state.engine->addScreenSpaceCenteredQuad(glm::vec4(1, 1, 1, 0.2f), pos + InvSlotSize / 2.0f, vec2(InvSlotSize));
+				drawlist->AddCenteredQuad(glm::vec4(1, 1, 1, 0.2f), pos + InvSlotSize / 2.0f, vec2(InvSlotSize));
 				break;
 			}
 
@@ -197,7 +187,7 @@ namespace UI {
 				//state.engine->addScreenCenteredSpaceTexture("itemSprites", itemHeader.inventorySpriteAtlasIndex, pos + InvSlotSize / 2.0f, InvSlotTextureSize);
 				drawInventorySprite(state, pos + InvSlotSize / 2.0f, itemHeader);
 				if (itemHeader.maxStack > 1) {
-					state.engine->addScreenSpaceText(state.smallfont, pos + vec2(InvSlotSize / 2.0f - InvSlotSize / 4.0f, InvSlotSize / 2.0f), vec4(1.0), to_string(global::playerInventory.slots[i].count));
+					drawlist->AddText(state.smallfont, pos + vec2(InvSlotSize / 2.0f - InvSlotSize / 4.0f, InvSlotSize / 2.0f), vec4(1.0), to_string(global::playerInventory.slots[i].count));
 				}
 			}
 		}
@@ -223,7 +213,7 @@ namespace UI {
 			drawInventorySprite(state, mpos, itemHeader);
 
 			if (itemHeader.maxStack > 1) {
-				state.engine->addScreenSpaceText(state.smallfont, mpos - vec2(InvSlotSize / 4.0f, 0.0f), vec4(1.0), to_string(global::cursorInventory.slots[0].count));
+				drawlist->AddText(state.smallfont, mpos - vec2(InvSlotSize / 4.0f, 0.0f), vec4(1.0), to_string(global::cursorInventory.slots[0].count));
 			}
 		}
 
@@ -242,7 +232,7 @@ namespace UI {
 		{
 			vec2 slotPos = startPos + vec2((i % inspectedInventoryRows) * (InvSlotSize + InvSlotGap), (i / inspectedInventoryRows) * (InvSlotSize + InvSlotGap));
 
-			state.engine->addScreenSpaceTexture("invSlot", 0, slotPos, InvSlotSize);
+			drawlist->AddSprite("invSlot", 0, slotPos, InvSlotSize);
 
 			if (global::inspectedInventory->slots[i].InUse()) {
 				const auto& itemHeader = itemLibrary.GetItem(global::inspectedInventory->slots[i].item);
@@ -251,7 +241,7 @@ namespace UI {
 				drawInventorySprite(state, slotPos + InvSlotSize / 2.0f, itemHeader);
 				
 				if (itemHeader.maxStack > 1) {
-					state.engine->addScreenSpaceText(state.smallfont, slotPos + vec2(InvSlotSize / 2.0f - InvSlotSize / 4.0f, InvSlotSize / 2.0f), vec4(1.0), to_string(global::inspectedInventory->slots[i].count));
+					drawlist->AddText(state.smallfont, slotPos + vec2(InvSlotSize / 2.0f - InvSlotSize / 4.0f, InvSlotSize / 2.0f), vec4(1.0), to_string(global::inspectedInventory->slots[i].count));
 				}
 			}
 
@@ -260,7 +250,7 @@ namespace UI {
 				HandleMouseInputForSlot(state, global::inspectedInventory, i);
 
 
-				state.engine->addScreenSpaceCenteredQuad(glm::vec4(1, 1, 1, 0.2f), slotPos + InvSlotSize / 2.0f, vec2(InvSlotSize));
+				drawlist->AddCenteredQuad(glm::vec4(1, 1, 1, 0.2f), slotPos + InvSlotSize / 2.0f, vec2(InvSlotSize));
 			}
 		}
 	}

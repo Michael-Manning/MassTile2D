@@ -81,14 +81,7 @@ public:
 	ParticleSystemPL(VKEngine* engine) :
 		pipeline(engine), engine(engine) { }
 
-	void CreateGraphicsPipeline(
-		const std::vector<uint8_t>& vertexSrc, 
-		const std::vector<uint8_t>& fragmentSrc, 
-		vk::RenderPass& renderTarget, 
-		MappedDoubleBuffer<cameraUBO_s>& cameradb,
-		DeviceBuffer* deviceParticleDataBuffer,
-		bool flipFaces = false, 
-		bool transparentFramebuffer = false);
+	void CreateGraphicsPipeline(const PipelineParameters& params, DeviceBuffer* deviceParticleDataBuffer);
 
 	// indexes should be within particle size group
 	void recordCommandBuffer(vk::CommandBuffer commandBuffer, std::vector<int>& systemIndexes, std::vector<int>& systemSizes, std::vector<int>& systemParticleCounts);

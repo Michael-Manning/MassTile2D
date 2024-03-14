@@ -31,20 +31,7 @@ public:
 	ColoredTrianglesPL(VKEngine* engine) : pipeline(engine), engine(engine) {
 	}
 
-	// move this struct 
-	struct GraphicsPipelineConfiguration {
-		std::vector<uint8_t> vertexSrc;
-		std::vector<uint8_t> fragmentSrc;
-		vk::RenderPass& renderTarget;
-		MappedDoubleBuffer<cameraUBO_s>& cameradb;
-		bool flipFaces = false;
-
-		// add specialization constant settings
-		bool invertLocalvertical;
-	//	asfapsoeifnapseoifnawpseoif
-	};
-
-	void CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc, vk::RenderPass& renderTarget, MappedDoubleBuffer<cameraUBO_s>& cameradb, bool flipFaces = false);
+	void CreateGraphicsPipeline(PipelineParameters& params);
 	void recordCommandBuffer(vk::CommandBuffer commandBuffer, int vertexCount);
 	Vertex* GetVertexMappedBuffer(int frame) {
 		return vertexDB.buffersMapped[frame];
