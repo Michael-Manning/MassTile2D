@@ -62,8 +62,7 @@ inline void Drawlist::AddSprite(std::string sprite, int atlasIndex, glm::vec2 po
 	AddCenteredSprite(s, atlasIndex, pos + (s->resolution / 2.0f) * (height / s->resolution.y), height, rotation);
 }
 
-// idk what to do about this
-inline void Drawlist::AddCenteredFramebufferTexture(framebufferID fbID, glm::vec2 pos, float height, float rotation = 0.0f) {
+inline void Drawlist::AddCenteredFramebufferTexture(framebufferID fbID, glm::vec2 pos, float height, float rotation) {
 
 	FramebufferDrawItem item;
 

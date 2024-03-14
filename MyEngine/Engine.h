@@ -453,7 +453,7 @@ private:
 
 	void recordSceneContextGraphics(const SceneGraphicsContext& ctx, std::shared_ptr<Scene> scene, const Camera& camera, vk::CommandBuffer& cmdBuffer);
 
-	void recordDrawlistContextGraphics(const DrawlistGraphicsContext& ctx, Drawlist& drawData, const Camera& camera, vk::CommandBuffer cmdBuffer);
+	void recordDrawlistContextGraphics(const DrawlistGraphicsContext& ctx, Drawlist& drawData, vk::CommandBuffer cmdBuffer);
 
 	void bindQuadMesh(vk::CommandBuffer cmdBuffer) {
 		vk::Buffer vertexBuffers[] = { quadMeshBuffer.vertexBuffer };

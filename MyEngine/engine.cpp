@@ -136,7 +136,7 @@ void Engine::initializeSceneGraphicsContext(SceneGraphicsContext& ctx, glm::ivec
 		//ctx.trianglesPipelines = make_unique<ColoredTrianglesPL>(rengine.get());
 	}
 
-	ctx.colorPipeline->CreateInstancingBuffer();
+	//ctx.colorPipeline->CreateInstancingBuffer();
 	ctx.textPipeline->createSSBOBuffer();
 
 	auto drawRenderpass = resourceManager->GetFramebuffer(ctx.drawFramebuffer)->renderpass;
@@ -482,11 +482,14 @@ void Engine::recordSceneContextGraphics(const SceneGraphicsContext& ctx, std::sh
 		vector<ColoredQuadPL::InstanceBufferData> drawlist;
 		drawlist.reserve(scene->sceneData.colorRenderers.size());
 
+		auto buffer = ctx.colorPipeline->getUploadMappedBuffer();
+
+		int bufferIndex = 0;
 		for (auto& renderer : scene->sceneData.colorRenderers)
 		{
 			const auto& entity = scene->sceneData.entities.at(renderer.first);
 
-			ColoredQuadPL::InstanceBufferData instanceData;
+			ColoredQuadPL::InstanceBufferData& instanceData = buffer[bufferIndex++];
 			instanceData.color = renderer.second.color;
 			instanceData.circle = renderer.second.shape == ColorRenderer::Shape::Circle;
 
@@ -505,7 +508,9 @@ void Engine::recordSceneContextGraphics(const SceneGraphicsContext& ctx, std::sh
 			drawlist.push_back(instanceData);
 		}
 
-		ctx.colorPipeline->UploadInstanceData(drawlist);
+		//ctx.colorPipeline->UploadInstanceData(drawlist);
+
+
 		ctx.colorPipeline->recordCommandBuffer(cmdBuffer, drawlist.size());
 	}
 
@@ -613,12 +618,22 @@ void Engine::recordSceneContextGraphics(const SceneGraphicsContext& ctx, std::sh
 	rengine->insertFramebufferTransitionBarrier(cmdBuffer, fb);
 }
 
-void Engine::recordDrawlistContextGraphics(const DrawlistGraphicsContext& ctx, Drawlist& drawData, const Camera& camera, vk::CommandBuffer cmdBuffer) {
+void Engine::recordDrawlistContextGraphics(const DrawlistGraphicsContext& ctx, Drawlist& drawData, vk::CommandBuffer cmdBuffer) {
 	
 	// screenspace texture
 	{
 		auto buffer = ctx.texturedQuadPipeline->getUploadMappedBuffer();
 		std::copy(drawData.textInstanceData.begin(), drawData.textInstanceData.end(), buffer);
+
+
+		// slap on the fb textures here
+		for (size_t i = 0; i < drawData.framebufferDrawData.size(); i++)
+		{
+			auto item = drawData.framebufferDrawData[i];
+			auto fb = resourceManager->GetFramebuffer(item.fb);
+
+			buffer[drawData.textInstanceIndex + i].uvMax = 
+		}
 
 		ctx.texturedQuadPipeline->recordCommandBuffer(cmdBuffer, drawData.textInstanceIndex);
 	}
@@ -635,23 +650,24 @@ void Engine::recordDrawlistContextGraphics(const DrawlistGraphicsContext& ctx, D
 	{
 		int memSlot = 0;
 		{
-			screenSpaceTextPipeline->ClearTextData(rengine->currentFrame);
-			for (auto& i : screenSpaceTextDrawlist)
+			ctx.textPipeline->ClearTextData(rengine->currentFrame);
+			for(int i = 0; i < drawData.textInstanceIndex; i++)
 			{
-				Font* f = assetManager->GetFont(i.font);
+				Drawlist::screenSpaceTextDrawItem& item = drawData.textInstanceData[i];
+				Font* f = assetManager->GetFont(item.font);
 				auto sprite = assetManager->GetSprite(f->atlas);
 
 				TextPL::textObject textData;
 
-				CalculateQuads(f, i.text, textData.quads);
+				CalculateQuads(f, item.text, textData.quads);
 
-				i.header.scale = vec2(f->fontHeight * 2) * i.scaleFactor;
-				i.header._textureIndex = sprite->textureID;
+				item.header.scale = vec2(f->fontHeight * 2) * item.scaleFactor;
+				item.header._textureIndex = sprite->textureID;
 
-				screenSpaceTextPipeline->UploadTextData(rengine->currentFrame, memSlot++, i.header, i.font, textData);
+				ctx.textPipeline->UploadTextData(rengine->currentFrame, memSlot++, item.header, item.font, textData);
 			}
 		}
-		screenSpaceTextPipeline->recordCommandBuffer(cmdBuffer);
+		ctx.textPipeline->recordCommandBuffer(cmdBuffer);
 	}
 }
 
@@ -979,7 +995,7 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 	}
 
 	for (size_t i = 0; i < screenspaceDrawlistContexts.size(); i++)
-		recordDrawlistContextGraphics(screenspaceDrawlistContexts[i], screenspaceDrawlistLayers[i], )
+		recordDrawlistContextGraphics(screenspaceDrawlistContexts[i], screenspaceDrawlistLayers[i], cmdBuffer);
 	
 
 	//// screenspace texture
