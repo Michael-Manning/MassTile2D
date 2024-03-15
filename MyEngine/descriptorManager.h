@@ -35,6 +35,17 @@ public:
 		Texture* textures = nullptr;
 		int textureCount = 0;
 
+		template<typename T>
+		descriptorSetInfo(int set, int binding, vk::ShaderStageFlags stageFlags, const MappedDoubleBuffer<T>& mappedBuffer)
+			: set(set), binding(binding), stageFlags(stageFlags), doubleBuffer(&mappedBuffer.buffers), bufferRange(mappedBuffer.size), textures(nullptr) {
+			if (mappedBuffer.usage == vk::BufferUsageFlagBits::eUniformBuffer)
+				type = vk::DescriptorType::eUniformBuffer;
+			else if (mappedBuffer.usage == vk::BufferUsageFlagBits::eStorageBuffer)
+				type = vk::DescriptorType::eStorageBuffer;
+			else {
+				assert(false);
+			}
+		};
 		descriptorSetInfo(int set, int binding, vk::DescriptorType type, vk::ShaderStageFlags stageFlags, const std::array<vk::Buffer, FRAMES_IN_FLIGHT>* db, vk::DeviceSize bufferRange)
 			: set(set), binding(binding), type(type), stageFlags(stageFlags), doubleBuffer(db), bufferRange(bufferRange), textures(nullptr) {
 		};

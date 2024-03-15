@@ -8,19 +8,76 @@
 
 #include "descriptorManager.h"
 #include "GraphicsTemplate.h"
+#include "Reflection.h"
 #include "pipeline.h"
 
 using namespace glm;
 using namespace std;
 
-void GraphicsTemplate::CreateGraphicsPipeline(const PipelineParameters& params, const PipelineResourceConfig& resourceConfig) {
-	
+void GraphicsTemplate::CreateGraphicsPipeline(const PipelineParameters& params, PipelineResourceConfig& resourceConfig) {
+
 	assert(init == false);
 	init = true;
-	
+
 	auto shaderStages = createGraphicsShaderStages(params.vertexSrc, params.fragmentSrc);
 
-	this->pushInfo = resourceConfig.pushInfo;
+	// binding info provided using buffer bindings means that we must use reflection to infer the shader stages
+	{
+
+		std::vector<Reflection::buffer_info> vertBufferInfos;
+		std::vector<Reflection::buffer_info> fragBufferInfos;
+
+		Reflection::push_constant_info vertPushInfo;
+		Reflection::push_constant_info fragPushInfo;
+
+		Reflection::GetShaderBufferBindings(params.vertexSrc, vertBufferInfos, vertPushInfo);
+		Reflection::GetShaderBufferBindings(params.fragmentSrc, fragBufferInfos, fragPushInfo);
+
+		if (vertPushInfo.size != 0 && fragPushInfo.size != 0) {
+			assert(vertPushInfo.size == fragPushInfo.size);
+		}
+
+		if (vertPushInfo.size > 0) {
+			pushInfo.pushConstantSize = vertPushInfo.size;
+			pushInfo.pushConstantShaderStages |= vk::ShaderStageFlagBits::eVertex;
+		}
+		if (fragPushInfo.size > 0) {
+			pushInfo.pushConstantSize = fragPushInfo.size;
+			pushInfo.pushConstantShaderStages |= vk::ShaderStageFlagBits::eFragment;
+		}
+
+		if (resourceConfig.bufferBindings.size() > 0) {
+			vector<vk::ShaderStageFlags> bindingShaderStages(resourceConfig.bufferBindings.size(), static_cast<vk::ShaderStageFlags>(0));
+
+			int i = 0;
+			for (auto& binding : resourceConfig.bufferBindings)
+			{
+				for (auto& info : vertBufferInfos)
+					if (binding.set == info.set && binding.binding == info.binding)
+						bindingShaderStages[i] |= vk::ShaderStageFlagBits::eVertex;
+				for (auto& info : fragBufferInfos)
+					if (binding.set == info.set && binding.binding == info.binding)
+						bindingShaderStages[i] |= vk::ShaderStageFlagBits::eFragment;
+				i++;
+			}
+
+			i = 0;
+			for (; i < resourceConfig.bufferBindings.size(); i++) {
+				const BufferBinding& binding = resourceConfig.bufferBindings[i];
+
+				vk::DescriptorType type;
+				if (binding.usage & vk::BufferUsageFlagBits::eUniformBuffer)
+					type = vk::DescriptorType::eUniformBuffer;
+				else if (binding.usage & vk::BufferUsageFlagBits::eStorageBuffer)
+					type = vk::DescriptorType::eStorageBuffer;
+				else {
+					assert(false);
+				}
+
+				resourceConfig.descriptorInfos.push_back(DescriptorManager::descriptorSetInfo(binding.set, binding.binding, type, bindingShaderStages[i], binding.buffers, binding.size));
+			}
+		}
+	}
 
 	descriptorManager.configureDescriptorSets(resourceConfig.descriptorInfos);
 	descriptorManager.buildDescriptorLayouts();
@@ -82,7 +139,7 @@ void GraphicsTemplate::CreateGraphicsPipeline(const PipelineParameters& params, 
 	globalDescriptors = resourceConfig.globalDescriptors;
 }
 
-void GraphicsTemplate::bindPipelineResources(vk::CommandBuffer& commandBuffer, void* pushConstantData){
+void GraphicsTemplate::bindPipelineResources(vk::CommandBuffer& commandBuffer) {
 
 	assert(init == true);
 
@@ -104,12 +161,4 @@ void GraphicsTemplate::bindPipelineResources(vk::CommandBuffer& commandBuffer, v
 			0,
 			nullptr);
 	}
-
-	if (pushInfo.pushConstantSize > 0 && pushConstantData != nullptr) {
-		updatePushConstant(commandBuffer, pushConstantData);
-	}
-}
-
-void GraphicsTemplate::updatePushConstant(vk::CommandBuffer& commandBuffer, void* pushConstantData) {
-	commandBuffer.pushConstants(pipelineLayout, pushInfo.pushConstantShaderStages, 0, pushInfo.pushConstantSize, pushConstantData);
 }

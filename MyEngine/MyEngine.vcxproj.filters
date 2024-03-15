@@ -72,9 +72,6 @@
     <ClCompile Include="Physics.cpp">
       <Filter>Source Files\Engine\ECS\Components</Filter>
     </ClCompile>
-    <ClCompile Include="tilemapPL.cpp">
-      <Filter>Source Files\vulkan\piplines</Filter>
-    </ClCompile>
     <ClCompile Include="LightingComputePL.cpp">
       <Filter>Source Files\vulkan\piplines</Filter>
     </ClCompile>
@@ -349,6 +346,9 @@
     </ClInclude>
     <ClInclude Include="Drawlist.h">
       <Filter>Source Files\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Reflection.h">
+      <Filter>Source Files\vulkan\piplines</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

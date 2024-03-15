@@ -1,33 +1,23 @@
 #pragma once
 
 #include <vector>
-#include <string>
-#include <memory>
 #include <stdint.h>
-#include <unordered_map>
-#include <set>
-#include <string>
 #include <array>
-#include <utility>
 
 #include <vulkan/vulkan.hpp>
 #include <glm/glm.hpp>
 
-#include <vk_mem_alloc.h>
-
-#include "texture.h"
 #include "VKEngine.h"
 #include "pipeline.h"
 #include "typedefs.h"
-#include "Constants.h"
-#include "BindingManager.h"
 #include "GlobalImageDescriptor.h"
 #include "globalBufferDefinitions.h"
+#include "GraphicsTemplate.h"
 
 constexpr int TexturedQuadPL_MAX_OBJECTS = 100000;
 
 
-class TexturedQuadPL :public  Pipeline {
+class TexturedQuadPL {
 public:
 
 	struct ssboObjectInstanceData {
@@ -46,10 +36,9 @@ public:
 	};
 	static_assert(sizeof(ssboObjectInstanceData) % 16 == 0);
 
-	TexturedQuadPL(VKEngine* engine) : 
-		Pipeline(engine) { }
+	TexturedQuadPL(VKEngine* engine) : pipeline(engine), engine(engine) { }
 
-	void CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc, vk::RenderPass& renderTarget, GlobalImageDescriptor* textureDescriptor, MappedDoubleBuffer<coodinateTransformUBO_s>& cameradb, std::array<int, 2>&lightMapTextureIndexes, bool flipFaces = false);
+	void CreateGraphicsPipeline(const PipelineParameters& params, GlobalImageDescriptor* textureDescriptor, std::array<int, 2>&lightMapTextureIndexes);
 
 	void recordCommandBuffer(vk::CommandBuffer commandBuffer, int instanceCount);
 
@@ -62,6 +51,9 @@ private:
 	struct lightMapIndex_UBO {
 		int lightMapIndex;
 	};
+
+	VKEngine* engine;
+	GraphicsTemplate pipeline;
 
 	GlobalImageDescriptor* textureDescriptor = nullptr;
 

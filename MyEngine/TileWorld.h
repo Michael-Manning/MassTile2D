@@ -393,7 +393,12 @@ private:
 	void createWorldBuffer() {
 		// create foreground and background VRAM buffers
 
-		MapFGBuffer.size = sizeof(worldTile_ssbo) * (mapCount);
+		engine->CreateDeviceOnlyStorageBuffer(sizeof(worldTile_ssbo) * (mapCount), true, MapFGBuffer);
+		engine->CreateDeviceOnlyStorageBuffer(sizeof(worldTile_ssbo) * (mapCount), true, MapBGBuffer);
+		engine->CreateDeviceOnlyStorageBuffer(sizeof(worldTile_ssbo) * (mapCount) * 4, true, MapLightUpscaleBuffer);
+		engine->CreateDeviceOnlyStorageBuffer(sizeof(worldTile_ssbo) * (mapCount) * 4, true, MapLightBlurBuffer);
+
+		/*MapFGBuffer.size = sizeof(worldTile_ssbo) * (mapCount);
 		MapBGBuffer.size = sizeof(worldTile_ssbo) * (mapCount);
 		MapLightUpscaleBuffer.size = sizeof(worldTile_ssbo) * (mapCount * 4);
 		MapLightBlurBuffer.size = sizeof(worldTile_ssbo) * (mapCount * 4);
@@ -402,7 +407,7 @@ private:
 		engine->createBuffer(MapBGBuffer.size, vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eStorageBuffer, VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT, MapBGBuffer.buffer, MapBGBuffer.allocation, true);
 		
 		engine->createBuffer(MapLightUpscaleBuffer.size, vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eStorageBuffer, VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT, MapLightUpscaleBuffer.buffer, MapLightUpscaleBuffer.allocation, true);
-		engine->createBuffer(MapLightBlurBuffer.size, vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eStorageBuffer, VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT, MapLightBlurBuffer.buffer, MapLightBlurBuffer.allocation, true);
+		engine->createBuffer(MapLightBlurBuffer.size, vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eStorageBuffer, VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT, MapLightBlurBuffer.buffer, MapLightBlurBuffer.allocation, true);*/
 	};
 	void createChunkTransferBuffers() {
 

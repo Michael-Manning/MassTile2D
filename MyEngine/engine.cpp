@@ -115,27 +115,17 @@ void Engine::initializeSceneGraphicsContext(SceneGraphicsContext& ctx, glm::ivec
 	ctx.drawFramebuffer = resourceManager->CreateFramebuffer(framebufferSize, ctx.allocationSettings.Framebuffer_ClearColor);
 	ctx.lightingFramebuffer = resourceManager->CreateFramebuffer(framebufferSize, glm::vec4(ctx.allocationSettings.Lightmap_ClearValue), lightingPassFormat);
 
-	rengine->createMappedBuffer(sizeof(coodinateTransformUBO_s), vk::BufferUsageFlagBits::eUniformBuffer, ctx.cameraBuffers);
-
-	if (ctx.allocationSettings.AllocateTileWorld) {
-		ctx.worldMap = make_unique<TileWorld>(rengine.get());
-		ctx.worldMap->AllocateVulkanResources();
-	}
+	rengine->createMappedBuffer(vk::BufferUsageFlagBits::eUniformBuffer, ctx.cameraBuffers);
 
 	// section can be done in parrallel
+
 	{
-		if (ctx.allocationSettings.AllocateTileWorld) {
-			ctx.lightingPipeline = make_unique<LightingComputePL>(rengine.get(), ctx.worldMap.get());
-			ctx.tilemapPipeline = make_unique<TilemapPL>(rengine.get(), ctx.worldMap.get());
-			ctx.tilemapLightRasterPipeline = make_unique<TilemapLightRasterPL>(rengine.get(), ctx.worldMap.get());
-		}
-		ctx.texturePipeline = make_unique<TexturedQuadPL>(rengine.get());
+		
 		ctx.textPipeline = make_unique<TextPL>(rengine.get());
 		ctx.particlePipeline = make_unique<ParticleSystemPL>(rengine.get());
 		//ctx.trianglesPipelines = make_unique<ColoredTrianglesPL>(rengine.get());
 	}
 
-	//ctx.colorPipeline->CreateInstancingBuffer();
 	ctx.textPipeline->createSSBOBuffer();
 
 	auto drawRenderpass = resourceManager->GetFramebuffer(ctx.drawFramebuffer)->renderpass;
@@ -147,7 +137,7 @@ void Engine::initializeSceneGraphicsContext(SceneGraphicsContext& ctx, glm::ivec
 		assetManager->LoadShaderFile("coloredQuad_vert.spv", prm.vertexSrc);
 		assetManager->LoadShaderFile("coloredQuad_frag.spv", prm.fragmentSrc);
 		prm.renderTarget = drawRenderpass;
-		prm.cameradb = ctx.cameraBuffers;
+		prm.cameraDB = ctx.cameraBuffers;
 		ctx.colorPipeline->CreateGraphicsPipeline(prm, ctx.allocationSettings.ColoredQuad_MaxInstances);
 	}
 	//{
@@ -157,15 +147,22 @@ void Engine::initializeSceneGraphicsContext(SceneGraphicsContext& ctx, glm::ivec
 	//	ctx.trianglesPipelines->CreateGraphicsPipeline(vert, frag, drawRenderpass, ctx.cameraBuffers, true);
 	//}
 	{
-		vector<uint8_t> vert, frag;
-		assetManager->LoadShaderFile("texture_vert.spv", vert);
-		assetManager->LoadShaderFile("texture_frag.spv", frag);
+		ctx.texturePipeline = make_unique<TexturedQuadPL>(rengine.get());
+		PipelineParameters prm;
+		assetManager->LoadShaderFile("texture_vert.spv", prm.vertexSrc);
+		assetManager->LoadShaderFile("texture_frag.spv", prm.fragmentSrc);
+		prm.renderTarget = drawRenderpass;
+		prm.cameraDB = ctx.cameraBuffers;
 		std::array<int, 2> lightmapTextures = { lightingFramebuffer->textureIDs[0], lightingFramebuffer->textureIDs[1] };
-		ctx.texturePipeline->CreateGraphicsPipeline(vert, frag, drawRenderpass, &GlobalTextureDesc, ctx.cameraBuffers, lightmapTextures);
+		ctx.texturePipeline->CreateGraphicsPipeline(prm, &GlobalTextureDesc, lightmapTextures);
 	}
 
 	if (ctx.allocationSettings.AllocateTileWorld) {
+		ctx.worldMap = make_unique<TileWorld>(rengine.get());
+		ctx.worldMap->AllocateVulkanResources();
+
 		{
+			ctx.lightingPipeline = make_unique<LightingComputePL>(rengine.get(), ctx.worldMap.get());
 			vector<uint8_t> comp, upscale, blur;
 			assetManager->LoadShaderFile("lighting_comp.spv", comp);
 			assetManager->LoadShaderFile("lightingUpscale_comp.spv", upscale);
@@ -173,16 +170,20 @@ void Engine::initializeSceneGraphicsContext(SceneGraphicsContext& ctx, glm::ivec
 			ctx.lightingPipeline->CreateComputePipeline(comp, upscale, blur);
 		}
 		{
-			vector<uint8_t> vert, frag;
-			assetManager->LoadShaderFile("tilemap_vert.spv", vert);
-			assetManager->LoadShaderFile("tilemap_frag.spv", frag);
-			ctx.tilemapPipeline->CreateGraphicsPipeline(vert, frag, drawRenderpass, &GlobalTextureDesc, ctx.cameraBuffers);
-		}
-		{
+			ctx.tilemapLightRasterPipeline = make_unique<TilemapLightRasterPL>(rengine.get(), ctx.worldMap.get());
 			vector<uint8_t> vert, frag;
 			assetManager->LoadShaderFile("tilemapLightRaster_vert.spv", vert);
 			assetManager->LoadShaderFile("tilemapLightRaster_frag.spv", frag);
 			ctx.tilemapLightRasterPipeline->CreateGraphicsPipeline(vert, frag, lightingFramebuffer->renderpass, &GlobalTextureDesc, ctx.cameraBuffers);
+		}
+		{
+			ctx.tilemapPipeline = make_unique<TilemapPL>(rengine.get(), ctx.worldMap.get());
+			PipelineParameters prm;
+			assetManager->LoadShaderFile("tilemap_vert.spv", prm.vertexSrc);
+			assetManager->LoadShaderFile("tilemap_frag.spv", prm.fragmentSrc);
+			prm.renderTarget = drawRenderpass;
+			prm.cameraDB = ctx.cameraBuffers;
+			ctx.tilemapPipeline->CreateGraphicsPipeline(prm, &GlobalTextureDesc);
 		}
 	}
 	{
@@ -196,8 +197,8 @@ void Engine::initializeSceneGraphicsContext(SceneGraphicsContext& ctx, glm::ivec
 		assetManager->LoadShaderFile("particleSystem_vert.spv", prm.vertexSrc);
 		assetManager->LoadShaderFile("particleSystem_frag.spv", prm.fragmentSrc);
 		prm.renderTarget = drawRenderpass;
-		prm.cameradb = ctx.cameraBuffers;
-		ctx.particlePipeline->CreateGraphicsPipeline(prm, &computerParticleBuffer);
+		prm.cameraDB = ctx.cameraBuffers;
+		ctx.particlePipeline->CreateGraphicsPipeline(prm, computerParticleBuffer);
 	}
 
 	//ctx.triangleGPUBuffer = ctx.trianglesPipelines->GetVertexMappedBuffer(rengine->currentFrame);
@@ -214,7 +215,7 @@ Engine::DrawlistGraphicsContext Engine::createDrawlistGraphicsContext(DrawlistAl
 		assetManager->LoadShaderFile("coloredQuad_vert.spv", prm.vertexSrc);
 		assetManager->LoadShaderFile("coloredQuad_frag.spv", prm.fragmentSrc);
 		prm.renderTarget = rengine->swapchainRenderPass;
-		prm.cameradb = cameraBuffers;
+		prm.cameraDB = cameraBuffers;
 		prm.flipFaces = true;
 		ctx.coloredQuadPipeline->CreateGraphicsPipeline(prm, allocationSettings.ColoredQuad_MaxInstances);
 
@@ -222,12 +223,14 @@ Engine::DrawlistGraphicsContext Engine::createDrawlistGraphicsContext(DrawlistAl
 
 	{
 		ctx.texturedQuadPipeline = make_unique<TexturedQuadPL>(rengine.get());
-
-		vector<uint8_t> vert, frag;
-		assetManager->LoadShaderFile("screenSpaceTexture_vert.spv", vert);
-		assetManager->LoadShaderFile("screenSpaceTexture_frag.spv", frag);
+		PipelineParameters prm;
+		assetManager->LoadShaderFile("screenSpaceTexture_vert.spv", prm.vertexSrc);
+		assetManager->LoadShaderFile("screenSpaceTexture_frag.spv", prm.fragmentSrc);
+		prm.renderTarget = rengine->swapchainRenderPass;
+		prm.cameraDB = cameraBuffers;
+		prm.flipFaces = true;
 		std::array<int, 2> unused = { 0, 0 };
-		ctx.texturedQuadPipeline->CreateGraphicsPipeline(vert, frag, rengine->swapchainRenderPass, &GlobalTextureDesc, cameraBuffers, unused, true);
+		ctx.texturedQuadPipeline->CreateGraphicsPipeline(prm, &GlobalTextureDesc, unused);
 	}
 
 	{
@@ -289,14 +292,17 @@ void Engine::Start(const VideoSettings& initialSettings, AssetManager::AssetPath
 
 		// allocated dedicated device memory for compute driven particle systems
 		{
-			computerParticleBuffer.size = sizeof(ParticleSystemPL::device_particle_ssbo);
+			// todo: use less ambigous size. ParticleGroup_larg is not labled as being device only
+			rengine->CreateDeviceOnlyStorageBuffer(sizeof(ParticleSystemPL::ParticleGroup_large) * MAX_PARTICLE_SYSTEMS_LARGE, false, computerParticleBuffer);
 
-			rengine->createBuffer(
-				computerParticleBuffer.size,
-				vk::BufferUsageFlagBits::eStorageBuffer, VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT,
-				computerParticleBuffer.buffer,
-				computerParticleBuffer.allocation,
-				true);
+			//computerParticleBuffer.size = sizeof(ParticleSystemPL::device_particle_ssbo);
+
+			//rengine->createBuffer(
+			//	computerParticleBuffer.size,
+			//	vk::BufferUsageFlagBits::eStorageBuffer, VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT,
+			//	computerParticleBuffer.buffer,
+			//	computerParticleBuffer.allocation,
+			//	true);
 		}
 	}
 

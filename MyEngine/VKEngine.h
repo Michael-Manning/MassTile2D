@@ -48,14 +48,19 @@ struct MappedDoubleBuffer {
 	std::array<VmaAllocation, FRAMES_IN_FLIGHT> allocations;
 	std::array<T*, FRAMES_IN_FLIGHT> buffersMapped;
 	vk::DeviceSize size;
+	vk::BufferUsageFlags usage;
 };
 
 struct DeviceBuffer {
 	VmaAllocation allocation;
 	vk::Buffer buffer;
 	vk::DeviceSize size;
+	vk::BufferUsageFlags usage;
 
-	std::array<vk::Buffer, FRAMES_IN_FLIGHT> GetDoubleBuffer() {
+	std::array<vk::Buffer, FRAMES_IN_FLIGHT> doubleBuffer;
+
+	// Deprecate
+	std::array<vk::Buffer, FRAMES_IN_FLIGHT> GetDoubleBuffer() const {
 		return { buffer, buffer };
 	}
 };
@@ -200,11 +205,25 @@ public:
 			vmaMapMemory(allocator, buffer.allocations[i], reinterpret_cast<void**>(&buffer.buffersMapped[i]));
 		}
 		buffer.size = size;
+		buffer.usage = usage;
 	};
 
 	template<typename T>
 	void createMappedBuffer(vk::BufferUsageFlags usage, MappedDoubleBuffer<T>& buffer) {
 		createMappedBuffer(sizeof(T), usage, buffer);
+	}
+
+	void CreateDeviceOnlyStorageBuffer(vk::DeviceSize size, bool transferDst, DeviceBuffer& buffer) {
+
+		vk::BufferUsageFlags usage = vk::BufferUsageFlagBits::eStorageBuffer;
+		if (transferDst)
+			usage |= vk::BufferUsageFlagBits::eTransferDst;
+
+		createBuffer(size, usage, VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT, buffer.buffer, buffer.allocation, true);
+
+		buffer.size = size;
+		buffer.usage = usage;
+		buffer.doubleBuffer = { buffer.buffer, buffer.buffer };
 	}
 
 	void WaitForComputeSubmission();

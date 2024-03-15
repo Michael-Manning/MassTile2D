@@ -81,7 +81,7 @@ public:
 	ParticleSystemPL(VKEngine* engine) :
 		pipeline(engine), engine(engine) { }
 
-	void CreateGraphicsPipeline(const PipelineParameters& params, DeviceBuffer* deviceParticleDataBuffer);
+	void CreateGraphicsPipeline(const PipelineParameters& params, const DeviceBuffer& deviceParticleDataBuffer);
 
 	// indexes should be within particle size group
 	void recordCommandBuffer(vk::CommandBuffer commandBuffer, std::vector<int>& systemIndexes, std::vector<int>& systemSizes, std::vector<int>& systemParticleCounts);

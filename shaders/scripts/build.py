@@ -45,11 +45,12 @@ def checkMod(srcDirectory, mod_time_file):
    return changedFiles
 
 
+current_directory = os.path.dirname(os.path.abspath(__file__))
+src_folder = os.path.join(os.path.dirname(os.path.dirname(current_directory)), "shaders")
+out_folder = os.path.join(src_folder, "compiled")
+scripts_folder = os.path.join(src_folder, "scripts")
 
-src_folder = "../shaders"
-out_folder = "../shaders/compiled"
-
-filesChanged = checkMod(src_folder, "scripts/mod_times.txt")
+filesChanged = checkMod(src_folder, os.path.join(scripts_folder, "mod_times.txt"))
 if(len(filesChanged) == 0):
    print("nothing to compile")
    exit(0)

@@ -19,7 +19,24 @@
 
 struct PushConstantInfo {
 	uint32_t pushConstantSize = 0;
-	vk::ShaderStageFlags pushConstantShaderStages;
+	vk::ShaderStageFlags pushConstantShaderStages = static_cast<vk::ShaderStageFlags>(0);
+};
+
+struct BufferBinding {
+	const int set;
+	const int binding;
+	const std::array<vk::Buffer, FRAMES_IN_FLIGHT>* buffers;
+	const vk::DeviceSize size;
+	const vk::BufferUsageFlags usage;
+
+	template<typename T>
+	BufferBinding(int set, int binding, const MappedDoubleBuffer<T>& mappedBuffer)
+		: set(set), binding(binding), buffers(&mappedBuffer.buffers), size(mappedBuffer.size), usage(mappedBuffer.usage)
+	{}
+
+	BufferBinding(int set, int binding, const DeviceBuffer& buffer)
+		: set(set), binding(binding), buffers(&buffer.doubleBuffer), size(buffer.size), usage(buffer.usage)
+	{}
 };
 
 struct PipelineParameters {
@@ -27,7 +44,7 @@ struct PipelineParameters {
 	std::vector<uint8_t> fragmentSrc;
 	std::vector<std::vector<uint8_t>> computeSrcStages;
 	vk::RenderPass renderTarget;
-	MappedDoubleBuffer<coodinateTransformUBO_s> cameradb;
+	MappedDoubleBuffer<coodinateTransformUBO_s> cameraDB;
 	bool flipFaces = false;
 };
 
@@ -37,9 +54,12 @@ struct PipelineResourceConfig {
 	//std::vector<std::vector<uint8_t>> computeSrcStages;
 	std::vector<DescriptorManager::descriptorSetInfo> descriptorInfos;
 	std::vector<GlobalDescriptorBinding> globalDescriptors;
+	std::vector<BufferBinding> bufferBindings;
 	//bool flipFaces;
 	bool transparentFramebuffer = false;
 	//vk::RenderPass renderTarget;
+
+	// deprecate
 	PushConstantInfo pushInfo = {};
 };
 
@@ -72,7 +92,7 @@ protected:
 	vk::PipelineRasterizationStateCreateInfo defaultRasterizer();
 	vk::PipelineMultisampleStateCreateInfo defaultMultisampling();
 	vk::PipelineColorBlendAttachmentState defaultColorBlendAttachment(bool blendEnabled, bool transparentFramebuffer = false);
-	vk::PipelineColorBlendStateCreateInfo defaultColorBlending(vk::PipelineColorBlendAttachmentState *attachment);
+	vk::PipelineColorBlendStateCreateInfo defaultColorBlending(vk::PipelineColorBlendAttachmentState* attachment);
 	vk::PipelineDynamicStateCreateInfo defaultDynamicState();
 
 	std::vector<vk::DynamicState> defaultDynamicStates = {

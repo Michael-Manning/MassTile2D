@@ -36,7 +36,7 @@ void ColoredTrianglesPL::CreateGraphicsPipeline(PipelineParameters& params) {
 	engine->createMappedBuffer(sizeof(InstanceBufferData) * ColoredTrianglesPL_MAX_OBJECTS, vk::BufferUsageFlagBits::eStorageBuffer, instanceDB);
 
 	PipelineResourceConfig con;
-	con.descriptorInfos.push_back(DescriptorManager::descriptorSetInfo(0, 0, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eVertex, &params.cameradb.buffers, params.cameradb.size));
+	con.descriptorInfos.push_back(DescriptorManager::descriptorSetInfo(0, 0, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eVertex, &params.cameraDB.buffers, params.cameraDB.size));
 	con.descriptorInfos.push_back(DescriptorManager::descriptorSetInfo(0, 1, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eFragment, &instanceDB.buffers, instanceDB.size));
 
 	pipeline.CreateGraphicsPipeline(params, con);

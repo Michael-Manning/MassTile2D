@@ -3,6 +3,7 @@ Near roadmap:
 - switch away from using hardcoded buffer sizes and use memory allocation settings in pipeline classes
 - split up text pipeline ssbo structure into two structures so that the text data can have different allocation sizes per instance of the 
 pipeline.
+- change large particle buffer to not be a fixed size
 - use pipeline params for all pipeline
 - replace screenspace versions of pipelines with specialization constants
 - bring back up triangle pipeline

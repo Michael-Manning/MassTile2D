@@ -33,8 +33,8 @@ public:
 		engine->createMappedBuffer(sizeof(InstanceBufferData) * maxInstances, vk::BufferUsageFlagBits::eStorageBuffer, instanceDataDB);
 
 		PipelineResourceConfig con;
-		con.descriptorInfos.push_back(DescriptorManager::descriptorSetInfo(0, 0, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eVertex, &params.cameradb.buffers, params.cameradb.size));
-		con.descriptorInfos.push_back(DescriptorManager::descriptorSetInfo(1, 0, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, &instanceDataDB.buffers, instanceDataDB.size));
+		con.bufferBindings.push_back(BufferBinding(0, 0, params.cameraDB));
+		con.bufferBindings.push_back(BufferBinding(1, 0, instanceDataDB));
 
 		pipeline.CreateGraphicsPipeline(params, con);
 	}

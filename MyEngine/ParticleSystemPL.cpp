@@ -30,16 +30,19 @@ struct pushConstant_s {
 	int systemSize; // small = 0, large  = 1;
 };
 
-void ParticleSystemPL::CreateGraphicsPipeline(const PipelineParameters& params, DeviceBuffer* deviceParticleDataBuffer){
+void ParticleSystemPL::CreateGraphicsPipeline(const PipelineParameters& params, const DeviceBuffer& deviceParticleDataBuffer){
 	
 	engine->createMappedBuffer(sizeof(host_particle_ssbo), vk::BufferUsageFlagBits::eStorageBuffer, particleDB);
 
-	auto deviceDB = deviceParticleDataBuffer->GetDoubleBuffer();
 
 	PipelineResourceConfig con;
-	con.descriptorInfos.push_back(DescriptorManager::descriptorSetInfo(0, 1, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eVertex, &params.cameradb.buffers, params.cameradb.size));
-	con.descriptorInfos.push_back(DescriptorManager::descriptorSetInfo(0, 0, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, &particleDB.buffers, particleDB.size));
-	con.descriptorInfos.push_back(DescriptorManager::descriptorSetInfo(0, 2, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, &deviceDB, deviceParticleDataBuffer->size));
+
+	con.bufferBindings.push_back(BufferBinding(0, 1, params.cameraDB));
+	con.bufferBindings.push_back(BufferBinding(0, 0, particleDB));
+	con.bufferBindings.push_back(BufferBinding(0, 2, deviceParticleDataBuffer));
+	
+	//auto deviceDB = deviceParticleDataBuffer.GetDoubleBuffer();
+	//con.descriptorInfos.push_back(DescriptorManager::descriptorSetInfo(0, 2, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, &deviceDB, deviceParticleDataBuffer.size));
 
 	con.pushInfo = PushConstantInfo{
 		.pushConstantSize = sizeof(pushConstant_s),
@@ -63,7 +66,7 @@ void ParticleSystemPL::recordCommandBuffer(vk::CommandBuffer commandBuffer, std:
 			.systemIndex = systemIndexes[i],
 			.systemSize = systemSizes[i]
 		};
-		pipeline.updatePushConstant(commandBuffer, &pc);
+		pipeline.UpdatePushConstant(commandBuffer, &pc);
 		commandBuffer.drawIndexed(static_cast<int32_t>(QuadIndices.size()), systemParticleCounts[i], 0, 0, 0);
 	}
 }
