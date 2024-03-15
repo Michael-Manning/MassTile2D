@@ -25,13 +25,15 @@
 #include "globalBufferDefinitions.h"
 #include "ParticleSystemPL.h"
 
-struct pushConstant_s {
-	int systemIndex;
-	int systemSize; // small = 0, large  = 1;
-};
+namespace {
+	struct pushConstant_s {
+		int systemIndex;
+		int systemSize; // small = 0, large  = 1;
+	};
+}
 
-void ParticleSystemPL::CreateGraphicsPipeline(const PipelineParameters& params, const DeviceBuffer& deviceParticleDataBuffer){
-	
+void ParticleSystemPL::CreateGraphicsPipeline(const PipelineParameters& params, const DeviceBuffer& deviceParticleDataBuffer) {
+
 	engine->createMappedBuffer(sizeof(host_particle_ssbo), vk::BufferUsageFlagBits::eStorageBuffer, particleDB);
 
 
@@ -40,14 +42,9 @@ void ParticleSystemPL::CreateGraphicsPipeline(const PipelineParameters& params, 
 	con.bufferBindings.push_back(BufferBinding(0, 1, params.cameraDB));
 	con.bufferBindings.push_back(BufferBinding(0, 0, particleDB));
 	con.bufferBindings.push_back(BufferBinding(0, 2, deviceParticleDataBuffer));
-	
+
 	//auto deviceDB = deviceParticleDataBuffer.GetDoubleBuffer();
 	//con.descriptorInfos.push_back(DescriptorManager::descriptorSetInfo(0, 2, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, &deviceDB, deviceParticleDataBuffer.size));
-
-	con.pushInfo = PushConstantInfo{
-		.pushConstantSize = sizeof(pushConstant_s),
-		.pushConstantShaderStages = vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment
-	};
 
 	pipeline.CreateGraphicsPipeline(params, con);
 }
@@ -62,11 +59,11 @@ void ParticleSystemPL::recordCommandBuffer(vk::CommandBuffer commandBuffer, std:
 
 	for (size_t i = 0; i < systemIndexes.size(); i++)
 	{
-		pushConstant_s pc{ 
+		pipeline.UpdatePushConstant(commandBuffer, pushConstant_s{
 			.systemIndex = systemIndexes[i],
 			.systemSize = systemSizes[i]
-		};
-		pipeline.UpdatePushConstant(commandBuffer, &pc);
+			});
+
 		commandBuffer.drawIndexed(static_cast<int32_t>(QuadIndices.size()), systemParticleCounts[i], 0, 0, 0);
 	}
 }

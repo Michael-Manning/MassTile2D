@@ -21,7 +21,7 @@ public:
 	void bindPipelineResources(vk::CommandBuffer& commandBuffer);
 
 	template<typename T>
-	void UpdatePushConstant(vk::CommandBuffer& commandBuffer, T* pushConstantData) {
+	void UpdatePushConstant(vk::CommandBuffer& commandBuffer, T&& pushConstantData) {
 
 		static_assert(!std::is_void<T>::value, "T cannot be void");
 
@@ -32,7 +32,7 @@ public:
 
 		assert(size > 0 && size <= pushInfo.pushConstantSize);
 
-		commandBuffer.pushConstants(pipelineLayout, pushInfo.pushConstantShaderStages, 0, size, pushConstantData);
+		commandBuffer.pushConstants(pipelineLayout, pushInfo.pushConstantShaderStages, 0, size, &pushConstantData);
 	}
 
 

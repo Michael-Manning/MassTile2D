@@ -10,7 +10,7 @@ layout(set = 0, binding = 1) uniform CamerUBO {
 #define MAX_PARTICLES_LARGE 400000
 
 #define MAX_PARTICLE_SYSTEMS_SMALL 10
-#define MAX_PARTICLE_SYSTEMS_LARGE 4
+// #define MAX_PARTICLE_SYSTEMS_LARGE 4
 
 struct particle {
    vec2 position;
@@ -33,7 +33,7 @@ layout(std430, set = 0, binding = 0) readonly buffer ObjectInstaceBuffer_small{
 };
 
 layout(std430, set = 0, binding = 2) buffer ObjectInstaceBuffer_large{
-	ParticleGroup_large particleGroups_large[MAX_PARTICLE_SYSTEMS_LARGE];
+	ParticleGroup_large particleGroups_large[];
 };
 
 layout(push_constant) uniform constants{

@@ -403,7 +403,7 @@ void worldDebug() {
 }
 
 
-constexpr bool useTileWorld = true;
+constexpr bool useTileWorld = false;
 bool showLightMapDebug = false;
 
 #ifdef  PUBLISH
@@ -429,7 +429,8 @@ int main() {
 
 	SceneGraphicsAllocationConfiguration sceneConfig;
 	sceneConfig.AllocateTileWorld = useTileWorld;
-	sceneConfig.Framebuffer_ClearColor = { 0.2, 0.3, 1.0, 1 };
+	sceneConfig.Framebuffer_ClearColor = { 0.0, 0.0, 0.0, 1 };
+	//sceneConfig.Framebuffer_ClearColor = { 0.2, 0.3, 1.0, 1 };
 
 	sceneRenderCtx = engine->CreateSceneRenderContext(engine->getWindowSize(), sceneConfig);
 
@@ -439,9 +440,10 @@ int main() {
 	engine->assetManager->LoadAllFonts();
 	engine->assetManager->LoadAllPrefabs(false);
 
-
-	engine->assetManager->LoadScene("game_test");
-	scene = engine->assetManager->GetScene("game_test");
+	if (useTileWorld) {
+		engine->assetManager->LoadScene("game_test");
+		scene = engine->assetManager->GetScene("game_test");
+	}
 
 	global::mainScene = scene.get();
 
@@ -466,12 +468,6 @@ int main() {
 	if (useTileWorld) {
 		createTileWorld();
 		worldData = make_unique<WorldData>();
-
-		//worldData->Add(Chest(30, { 962, 846 }));
-
-		//Chest myhes = Chest(12, { 2, 3 });
-		//Chest chtesss = myhes;
-		//worldData->chunks[10].chests()
 	}
 
 	//const auto& myTest = worldData->chunks[0].chests.at(glm::ivec2(6, 8));
@@ -505,51 +501,43 @@ int main() {
 		// 460, 2800
 	}
 
-	//engine->assetManager->LoadScene("serial_demo");
-	//scene = engine->assetManager->GetScene("serial_demo");
-
-
-
-	//auto ent = scene->CreateEntity();
-	//scene->DeleteEntity(ent->ID, false);
-
-	//itemLibrary.PopulateTools(AssetDirectories.assetDir + "Tools.csv");
-	//itemLibrary.PopulateConsumables(AssetDirectories.assetDir + "Consumables.csv");
-	//itemLibrary.PopulateBlocks(AssetDirectories.assetDir + "Blocks.csv");
-
-	global::playerInventory.slots[4] = ItemStack(
-		Sword_ItemID,
-		1
-	);
-	global::playerInventory.slots[3] = ItemStack(
-		Pickaxe_ItemID,
-		1
-	);
-	global::playerInventory.slots[15] = ItemStack(
-		Bow_ItemID,
-		1
-	);
-	global::playerInventory.slots[16] = ItemStack(
-		Apple_ItemID,
-		40
-	);
-	global::playerInventory.slots[33] = ItemStack(
-		Apple_ItemID,
-		9
-	);
-	global::playerInventory.slots[34] = ItemStack(
-		Apple_ItemID,
-		49
-	);
-
-	global::playerInventory.slots[36] = ItemStack(
-		Chest_ItemID,
-		1
-	);
 
 	if (useTileWorld) {
+		global::playerInventory.slots[4] = ItemStack(
+			Sword_ItemID,
+			1
+		);
+		global::playerInventory.slots[3] = ItemStack(
+			Pickaxe_ItemID,
+			1
+		);
+		global::playerInventory.slots[15] = ItemStack(
+			Bow_ItemID,
+			1
+		);
+		global::playerInventory.slots[16] = ItemStack(
+			Apple_ItemID,
+			40
+		);
+		global::playerInventory.slots[33] = ItemStack(
+			Apple_ItemID,
+			9
+		);
+		global::playerInventory.slots[34] = ItemStack(
+			Apple_ItemID,
+			49
+		);
 
+		global::playerInventory.slots[36] = ItemStack(
+			Chest_ItemID,
+			1
+		);
 	}
+
+	auto en = scene->CreateEntity();
+	auto cco = ParticleSystemPL::ParticleSystemConfiguration{};
+	scene->registerComponent(en->ID, ParticleSystemRenderer::ParticleSystemSize::Large, cco);
+
 
 	bool firstFrame = true;
 	while (!engine->ShouldClose())
@@ -623,22 +611,25 @@ int main() {
 
 			drawlist->AddText(UI.smallfont, { 4, 4 }, vec4(1.0), "fps: %d", (int)engine->_getAverageFramerate());
 
-			UI::DoUI(uiState);
+
+			if (useTileWorld) {
+				UI::DoUI(uiState);
 
 
 
-			// trigger map entity click
-			{
-				if (input->getMouseBtnDown(MouseBtn::Right)) {
-					ivec2 tile = GetMouseTile();
-					int chunk = worldMap->GetChunk(tile);
+				// trigger map entity click
+				{
+					if (input->getMouseBtnDown(MouseBtn::Right)) {
+						ivec2 tile = GetMouseTile();
+						int chunk = worldMap->GetChunk(tile);
 
-					for (auto& ent : worldData->chunks[chunk].mapEntities)
-					{
-						if (tile.x >= ent->position.x && tile.x < ent->position.x + ent->size.x &&
-							tile.y >= ent->position.y && tile.y < ent->position.y + ent->size.y) {
-							ent->OnRightClick();
-							break; // map entities shouldn't overlap
+						for (auto& ent : worldData->chunks[chunk].mapEntities)
+						{
+							if (tile.x >= ent->position.x && tile.x < ent->position.x + ent->size.x &&
+								tile.y >= ent->position.y && tile.y < ent->position.y + ent->size.y) {
+								ent->OnRightClick();
+								break; // map entities shouldn't overlap
+							}
 						}
 					}
 				}

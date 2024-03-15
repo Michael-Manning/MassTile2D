@@ -368,7 +368,6 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Publish|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="TextPL.cpp" />
-    <ClCompile Include="texturedQuadPL.cpp" />
     <ClCompile Include="ECS.cpp" />
     <ClCompile Include="engine.cpp" />
     <ClCompile Include="Input.cpp" />

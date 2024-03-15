@@ -10,7 +10,6 @@
 #include "VKEngine.h"
 #include "pipeline.h"
 #include "typedefs.h"
-#include "Vertex.h"
 #include "TileWorld.h"
 #include "globalBufferDefinitions.h"
 #include "GraphicsTemplate.h"
@@ -37,11 +36,10 @@ public:
 
 		pipeline.bindPipelineResources(commandBuffer);
 
-		pushConstant_s pc{
+		pipeline.UpdatePushConstant(commandBuffer, pushConstant_s{
 			.textureIndex = textureIndex,
 			.lightMapIndex = lightMapIndex
-		};
-		pipeline.UpdatePushConstant(commandBuffer, &pc);
+			});
 
 		commandBuffer.drawIndexed(QuadIndices.size(), 1, 0, 0, 0);
 	}

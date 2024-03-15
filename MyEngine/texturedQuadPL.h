@@ -14,9 +14,6 @@
 #include "globalBufferDefinitions.h"
 #include "GraphicsTemplate.h"
 
-constexpr int TexturedQuadPL_MAX_OBJECTS = 100000;
-
-
 class TexturedQuadPL {
 public:
 
@@ -38,9 +35,33 @@ public:
 
 	TexturedQuadPL(VKEngine* engine) : pipeline(engine), engine(engine) { }
 
-	void CreateGraphicsPipeline(const PipelineParameters& params, GlobalImageDescriptor* textureDescriptor, std::array<int, 2>&lightMapTextureIndexes);
+	void CreateGraphicsPipeline(const PipelineParameters& params, GlobalImageDescriptor* textureDescriptor, std::array<int, 2>& lightMapTextureIndexes, int maxInstances) {
+		
+		engine->createMappedBuffer(sizeof(ssboObjectInstanceData) * maxInstances, vk::BufferUsageFlagBits::eStorageBuffer, ssboMappedDB);
 
-	void recordCommandBuffer(vk::CommandBuffer commandBuffer, int instanceCount);
+		engine->createMappedBuffer(vk::BufferUsageFlagBits::eUniformBuffer, lightmapIndexDB);
+		for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++)
+			lightmapIndexDB.buffersMapped[i]->lightMapIndex = lightMapTextureIndexes[i];
+
+		PipelineResourceConfig con;
+		con.bufferBindings.push_back(BufferBinding(1, 1, params.cameraDB));
+		con.bufferBindings.push_back(BufferBinding(1, 0, ssboMappedDB));
+		con.bufferBindings.push_back(BufferBinding(1, 2, lightmapIndexDB));
+
+		con.globalDescriptors.push_back({ 0, textureDescriptor });
+
+		pipeline.CreateGraphicsPipeline(params, con);
+	}
+
+	void recordCommandBuffer(vk::CommandBuffer commandBuffer, int instanceCount) {
+		TracyVkZone(engine->tracyGraphicsContexts[engine->currentFrame], commandBuffer, "textured quad render");
+
+		assert(instanceCount > 0);
+
+		pipeline.bindPipelineResources(commandBuffer);
+
+		commandBuffer.drawIndexed(QuadIndices.size(), instanceCount, 0, 0, 0);
+	}
 
 	ssboObjectInstanceData* getUploadMappedBuffer() {
 		return ssboMappedDB.buffersMapped[engine->currentFrame];

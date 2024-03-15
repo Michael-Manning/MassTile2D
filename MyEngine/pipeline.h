@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <optional>
 
 #include <vulkan/vulkan.hpp>
 #include <glm/glm.hpp>
@@ -44,23 +45,20 @@ struct PipelineParameters {
 	std::vector<uint8_t> fragmentSrc;
 	std::vector<std::vector<uint8_t>> computeSrcStages;
 	vk::RenderPass renderTarget;
-	MappedDoubleBuffer<coodinateTransformUBO_s> cameraDB;
+	MappedDoubleBuffer<coordinateTransformUBO_s> cameraDB;
 	bool flipFaces = false;
 };
 
 struct PipelineResourceConfig {
-	//std::vector<uint8_t> fragmentSrc;
-	//std::vector<uint8_t> vertexSrc;
-	//std::vector<std::vector<uint8_t>> computeSrcStages;
 	std::vector<DescriptorManager::descriptorSetInfo> descriptorInfos;
 	std::vector<GlobalDescriptorBinding> globalDescriptors;
 	std::vector<BufferBinding> bufferBindings;
-	//bool flipFaces;
-	bool transparentFramebuffer = false;
-	//vk::RenderPass renderTarget;
+
+	// populate to overide default
+	std::optional< vk::PipelineColorBlendAttachmentState> colorBlendAttachment;
 
 	// deprecate
-	PushConstantInfo pushInfo = {};
+	//PushConstantInfo pushInfo = {};
 };
 
 // keyed by set number

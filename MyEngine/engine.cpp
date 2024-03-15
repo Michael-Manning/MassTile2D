@@ -154,7 +154,7 @@ void Engine::initializeSceneGraphicsContext(SceneGraphicsContext& ctx, glm::ivec
 		prm.renderTarget = drawRenderpass;
 		prm.cameraDB = ctx.cameraBuffers;
 		std::array<int, 2> lightmapTextures = { lightingFramebuffer->textureIDs[0], lightingFramebuffer->textureIDs[1] };
-		ctx.texturePipeline->CreateGraphicsPipeline(prm, &GlobalTextureDesc, lightmapTextures);
+		ctx.texturePipeline->CreateGraphicsPipeline(prm, &GlobalTextureDesc, lightmapTextures, ctx.allocationSettings.TexturedQuad_MaxInstances);
 	}
 
 	if (ctx.allocationSettings.AllocateTileWorld) {
@@ -171,10 +171,12 @@ void Engine::initializeSceneGraphicsContext(SceneGraphicsContext& ctx, glm::ivec
 		}
 		{
 			ctx.tilemapLightRasterPipeline = make_unique<TilemapLightRasterPL>(rengine.get(), ctx.worldMap.get());
-			vector<uint8_t> vert, frag;
-			assetManager->LoadShaderFile("tilemapLightRaster_vert.spv", vert);
-			assetManager->LoadShaderFile("tilemapLightRaster_frag.spv", frag);
-			ctx.tilemapLightRasterPipeline->CreateGraphicsPipeline(vert, frag, lightingFramebuffer->renderpass, &GlobalTextureDesc, ctx.cameraBuffers);
+			PipelineParameters prm;
+			assetManager->LoadShaderFile("tilemapLightRaster_vert.spv", prm.vertexSrc);
+			assetManager->LoadShaderFile("tilemapLightRaster_frag.spv", prm.fragmentSrc);
+			prm.renderTarget = lightingFramebuffer->renderpass;
+			prm.cameraDB = ctx.cameraBuffers;
+			ctx.tilemapLightRasterPipeline->CreateGraphicsPipeline(prm, &GlobalTextureDesc);
 		}
 		{
 			ctx.tilemapPipeline = make_unique<TilemapPL>(rengine.get(), ctx.worldMap.get());
@@ -205,7 +207,7 @@ void Engine::initializeSceneGraphicsContext(SceneGraphicsContext& ctx, glm::ivec
 	//ctx.triangleColorGPUBuffer = ctx.trianglesPipelines->GetColorMappedBuffer(rengine->currentFrame);
 }
 
-Engine::DrawlistGraphicsContext Engine::createDrawlistGraphicsContext(DrawlistAllocationConfiguration allocationSettings, MappedDoubleBuffer<coodinateTransformUBO_s> cameraBuffers) {
+Engine::DrawlistGraphicsContext Engine::createDrawlistGraphicsContext(DrawlistAllocationConfiguration allocationSettings, MappedDoubleBuffer<coordinateTransformUBO_s> cameraBuffers) {
 
 	DrawlistGraphicsContext ctx = DrawlistGraphicsContext(allocationSettings);
 
@@ -230,7 +232,7 @@ Engine::DrawlistGraphicsContext Engine::createDrawlistGraphicsContext(DrawlistAl
 		prm.cameraDB = cameraBuffers;
 		prm.flipFaces = true;
 		std::array<int, 2> unused = { 0, 0 };
-		ctx.texturedQuadPipeline->CreateGraphicsPipeline(prm, &GlobalTextureDesc, unused);
+		ctx.texturedQuadPipeline->CreateGraphicsPipeline(prm, &GlobalTextureDesc, unused, allocationSettings.TexturedQuad_MaxInstances);
 	}
 
 	{
@@ -293,7 +295,7 @@ void Engine::Start(const VideoSettings& initialSettings, AssetManager::AssetPath
 		// allocated dedicated device memory for compute driven particle systems
 		{
 			// todo: use less ambigous size. ParticleGroup_larg is not labled as being device only
-			rengine->CreateDeviceOnlyStorageBuffer(sizeof(ParticleSystemPL::ParticleGroup_large) * MAX_PARTICLE_SYSTEMS_LARGE, false, computerParticleBuffer);
+			rengine->CreateDeviceOnlyStorageBuffer(sizeof(ParticleSystemPL::particle) * MAX_PARTICLES_LARGE * MAX_PARTICLE_SYSTEMS_LARGE, false, computerParticleBuffer);
 
 			//computerParticleBuffer.size = sizeof(ParticleSystemPL::device_particle_ssbo);
 
@@ -318,7 +320,7 @@ void Engine::Start(const VideoSettings& initialSettings, AssetManager::AssetPath
 		particleComputePipeline = make_unique<ParticleComputePL>(rengine.get());
 		vector<uint8_t> comp;
 		assetManager->LoadShaderFile("particleSystem_comp.spv", comp);
-		particleComputePipeline->CreateComputePipeline(comp, &computerParticleBuffer);
+		particleComputePipeline->CreateComputePipeline(comp, computerParticleBuffer);
 	}
 
 
@@ -416,7 +418,7 @@ void Engine::recordSceneContextGraphics(const SceneGraphicsContext& ctx, std::sh
 			TexturedQuadPL::ssboObjectInstanceData* GPUBuffer = ctx.texturePipeline->getUploadMappedBuffer();
 			int instanceIndex = 0;
 
-			assert(scene->sceneData.spriteRenderers.size() < TexturedQuadPL_MAX_OBJECTS);
+			assert(scene->sceneData.spriteRenderers.size() < ctx.allocationSettings.TexturedQuad_MaxInstances);
 			for (auto& [entID, renderer] : scene->sceneData.spriteRenderers)
 			{
 				Entity* entity = renderer._entityCache;
@@ -604,8 +606,8 @@ void Engine::recordSceneContextGraphics(const SceneGraphicsContext& ctx, std::sh
 void Engine::recordDrawlistContextGraphics(const DrawlistGraphicsContext& ctx, Drawlist& drawData, vk::CommandBuffer cmdBuffer) {
 
 	// screenspace texture
+	if(drawData.texturedQuadInstanceIndex > 0)
 	{
-
 		auto buffer = ctx.texturedQuadPipeline->getUploadMappedBuffer();
 
 		// slap on the fb textures here
@@ -800,6 +802,19 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 						dispachInfos.push_back(info);
 
 						// TODO: only update if dirty?
+						//renderer.configuration.burstMode = 0;
+
+						//renderer.configuration.particleCount = 0;
+						//renderer.configuration.burstMode = 0;
+						//renderer.configuration.burstRepeat = 0;
+						//renderer.configuration.spawnRate = 0; 
+						//renderer.configuration.particleLifeSpan =0; 
+						//renderer.configuration.gravity = 0;
+						//renderer.configuration.startSize = 0;
+						//renderer.configuration.endSize = 0;
+						//renderer.configuration.startColor = {0, 0, 0, 0};
+						//renderer.configuration.endColor = { 0, 0, 0, 0 };
+
 						particleComputePipeline->UploadInstanceConfigurationData(renderer.configuration, renderer.token->index);
 					}
 
@@ -957,7 +972,7 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 
 	// screen space transformer
 	{
-		coodinateTransformUBO_s* transform = screenSpaceTransformCameraBuffer.buffersMapped[rengine->currentFrame];
+		coordinateTransformUBO_s* transform = screenSpaceTransformCameraBuffer.buffersMapped[rengine->currentFrame];
 
 		transform->aspectRatio = (float)winH / (float)winW;
 		transform->position = vec2(-(float)winW / 2.0f, -(float)winH / 2.0f);

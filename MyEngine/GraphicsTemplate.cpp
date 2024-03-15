@@ -102,7 +102,7 @@ void GraphicsTemplate::CreateGraphicsPipeline(const PipelineParameters& params, 
 	auto viewportState = defaultViewportState();
 	auto rasterizer = defaultRasterizer();
 	auto multisampling = defaultMultisampling();
-	auto colorBlendAttachment = defaultColorBlendAttachment(true, resourceConfig.transparentFramebuffer);
+	auto colorBlendAttachment = resourceConfig.colorBlendAttachment.has_value() ? resourceConfig.colorBlendAttachment.value() : defaultColorBlendAttachment(true, false);
 	auto colorBlending = defaultColorBlending(&colorBlendAttachment);
 	auto dynamicState = defaultDynamicState();
 

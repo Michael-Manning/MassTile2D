@@ -46,8 +46,8 @@ public:
 
 	struct ParticleSystemConfiguration {
 		int32_t particleCount = 200;
-		bool burstMode = false;
-		bool burstRepeat = false;
+		uint32_t burstMode = false;
+		uint32_t burstRepeat = false;
 		float spawnRate = 100.0f; // particles per second
 		float particleLifeSpan = 1.0f; // seconds
 		float gravity = -10.0f;
@@ -73,9 +73,9 @@ public:
 	};
 
 	// device/compute driven particle system
-	struct ParticleGroup_large{
-		particle particles[MAX_PARTICLES_LARGE];
-	};
+	//struct ParticleGroup_large{
+	//	particle particles[MAX_PARTICLES_LARGE];
+	//};
 
 
 	ParticleSystemPL(VKEngine* engine) :
@@ -92,9 +92,9 @@ public:
 	}
 
 	// device local particle data
-	struct device_particle_ssbo{
-		ParticleGroup_large particleGroups_large[MAX_PARTICLE_SYSTEMS_LARGE];
-	};
+	//struct device_particle_ssbo{
+	//	ParticleGroup_large particleGroups_large[MAX_PARTICLE_SYSTEMS_LARGE];
+	//};
 
 private:
 

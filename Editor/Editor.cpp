@@ -87,6 +87,13 @@ namespace {
 		*value = glm::max(*value, min);
 		return b;
 	}
+	
+	bool Checkbox(const char* label, uint32_t* value) {
+		bool b = value;
+		bool changed = ImGui::Checkbox(label, &b);
+		*value = b;
+		return changed;
+	}
 
 	float GetWorldGridSize(float zoomLevel) {
 		if (zoomLevel < 0.02)

@@ -18,7 +18,7 @@ def checkMod(srcDirectory, mod_time_file):
    with open(mod_time_file, 'r') as f:
       mod_times = {}
       for line in f:
-         path, mod_time = line.strip().split(':')
+         path, mod_time = line.strip().split('|')
          mod_times[path] = float(mod_time)
 
    filesChanged = False
@@ -40,7 +40,7 @@ def checkMod(srcDirectory, mod_time_file):
    # Write the updated modification times to the file
    with open(mod_time_file, 'w') as f:
       for path, mod_time in mod_times.items():
-         f.write(f'{path}:{mod_time}\n')
+         f.write(f'{path}|{mod_time}\n')
 
    return changedFiles
 

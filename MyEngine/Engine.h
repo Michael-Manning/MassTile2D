@@ -75,7 +75,7 @@ private:
 
 		const SceneGraphicsAllocationConfiguration allocationSettings;
 
-		MappedDoubleBuffer<coodinateTransformUBO_s> cameraBuffers;
+		MappedDoubleBuffer<coordinateTransformUBO_s> cameraBuffers;
 
 		std::unique_ptr<LightingComputePL> lightingPipeline = nullptr;
 
@@ -241,7 +241,7 @@ public:
 
 private:
 
-	DrawlistGraphicsContext createDrawlistGraphicsContext(DrawlistAllocationConfiguration allocationSettings, MappedDoubleBuffer<coodinateTransformUBO_s> cameraBuffers);
+	DrawlistGraphicsContext createDrawlistGraphicsContext(DrawlistAllocationConfiguration allocationSettings, MappedDoubleBuffer<coordinateTransformUBO_s> cameraBuffers);
 
 	const vk::Format lightingPassFormat = vk::Format::eR16Unorm; //vk::Format::eR16Unorm;
 
@@ -285,8 +285,8 @@ private:
 	std::vector<DrawlistGraphicsContext> screenspaceDrawlistContexts;
 	std::vector<Drawlist> screenspaceDrawlistLayers;
 
-	MappedDoubleBuffer<coodinateTransformUBO_s> screenSpaceTransformCameraBuffer;
-	//VKUtil::BufferUploader<coodinateTransformUBO_s> screenSpaceTransformUploader; // TODO: replace with plain mapped double buffer
+	MappedDoubleBuffer<coordinateTransformUBO_s> screenSpaceTransformCameraBuffer;
+	//VKUtil::BufferUploader<coordinateTransformUBO_s> screenSpaceTransformUploader; // TODO: replace with plain mapped double buffer
 
 	uint32_t frameCounter = 0;
 	bool firstFrame = true;
