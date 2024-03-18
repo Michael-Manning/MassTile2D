@@ -86,6 +86,14 @@ private:
 		std::unique_ptr<TextPL> textPipeline = nullptr;
 		std::unique_ptr<ParticleSystemPL> particlePipeline = nullptr;
 
+		// world space drawlist that renders behind scene graphics components
+		std::vector<DrawlistGraphicsContext> backgroundDrawlistContexts;
+		std::vector<Drawlist> backgroundDrawlistLayers;
+
+		// world space drawlist that renders in front of scene graphics components
+		std::vector<DrawlistGraphicsContext> foregroundDrawlistContexts;
+		std::vector<Drawlist> foregroundDrawlistLayers;
+
 		std::unique_ptr<TileWorld> worldMap = nullptr;
 
 		texID tilemapTextureAtlas;
@@ -286,7 +294,6 @@ private:
 	std::vector<Drawlist> screenspaceDrawlistLayers;
 
 	MappedDoubleBuffer<coordinateTransformUBO_s> screenSpaceTransformCameraBuffer;
-	//VKUtil::BufferUploader<coordinateTransformUBO_s> screenSpaceTransformUploader; // TODO: replace with plain mapped double buffer
 
 	uint32_t frameCounter = 0;
 	bool firstFrame = true;

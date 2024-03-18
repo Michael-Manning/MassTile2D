@@ -56,21 +56,22 @@ struct SceneGraphicsAllocationConfiguration {
 	uint32_t ParticleSystem_MaxSmallSystemParticles = 200; 
 
 	glm::vec4 Framebuffer_ClearColor = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-	//bool transparentFramebufferBlending = false;
 
 	bool AllocateTileWorld = true;
 	float Lightmap_ClearValue = 0.0f;
+
+	// layers which appear behind scene graphics components
+	int Worldspace_Background_DrawlistLayerCount = 0;
+	std::vector<DrawlistAllocationConfiguration> Worldspace_Background_LayerAllocations;
+
+	// layers which appear in front of scene graphics components
+	int Worldspace_Foreground_DrawlistLayerCount = 0;
+	std::vector<DrawlistAllocationConfiguration> Worldspace_Foreground_LayerAllocations;
 };
 
 struct EngineMemoryAllocationConfiguration {
 
-	//// layers which appear behind scene graphics components
-	//int Worldspace_Background_DrawlistLayerCount = 1;
-	//std::vector<DrawlistAllocationConfiguration> Worldspace_Background_LayerAllocations;
 
-	//// layers which appear in front of scene graphics components
-	//int Worldspace_Forground_DrawlistLayerCount = 1;
-	//std::vector<DrawlistAllocationConfiguration> Worldspace_Foreground_LayerAllocations;
 
 	uint32_t ParticleSystem_MaxLargeSystems = 4;
 	uint32_t ParticleSystem_MaxLargeSystemParticles = 100000;

@@ -538,7 +538,6 @@ int main() {
 	//auto cco = ParticleSystemPL::ParticleSystemConfiguration{};
 	//scene->registerComponent(en->ID, ParticleSystemRenderer::Size::Large, cco);
 
-
 	bool firstFrame = true;
 	while (!engine->ShouldClose())
 	{

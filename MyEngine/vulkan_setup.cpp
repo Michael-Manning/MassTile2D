@@ -30,6 +30,7 @@
 #include <tracy/Tracy.hpp>
 #include <tracy/TracyVulkan.hpp>
 
+#include "profiling.h"
 #include "VKEngine.h"
 
 #define ENGINE_VERSION VK_MAKE_VERSION(1, 2, 0)
@@ -159,6 +160,8 @@ bool checkValidationLayerSupport() {
 }
 
 void VKEngine::createSwapchainFramebuffers() {
+	PROFILE_SCOPE;
+
 	swapChainFramebuffers.resize(swapChainImageViews.size());
 
 	for (size_t i = 0; i < swapChainImageViews.size(); i++) {
@@ -179,6 +182,8 @@ void VKEngine::createSwapchainFramebuffers() {
 }
 
 void VKEngine::createTextureSamplers() {
+	PROFILE_SCOPE
+
 	vk::PhysicalDeviceProperties properties = physicalDevice.getProperties();
 
 	// linear sampler
@@ -299,6 +304,9 @@ bool VKEngine::shouldClose() {
 }
 
 void VKEngine::initVulkan(const SwapChainSetting& setting, int subPassCount) {
+
+	PROFILE_SCOPE
+
 	createInstance();
 	dynamicDispatcher = vk::DispatchLoaderDynamic(instance, vkGetInstanceProcAddr);
 
@@ -416,6 +424,7 @@ void VKEngine::cleanup() {
 bool checkInstanceExtensionSupport();
 
 void VKEngine::createInstance() {
+	PROFILE_SCOPE;
 	if (enableValidationLayers && !checkValidationLayerSupport()) {
 		throw std::runtime_error("validation layers requested, but not available!");
 	}
@@ -452,7 +461,10 @@ void VKEngine::createInstance() {
 		createInfo.pNext = nullptr;
 	}
 
-	instance = vk::createInstance(createInfo);
+	{
+		PROFILE_SCOPEN(VKINSTANCE);
+		instance = vk::createInstance(createInfo);
+	}
 }
 
 
@@ -577,7 +589,7 @@ deviceSuitabilityStatus getDeviceSuitability(vk::PhysicalDevice device, vk::Surf
 }
 
 void VKEngine::pickPhysicalDevice() {
-
+	PROFILE_SCOPE;
 	std::vector<vk::PhysicalDevice> devices = instance.enumeratePhysicalDevices();
 
 	deviceSuitabilityStatus mostSuitableStatus;
@@ -637,6 +649,7 @@ bool CheckDeviceFeaturesSupported_descriptorBindingSampledImageUpdateAfterBind(v
 #endif
 
 void VKEngine::createLogicalDevice() {
+	PROFILE_SCOPE;
 	QueueFamilyIndices indices = findQueueFamilies(physicalDevice, surface);
 	devContext.queueFamilyIndices = indices;
 
@@ -694,6 +707,7 @@ void VKEngine::createLogicalDevice() {
 
 
 void VKEngine::createSurface() {
+	PROFILE_SCOPE;
 	if (glfwCreateWindowSurface(instance, window, nullptr, reinterpret_cast<VkSurfaceKHR*>(&surface)) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create window surface!");
 	}
@@ -771,6 +785,7 @@ SwapChainSupportDetails querySwapChainSupport(vk::PhysicalDevice device, vk::Sur
 }
 
 void VKEngine::createSwapChain(SwapChainSetting setting) {
+	PROFILE_SCOPE;
 	SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice, surface);
 
 	vk::SurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
@@ -881,6 +896,8 @@ void VKEngine::cleanupSwapChain() {
 }
 
 void VKEngine::createCommandBuffers() {
+	PROFILE_SCOPE
+
 	// graphics command buffers
 	{
 		vk::CommandBufferAllocateInfo allocInfo;

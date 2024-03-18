@@ -35,6 +35,8 @@
 #include "Settings.h"
 #include "GlobalImageDescriptor.h"
 
+PROFILING_IMPL
+
 
 using namespace glm;
 using namespace std;
@@ -112,25 +114,19 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 
 void Engine::initializeSceneGraphicsContext(SceneGraphicsContext& ctx, glm::ivec2 framebufferSize) {
 
+	PROFILE_SCOPE;
+
 	ctx.drawFramebuffer = resourceManager->CreateFramebuffer(framebufferSize, ctx.allocationSettings.Framebuffer_ClearColor);
 	ctx.lightingFramebuffer = resourceManager->CreateFramebuffer(framebufferSize, glm::vec4(ctx.allocationSettings.Lightmap_ClearValue), lightingPassFormat);
 
 	rengine->createMappedBuffer(vk::BufferUsageFlagBits::eUniformBuffer, ctx.cameraBuffers);
 
 	// section can be done in parrallel
-
-	{
-		
-		ctx.particlePipeline = make_unique<ParticleSystemPL>(rengine.get(), ctx.allocationSettings.ParticleSystem_MaxSmallSystems);
-		//ctx.trianglesPipelines = make_unique<ColoredTrianglesPL>(rengine.get());
-	}
-
-	//ctx.textPipeline->createSSBOBuffer();
-
 	auto drawRenderpass = resourceManager->GetFramebuffer(ctx.drawFramebuffer)->renderpass;
 	auto lightingFramebuffer = resourceManager->GetFramebuffer(ctx.lightingFramebuffer);
 
 	{
+		PROFILE_SCOPEN(colorPipeline);
 		ctx.colorPipeline = make_unique<ColoredQuadPL>(rengine.get(), ctx.allocationSettings.ColoredQuad_MaxInstances);
 		PipelineParameters prm;
 		assetManager->LoadShaderFile("coloredQuad_vert.spv", prm.vertexSrc);
@@ -146,6 +142,7 @@ void Engine::initializeSceneGraphicsContext(SceneGraphicsContext& ctx, glm::ivec
 	//	ctx.trianglesPipelines->CreateGraphicsPipeline(vert, frag, drawRenderpass, ctx.cameraBuffers, true);
 	//}
 	{
+		PROFILE_SCOPEN(texturePipeline);
 		ctx.texturePipeline = make_unique<TexturedQuadPL>(rengine.get(), ctx.allocationSettings.TexturedQuad_MaxInstances);
 		PipelineParameters prm;
 		assetManager->LoadShaderFile("texture_vert.spv", prm.vertexSrc);
@@ -157,10 +154,15 @@ void Engine::initializeSceneGraphicsContext(SceneGraphicsContext& ctx, glm::ivec
 	}
 
 	if (ctx.allocationSettings.AllocateTileWorld) {
-		ctx.worldMap = make_unique<TileWorld>(rengine.get());
-		ctx.worldMap->AllocateVulkanResources();
 
 		{
+			PROFILE_SCOPEN(Allocate_tileworld);
+			ctx.worldMap = make_unique<TileWorld>(rengine.get());
+			ctx.worldMap->AllocateVulkanResources();
+		}
+
+		{
+			PROFILE_SCOPEN(lightingPipeline);
 			ctx.lightingPipeline = make_unique<LightingComputePL>(rengine.get(), ctx.worldMap.get());
 			vector<uint8_t> comp, upscale, blur;
 			assetManager->LoadShaderFile("lighting_comp.spv", comp);
@@ -169,6 +171,7 @@ void Engine::initializeSceneGraphicsContext(SceneGraphicsContext& ctx, glm::ivec
 			ctx.lightingPipeline->CreateComputePipeline(comp, upscale, blur);
 		}
 		{
+			PROFILE_SCOPEN(tilemapLightRasterPipeline);
 			ctx.tilemapLightRasterPipeline = make_unique<TilemapLightRasterPL>(rengine.get(), ctx.worldMap.get());
 			PipelineParameters prm;
 			assetManager->LoadShaderFile("tilemapLightRaster_vert.spv", prm.vertexSrc);
@@ -178,6 +181,7 @@ void Engine::initializeSceneGraphicsContext(SceneGraphicsContext& ctx, glm::ivec
 			ctx.tilemapLightRasterPipeline->CreateGraphicsPipeline(prm, &GlobalTextureDesc);
 		}
 		{
+			PROFILE_SCOPEN(tilemapPipeline);
 			ctx.tilemapPipeline = make_unique<TilemapPL>(rengine.get(), ctx.worldMap.get());
 			PipelineParameters prm;
 			assetManager->LoadShaderFile("tilemap_vert.spv", prm.vertexSrc);
@@ -189,6 +193,7 @@ void Engine::initializeSceneGraphicsContext(SceneGraphicsContext& ctx, glm::ivec
 		}
 	}
 	{
+		PROFILE_SCOPEN(textPipeline);
 		ctx.textPipeline = make_unique<TextPL>(rengine.get(), ctx.allocationSettings.Text_MaxStrings, ctx.allocationSettings.Text_MaxStringLength);
 		PipelineParameters prm;
 		assetManager->LoadShaderFile("text_vert.spv", prm.vertexSrc);
@@ -198,6 +203,8 @@ void Engine::initializeSceneGraphicsContext(SceneGraphicsContext& ctx, glm::ivec
 		ctx.textPipeline->CreateGraphicsPipeline(prm, &GlobalTextureDesc);
 	}
 	{
+		PROFILE_SCOPEN(textPipeline);
+		ctx.particlePipeline = make_unique<ParticleSystemPL>(rengine.get(), ctx.allocationSettings.ParticleSystem_MaxSmallSystems);
 		PipelineParameters prm;
 		assetManager->LoadShaderFile("particleSystem_vert.spv", prm.vertexSrc);
 		assetManager->LoadShaderFile("particleSystem_frag.spv", prm.fragmentSrc);
@@ -206,8 +213,16 @@ void Engine::initializeSceneGraphicsContext(SceneGraphicsContext& ctx, glm::ivec
 		ctx.particlePipeline->CreateGraphicsPipeline(prm, computerParticleBuffer);
 	}
 
-	//ctx.triangleGPUBuffer = ctx.trianglesPipelines->GetVertexMappedBuffer(rengine->currentFrame);
-	//ctx.triangleColorGPUBuffer = ctx.trianglesPipelines->GetColorMappedBuffer(rengine->currentFrame);
+	assert(ctx.allocationSettings.Worldspace_Background_DrawlistLayerCount == ctx.allocationSettings.Worldspace_Background_LayerAllocations.size());
+	for (auto& setting : ctx.allocationSettings.Worldspace_Background_LayerAllocations) {
+		screenspaceDrawlistContexts.push_back(createDrawlistGraphicsContext(setting, screenSpaceTransformCameraBuffer));
+		screenspaceDrawlistLayers.push_back(Drawlist(setting, assetManager.get()));
+	}
+
+	assert(ctx.allocationSettings.Worldspace_Foreground_DrawlistLayerCount == ctx.allocationSettings.Worldspace_Foreground_LayerAllocations.size());
+	for (auto& setting : ctx.allocationSettings.Worldspace_Foreground_LayerAllocations) {
+
+	}
 }
 
 Engine::DrawlistGraphicsContext Engine::createDrawlistGraphicsContext(DrawlistAllocationConfiguration allocationSettings, MappedDoubleBuffer<coordinateTransformUBO_s> cameraBuffers) {
@@ -254,29 +269,37 @@ Engine::DrawlistGraphicsContext Engine::createDrawlistGraphicsContext(DrawlistAl
 
 void Engine::Start(const VideoSettings& initialSettings, AssetManager::AssetPaths assetPaths, EngineMemoryAllocationConfiguration allocationSettings) {
 
+	PROFILE_SCOPEN(Engine_Setup)
 
-	PROFILE_START(Engine_Startup);
+	{
+		PROFILE_SCOPEN(Init_Window);
 
-	rengine->initWindow(initialSettings.windowSetting, false);
-	glfwSetWindowUserPointer(rengine->window, this);
-	glfwSetFramebufferSizeCallback(rengine->window, framebufferResizeCallback);
-	glfwSetKeyCallback(rengine->window, KeyCallback);
-	glfwSetMouseButtonCallback(rengine->window, mouseButtonCallback);
-	glfwSetScrollCallback(rengine->window, scroll_callback);
+		rengine->initWindow(initialSettings.windowSetting, false);
+		glfwSetWindowUserPointer(rengine->window, this);
+		glfwSetFramebufferSizeCallback(rengine->window, framebufferResizeCallback);
+		glfwSetKeyCallback(rengine->window, KeyCallback);
+		glfwSetMouseButtonCallback(rengine->window, mouseButtonCallback);
+		glfwSetScrollCallback(rengine->window, scroll_callback);
+	}
 
 	input = make_unique<Input>(rengine->window);
 	Behaviour::input = input.get();
 
 	DebugLog("Initialized Window");
 
-	rengine->initVulkan(initialSettings.swapChainSetting, 1);
-	rengine->createCommandPools();
-	rengine->createDescriptorPool();
-	rengine->createCommandBuffers();
-	rengine->createTextureSamplers();
+	{
+		PROFILE_SCOPEN(Setup_Vulkan);
+
+		rengine->initVulkan(initialSettings.swapChainSetting, 1);
+		rengine->createCommandPools();
+		rengine->createDescriptorPool();
+		rengine->createCommandBuffers();
+		rengine->createTextureSamplers();
+	}
 
 	resourceManager = std::make_unique<ResourceManager>(rengine.get(), resourceChangeFlags.get());
 	assetManager = std::make_unique<AssetManager>(rengine.get(), assetPaths, resourceManager.get());
+
 
 	DebugLog("Initialized Vulkan");
 
@@ -340,8 +363,6 @@ void Engine::Start(const VideoSettings& initialSettings, AssetManager::AssetPath
 	assetManager->CreateDefaultSprite(400, 400, checkerData);
 
 	DebugLog("Initialized pipelines");
-
-	PROFILE_END(Engine_Startup);
 }
 
 void Engine::ShowWindow() {
@@ -464,7 +485,7 @@ void Engine::recordSceneContextGraphics(const SceneGraphicsContext& ctx, std::sh
 	}
 
 	// colored quad
-	if(scene->sceneData.colorRenderers.size() > 0)
+	if (scene->sceneData.colorRenderers.size() > 0)
 	{
 		ZoneScopedN("Colored quad PL");
 
@@ -610,7 +631,7 @@ void Engine::recordSceneContextGraphics(const SceneGraphicsContext& ctx, std::sh
 void Engine::recordDrawlistContextGraphics(const DrawlistGraphicsContext& ctx, Drawlist& drawData, vk::CommandBuffer cmdBuffer) {
 
 	// screenspace texture
-	if(drawData.texturedQuadInstanceIndex > 0)
+	if (drawData.texturedQuadInstanceIndex > 0)
 	{
 		auto buffer = ctx.texturedQuadPipeline->getUploadMappedBuffer();
 
@@ -640,7 +661,7 @@ void Engine::recordDrawlistContextGraphics(const DrawlistGraphicsContext& ctx, D
 	}
 
 	// screenspace quad
-	if(drawData.coloredQuadInstanceIndex > 0)
+	if (drawData.coloredQuadInstanceIndex > 0)
 	{
 		auto buffer = ctx.coloredQuadPipeline->getUploadMappedBuffer();
 		std::copy(drawData.coloredQuadInstanceData.begin(), drawData.coloredQuadInstanceData.begin() + drawData.coloredQuadInstanceIndex, buffer);
@@ -829,7 +850,7 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 					renderer.computeContextDirty = false;
 				}
 			}
-			if(dispachInfos.size() > 0)
+			if (dispachInfos.size() > 0)
 				particleComputePipeline->RecordCommandBuffer(computeCmdBuffer, deltaTime, dispachInfos);
 		}
 
@@ -1100,7 +1121,7 @@ void Engine::InitImgui() {
 		{ vk::DescriptorType::eUniformBufferDynamic, 1000 },
 		{ vk::DescriptorType::eStorageBufferDynamic, 1000 },
 		{ vk::DescriptorType::eInputAttachment, 1000 }
-};
+	};
 
 
 	vk::DescriptorPoolCreateInfo pool_info;

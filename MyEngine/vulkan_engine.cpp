@@ -38,6 +38,8 @@ using namespace std;
 
 void VKEngine::createRenderPass(vk::RenderPass& renderpass, vk::Format imageFormat, vk::ImageLayout initialLayout, vk::ImageLayout finalLayout, int subpassCount) {
 
+	PROFILE_SCOPE;
+
 	assert(subpassCount < 3); // not properly supporting more because of the way the subpass dependencies are set up
 
 	vk::AttachmentDescription colorAttachment{};
@@ -90,7 +92,7 @@ void VKEngine::createRenderPass(vk::RenderPass& renderpass, vk::Format imageForm
 
 
 void VKEngine::createCommandPools() {
-
+	PROFILE_SCOPE
 	vk::CommandPoolCreateInfo poolInfo;
 	poolInfo.flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
 	poolInfo.queueFamilyIndex = devContext.queueFamilyIndices.graphicsAndComputeFamily.value();
@@ -99,7 +101,7 @@ void VKEngine::createCommandPools() {
 }
 
 void VKEngine::createSyncObjects() {
-
+	PROFILE_SCOPE;
 	vk::SemaphoreCreateInfo semaphoreInfo;
 	vk::FenceCreateInfo fenceInfo;
 
@@ -413,6 +415,7 @@ void VKEngine::createBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, Vma
 constexpr int pipelineCount = 4; // temp
 
 void VKEngine::createDescriptorPool() {
+	PROFILE_SCOPE
 
 	vector< vk::DescriptorPoolSize> poolSizes{
 		{ vk::DescriptorType::eCombinedImageSampler, static_cast<uint32_t>(FRAMES_IN_FLIGHT) * 10 * 2 + 2 },
