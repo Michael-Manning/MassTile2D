@@ -12,6 +12,8 @@ atlasStride = 16 * 3
 imgPaths = ["Tiles_2.png", "Tiles_0.png", "Tiles_1.png", "Tiles_9.png"]
 outpath = "tilemapSprites.png"
 
+flipColumns = True
+
 # parse csv file full of integers into a 2d array
 def getNumbersFromCSV(path): 
     with open(path, newline='') as csvfile:
@@ -36,7 +38,7 @@ for row in range(len(numbersList)):
 outImg = Image.new('RGBA', (outSizex * outStride, outSizey * outStride))
 # outImg = Image.open("out.png")
 
-# can only be three of each hash in the csv
+# can only be three of each hash in the csv5
 atlasCount = 0
 for path in imgPaths:
     inImg = Image.open(path)
@@ -46,7 +48,12 @@ for path in imgPaths:
             for row, col in locations:
                 pos = num * 3 + variation + atlasCount * atlasStride
                 pastx = pos  % outSizex
-                pasty = pos // outSizex
+
+                if(flipColumns):
+                  pasty = outSizey - (pos // outSizex) - 1
+                else:
+                  pasty = pos // outSizex
+
                 outImg.paste( inImg.crop((col * inStride, row * inStride, col * inStride + tileSize, row * inStride + tileSize )) , (pastx * outStride, pasty * outStride))
                 variation += 1
     atlasCount += 1

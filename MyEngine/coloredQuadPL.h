@@ -27,9 +27,10 @@ public:
 	};
 	static_assert(sizeof(InstanceBufferData) % 16 == 0);
 
-	ColoredQuadPL(VKEngine* engine) : pipeline(engine), engine(engine) { }
+	ColoredQuadPL(VKEngine* engine, int maxInstances) 
+		: pipeline(engine), engine(engine), maxInstances(maxInstances) { }
 
-	void CreateGraphicsPipeline(const PipelineParameters& params, int maxInstances) {
+	void CreateGraphicsPipeline(const PipelineParameters& params) {
 		engine->createMappedBuffer(sizeof(InstanceBufferData) * maxInstances, vk::BufferUsageFlagBits::eStorageBuffer, instanceDataDB);
 
 		PipelineResourceConfig con;
@@ -49,6 +50,8 @@ public:
 	InstanceBufferData* getUploadMappedBuffer() {
 		return instanceDataDB.buffersMapped[engine->currentFrame];
 	}
+
+	const int maxInstances;
 
 private:
 	MappedDoubleBuffer<InstanceBufferData> instanceDataDB;

@@ -101,8 +101,17 @@ Font GenerateFont_unidentified(const std::string& truetypeFilePath, std::string 
 		packedChar pc;
 		vec2 pixelsMin = glm::vec2(c.x0, c.y0);
 		vec2 pixelsMax = glm::vec2(c.x1, c.y1);
+
 		pc.uvmin = pixelsMin / vec2(config.atlasWidth, config.atlasHeight);
 		pc.uvmax = pixelsMax / vec2(config.atlasWidth, config.atlasHeight);
+
+		// uvs now start from bottom left
+		pc.uvmin.y = 1.0 - pc.uvmin.y;
+		pc.uvmax.y = 1.0 - pc.uvmax.y;
+		auto temp = pc.uvmin.y;
+		pc.uvmin.y = pc.uvmax.y;
+		pc.uvmax.y = temp;
+
 
 		vec2 pixelScale = (pixelsMax - pixelsMin) / (float)config.oversample;
 		pc.scale = pixelScale * pixelPositionScale;

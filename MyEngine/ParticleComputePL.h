@@ -11,6 +11,7 @@
 #include "typedefs.h"
 #include "ComputeTemplate.h"
 #include "ParticleSystemPL.h"
+#include "ParticleStructures.h"
 
 
 class ParticleComputePL {
@@ -60,7 +61,7 @@ public:
 	//	alignas(16) glm::vec4 endColor = glm::vec4(1.0f, 1.0f, 0.0f, 1.0f);
 	//};
 
-	void UploadInstanceConfigurationData(ParticleSystemPL::ParticleSystemConfiguration& psystem, int index) {
+	void UploadInstanceConfigurationData(ParticleSystemConfiguration& psystem, int index) {
 		assert(index < MAX_PARTICLE_SYSTEMS_LARGE);
 
 		//auto tt = sizeof(bool);
@@ -112,7 +113,7 @@ private:
 
 	//MappedDoubleBuffer<device_particleConfiguration_ssbo> sysConfigDB;
 	
-	MappedDoubleBuffer<ParticleSystemPL::ParticleSystemConfiguration> sysConfigDB;
+	MappedDoubleBuffer<ParticleSystemConfiguration> sysConfigDB;
 
 	ComputeTemplate pipeline;
 

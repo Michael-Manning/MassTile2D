@@ -34,7 +34,7 @@ namespace {
 
 void ParticleSystemPL::CreateGraphicsPipeline(const PipelineParameters& params, const DeviceBuffer& deviceParticleDataBuffer) {
 
-	engine->createMappedBuffer(sizeof(host_particle_ssbo), vk::BufferUsageFlagBits::eStorageBuffer, particleDB);
+	engine->createMappedBuffer(sizeof(ParticleGroup_small) * maxSystemsSmall, vk::BufferUsageFlagBits::eStorageBuffer, particleDB);
 
 
 	PipelineResourceConfig con;
@@ -42,9 +42,6 @@ void ParticleSystemPL::CreateGraphicsPipeline(const PipelineParameters& params, 
 	con.bufferBindings.push_back(BufferBinding(0, 1, params.cameraDB));
 	con.bufferBindings.push_back(BufferBinding(0, 0, particleDB));
 	con.bufferBindings.push_back(BufferBinding(0, 2, deviceParticleDataBuffer));
-
-	//auto deviceDB = deviceParticleDataBuffer.GetDoubleBuffer();
-	//con.descriptorInfos.push_back(DescriptorManager::descriptorSetInfo(0, 2, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, &deviceDB, deviceParticleDataBuffer.size));
 
 	pipeline.CreateGraphicsPipeline(params, con);
 }

@@ -269,10 +269,10 @@ public:
 
 	uint8_t getAdjacencyHash(uint32_t x, uint32_t y) {
 		uint8_t hash = 0;
-		hash |= (uint8_t)(getTile(x, y - 1) != 1023) << 0;
+		hash |= (uint8_t)(getTile(x, y + 1) != 1023) << 0;
 		hash |= (uint8_t)(getTile(x - 1, y) != 1023) << 1;
 		hash |= (uint8_t)(getTile(x + 1, y) != 1023) << 2;
-		hash |= (uint8_t)(getTile(x, y + 1) != 1023) << 3;
+		hash |= (uint8_t)(getTile(x, y - 1) != 1023) << 3;
 		return hash;
 	};
 

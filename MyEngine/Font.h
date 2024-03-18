@@ -20,7 +20,7 @@ const auto Font_extension = ".font";
 // Serialize using json on creation for asset packager to automatically convert to flatbuffer
 // serialize serialize flatbuffer during published build with packed assets
 
-struct charQuad {
+struct alignas(16) charQuad {
 	alignas(8) glm::vec2 uvmin;
 	alignas(8) glm::vec2 uvmax;
 	alignas(8) glm::vec2 scale;

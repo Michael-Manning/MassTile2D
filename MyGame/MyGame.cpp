@@ -403,7 +403,7 @@ void worldDebug() {
 }
 
 
-constexpr bool useTileWorld = false;
+constexpr bool useTileWorld = true;
 bool showLightMapDebug = false;
 
 #ifdef  PUBLISH
@@ -429,8 +429,8 @@ int main() {
 
 	SceneGraphicsAllocationConfiguration sceneConfig;
 	sceneConfig.AllocateTileWorld = useTileWorld;
-	sceneConfig.Framebuffer_ClearColor = { 0.0, 0.0, 0.0, 1 };
-	//sceneConfig.Framebuffer_ClearColor = { 0.2, 0.3, 1.0, 1 };
+	//sceneConfig.Framebuffer_ClearColor = { 0.0, 0.0, 0.0, 1 };
+	sceneConfig.Framebuffer_ClearColor = { 0.2, 0.3, 1.0, 1 };
 
 	sceneRenderCtx = engine->CreateSceneRenderContext(engine->getWindowSize(), sceneConfig);
 
@@ -534,9 +534,9 @@ int main() {
 		);
 	}
 
-	auto en = scene->CreateEntity();
-	auto cco = ParticleSystemPL::ParticleSystemConfiguration{};
-	scene->registerComponent(en->ID, ParticleSystemRenderer::ParticleSystemSize::Large, cco);
+	//auto en = scene->CreateEntity();
+	//auto cco = ParticleSystemPL::ParticleSystemConfiguration{};
+	//scene->registerComponent(en->ID, ParticleSystemRenderer::Size::Large, cco);
 
 
 	bool firstFrame = true;
@@ -568,6 +568,8 @@ int main() {
 		}
 
 
+		auto drawlist = engine->GetScreenspaceDrawlist();
+		drawlist->AddCenteredSprite("test_cat", 0, vec2(100, 100), 100);
 
 		// pulled out of queue function because it prevents drawing anything on top of the main framebuffer
 		{
@@ -578,7 +580,7 @@ int main() {
 			// draw main scene full screen
 			if (showingEditor == false) {
 
-				auto drawlist = engine->GetScreenspaceDrawlist();
+				
 
 				if (showLightMapDebug) {
 					framebufferID fb = engine->_GetSceneRenderContextLightMapBuffer(sceneRenderCtx);

@@ -33,9 +33,10 @@ public:
 	};
 	static_assert(sizeof(ssboObjectInstanceData) % 16 == 0);
 
-	TexturedQuadPL(VKEngine* engine) : pipeline(engine), engine(engine) { }
+	TexturedQuadPL(VKEngine* engine, int maxInstances) 
+		: pipeline(engine), engine(engine), maxInstances(maxInstances) { }
 
-	void CreateGraphicsPipeline(const PipelineParameters& params, GlobalImageDescriptor* textureDescriptor, std::array<int, 2>& lightMapTextureIndexes, int maxInstances) {
+	void CreateGraphicsPipeline(const PipelineParameters& params, GlobalImageDescriptor* textureDescriptor, std::array<int, 2>& lightMapTextureIndexes) {
 		
 		engine->createMappedBuffer(sizeof(ssboObjectInstanceData) * maxInstances, vk::BufferUsageFlagBits::eStorageBuffer, ssboMappedDB);
 
@@ -66,6 +67,8 @@ public:
 	ssboObjectInstanceData* getUploadMappedBuffer() {
 		return ssboMappedDB.buffersMapped[engine->currentFrame];
 	}
+
+	const int maxInstances;
 
 private:
 

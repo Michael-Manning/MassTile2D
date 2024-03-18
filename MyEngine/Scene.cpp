@@ -19,6 +19,7 @@
 #include "BehaviorRegistry.h"
 #include "Input.h"
 #include "AssetManager.h";
+#include "ParticleStructures.h"
 
 #include <assetPack/Scene_generated.h>
 
@@ -423,10 +424,10 @@ void Scene::registerComponent(entityID id, TextRenderer t) {
 	sceneData.textRenderers.insert({ id, t });
 }
 
-void Scene::registerComponent(entityID id, ParticleSystemRenderer::ParticleSystemSize systemSize) {
+void Scene::registerComponent(entityID id, ParticleSystemRenderer::Size systemSize) {
 	sceneData.particleSystemRenderers.emplace(id, systemSize);
 }
-void Scene::registerComponent(entityID id, ParticleSystemRenderer::ParticleSystemSize systemSize, ParticleSystemPL::ParticleSystemConfiguration& configuration) {
+void Scene::registerComponent(entityID id, ParticleSystemRenderer::Size systemSize, ParticleSystemConfiguration& configuration) {
 	sceneData.particleSystemRenderers.emplace(
 		std::piecewise_construct,
 		std::forward_as_tuple(id),

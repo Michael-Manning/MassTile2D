@@ -91,7 +91,7 @@ void main() {
    view *= translate(camera.position);
 
    mat4 letterModel = mat4(1.0);
-   letterModel *= translate(ssboData.textData[i].quads[letter_index].position * vec2(1.0, -1.0));
+   letterModel *= translate(ssboData.textData[i].quads[letter_index].position * vec2(1.0, 1.0));
    letterModel *= scale(ssboData.textData[i].quads[letter_index].scale );
 
    mat4 objectModel = mat4(1.0);

@@ -63,48 +63,6 @@ TextRenderer TextRenderer::deserializeJson(nlohmann::json j){
 	return t;
 }
 
-
-nlohmann::json ParticleSystemPL::ParticleSystemConfiguration::serializeJson() const {
-	nlohmann::json j;
-
-	j["particleCount"] = particleCount;
-	j["burstMode"] = burstMode;
-	j["spawnRate"] = spawnRate;
-	j["particleLifeSpan"] = particleLifeSpan;
-	j["gravity"] = gravity;
-	j["startSize"] = startSize;
-	j["endSize"] = endSize;
-	j["startColor"] = toJson(startColor);
-	j["endColor"] = toJson(endColor);
-
-	return j;
-};
-void ParticleSystemPL::ParticleSystemConfiguration::deserializeJson(nlohmann::json j, ParticleSystemPL::ParticleSystemConfiguration* config) {
-
-	config->particleCount = j["particleCount"];
-	config->burstMode = j["burstMode"];
-	config->spawnRate = j["spawnRate"];
-	config->particleLifeSpan = j["particleLifeSpan"];
-	config->gravity = j["gravity"];
-	config->startSize = j["startSize"];
-	config->endSize = j["endSize"];
-	config->startColor = fromJson<vec4>(j["startColor"]);
-	config->endColor = fromJson<vec4>(j["endColor"]);
-};
-void ParticleSystemPL::ParticleSystemConfiguration::deserializeFlatbuffers(const AssetPack::ParticleSystemConfiguration* p, ParticleSystemPL::ParticleSystemConfiguration* config) {
-
-	config->particleCount = p->particleCount();
-	config->burstMode = p->burstMode();
-	config->spawnRate = p->spawnRate();
-	config->particleLifeSpan = p->particleLifeSpan();
-	config->gravity = p->gravity();
-	config->startSize = p->startSize();
-	config->endSize = p->endSize();
-	config->startColor = fromAP(p->startColor());
-	config->endColor = fromAP(p->endColor());
-};
-
-
 nlohmann::json Rigidbody::serializeJson(entityID entId) const {
 	nlohmann::json j;
 	j["entityID"] = entId;

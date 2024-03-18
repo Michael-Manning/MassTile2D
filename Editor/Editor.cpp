@@ -89,7 +89,7 @@ namespace {
 	}
 	
 	bool Checkbox(const char* label, uint32_t* value) {
-		bool b = value;
+		bool b = *value;
 		bool changed = ImGui::Checkbox(label, &b);
 		*value = b;
 		return changed;
@@ -147,7 +147,7 @@ vec2 Editor::DrawSprite(spriteID id, glm::vec2 maxSize) {
 		dispSize.x = maxSize.y * iaspect;
 	}
 
-	Image((ImTextureID)imTexture.value(), dispSize);
+	Image((ImTextureID)imTexture.value(), dispSize, vec2(0, 1), vec2(1, 0));
 	return dispSize;
 }
 vec2 Editor::DrawSpriteAtlas(spriteID id, glm::vec2 maxSize, int atlasIndex) {
@@ -178,7 +178,8 @@ vec2 Editor::DrawSpriteAtlas(spriteID id, glm::vec2 maxSize, int atlasIndex) {
 		}
 
 		Text(atlasEntry.name.c_str());
-		Image((ImTextureID)imTexture.value(), dispSize, atlasEntry.uv_min, atlasEntry.uv_max);
+		Image((ImTextureID)imTexture.value(), dispSize, vec2(atlasEntry.uv_min.x, 1.0 - atlasEntry.uv_min.y), vec2(atlasEntry.uv_max.x, 1.0 - atlasEntry.uv_max.y));
+		//Image((ImTextureID)imTexture.value(), dispSize, atlasEntry.uv_min, atlasEntry.uv_max);
 		return dispSize;
 	}
 }
@@ -1133,7 +1134,7 @@ void Editor::Run() {
 					break;
 				case 3:
 					if (!selectedScene->sceneData.particleSystemRenderers.contains(selectedEntity->ID))
-						selectedScene->registerComponent(selectedEntity->ID, ParticleSystemRenderer::ParticleSystemSize::Small);
+						selectedScene->registerComponent(selectedEntity->ID, ParticleSystemRenderer::Size::Small);
 					break;
 				case 4:
 					if (!selectedScene->sceneData.staticbodies.contains(selectedEntity->ID))
@@ -1494,14 +1495,14 @@ bool Editor::drawInspector(ParticleSystemRenderer& r) {
 	int tSize = static_cast<int>(r.size);
 	if (Combo("Size", &tSize, "Small\0Large")) {
 		assert(tSize == 0 || tSize == 1);
-		r.SetSystemSize(static_cast<ParticleSystemRenderer::ParticleSystemSize>(tSize));
+		r.SetSystemSize(static_cast<ParticleSystemRenderer::Size>(tSize));
 	}
 
 	InputInt("Particle count", &ps.particleCount);
-	if (r.size == ParticleSystemRenderer::ParticleSystemSize::Small) {
+	if (r.size == ParticleSystemRenderer::Size::Small) {
 		ps.particleCount = glm::clamp(ps.particleCount, 0, MAX_PARTICLES_SMALL);
 	}
-	else if (r.size == ParticleSystemRenderer::ParticleSystemSize::Large) {
+	else if (r.size == ParticleSystemRenderer::Size::Large) {
 		ps.particleCount = glm::clamp(ps.particleCount, 0, MAX_PARTICLES_LARGE);
 	}
 	else {

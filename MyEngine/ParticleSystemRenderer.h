@@ -10,26 +10,27 @@
 #include "Component.h"
 #include "serialization.h"
 #include "ParticleSystemPL.h"
+#include "ParticleStructures.h"
 
 #include <assetPack/common_generated.h>
 
 class ParticleSystemRenderer { // : public Component {
 public:
 
-	enum class ParticleSystemSize {
+	enum class Size {
 		Small = 0,
 		Large
 	};
 
-	ParticleSystemSize size = ParticleSystemSize::Small;
+	Size size = Size::Small;
 
 	// TODO: maybe make try to remove this default argument to prevent unnecessary CPU allocation if immediately converting to compute driven system
-	ParticleSystemRenderer(ParticleSystemSize size){
+	ParticleSystemRenderer(Size size){
 		SetSystemSize(size);
 	};
 
 	// used for copying
-	ParticleSystemRenderer(ParticleSystemSize size, const ParticleSystemPL::ParticleSystemConfiguration& config) {
+	ParticleSystemRenderer(Size size, const ParticleSystemConfiguration& config) {
 		configuration = config;
 		SetSystemSize(size);
 	};
@@ -50,13 +51,13 @@ public:
 		}
 	};
 
-	void SetSystemSize(ParticleSystemSize size) {
+	void SetSystemSize(Size size) {
 		this->size = size;
 
 		float spawntimer = 0;
 		int particlesToSpawn = 0;
 
-		if (size == ParticleSystemSize::Small) {
+		if (size == Size::Small) {
 
 			// allocate host memory for particle data
 			if (hostParticleBuffer == nullptr) {
@@ -72,7 +73,7 @@ public:
 			}
 			computeContextDirty = false;
 		}
-		else if (size == ParticleSystemSize::Large) {
+		else if (size == Size::Large) {
 			if (hostParticleBuffer != nullptr) {
 				hostParticleBuffer.reset();
 			}
@@ -87,7 +88,7 @@ public:
 	// change to smart pointer and dynamically allocate only if running simulation on CPU
 	std::unique_ptr<ParticleSystemPL::ParticleGroup_small> hostParticleBuffer = nullptr;
 
-	ParticleSystemPL::ParticleSystemConfiguration configuration;
+	ParticleSystemConfiguration configuration;
 
 	float spawntimer = 0;
 	int particlesToSpawn = 0;

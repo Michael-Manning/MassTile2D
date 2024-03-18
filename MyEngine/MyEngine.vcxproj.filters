@@ -347,6 +347,9 @@
     <ClInclude Include="Reflection.h">
       <Filter>Source Files\vulkan\piplines</Filter>
     </ClInclude>
+    <ClInclude Include="ParticleStructures.h">
+      <Filter>Source Files\vulkan</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="notes.txt" />

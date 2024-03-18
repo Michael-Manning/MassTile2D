@@ -87,8 +87,8 @@ public:
 
 	void registerComponent(entityID id, TextRenderer component);
 
-	void registerComponent(entityID id, ParticleSystemRenderer::ParticleSystemSize systemSize);
-	void registerComponent(entityID id, ParticleSystemRenderer::ParticleSystemSize systemSize, ParticleSystemPL::ParticleSystemConfiguration& configuration);
+	void registerComponent(entityID id, ParticleSystemRenderer::Size systemSize);
+	void registerComponent(entityID id, ParticleSystemRenderer::Size systemSize, ParticleSystemConfiguration& configuration);
 
 	Rigidbody* registerComponent_Rigidbody(entityID id, const Collider& collider);
 

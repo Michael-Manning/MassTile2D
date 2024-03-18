@@ -16,7 +16,7 @@ using dbVertexAtribute = std::array<vk::VertexInputAttributeDescription, 2>;
 /// </summary>
 struct Vertex {
 	glm::vec2 pos;
-	glm::vec2 texCoord;
+	glm::vec2 UVCoord;
 
 	static vk::VertexInputBindingDescription getBindingDescription() {
 		vk::VertexInputBindingDescription bindingDescription{};
@@ -38,7 +38,7 @@ struct Vertex {
 		attributeDescriptions[1].binding = 0;
 		attributeDescriptions[1].location = 2;
 		attributeDescriptions[1].format = vk::Format::eR32G32Sfloat;
-		attributeDescriptions[1].offset = offsetof(Vertex, texCoord);
+		attributeDescriptions[1].offset = offsetof(Vertex, UVCoord);
 
 		return attributeDescriptions;
 	}
@@ -59,10 +59,16 @@ struct Vertex {
 
 
 constexpr std::array<Vertex, 4> quadVertices = {
-	Vertex{{-0.5f, -0.5f}, {1.0f, 0.0f}},
-	Vertex{{0.5f, -0.5f}, {0.0f, 0.0f}},
-	Vertex{{0.5f, 0.5f}, {0.0f, 1.0f}},
-	Vertex{{-0.5f, 0.5f}, {1.0f, 1.0f}}
+
+	Vertex{{-0.5f, -0.5f}, {0.0f, 0.0f}},
+	Vertex{{0.5f, -0.5f}, {1.0f, 0.0f}},
+	Vertex{{0.5f, 0.5f}, {1.0f, 1.0f}},
+	Vertex{{-0.5f, 0.5f}, {0.0f, 1.0f}}
+
+	//Vertex{{-0.5f, -0.5f}, {1.0f, 0.0f}},
+	//Vertex{{0.5f, -0.5f}, {0.0f, 0.0f}},
+	//Vertex{{0.5f, 0.5f}, {0.0f, 1.0f}},
+	//Vertex{{-0.5f, 0.5f}, {1.0f, 1.0f}}
 };
 
 constexpr std::array<uint16_t, 6> QuadIndices = {

@@ -11,10 +11,11 @@
 #include "Constants.h"
 #include "globalBufferDefinitions.h"
 #include "ParticleSystemPL.h"
+#include "ParticleStructures.h"
 #include "ParticleComputePL.h"
 
 namespace {
-
+		
 	inline float randomNormal() {
 		return static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
 	}
@@ -39,7 +40,7 @@ void ParticleComputePL::CreateComputePipeline(const std::vector<uint8_t>& compSr
 	// for pipeline barrier
 	this->particleDataBuffer = &particleDataBuffer;
 
-	engine->createMappedBuffer(sizeof(ParticleSystemPL::ParticleSystemConfiguration) * MAX_PARTICLE_SYSTEMS_LARGE, vk::BufferUsageFlagBits::eStorageBuffer, sysConfigDB);
+	engine->createMappedBuffer(sizeof(ParticleSystemConfiguration) * MAX_PARTICLE_SYSTEMS_LARGE, vk::BufferUsageFlagBits::eStorageBuffer, sysConfigDB);
 	//engine->createMappedBuffer(sizeof(device_particleConfiguration_ssbo), vk::BufferUsageFlagBits::eStorageBuffer, sysConfigDB);
 
 	//atomicCounterBuffer.size = sizeof(atomicCounter_ssbo);

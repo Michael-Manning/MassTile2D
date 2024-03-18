@@ -114,14 +114,40 @@ void Drawlist::AddText(fontID font, glm::vec2 position, glm::vec4 color, std::st
 	textInstanceIndex++;
 };
 
+
+namespace {
+	// reusable buffer for formatted strings. Grows if longer strings are used
+	std::vector<char> sprintBuffer;
+}
+
 void Drawlist::AddText(fontID font, glm::vec2 position, glm::vec4 color, const char* fmt, ...) {
 
-	char buffer[TEXTPL_maxTextLength];
+	//va_list args;
+	//va_start(args, fmt);
+	//vsnprintf(buffer, sizeof(buffer), fmt, args);
+	//va_end(args);
+
 
 	va_list args;
 	va_start(args, fmt);
-	vsnprintf(buffer, sizeof(buffer), fmt, args);
+
+	// First, we use vsnprintf with a size of 0 to calculate the required length of the formatted string
+	int requiredLength = vsnprintf(nullptr, 0, fmt, args) + 1; // +1 for null terminator
 	va_end(args);
 
-	AddText(font, position, color, std::string(buffer));
+	// Check if our buffer is large enough; if not, resize it
+	if (requiredLength > sprintBuffer.size()) {
+		sprintBuffer.resize(requiredLength);
+	}
+
+	// We need to start the va_list again since we've used it up above
+	va_start(args, fmt);
+	// Now we actually format the string into our buffer
+	vsnprintf(sprintBuffer.data(), sprintBuffer.size(), fmt, args);
+	va_end(args);
+
+	// Finally, call the overloaded AddText method with the formatted string
+	AddText(font, position, color, std::string(sprintBuffer.data()));
+
+	AddText(font, position, color, std::string(sprintBuffer.data()));
 };

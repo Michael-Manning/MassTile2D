@@ -12,6 +12,9 @@ pipeline.
 
 - set lightmap to full bright when not using tilemap or in editor prefab preview scene
 
+- should create a version of the text pipeline that packs quads tightly instead of in groups on max textlength.
+Currently the drawlist gets completely re uploaded every frame and well as the scene text renderers, so the potential performance 
+benefit of only reuploading changed text for scene text objects is not even being taken advantage of right now.
 
 - for none-moving light sources (lights fixed to the grid), implement this line algorithm for thoeretically faster shadows:
 https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm

@@ -1,25 +1,16 @@
 #pragma once
 
-
 #include <vector>
-#include <string>
-#include <memory>
 #include <stdint.h>
-#include <string>
-#include <utility>
 
 #include <vulkan/vulkan.hpp>
 #include <glm/glm.hpp>
 
-#include <vk_mem_alloc.h>
 #include <tracy/Tracy.hpp>
 
 #include "VKEngine.h"
 #include "pipeline.h"
 #include "typedefs.h"
-#include "Constants.h"
-#include "vertex.h"
-#include "vulkan_util.h"
 #include "globalBufferDefinitions.h"
 
 

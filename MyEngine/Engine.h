@@ -231,7 +231,7 @@ public:
 	void ImGuiFramebufferImage(framebufferID framebuffer, glm::ivec2 displaySize) {
 		auto fb = resourceManager->GetFramebuffer(framebuffer);
 		auto tex = fb->textures[rengine->currentFrame];
-		ImGui::Image((ImTextureID)tex->imTexture.value(), ImVec2(displaySize.x, displaySize.y));
+		ImGui::Image((ImTextureID)tex->imTexture.value(), ImVec2(displaySize.x, displaySize.y), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
 	};
 
 	Drawlist* GetScreenspaceDrawlist(int layer = 0) {

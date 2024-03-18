@@ -1,18 +1,13 @@
 #version 460
 
-#define TEXTPL_maxTextObjects 100
-#define TEXTPL_maxTextLength 128
-
-
 layout(location = 0) in vec2 inPosition;
 layout(location = 2) in vec2 inFragCoord;
 
-layout(set = 1, binding = 1) uniform CamerUBO {
+layout(set = 1, binding = 0) uniform CamerUBO {
    vec2 position;
 	float zoom;
 	float aspectRatio;
 } camera;
-
 
 struct charQuad {
 	vec2 uvmin;
@@ -20,9 +15,7 @@ struct charQuad {
 	vec2 scale;
 	vec2 position;
 };
-struct textObject {
-   charQuad quads[TEXTPL_maxTextLength];
-};
+
 struct textHeader {
    vec4 color;
    vec2 position;
@@ -31,18 +24,27 @@ struct textHeader {
    int _textureIndex;
    int textLength;
 };
-struct textIndexes_ssbo {
-   textHeader headers[TEXTPL_maxTextObjects];
-   textObject textData[TEXTPL_maxTextObjects];
+
+struct letterIndexInfo {
+   uint headerIndex;
+   uint letterIndex;
 };
 
-layout(std140, set = 1, binding = 0) readonly buffer ObjectInstaceBuffer{
-	textIndexes_ssbo ssboData;
+layout(std140, set = 1, binding = 1) readonly buffer headerInstaceBuffer{
+	textHeader headerData[];
+};
+
+layout(std430, set = 1, binding = 2) readonly buffer textDataInstaceBuffer{
+	charQuad textData[];
+};
+
+layout(std140, set = 1, binding = 3) readonly buffer indexInstaceBuffer{
+	letterIndexInfo indexData[];
 };
 
 layout(location = 1) out vec2 uv;
-layout(location = 2) out flat int obj_index;
-layout(location = 3) out flat int letter_index;
+layout(location = 2) out flat uint obj_index;
+layout(location = 3) out flat uint letter_index;
 
 mat4 translate(vec2 v) {
     return mat4(
@@ -73,17 +75,20 @@ mat4 rotate(float angle) {
 
 void main() {
 
-   int indexAccumulator = 0;
-   int i = 0;
-   for(; i < TEXTPL_maxTextObjects; i++){
-      if(gl_InstanceIndex < (indexAccumulator + ssboData.headers[i].textLength)){
-         break;
-      }
-      indexAccumulator += ssboData.headers[i].textLength;
-   }
+   // int indexAccumulator = 0;
+   // int i = 0;
+   // for(; i < TEXTPL_maxTextObjects; i++){
+   //    if(gl_InstanceIndex < (indexAccumulator + headerData[i].textLength)){
+   //       break;
+   //    }
+   //    indexAccumulator += headerData[i].textLength;
+   // }
 
-   obj_index = i;
-   letter_index = gl_InstanceIndex - indexAccumulator;
+   // obj_index = i;
+   // letter_index = gl_InstanceIndex - indexAccumulator;
+
+   obj_index = indexData[gl_InstanceIndex].headerIndex;
+   letter_index = indexData[gl_InstanceIndex].letterIndex;
 
    
    mat4 view = mat4(1.0);
@@ -91,15 +96,15 @@ void main() {
    view *= translate(camera.position);
 
    mat4 letterModel = mat4(1.0);
-   letterModel *= translate(ssboData.textData[i].quads[letter_index].position);
-   letterModel *= scale(ssboData.textData[i].quads[letter_index].scale );
+   letterModel *= translate(textData[letter_index].position);
+   letterModel *= scale(textData[letter_index].scale );
 
    mat4 objectModel = mat4(1.0);
-   objectModel *= translate(ssboData.headers[i].position);
-   objectModel *= rotate(ssboData.headers[i].rotation);
-   objectModel *= scale(ssboData.headers[i].scale);
+   objectModel *= translate(headerData[obj_index].position);
+   objectModel *= rotate(headerData[obj_index].rotation);
+   objectModel *= scale(headerData[obj_index].scale);
 
    gl_Position = view * objectModel * letterModel  * vec4(inPosition, 0.0, 1.0) * vec4(vec2( camera.aspectRatio, 1.0), 1.0, 1.0);
 
-   uv = vec2(inFragCoord.x, 1.0 - inFragCoord.y);
+   uv = vec2(inFragCoord.x, inFragCoord.y);
 }

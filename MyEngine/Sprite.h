@@ -103,7 +103,8 @@ public:
 
 			float uvw = 1.0f / xcount;
 			float uvh = 1.0f / ycount;
-			for (size_t i = 0; i < ycount; i++) {
+
+			for (int i = ycount - 1; i > -1; i--) {
 				for (size_t j = 0; j < xcount; j++) {
 					AtlasEntry entry;
 					entry.name = std::to_string((int)(i + j * xcount));
@@ -112,6 +113,16 @@ public:
 					sprite->atlas.push_back(entry);
 				}
 			}
+
+			//for (size_t i = 0; i < ycount; i++) {
+			//	for (size_t j = 0; j < xcount; j++) {
+			//		AtlasEntry entry;
+			//		entry.name = std::to_string((int)(i + j * xcount));
+			//		entry.uv_min = glm::vec2(j * uvw, i * uvh);
+			//		entry.uv_max = entry.uv_min + glm::vec2(uvw, uvh);
+			//		sprite->atlas.push_back(entry);
+			//	}
+			//}
 		}
 
 		return;

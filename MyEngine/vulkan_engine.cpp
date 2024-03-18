@@ -709,6 +709,8 @@ void VKEngine::genTexture(unsigned char* pixels, vk::DeviceSize imageSize, Filte
 Texture VKEngine::genTexture(const uint8_t* imageFileData, int dataLength, FilterMode filterMode, const ThreadContext& context) {
 	Texture tex = {};
 	{
+		stbi_set_flip_vertically_on_load(true);
+
 		int texChannels;
 		stbi_uc* pixels = stbi_load_from_memory(imageFileData, dataLength, &tex.resolutionX, &tex.resolutionY, &texChannels, STBI_rgb_alpha);
 		vk::DeviceSize imageSize = tex.resolutionX * tex.resolutionY * 4;
@@ -726,6 +728,9 @@ Texture VKEngine::genTexture(string imagePath, FilterMode filterMode, const Thre
 	assert(std::filesystem::exists(std::filesystem::path(imagePath)));
 
 	{
+
+		stbi_set_flip_vertically_on_load(true);
+
 		int texChannels;
 		stbi_uc* pixels = stbi_load(imagePath.c_str(), &tex.resolutionX, &tex.resolutionY, &texChannels, STBI_rgb_alpha);
 		vk::DeviceSize imageSize = tex.resolutionX * tex.resolutionY * 4;

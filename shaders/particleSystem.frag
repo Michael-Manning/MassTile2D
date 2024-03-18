@@ -3,7 +3,6 @@
 #define MAX_PARTICLES_SMALL 400
 #define MAX_PARTICLES_LARGE 400000
 
-#define MAX_PARTICLE_SYSTEMS_SMALL 10
 #define MAX_PARTICLE_SYSTEMS_LARGE 4
 
 struct particle {
@@ -23,7 +22,7 @@ struct ParticleGroup_large{
 };
 
 layout(std430, set = 0, binding = 0) readonly buffer ObjectInstaceBuffer_small{
-	ParticleGroup_small particleGroups_small[MAX_PARTICLE_SYSTEMS_SMALL];
+	ParticleGroup_small particleGroups_small[];
 };
 
 layout(std430, set = 0, binding = 2) buffer ObjectInstaceBuffer_large{

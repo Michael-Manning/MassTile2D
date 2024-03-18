@@ -27,7 +27,6 @@
 #include "globalBufferDefinitions.h"
 
 
-//class LightingComputePL :public  Pipeline {
 class LightingComputePL {
 
 public:
@@ -35,10 +34,7 @@ public:
 	LightingComputePL(VKEngine* engine, TileWorld* world) : engine(engine), world(world), pipelines(engine) {
 	}
 
-	//void createStagingBuffers();
-
 	void CreateComputePipeline(const std::vector<uint8_t>& computeSrc_firstPass, const std::vector<uint8_t>& computeSrc_secondPass, const std::vector<uint8_t>& computeSrc_thirdPass);
-	//void CreateComputePipeline(std::string computeSrc_firstPass, std::string computeSrc_secondPass);
 
 	void recordCommandBuffer(vk::CommandBuffer commandBuffer, int baseUpdates, int blurUpdates);
 
@@ -52,9 +48,6 @@ public:
 	}
 
 private:
-
-	/*vk::Pipeline firstStagePipeline;
-	vk::Pipeline secondStagePipeline;*/
 
 	VKEngine* engine;
 

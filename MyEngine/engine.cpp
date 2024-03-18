@@ -121,24 +121,23 @@ void Engine::initializeSceneGraphicsContext(SceneGraphicsContext& ctx, glm::ivec
 
 	{
 		
-		ctx.textPipeline = make_unique<TextPL>(rengine.get());
-		ctx.particlePipeline = make_unique<ParticleSystemPL>(rengine.get());
+		ctx.particlePipeline = make_unique<ParticleSystemPL>(rengine.get(), ctx.allocationSettings.ParticleSystem_MaxSmallSystems);
 		//ctx.trianglesPipelines = make_unique<ColoredTrianglesPL>(rengine.get());
 	}
 
-	ctx.textPipeline->createSSBOBuffer();
+	//ctx.textPipeline->createSSBOBuffer();
 
 	auto drawRenderpass = resourceManager->GetFramebuffer(ctx.drawFramebuffer)->renderpass;
 	auto lightingFramebuffer = resourceManager->GetFramebuffer(ctx.lightingFramebuffer);
 
 	{
-		ctx.colorPipeline = make_unique<ColoredQuadPL>(rengine.get());
+		ctx.colorPipeline = make_unique<ColoredQuadPL>(rengine.get(), ctx.allocationSettings.ColoredQuad_MaxInstances);
 		PipelineParameters prm;
 		assetManager->LoadShaderFile("coloredQuad_vert.spv", prm.vertexSrc);
 		assetManager->LoadShaderFile("coloredQuad_frag.spv", prm.fragmentSrc);
 		prm.renderTarget = drawRenderpass;
 		prm.cameraDB = ctx.cameraBuffers;
-		ctx.colorPipeline->CreateGraphicsPipeline(prm, ctx.allocationSettings.ColoredQuad_MaxInstances);
+		ctx.colorPipeline->CreateGraphicsPipeline(prm);
 	}
 	//{
 	//	vector<uint8_t> vert, frag;
@@ -147,14 +146,14 @@ void Engine::initializeSceneGraphicsContext(SceneGraphicsContext& ctx, glm::ivec
 	//	ctx.trianglesPipelines->CreateGraphicsPipeline(vert, frag, drawRenderpass, ctx.cameraBuffers, true);
 	//}
 	{
-		ctx.texturePipeline = make_unique<TexturedQuadPL>(rengine.get());
+		ctx.texturePipeline = make_unique<TexturedQuadPL>(rengine.get(), ctx.allocationSettings.TexturedQuad_MaxInstances);
 		PipelineParameters prm;
 		assetManager->LoadShaderFile("texture_vert.spv", prm.vertexSrc);
 		assetManager->LoadShaderFile("texture_frag.spv", prm.fragmentSrc);
 		prm.renderTarget = drawRenderpass;
 		prm.cameraDB = ctx.cameraBuffers;
 		std::array<int, 2> lightmapTextures = { lightingFramebuffer->textureIDs[0], lightingFramebuffer->textureIDs[1] };
-		ctx.texturePipeline->CreateGraphicsPipeline(prm, &GlobalTextureDesc, lightmapTextures, ctx.allocationSettings.TexturedQuad_MaxInstances);
+		ctx.texturePipeline->CreateGraphicsPipeline(prm, &GlobalTextureDesc, lightmapTextures);
 	}
 
 	if (ctx.allocationSettings.AllocateTileWorld) {
@@ -185,14 +184,18 @@ void Engine::initializeSceneGraphicsContext(SceneGraphicsContext& ctx, glm::ivec
 			assetManager->LoadShaderFile("tilemap_frag.spv", prm.fragmentSrc);
 			prm.renderTarget = drawRenderpass;
 			prm.cameraDB = ctx.cameraBuffers;
+			prm.flipFaces = false;
 			ctx.tilemapPipeline->CreateGraphicsPipeline(prm, &GlobalTextureDesc);
 		}
 	}
 	{
-		vector<uint8_t> vert, frag;
-		assetManager->LoadShaderFile("text_vert.spv", vert);
-		assetManager->LoadShaderFile("text_frag.spv", frag);
-		ctx.textPipeline->CreateGraphicsPipeline(vert, frag, drawRenderpass, &GlobalTextureDesc, ctx.cameraBuffers);
+		ctx.textPipeline = make_unique<TextPL>(rengine.get(), ctx.allocationSettings.Text_MaxStrings, ctx.allocationSettings.Text_MaxStringLength);
+		PipelineParameters prm;
+		assetManager->LoadShaderFile("text_vert.spv", prm.vertexSrc);
+		assetManager->LoadShaderFile("text_frag.spv", prm.fragmentSrc);
+		prm.renderTarget = drawRenderpass;
+		prm.cameraDB = ctx.cameraBuffers;
+		ctx.textPipeline->CreateGraphicsPipeline(prm, &GlobalTextureDesc);
 	}
 	{
 		PipelineParameters prm;
@@ -212,37 +215,38 @@ Engine::DrawlistGraphicsContext Engine::createDrawlistGraphicsContext(DrawlistAl
 	DrawlistGraphicsContext ctx = DrawlistGraphicsContext(allocationSettings);
 
 	{
-		ctx.coloredQuadPipeline = make_unique<ColoredQuadPL>(rengine.get());
+		ctx.coloredQuadPipeline = make_unique<ColoredQuadPL>(rengine.get(), allocationSettings.ColoredQuad_MaxInstances);
 		PipelineParameters prm;
 		assetManager->LoadShaderFile("coloredQuad_vert.spv", prm.vertexSrc);
 		assetManager->LoadShaderFile("coloredQuad_frag.spv", prm.fragmentSrc);
 		prm.renderTarget = rengine->swapchainRenderPass;
 		prm.cameraDB = cameraBuffers;
-		prm.flipFaces = true;
-		ctx.coloredQuadPipeline->CreateGraphicsPipeline(prm, allocationSettings.ColoredQuad_MaxInstances);
+		//prm.flipFaces = true;
+		ctx.coloredQuadPipeline->CreateGraphicsPipeline(prm);
 
 	}
 
 	{
-		ctx.texturedQuadPipeline = make_unique<TexturedQuadPL>(rengine.get());
+		ctx.texturedQuadPipeline = make_unique<TexturedQuadPL>(rengine.get(), allocationSettings.TexturedQuad_MaxInstances);
 		PipelineParameters prm;
 		assetManager->LoadShaderFile("screenSpaceTexture_vert.spv", prm.vertexSrc);
 		assetManager->LoadShaderFile("screenSpaceTexture_frag.spv", prm.fragmentSrc);
 		prm.renderTarget = rengine->swapchainRenderPass;
 		prm.cameraDB = cameraBuffers;
-		prm.flipFaces = true;
+		prm.flipFaces = false;
 		std::array<int, 2> unused = { 0, 0 };
-		ctx.texturedQuadPipeline->CreateGraphicsPipeline(prm, &GlobalTextureDesc, unused, allocationSettings.TexturedQuad_MaxInstances);
+		ctx.texturedQuadPipeline->CreateGraphicsPipeline(prm, &GlobalTextureDesc, unused);
 	}
 
 	{
-		ctx.textPipeline = make_unique<TextPL>(rengine.get());
-		ctx.textPipeline->createSSBOBuffer();
-
-		vector<uint8_t> vert, frag;
-		assetManager->LoadShaderFile("screenSpaceText_vert.spv", vert);
-		assetManager->LoadShaderFile("screenSpaceText_frag.spv", frag);
-		ctx.textPipeline->CreateGraphicsPipeline(vert, frag, rengine->swapchainRenderPass, &GlobalTextureDesc, cameraBuffers, true);
+		ctx.textPipeline = make_unique<TextPL>(rengine.get(), allocationSettings.Text_MaxStrings, allocationSettings.Text_MaxStringLength);
+		PipelineParameters prm;
+		assetManager->LoadShaderFile("text_vert.spv", prm.vertexSrc);
+		assetManager->LoadShaderFile("text_frag.spv", prm.fragmentSrc);
+		prm.renderTarget = rengine->swapchainRenderPass;
+		prm.cameraDB = cameraBuffers;
+		//prm.flipFaces = true;
+		ctx.textPipeline->CreateGraphicsPipeline(prm, &GlobalTextureDesc);
 	}
 
 	return ctx;
@@ -295,7 +299,7 @@ void Engine::Start(const VideoSettings& initialSettings, AssetManager::AssetPath
 		// allocated dedicated device memory for compute driven particle systems
 		{
 			// todo: use less ambigous size. ParticleGroup_larg is not labled as being device only
-			rengine->CreateDeviceOnlyStorageBuffer(sizeof(ParticleSystemPL::particle) * MAX_PARTICLES_LARGE * MAX_PARTICLE_SYSTEMS_LARGE, false, computerParticleBuffer);
+			rengine->CreateDeviceOnlyStorageBuffer(sizeof(Particle) * MAX_PARTICLES_LARGE * MAX_PARTICLE_SYSTEMS_LARGE, false, computerParticleBuffer);
 
 			//computerParticleBuffer.size = sizeof(ParticleSystemPL::device_particle_ssbo);
 
@@ -511,7 +515,7 @@ void Engine::recordSceneContextGraphics(const SceneGraphicsContext& ctx, std::sh
 		{
 			const auto& entity = scene->sceneData.entities.at(entID);
 
-			if (renderer.size == ParticleSystemRenderer::ParticleSystemSize::Small) {
+			if (renderer.size == ParticleSystemRenderer::Size::Small) {
 
 				if (entity.HasParent()) {
 					Transform global = entity.GetGlobalTransform();
@@ -527,7 +531,7 @@ void Engine::recordSceneContextGraphics(const SceneGraphicsContext& ctx, std::sh
 				systemSizes.push_back(0);
 				particleCounts.push_back(renderer.configuration.particleCount);
 			}
-			else if (renderer.size == ParticleSystemRenderer::ParticleSystemSize::Large) {
+			else if (renderer.size == ParticleSystemRenderer::Size::Large) {
 				assert(renderer.token != nullptr);
 				indexes.push_back(renderer.token->index);
 				systemSizes.push_back(1);
@@ -572,7 +576,7 @@ void Engine::recordSceneContextGraphics(const SceneGraphicsContext& ctx, std::sh
 
 				TextPL::textHeader header;
 				header.color = r.color;
-				header.textLength = glm::min(TEXTPL_maxTextLength, (int)r.quads.size());
+				header.textLength = glm::min(ctx.allocationSettings.Text_MaxStringLength, (uint32_t)r.quads.size());
 				header._textureIndex = sprite->textureID;
 
 				if (entity.HasParent()) {
@@ -588,10 +592,10 @@ void Engine::recordSceneContextGraphics(const SceneGraphicsContext& ctx, std::sh
 				}
 
 				//TODO: could potentially assume this data is already here if the renderer is not dirty ?
-				TextPL::textObject textData;
-				std::copy(r.quads.begin(), r.quads.end(), textData.quads);
+				//TextPL::textObject textData;
+				//std::copy(r.quads.begin(), r.quads.end(), textData.quads);
 
-				ctx.textPipeline->UploadTextData(rengine->currentFrame, i, header, r.font, textData);
+				ctx.textPipeline->UploadTextData(rengine->currentFrame, i, header, r.font, r.quads);
 				i++;
 			}
 			ctx.textPipeline->recordCommandBuffer(cmdBuffer);
@@ -619,8 +623,10 @@ void Engine::recordDrawlistContextGraphics(const DrawlistGraphicsContext& ctx, D
 			float w = fb->extents[rengine->currentFrame].width;
 			float h = fb->extents[rengine->currentFrame].height;
 
-			buffer[i].uvMin = vec2(0);
-			buffer[i].uvMax = vec2(1);
+			//buffer[i].uvMin = vec2(0);
+			//buffer[i].uvMax = vec2(1);
+			buffer[i].uvMin = vec2(0, 1);
+			buffer[i].uvMax = vec2(1, 0);
 			buffer[i].translation = item.pos;
 			buffer[i].scale = glm::vec2((w / h) * item.height, item.height);
 			buffer[i].rotation = item.rotation;
@@ -653,14 +659,16 @@ void Engine::recordDrawlistContextGraphics(const DrawlistGraphicsContext& ctx, D
 				Font* f = assetManager->GetFont(item.font);
 				auto sprite = assetManager->GetSprite(f->atlas);
 
-				TextPL::textObject textData;
-
-				CalculateQuads(f, item.text, textData.quads);
+				//TextPL::textObject textData;
+				vector<charQuad> quads;
+				quads.resize(item.text.length());
+				//CalculateQuads(f, item.text, textData.quads);
+				CalculateQuads(f, item.text, quads.data());
 
 				item.header.scale = vec2(f->fontHeight * 2) * item.scaleFactor;
 				item.header._textureIndex = sprite->textureID;
 
-				ctx.textPipeline->UploadTextData(rengine->currentFrame, memSlot++, item.header, item.font, textData);
+				ctx.textPipeline->UploadTextData(rengine->currentFrame, memSlot++, item.header, item.font, quads);
 			}
 		}
 		ctx.textPipeline->recordCommandBuffer(cmdBuffer);
@@ -755,7 +763,7 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 				for (auto& [entID, renderer] : job.scene->sceneData.particleSystemRenderers) {
 					if (renderer.computeContextDirty) {
 
-						if (renderer.size == ParticleSystemRenderer::ParticleSystemSize::Large && renderer.token == nullptr) {
+						if (renderer.size == ParticleSystemRenderer::Size::Large && renderer.token == nullptr) {
 							int selectedIndex = -1;
 							for (size_t i = 0; i < particleSystemResourceTokens.size(); i++)
 							{
@@ -772,7 +780,7 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 						}
 					}
 
-					if (renderer.size == ParticleSystemRenderer::ParticleSystemSize::Large) {
+					if (renderer.size == ParticleSystemRenderer::Size::Large) {
 
 						assert(renderer.token != nullptr);
 
@@ -821,7 +829,8 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 					renderer.computeContextDirty = false;
 				}
 			}
-			particleComputePipeline->RecordCommandBuffer(computeCmdBuffer, deltaTime, dispachInfos);
+			if(dispachInfos.size() > 0)
+				particleComputePipeline->RecordCommandBuffer(computeCmdBuffer, deltaTime, dispachInfos);
 		}
 
 		TracyVkCollect(rengine->tracyComputeContexts[rengine->currentFrame], rengine->computeCommandBuffers[rengine->currentFrame]);
@@ -983,9 +992,10 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 	{
 		vk::Viewport viewport;
 		viewport.x = 0.0f;
-		viewport.y = 0.0f;
+		viewport.y = static_cast<float>(rengine->swapChainExtent.height);
+		//viewport.y = 800.0f;
 		viewport.width = static_cast<float>(rengine->swapChainExtent.width);
-		viewport.height = static_cast<float>(rengine->swapChainExtent.height);
+		viewport.height = -static_cast<float>(rengine->swapChainExtent.height);
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
 		cmdBuffer.setViewport(0, 1, &viewport);

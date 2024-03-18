@@ -36,7 +36,7 @@ namespace {
 void ParticleSystemRenderer::runSimulation(float deltaTime, glm::vec2 spawnOrigin) {
 
 	// only small size system are for host simulation
-	assert(size == ParticleSystemSize::Small);
+	assert(size == Size::Small);
 
 	const auto& con = configuration;
 	auto& ps = hostParticleBuffer->particles;
@@ -99,13 +99,13 @@ nlohmann::json ParticleSystemRenderer::serializeJson(entityID ID) const {
 	return j;
 }
 
-ParticleSystemRenderer::ParticleSystemRenderer(nlohmann::json& j) {
+ParticleSystemRenderer::ParticleSystemRenderer(nlohmann::json& j) : configuration(j["configuration"]){
 	size = j["size"];
-	ParticleSystemPL::ParticleSystemConfiguration::deserializeJson(j["configuration"], &configuration);
+	//ParticleSystemPL::ParticleSystemConfiguration::deserializeJson(j["configuration"], &configuration);
 	SetSystemSize(size);
 }
-ParticleSystemRenderer::ParticleSystemRenderer(const AssetPack::ParticleSystemRenderer* p) {
-	size = static_cast<ParticleSystemSize>(p->size());
-	ParticleSystemPL::ParticleSystemConfiguration::deserializeFlatbuffers(&p->configuration(), &configuration);
+ParticleSystemRenderer::ParticleSystemRenderer(const AssetPack::ParticleSystemRenderer* p) : configuration(&p->configuration()) {
+	size = static_cast<Size>(p->size());
+	//ParticleSystemConfiguration::deserializeFlatbuffers(&p->configuration(), &configuration);
 	SetSystemSize(size);
 }

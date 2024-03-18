@@ -33,10 +33,10 @@ void main() {
    vec2 umax = ssboBuffer.ssboData[instance_index].uvMax;
 
    float xscale = (umax.x - umin.x);
-   float sampleX = umin.x + xscale * (1.0 - uv.x);
+   float sampleX = umin.x + xscale * (uv.x);
 
    float yscale = (umax.y - umin.y);
-   float sampleY = umin.y + yscale * (1.0 -uv.y);
+   float sampleY = umin.y + yscale * (uv.y);
 
    outColor = texture(texSampler[ssboBuffer.ssboData[instance_index].index], vec2( sampleX, sampleY));
 }

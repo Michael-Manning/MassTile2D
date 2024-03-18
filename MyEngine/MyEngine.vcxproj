@@ -412,6 +412,7 @@
     <ClInclude Include="Input.h" />
     <ClInclude Include="LightingComputePL.h" />
     <ClInclude Include="ParticleComputePL.h" />
+    <ClInclude Include="ParticleStructures.h" />
     <ClInclude Include="ParticleSystemPL.h" />
     <ClInclude Include="ParticleSystemRenderer.h" />
     <ClInclude Include="pipelines.h" />

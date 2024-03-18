@@ -1,39 +1,21 @@
 #pragma once
 
 #include <vector>
-#include <string>
-#include <memory>
 #include <stdint.h>
-#include <unordered_map>
-#include <set>
-#include <string>
-#include <utility>
 
 #include <vulkan/vulkan.hpp>
 #include <glm/glm.hpp>
 
-#include <vk_mem_alloc.h>
-
-#include "texture.h"
 #include "VKEngine.h"
 #include "pipeline.h"
 #include "typedefs.h"
 #include "Constants.h"
 #include "Font.h"
-#include "vulkan_util.h"
-#include "BindingManager.h"
 #include "globalBufferDefinitions.h"
+#include "GraphicsTemplate.h"
 
-constexpr int TEXTPL_maxTextObjects = 100;
-constexpr int TEXTPL_maxTextLength = 128;
-
-class TextPL :public  Pipeline {
+class TextPL {
 public:
-
-	struct textObject {
-		charQuad quads[TEXTPL_maxTextLength];
-	};
-	static_assert(sizeof(textObject) % 16 == 0);
 
 	struct textHeader {
 		glm::vec4 color;
@@ -47,36 +29,43 @@ public:
 	};
 	static_assert(sizeof(textHeader) % 16 == 0);
 
-	TextPL(VKEngine* engine) :
-		Pipeline(engine) {
-	}
+	TextPL(VKEngine* engine, int maxObjects, int maxStringLength) 
+		: pipeline(engine), engine(engine), maxObjects(maxObjects), maxStringLength(maxStringLength) {}
 
-	void CreateGraphicsPipeline(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc, vk::RenderPass& renderTarget, GlobalImageDescriptor* textureDescriptor, MappedDoubleBuffer<coordinateTransformUBO_s>& cameradb, bool flipFaces = false);
-	
-	void createSSBOBuffer();
+	void CreateGraphicsPipeline(const PipelineParameters& params, GlobalImageDescriptor* textureDescriptor);
+
 	void recordCommandBuffer(vk::CommandBuffer commandBuffer);
 
 	void ClearTextData(int frame) {
-		for (size_t i = 0; i < TEXTPL_maxTextObjects; i++)
-			textDataDB.buffersMapped[frame]->headers[i].textLength = 0;
+		for (size_t i = 0; i < maxObjects; i++)
+			textHeadersDB.buffersMapped[frame][i].textLength = 0;
 	}
 
 	// TODO replace with function to get pointers to a given memory slot for direct memory access to avoid copy
-	void UploadTextData(int frame, int memorySlot, textHeader& header, fontID font, textObject& text) {
+	void UploadTextData(int frame, int memorySlot, textHeader& header, fontID font, std::vector<charQuad>& quads) {
 
 		// transfers memory to GPU 
-		textDataDB.buffersMapped[frame]->headers[memorySlot] = header;
-		textDataDB.buffersMapped[frame]->textData[memorySlot] = text;
+		textHeadersDB.buffersMapped[frame][memorySlot] = header;
+		std::copy(quads.begin(), quads.end(), textQuadsDB.buffersMapped[frame] + memorySlot * maxStringLength);
 	};
 
+	const int maxObjects;
+	const int maxStringLength;
 
 private:
-	GlobalImageDescriptor* textureDescriptor = nullptr;
 
-	struct textIndexes_ssbo {
-		textHeader headers[TEXTPL_maxTextObjects];
-		textObject textData[TEXTPL_maxTextObjects];
+	struct alignas(16) letterIndexInfo {
+		uint32_t headerIndex;
+		uint32_t letterIndex;
 	};
 
-	MappedDoubleBuffer<textIndexes_ssbo> textDataDB;
+	GlobalImageDescriptor* textureDescriptor = nullptr;
+
+	VKEngine* engine;
+
+	GraphicsTemplate pipeline;
+
+	MappedDoubleBuffer<textHeader> textHeadersDB;
+	MappedDoubleBuffer<charQuad> textQuadsDB;
+	MappedDoubleBuffer<letterIndexInfo> letterIndexDB;
 };

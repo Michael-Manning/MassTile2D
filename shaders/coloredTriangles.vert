@@ -48,6 +48,6 @@ void main() {
 
     gl_Position = view * vec4(inPosition, 0.0, 1.0) * vec4(camera.aspectRatio, 1.0, 1.0, 1.0);
     
-    uv = vec2(inFragCoord.x, 1.0 - inFragCoord.y);
+    uv = vec2(inFragCoord.x, inFragCoord.y);
     instance_index = gl_VertexIndex / 3;
 }

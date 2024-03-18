@@ -34,7 +34,7 @@
 
 #define ENGINE_VERSION VK_MAKE_VERSION(1, 2, 0)
 #define ENGINE_API_VERSION VK_API_VERSION_1_2
-#define ENGINE_NAME "MichaelEngineV1"
+#define ENGINE_NAME "MassTile2DV1"
 #define APPLICATION_NAME "MyGame" 
 
 using namespace glm;
