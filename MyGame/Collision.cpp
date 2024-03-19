@@ -118,8 +118,8 @@ std::vector<glm::vec2> CreateTriangleFan(float startAngle, float endAngle, int c
 		};
 
 		vertices.push_back(origin);
-		vertices.push_back(coolPoint2);
 		vertices.push_back(coolPoint);
+		vertices.push_back(coolPoint2);
 
 		coolPoint = coolPoint2;
 	}

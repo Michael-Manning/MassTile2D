@@ -1,5 +1,7 @@
 #version 450
 
+#define verticesPerTriangle 3
+
 layout(binding = 0) uniform CamerUBO {
     vec2 position;
     float zoom;
@@ -8,8 +10,6 @@ layout(binding = 0) uniform CamerUBO {
 
 layout(location = 0) in vec2 inPosition;
 layout(location = 2) in vec2 inFragCoord;
-
-layout(location = 1) out vec2 uv;
 
 layout(location = 2) out flat int instance_index;
 
@@ -48,6 +48,5 @@ void main() {
 
     gl_Position = view * vec4(inPosition, 0.0, 1.0) * vec4(camera.aspectRatio, 1.0, 1.0, 1.0);
     
-    uv = vec2(inFragCoord.x, inFragCoord.y);
-    instance_index = gl_VertexIndex / 3;
+    instance_index = gl_VertexIndex / verticesPerTriangle;
 }

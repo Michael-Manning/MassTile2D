@@ -10,15 +10,12 @@
 
 #include <vulkan/vulkan.hpp>
 #include <glm/glm.hpp>
-#include <vk_mem_alloc.h>
 
 #include "VKEngine.h"
 #include "pipeline.h"
 #include "typedefs.h"
 #include "Constants.h"
 #include "globalBufferDefinitions.h"
-
-constexpr int ColoredTrianglesPL_MAX_OBJECTS = 10000;
 
 class ColoredTrianglesPL {
 public:
@@ -28,11 +25,12 @@ public:
 	};
 	static_assert(sizeof(InstanceBufferData) % 16 == 0);
 
-	ColoredTrianglesPL(VKEngine* engine) : pipeline(engine), engine(engine) {
+	ColoredTrianglesPL(VKEngine* engine, int maxTriangles) : pipeline(engine), engine(engine), maxTriangles(maxTriangles) {
 	}
 
 	void CreateGraphicsPipeline(PipelineParameters& params);
-	void recordCommandBuffer(vk::CommandBuffer commandBuffer, int vertexCount);
+	void recordCommandBuffer(vk::CommandBuffer commandBuffer, int triangleCount);
+
 	Vertex* GetVertexMappedBuffer(int frame) {
 		return vertexDB.buffersMapped[frame];
 	}
@@ -41,6 +39,8 @@ public:
 	}
 
 	const static int verticesPerMesh = 3;
+
+	const int maxTriangles;
 private:
 	GraphicsTemplate pipeline;
 
@@ -48,5 +48,4 @@ private:
 	MappedDoubleBuffer<InstanceBufferData> instanceDB;
 
 	VKEngine* engine;
-
 };

@@ -17,7 +17,7 @@
 #include <vulkan/vulkan.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <vk_mem_alloc.h>
+#include <vma/vk_mem_alloc.h>
 #include <stb_image.h>
 
 #include "VKEngine.h"
@@ -112,7 +112,8 @@ void DescriptorManager::buidDBDescriptorSet(vk::DescriptorSetLayout& layout, std
 	allocInfo.descriptorSetCount = static_cast<uint32_t>(FRAMES_IN_FLIGHT);
 	allocInfo.pSetLayouts = layouts.data();
 
-	engine->devContext.device.allocateDescriptorSets(&allocInfo, sets.data());
+	auto res = engine->devContext.device.allocateDescriptorSets(&allocInfo, sets.data());
+	assert(res != vk::Result::eErrorOutOfPoolMemory);
 }
 
 void DescriptorManager::buildDescriptorSets() {

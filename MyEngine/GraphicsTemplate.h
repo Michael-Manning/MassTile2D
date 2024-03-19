@@ -37,7 +37,6 @@ public:
 
 
 private:
-	vk::Pipeline compPipeline;
 	DescriptorManager descriptorManager;
 	std::vector<GlobalDescriptorBinding> globalDescriptors;
 	PushConstantInfo pushInfo;

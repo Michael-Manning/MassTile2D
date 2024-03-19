@@ -14,7 +14,6 @@
 #include <assetPack/SceneEntities_generated.h>
 #include <assetPack/WorldData_generated.h>
 
-#define GLM_ENABLE_EXPERIMENTAL
 #include "glm/gtx/hash.hpp"
 
 #include <robin_hood.h>

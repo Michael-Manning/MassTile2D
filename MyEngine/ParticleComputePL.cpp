@@ -3,8 +3,6 @@
 #include <vulkan/vulkan.hpp>
 #include <glm/glm.hpp>
 
-#include <vk_mem_alloc.h>
-
 #include "VKEngine.h"
 #include "pipeline.h"
 #include "typedefs.h"

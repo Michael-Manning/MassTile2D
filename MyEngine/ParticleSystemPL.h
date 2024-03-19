@@ -11,7 +11,6 @@
 
 #include <vulkan/vulkan.hpp>
 #include <glm/glm.hpp>
-#include <vk_mem_alloc.h>
 #include <nlohmann/json.hpp>
 
 #include <assetPack/common_generated.h>

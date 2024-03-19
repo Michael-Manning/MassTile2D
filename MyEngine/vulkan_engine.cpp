@@ -23,7 +23,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include <vk_mem_alloc.h>
+#include <vma/vk_mem_alloc.h>
 #include <tracy/Tracy.hpp>
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -421,13 +421,13 @@ void VKEngine::createDescriptorPool() {
 		{ vk::DescriptorType::eCombinedImageSampler, static_cast<uint32_t>(FRAMES_IN_FLIGHT) * 10 * 2 + 2 },
 		{ vk::DescriptorType::eUniformBuffer, 50 },
 		{ vk::DescriptorType::eUniformBufferDynamic, 10 + 2 },
-		{ vk::DescriptorType::eStorageBuffer, 30 }
+		{ vk::DescriptorType::eStorageBuffer, 50 }
 	};
 
 	vk::DescriptorPoolCreateInfo poolInfo;
 	poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
 	poolInfo.pPoolSizes = poolSizes.data();
-	poolInfo.maxSets = static_cast<uint32_t>(FRAMES_IN_FLIGHT) * pipelineCount + 50;
+	poolInfo.maxSets = static_cast<uint32_t>(FRAMES_IN_FLIGHT) * pipelineCount + 100;
 	poolInfo.flags = vk::DescriptorPoolCreateFlagBits::eUpdateAfterBind;
 
 	descriptorPool = devContext.device.createDescriptorPool(poolInfo);

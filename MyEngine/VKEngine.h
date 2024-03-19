@@ -13,7 +13,7 @@
 
 #include <vulkan/vulkan.hpp>
 #include <glm/glm.hpp>
-#include <vk_mem_alloc.h>
+#include <vma/vk_mem_alloc.h>
 #include <tracy/TracyVulkan.hpp>
 
 #include "texture.h"

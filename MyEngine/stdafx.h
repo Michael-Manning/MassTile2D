@@ -23,7 +23,7 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_vulkan.h>
 
-#include <vk_mem_alloc.h>
+#include <vma/vk_mem_alloc.h>
 
 #include "texture.h"
 #include "VKEngine.h"

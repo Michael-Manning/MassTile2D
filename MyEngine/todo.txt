@@ -1,14 +1,9 @@
 
 Near roadmap:
-- switch away from using hardcoded buffer sizes and use memory allocation settings in pipeline classes
-- split up text pipeline ssbo structure into two structures so that the text data can have different allocation sizes per instance of the 
+
 pipeline.
-- change large particle buffer to not be a fixed size
-- use pipeline params for all pipeline
 - replace screenspace versions of pipelines with specialization constants
 - bring back up triangle pipeline
-- either flip screen space coordinates Y, or find way to unify UV coordinates accross all pipelines
-- glm aligned types
 
 - set lightmap to full bright when not using tilemap or in editor prefab preview scene
 
@@ -21,23 +16,10 @@ https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm
 
 - only trigger base lighting updates on setTile() when setting the tile from air to not air or vice versa (still need blur to overwrite forground lighting bits invalidated by buffer copy)
 
-- if only one chunk of tile data can be updated per frame, it's possible for 2 chunks to be dirty in one frame, where both get lighting updates,
-but one of the lighting updates performs on out of date tile data as the second chunk tile data hasn't uploaded yet
+- support rendering lightmap at half resolution
 
 - could triple buffer drawlist data to allow direct gpu map insertion and avoid copy when recording commandbuffers. Oy maybe manually flushing
 memory ranges could also allow this with current 2 buffers without breaking synchronization?
-
-Create serializable "map/grid entity" structure which represents an entity placed on top of the tile world which can be serialized.
-Should be stored within a map keyed by each check for update/draw culling and instantiate a prefab on load. Start with a chest/storage entity
-
----- Test:
-- entity deleation
-- nested prefab with all component types
-- full serialization setup and publish build
-
-
-- change indexing in text pipeline to include an map of instance index to textObject index to avoid looping and nonlinear complexity
-with increasing text object counts
 
 -investigate or measure mouse latency. At high framerates, work computer has imperceptible mouse latency, while home computer it is percetpable
 
@@ -48,32 +30,15 @@ with increasing text object counts
 - switch all deserialization functions to constructors for uniformity, simplicity, as well as slight performance boost as components could all
 be emplaced into maps instead of constructed, coppied, and destructed;
 
-
-- editor issue with selectables when entities have the same name. Problem when instantiating prefabs with same name as existing entity
-
-- component deletion from editor
-
-- rework body collider relationship. Remove use of shared pointer
-
-- drag prefab to instantiate
-
 - only enable used device features instead of enabling everything for the sake of bindless textures
 
 - support downscaled resolution (run full screen at lower resolution than monitor resolution)
 
 - run main loop in a different thread so game logic doesn't freeze whem moving window
 
-- add deletion of components to editor
-
-- fix getkeyup
-
 - allow mapped buffer creation with explicit flushing of memory ranges
 
 - replace file path string concatenation all over engine with filesystem api (to elemenate having to check for trailing slahes on directory paths)
-
-- Inter-bahaviour entity accessor
-
-- general behaviour scene access for camera and common data needs
 
 - player buffer jump input
 
@@ -83,8 +48,6 @@ could have some sort of optional set on an entity listing what components it's u
 
 - replace upload text data function with zero copy method for uploading data
 
-- sprv reflect
-
 - create default font
 
 - check if the the swapchain is out of date earlier in the engine loop so that we can potentially bail out of submitting work which will not
@@ -93,11 +56,6 @@ be displayed which should reduce latency
 - create bulk generate texture function to avoid having to recreate staging buffers and synchronize the graphics queue for every single texture creation
 
 - query maxComputeWorkGroupCount, maxComputeWorkGroupInvocations, and maxComputeWorkGroupSize to determine max work group size
-
-- for mapped double buffers (instancing, lighting), populate data directly into void pointer instead constructing an array and calling memcpy
-
-- could look into cachine pointers in components, such as caching the texture index binding directly to the sprite or sprite renderer to skip map lookups
-on entities which are drawn for multiple frames(basically all of them)
 
 - disallow rigidbodies on child entities
 
@@ -113,7 +71,7 @@ for anything, and the class is just used as a clone template
 
 - descriptor pool sizes
 
-- colored quad/triangles could use a different vertex buffer which doesn't calculate UVs
+- colored quad/triangles could use a different vertex type which doesn't include UV data
 
 ---- features:
 

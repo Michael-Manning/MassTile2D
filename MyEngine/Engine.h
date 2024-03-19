@@ -79,9 +79,9 @@ private:
 
 		std::unique_ptr<LightingComputePL> lightingPipeline = nullptr;
 
+		std::unique_ptr<ColoredQuadPL> coloredQuadPipeline = nullptr;
 		std::unique_ptr<TilemapPL> tilemapPipeline = nullptr;
 		std::unique_ptr<TilemapLightRasterPL> tilemapLightRasterPipeline = nullptr;
-		std::unique_ptr<ColoredQuadPL> colorPipeline = nullptr;
 		std::unique_ptr<TexturedQuadPL> texturePipeline = nullptr;
 		std::unique_ptr<TextPL> textPipeline = nullptr;
 		std::unique_ptr<ParticleSystemPL> particlePipeline = nullptr;

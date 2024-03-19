@@ -54,10 +54,6 @@
 	   "platform": "x64"  
 	},
 	{
-	   "name": "fast-cpp-csv-parser",
-	   "platform": "x64"
-	},
-	{
 	   "name": "spirv-reflect",
 	   "platform": "x64"
 	}

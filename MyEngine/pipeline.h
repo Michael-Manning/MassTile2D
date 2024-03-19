@@ -9,8 +9,6 @@
 #include <vulkan/vulkan.hpp>
 #include <glm/glm.hpp>
 
-#include <vk_mem_alloc.h>
-
 #include "texture.h"
 #include "VKEngine.h"
 #include "descriptorManager.h"
@@ -40,6 +38,11 @@ struct BufferBinding {
 	{}
 };
 
+struct ShaderConstantBinding {
+	const int constantID;
+	size_t size;
+};
+
 struct PipelineParameters {
 	std::vector<uint8_t> vertexSrc;
 	std::vector<uint8_t> fragmentSrc;
@@ -56,9 +59,6 @@ struct PipelineResourceConfig {
 
 	// populate to overide default
 	std::optional< vk::PipelineColorBlendAttachmentState> colorBlendAttachment;
-
-	// deprecate
-	//PushConstantInfo pushInfo = {};
 };
 
 // keyed by set number

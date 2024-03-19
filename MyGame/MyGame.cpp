@@ -704,16 +704,15 @@ int main() {
 
 
 
-			//vector<vec4> debugColors;
+			vector<vec4> debugColors;
 
-			//for (size_t i = 0; i < debugTriangles.size() / 3; i++)
-			//{
-			//	debugColors.push_back(vec4(1.0, 0.0, 0.0, 0.5));
-			//}
+			for (size_t i = 0; i < debugTriangles.size() / 3; i++)
+				debugColors.push_back(vec4(1.0, 0.0, 0.0, 0.5));
+			
 
-			//engine->SceneTriangles(sceneRenderCtx, debugTriangles, debugColors);
+			foregroundList->AddTriangles(debugTriangles, debugColors);
 
-			//debugTriangles.clear();
+			debugTriangles.clear();
 
 
 			if (useTileWorld) {

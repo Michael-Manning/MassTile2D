@@ -10,8 +10,6 @@
 #include <glm/glm.hpp>
 #include <nlohmann/json.hpp>
 
-#include <vk_mem_alloc.h>
-
 #include "texture.h"
 #include "VKEngine.h"
 

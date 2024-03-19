@@ -6,6 +6,7 @@ import os
 def checkMod(srcDirectory, mod_time_file):
 
    changedFiles = set()
+   allFiles = set()
 
    # Define the file extensions to monitor
    extensions = ['.frag', '.vert', '.comp']
@@ -29,10 +30,11 @@ def checkMod(srcDirectory, mod_time_file):
          if any(filename.endswith(ext) for ext in extensions):
                path = os.path.join(root, filename)
                mod_time = os.path.getmtime(path)
+               basename = os.path.basename(path)
+               allFiles.add(basename)
                if mod_times.get(path) is None or mod_times.get(path) != mod_time:
                   # print(f'File changed: {path}')
                   # changedFiles.add(path)
-                  basename = os.path.basename(path)
                   changedFiles.add(basename)
                   filesChanged = True
                mod_times[path] = mod_time
@@ -42,16 +44,38 @@ def checkMod(srcDirectory, mod_time_file):
       for path, mod_time in mod_times.items():
          f.write(f'{path}|{mod_time}\n')
 
-   return changedFiles
-
+   return [changedFiles, allFiles]
 
 current_directory = os.path.dirname(os.path.abspath(__file__))
-src_folder = os.path.join(os.path.dirname(os.path.dirname(current_directory)), "shaders")
-out_folder = os.path.join(src_folder, "compiled")
-scripts_folder = os.path.join(src_folder, "scripts")
+src_folder = os.path.join(os.path.dirname(current_directory), "shaders")
+out_folder = os.path.join(os.path.dirname(current_directory), "compiled")
+scripts_folder = os.path.join(os.path.dirname(current_directory), "scripts")
 
-filesChanged = checkMod(src_folder, os.path.join(scripts_folder, "mod_times.txt"))
-if(len(filesChanged) == 0):
+#assums this python file is in a folder called scripts
+if(current_directory != scripts_folder):
+   raise Exception("Invalid folder layout in shader workspace")
+
+if not os.path.exists(src_folder):
+   raise Exception('Expected folder "shaders"')
+
+shadersChanged, allShaders = checkMod(src_folder, os.path.join(scripts_folder, "mod_times.txt"))
+
+# create compiled folder to put spv files if it doesn't exist
+if not os.path.exists(out_folder):
+   os.mkdir(out_folder) 
+   # assume all files invalid
+   shadersChanged = allShaders
+
+# check if the number of shaders and compiled shaders is the same
+compiledFileCount = 0
+for file in os.listdir(out_folder):
+   if file.endswith(".spv"):
+      compiledFileCount += 1
+if compiledFileCount != len(allShaders):
+   # assume all files invalid
+   shadersChanged = allShaders
+
+if(len(shadersChanged) == 0):
    print("nothing to compile")
    exit(0)
 
@@ -84,8 +108,8 @@ errors = False
 for base_name in paired_files:
    frag_file = os.path.join(src_folder, base_name + '.frag')
    vert_file = os.path.join(src_folder, base_name + '.vert')
-   fchanged = (base_name + '.frag') in filesChanged
-   vchanged = (base_name + '.vert') in filesChanged
+   fchanged = (base_name + '.frag') in shadersChanged
+   vchanged = (base_name + '.vert') in shadersChanged
    if(fchanged or vchanged):
       print(f"compiling: {base_name}")
    if(fchanged):
@@ -103,7 +127,7 @@ for base_name in paired_files:
    
 for base_name in comp_files:
    comp_file = os.path.join(src_folder, base_name + '.comp')
-   changed = (base_name + '.comp') in filesChanged
+   changed = (base_name + '.comp') in shadersChanged
    if(changed):
       print(f"compiling: {base_name}")
       cmd = compilerPath + " " + comp_file + " -o " + os.path.join(out_folder, base_name + '_comp.spv')

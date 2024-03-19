@@ -8,7 +8,6 @@
 #include <iostream>
 
 #include <vulkan/vulkan.hpp>
-#include <vk_mem_alloc.h>
 
 #include <glm/glm.hpp>
 

@@ -18,8 +18,6 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_vulkan.h>
 
-#include <vk_mem_alloc.h>
-
 #include "texture.h"
 #include "VKEngine.h"
 
@@ -127,20 +125,14 @@ void Engine::initializeSceneGraphicsContext(SceneGraphicsContext& ctx, glm::ivec
 
 	{
 		PROFILE_SCOPEN(colorPipeline);
-		ctx.colorPipeline = make_unique<ColoredQuadPL>(rengine.get(), ctx.allocationSettings.ColoredQuad_MaxInstances);
+		ctx.coloredQuadPipeline = make_unique<ColoredQuadPL>(rengine.get(), ctx.allocationSettings.ColoredQuad_MaxInstances);
 		PipelineParameters prm;
 		assetManager->LoadShaderFile("coloredQuad_vert.spv", prm.vertexSrc);
 		assetManager->LoadShaderFile("coloredQuad_frag.spv", prm.fragmentSrc);
 		prm.renderTarget = drawRenderpass;
 		prm.cameraDB = ctx.cameraBuffers;
-		ctx.colorPipeline->CreateGraphicsPipeline(prm);
+		ctx.coloredQuadPipeline->CreateGraphicsPipeline(prm);
 	}
-	//{
-	//	vector<uint8_t> vert, frag;
-	//	assetManager->LoadShaderFile("triangles_vert.spv", vert);
-	//	assetManager->LoadShaderFile("triangles_frag.spv", frag);
-	//	ctx.trianglesPipelines->CreateGraphicsPipeline(vert, frag, drawRenderpass, ctx.cameraBuffers, true);
-	//}
 	{
 		PROFILE_SCOPEN(texturePipeline);
 		ctx.texturePipeline = make_unique<TexturedQuadPL>(rengine.get(), ctx.allocationSettings.TexturedQuad_MaxInstances);
@@ -238,11 +230,18 @@ Engine::DrawlistGraphicsContext Engine::createDrawlistGraphicsContext(DrawlistAl
 		assetManager->LoadShaderFile("coloredQuad_frag.spv", prm.fragmentSrc);
 		prm.renderTarget = renderTarget;
 		prm.cameraDB = cameraBuffers;
-		//prm.flipFaces = true;
 		ctx.coloredQuadPipeline->CreateGraphicsPipeline(prm);
 
 	}
-
+	{
+		ctx.coloredTrianglesPipeline = make_unique<ColoredTrianglesPL>(rengine.get(), ctx.allocationSettings.ColoredTriangle_MaxInstances);
+		PipelineParameters prm;
+		assetManager->LoadShaderFile("coloredTriangles_vert.spv", prm.vertexSrc);
+		assetManager->LoadShaderFile("coloredTriangles_frag.spv", prm.fragmentSrc);
+		prm.renderTarget = renderTarget;
+		prm.cameraDB = cameraBuffers;
+		ctx.coloredTrianglesPipeline->CreateGraphicsPipeline(prm);
+	}
 	{
 		ctx.texturedQuadPipeline = make_unique<TexturedQuadPL>(rengine.get(), allocationSettings.TexturedQuad_MaxInstances);
 		PipelineParameters prm;
@@ -250,7 +249,6 @@ Engine::DrawlistGraphicsContext Engine::createDrawlistGraphicsContext(DrawlistAl
 		assetManager->LoadShaderFile("screenSpaceTexture_frag.spv", prm.fragmentSrc);
 		prm.renderTarget = renderTarget;
 		prm.cameraDB = cameraBuffers;
-		prm.flipFaces = false;
 		std::array<int, 2> unused = { 0, 0 };
 		ctx.texturedQuadPipeline->CreateGraphicsPipeline(prm, &GlobalTextureDesc, unused);
 	}
@@ -262,7 +260,6 @@ Engine::DrawlistGraphicsContext Engine::createDrawlistGraphicsContext(DrawlistAl
 		assetManager->LoadShaderFile("text_frag.spv", prm.fragmentSrc);
 		prm.renderTarget = renderTarget;
 		prm.cameraDB = cameraBuffers;
-		//prm.flipFaces = true;
 		ctx.textPipeline->CreateGraphicsPipeline(prm, &GlobalTextureDesc);
 	}
 
@@ -414,7 +411,7 @@ void Engine::recordSceneContextGraphics(const SceneGraphicsContext& ctx, std::sh
 		cmdBuffer.bindVertexBuffers(0, 1, vertexBuffers, offsets);
 		cmdBuffer.bindIndexBuffer(quadMeshBuffer.indexBuffer, 0, vk::IndexType::eUint16);
 	}
-	
+
 
 	// tile map lighting pass
 	if (ctx.tilemapPipeline != nullptr)
@@ -499,7 +496,7 @@ void Engine::recordSceneContextGraphics(const SceneGraphicsContext& ctx, std::sh
 		//vector<ColoredQuadPL::InstanceBufferData> drawlist;
 		//drawlist.reserve(scene->sceneData.colorRenderers.size());
 
-		auto buffer = ctx.colorPipeline->getUploadMappedBuffer();
+		auto buffer = ctx.coloredQuadPipeline->getUploadMappedBuffer();
 
 		int bufferIndex = 0;
 		for (auto& renderer : scene->sceneData.colorRenderers)
@@ -528,7 +525,7 @@ void Engine::recordSceneContextGraphics(const SceneGraphicsContext& ctx, std::sh
 		//ctx.colorPipeline->UploadInstanceData(drawlist);
 
 
-		ctx.colorPipeline->recordCommandBuffer(cmdBuffer, bufferIndex);
+		ctx.coloredQuadPipeline->recordCommandBuffer(cmdBuffer, bufferIndex);
 	}
 
 	// particles
@@ -573,12 +570,6 @@ void Engine::recordSceneContextGraphics(const SceneGraphicsContext& ctx, std::sh
 
 		ctx.particlePipeline->recordCommandBuffer(cmdBuffer, indexes, systemSizes, particleCounts);
 	}
-
-	//// triangles
-	//{
-	//	ctx.trianglesPipelines->recordCommandBuffer(cmdBuffer, ctx.triangleDrawlistCount);
-	//}
-	//bindQuadMesh(cmdBuffer);
 
 	// text
 	{
@@ -679,6 +670,18 @@ void Engine::recordDrawlistContextGraphics(const DrawlistGraphicsContext& ctx, c
 
 		ctx.coloredQuadPipeline->recordCommandBuffer(cmdBuffer, drawData.coloredQuadInstanceIndex);
 	}
+
+	// triangles
+	if(drawData.coloredQuadInstanceIndex > 0)
+	{
+		auto colorBuffer = ctx.coloredTrianglesPipeline->GetColorMappedBuffer(rengine->currentFrame);
+		auto vertexBuffer = ctx.coloredTrianglesPipeline->GetVertexMappedBuffer(rengine->currentFrame);
+		std::copy(drawData.coloredTriangleColorData.begin(), drawData.coloredTriangleColorData.begin() + drawData.coloredTrianglesInstanceIndex, colorBuffer);
+		std::copy(drawData.coloredTriangleVertexData.begin(), drawData.coloredTriangleVertexData.begin() + drawData.coloredTrianglesInstanceIndex * ColoredTrianglesPL::verticesPerMesh, vertexBuffer);
+
+		ctx.coloredTrianglesPipeline->recordCommandBuffer(cmdBuffer, drawData.coloredTrianglesInstanceIndex);
+	}
+	bindQuadMesh(cmdBuffer);
 
 	// screenspace text
 	{
@@ -1179,11 +1182,14 @@ void Engine::InitImgui() {
 
 	//execute a gpu command to upload imgui font textures
 	auto cmdBuffer = rengine->beginSingleTimeCommands_gfx();
-	ImGui_ImplVulkan_CreateFontsTexture(cmdBuffer);
+	//ImGui_ImplVulkan_CreateFontsTexture(cmdBuffer);
 	rengine->endSingleTimeCommands_gfx(cmdBuffer);
 
 	//clear font textures from cpu data
-	ImGui_ImplVulkan_DestroyFontUploadObjects();
+	//ImGui_ImplVulkan_DestroyFontUploadObjects();
+
+
+
 
 	//add the destroy the imgui created structures
 	//_mainDeletionQueue.push_function([=]() {

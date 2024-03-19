@@ -26,12 +26,13 @@ void GraphicsTemplate::CreateGraphicsPipeline(const PipelineParameters& params, 
 
 		std::vector<Reflection::buffer_info> vertBufferInfos;
 		std::vector<Reflection::buffer_info> fragBufferInfos;
-
 		Reflection::push_constant_info vertPushInfo;
 		Reflection::push_constant_info fragPushInfo;
+		std::vector<Reflection::spec_constant_info> vertSpecInfos;
+		std::vector<Reflection::spec_constant_info> fragSpecInfos;
 
-		Reflection::GetShaderBufferBindings(params.vertexSrc, vertBufferInfos, vertPushInfo);
-		Reflection::GetShaderBufferBindings(params.fragmentSrc, fragBufferInfos, fragPushInfo);
+		Reflection::GetShaderBufferBindings(params.vertexSrc, vertBufferInfos, vertPushInfo, vertSpecInfos);
+		Reflection::GetShaderBufferBindings(params.fragmentSrc, fragBufferInfos, fragPushInfo, fragSpecInfos);
 
 		if (vertPushInfo.size != 0 && fragPushInfo.size != 0) {
 			assert(vertPushInfo.size == fragPushInfo.size);

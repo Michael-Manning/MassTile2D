@@ -30,7 +30,7 @@ void Drawlist::AddTriangles(std::vector <glm::vec2>&vertices, std::vector<glm::v
 	
 	assert(vertices.size() % 3 == 0);
 	assert(coloredTrianglesInstanceIndex < allocationSettings.ColoredTriangle_MaxInstances);
-	assert(triangleColors.size() == coloredTriangleVertexData.size() / ColoredTrianglesPL::verticesPerMesh);
+	assert(triangleColors.size() == vertices.size() / ColoredTrianglesPL::verticesPerMesh);
 
 	int triangleIndex = coloredTrianglesInstanceIndex * ColoredTrianglesPL::verticesPerMesh;
 	for (auto& c : triangleColors)

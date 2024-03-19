@@ -1,9 +1,9 @@
 #pragma once
 
 #include <optional>
-#include <vulkan/vulkan.hpp>
 
-#include <vk_mem_alloc.h>
+#include <vulkan/vulkan.hpp>
+#include <vma/vk_mem_alloc.h>
 
 #include <imgui.h>
 #include <imgui_impl_vulkan.h>

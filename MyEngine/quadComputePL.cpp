@@ -18,7 +18,6 @@
 #include <utility>
 
 #include <vulkan/vulkan.hpp>
-#include <vk_mem_alloc.h>
 #include <tracy/Tracy.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>

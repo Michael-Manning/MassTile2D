@@ -26,12 +26,13 @@ void ComputeTemplate::CreateComputePipeline(const PipelineParameters& params, Pi
 
 		std::vector<Reflection::buffer_info> unused;
 		std::vector<Reflection::push_constant_info> compPushInfos;
+		std::vector<Reflection::spec_constant_info> compSpecInfos;
 		compPushInfos.resize(params.computeSrcStages.size());
 
 		int i = 0;
 		for (auto& stage : params.computeSrcStages)
 		{
-			Reflection::GetShaderBufferBindings(stage, unused, compPushInfos[i]);
+			Reflection::GetShaderBufferBindings(stage, unused, compPushInfos[i], compSpecInfos);
 			i++;
 		}
 
