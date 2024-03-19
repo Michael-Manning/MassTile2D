@@ -26,27 +26,28 @@ void Drawlist::AddCenteredQuad(glm::vec4 color, glm::vec2 pos, glm::vec2 scale, 
 	coloredQuadInstanceIndex++;
 }
 
-//inline void SceneTriangles(sceneGraphicsContextID ctxID, std::vector <glm::vec2>& vertices, std::vector<glm::vec4>& triangleColors) {
+void Drawlist::AddTriangles(std::vector <glm::vec2>&vertices, std::vector<glm::vec4>&triangleColors) {
+	
+	assert(vertices.size() % 3 == 0);
+	assert(coloredTrianglesInstanceIndex < allocationSettings.ColoredTriangle_MaxInstances);
+	assert(triangleColors.size() == coloredTriangleVertexData.size() / ColoredTrianglesPL::verticesPerMesh);
 
-//	auto ctx = &sceneRenderContextMap.at(ctxID);
-//	
-//	assert(vertices.size() % 3 == 0);
-//	assert((ctx->pl.triangleDrawlistCount + vertices.size()) / ColoredTrianglesPL::verticesPerMesh < ColoredTrianglesPL_MAX_OBJECTS);
-//	assert(triangleColors.size() == vertices.size() / ColoredTrianglesPL::verticesPerMesh);
+	int triangleIndex = coloredTrianglesInstanceIndex * ColoredTrianglesPL::verticesPerMesh;
+	for (auto& c : triangleColors)
+	{
+		coloredTriangleColorData[triangleIndex].color = c;
+		triangleIndex++;
+	}
 
-//	int triangleIndex = ctx->pl.triangleDrawlistCount / ColoredTrianglesPL::verticesPerMesh;
-//	for (auto& c : triangleColors)
-//	{
-//		ctx->pl.triangleColorGPUBuffer[triangleIndex].color = c;
-//		triangleIndex++;
-//	}
+	int vertexIndex = coloredTrianglesInstanceIndex * ColoredTrianglesPL::verticesPerMesh;
+	for (auto& v : vertices)
+	{
+		coloredTriangleVertexData[vertexIndex] = Vertex{ .pos = v, .UVCoord = {0, 0} };
+		vertexIndex++;
+	}
 
-//	for (auto& v : vertices)
-//	{
-//		ctx->pl.triangleGPUBuffer[ctx->pl.triangleDrawlistCount] = Vertex{ .pos = v, .texCoord = {0, 0} };
-//		ctx->pl.triangleDrawlistCount++;
-//	}
-//}
+	coloredTrianglesInstanceIndex = triangleIndex;
+}
 
 void Drawlist::AddCenteredSprite(Sprite* sprite, int atlasIndex, glm::vec2 pos, float height, float rotation) {
 

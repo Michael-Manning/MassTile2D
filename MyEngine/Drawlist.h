@@ -7,6 +7,7 @@
 
 #include "pipelines.h"
 #include "Settings.h"
+#include "Vertex.h"
 #include "AssetManager.h"
 
 class Engine;
@@ -22,9 +23,13 @@ public:
 		coloredQuadInstanceData.resize(allocationSettings.ColoredQuad_MaxInstances);
 		texturedQuadInstanceData.resize(allocationSettings.TexturedQuad_MaxInstances);
 		textInstanceData.resize(allocationSettings.Text_MaxStrings);
+		coloredTriangleColorData.resize(allocationSettings.ColoredTriangle_MaxInstances);
+		coloredTriangleVertexData.resize(allocationSettings.ColoredTriangle_MaxInstances * ColoredTrianglesPL::verticesPerMesh);
 	}
 
 	 void AddCenteredQuad(glm::vec4 color, glm::vec2 pos, glm::vec2 scale, float rotation = 0.0f);
+
+	 void AddTriangles(std::vector <glm::vec2>& vertices, std::vector<glm::vec4>& triangleColors);
 
 	 void AddCenteredSprite(Sprite* sprite, int atlasIndex, glm::vec2 pos, float height, float rotation = 0.0f);
 	 void AddCenteredSprite(spriteID sprID, int atlasIndex, glm::vec2 pos, float height, float rotation = 0.0f);
@@ -45,6 +50,7 @@ private:
 		coloredQuadInstanceIndex = 0;
 		texturedQuadInstanceIndex = 0;
 		textInstanceIndex = 0;
+		coloredTrianglesInstanceIndex = 0;
 
 		framebufferDrawData.clear();
 	}
@@ -69,6 +75,11 @@ private:
 	// drawlist data
 	std::vector<ColoredQuadPL::InstanceBufferData> coloredQuadInstanceData;
 	int coloredQuadInstanceIndex = 0;
+
+	std::vector<ColoredTrianglesPL::InstanceBufferData> coloredTriangleColorData;
+	std::vector<Vertex> coloredTriangleVertexData;
+	int coloredTrianglesInstanceIndex = 0;
+
 
 	std::vector<TexturedQuadPL::ssboObjectInstanceData> texturedQuadInstanceData;
 	int texturedQuadInstanceIndex = 0;
