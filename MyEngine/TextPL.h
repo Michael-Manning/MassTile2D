@@ -42,7 +42,7 @@ public:
 	}
 
 	// TODO replace with function to get pointers to a given memory slot for direct memory access to avoid copy
-	void UploadTextData(int frame, int memorySlot, textHeader& header, fontID font, std::vector<charQuad>& quads) {
+	void UploadTextData(int frame, int memorySlot, const textHeader& header, fontID font, std::vector<charQuad>& quads) {
 
 		// transfers memory to GPU 
 		textHeadersDB.buffersMapped[frame][memorySlot] = header;

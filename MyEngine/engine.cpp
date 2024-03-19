@@ -215,17 +215,19 @@ void Engine::initializeSceneGraphicsContext(SceneGraphicsContext& ctx, glm::ivec
 
 	assert(ctx.allocationSettings.Worldspace_Background_DrawlistLayerCount == ctx.allocationSettings.Worldspace_Background_LayerAllocations.size());
 	for (auto& setting : ctx.allocationSettings.Worldspace_Background_LayerAllocations) {
-		screenspaceDrawlistContexts.push_back(createDrawlistGraphicsContext(setting, screenSpaceTransformCameraBuffer));
-		screenspaceDrawlistLayers.push_back(Drawlist(setting, assetManager.get()));
+		ctx.backgroundDrawlistContexts.push_back(createDrawlistGraphicsContext(setting, ctx.cameraBuffers, drawRenderpass));
+		ctx.backgroundDrawlistLayers.push_back(Drawlist(setting, assetManager.get()));
 	}
 
 	assert(ctx.allocationSettings.Worldspace_Foreground_DrawlistLayerCount == ctx.allocationSettings.Worldspace_Foreground_LayerAllocations.size());
 	for (auto& setting : ctx.allocationSettings.Worldspace_Foreground_LayerAllocations) {
-
+		ctx.foregroundDrawlistContexts.push_back(createDrawlistGraphicsContext(setting, ctx.cameraBuffers, drawRenderpass));
+		ctx.foregroundDrawlistLayers.push_back(Drawlist(setting, assetManager.get()));
 	}
 }
 
-Engine::DrawlistGraphicsContext Engine::createDrawlistGraphicsContext(DrawlistAllocationConfiguration allocationSettings, MappedDoubleBuffer<coordinateTransformUBO_s> cameraBuffers) {
+
+Engine::DrawlistGraphicsContext Engine::createDrawlistGraphicsContext(DrawlistAllocationConfiguration allocationSettings, MappedDoubleBuffer<coordinateTransformUBO_s> cameraBuffers, vk::RenderPass renderTarget) {
 
 	DrawlistGraphicsContext ctx = DrawlistGraphicsContext(allocationSettings);
 
@@ -234,7 +236,7 @@ Engine::DrawlistGraphicsContext Engine::createDrawlistGraphicsContext(DrawlistAl
 		PipelineParameters prm;
 		assetManager->LoadShaderFile("coloredQuad_vert.spv", prm.vertexSrc);
 		assetManager->LoadShaderFile("coloredQuad_frag.spv", prm.fragmentSrc);
-		prm.renderTarget = rengine->swapchainRenderPass;
+		prm.renderTarget = renderTarget;
 		prm.cameraDB = cameraBuffers;
 		//prm.flipFaces = true;
 		ctx.coloredQuadPipeline->CreateGraphicsPipeline(prm);
@@ -246,7 +248,7 @@ Engine::DrawlistGraphicsContext Engine::createDrawlistGraphicsContext(DrawlistAl
 		PipelineParameters prm;
 		assetManager->LoadShaderFile("screenSpaceTexture_vert.spv", prm.vertexSrc);
 		assetManager->LoadShaderFile("screenSpaceTexture_frag.spv", prm.fragmentSrc);
-		prm.renderTarget = rengine->swapchainRenderPass;
+		prm.renderTarget = renderTarget;
 		prm.cameraDB = cameraBuffers;
 		prm.flipFaces = false;
 		std::array<int, 2> unused = { 0, 0 };
@@ -258,7 +260,7 @@ Engine::DrawlistGraphicsContext Engine::createDrawlistGraphicsContext(DrawlistAl
 		PipelineParameters prm;
 		assetManager->LoadShaderFile("text_vert.spv", prm.vertexSrc);
 		assetManager->LoadShaderFile("text_frag.spv", prm.fragmentSrc);
-		prm.renderTarget = rengine->swapchainRenderPass;
+		prm.renderTarget = renderTarget;
 		prm.cameraDB = cameraBuffers;
 		//prm.flipFaces = true;
 		ctx.textPipeline->CreateGraphicsPipeline(prm, &GlobalTextureDesc);
@@ -353,7 +355,7 @@ void Engine::Start(const VideoSettings& initialSettings, AssetManager::AssetPath
 
 	assert(allocationSettings.Screenspace_DrawlistLayerCount == allocationSettings.Screenspace_DrawlistLayerAllocations.size());
 	for (auto& setting : allocationSettings.Screenspace_DrawlistLayerAllocations) {
-		screenspaceDrawlistContexts.push_back(createDrawlistGraphicsContext(setting, screenSpaceTransformCameraBuffer));
+		screenspaceDrawlistContexts.push_back(createDrawlistGraphicsContext(setting, screenSpaceTransformCameraBuffer, rengine->swapchainRenderPass));
 		screenspaceDrawlistLayers.push_back(Drawlist(setting, assetManager.get()));
 	}
 
@@ -412,6 +414,7 @@ void Engine::recordSceneContextGraphics(const SceneGraphicsContext& ctx, std::sh
 		cmdBuffer.bindVertexBuffers(0, 1, vertexBuffers, offsets);
 		cmdBuffer.bindIndexBuffer(quadMeshBuffer.indexBuffer, 0, vk::IndexType::eUint16);
 	}
+	
 
 	// tile map lighting pass
 	if (ctx.tilemapPipeline != nullptr)
@@ -424,6 +427,10 @@ void Engine::recordSceneContextGraphics(const SceneGraphicsContext& ctx, std::sh
 	}
 
 	rengine->beginRenderpass(fb, cmdBuffer);
+
+	// render background drawlists
+	for (size_t i = 0; i < ctx.backgroundDrawlistContexts.size(); i++)
+		recordDrawlistContextGraphics(ctx.backgroundDrawlistContexts[i], ctx.backgroundDrawlistLayers[i], cmdBuffer);
 
 	// tilemap
 	if (ctx.tilemapPipeline != nullptr)
@@ -623,12 +630,16 @@ void Engine::recordSceneContextGraphics(const SceneGraphicsContext& ctx, std::sh
 		}
 	}
 
+	// render foreground drawlists
+	for (size_t i = 0; i < ctx.foregroundDrawlistContexts.size(); i++)
+		recordDrawlistContextGraphics(ctx.foregroundDrawlistContexts[i], ctx.foregroundDrawlistLayers[i], cmdBuffer);
+
 	cmdBuffer.endRenderPass();
 
 	rengine->insertFramebufferTransitionBarrier(cmdBuffer, fb);
 }
 
-void Engine::recordDrawlistContextGraphics(const DrawlistGraphicsContext& ctx, Drawlist& drawData, vk::CommandBuffer cmdBuffer) {
+void Engine::recordDrawlistContextGraphics(const DrawlistGraphicsContext& ctx, const Drawlist& drawData, vk::CommandBuffer cmdBuffer) {
 
 	// screenspace texture
 	if (drawData.texturedQuadInstanceIndex > 0)
@@ -676,7 +687,7 @@ void Engine::recordDrawlistContextGraphics(const DrawlistGraphicsContext& ctx, D
 			ctx.textPipeline->ClearTextData(rengine->currentFrame);
 			for (int i = 0; i < drawData.textInstanceIndex; i++)
 			{
-				Drawlist::screenSpaceTextDrawItem& item = drawData.textInstanceData[i];
+				const Drawlist::screenSpaceTextDrawItem& item = drawData.textInstanceData[i];
 				Font* f = assetManager->GetFont(item.font);
 				auto sprite = assetManager->GetSprite(f->atlas);
 
@@ -686,8 +697,9 @@ void Engine::recordDrawlistContextGraphics(const DrawlistGraphicsContext& ctx, D
 				//CalculateQuads(f, item.text, textData.quads);
 				CalculateQuads(f, item.text, quads.data());
 
-				item.header.scale = vec2(f->fontHeight * 2) * item.scaleFactor;
-				item.header._textureIndex = sprite->textureID;
+				TextPL::textHeader header = item.header;
+				header.scale = vec2(f->fontHeight * 2) * item.scaleFactor;
+				header._textureIndex = sprite->textureID;
 
 				ctx.textPipeline->UploadTextData(rengine->currentFrame, memSlot++, item.header, item.font, quads);
 			}
@@ -1060,7 +1072,14 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 
 	for (auto& list : screenspaceDrawlistLayers)
 		list.ResetIndexes();
-
+	for (auto& job : sceneRenderJobs)
+	{
+		auto& ctx = sceneRenderContextMap.at(job.sceneRenderCtxID);
+		for (auto& ls : ctx.backgroundDrawlistLayers)
+			ls.ResetIndexes();
+		for (auto& ls : ctx.foregroundDrawlistLayers)
+			ls.ResetIndexes();
+	}
 
 	firstFrame = false;
 

@@ -247,9 +247,18 @@ public:
 		return &screenspaceDrawlistLayers[layer];
 	}
 
+	Drawlist* GetSceneBackgroundDrawlist(sceneGraphicsContextID id, int layer = 0) {
+		assert(sceneRenderContextMap.at(id).backgroundDrawlistLayers.size() >= layer);
+		return &sceneRenderContextMap.at(id).backgroundDrawlistLayers.at(layer);
+	}
+	Drawlist* GetSceneForegroundDrawlist(sceneGraphicsContextID id, int layer = 0) {
+		assert(sceneRenderContextMap.at(id).foregroundDrawlistLayers.size() >= layer);
+		return &sceneRenderContextMap.at(id).foregroundDrawlistLayers.at(layer);
+	}
+
 private:
 
-	DrawlistGraphicsContext createDrawlistGraphicsContext(DrawlistAllocationConfiguration allocationSettings, MappedDoubleBuffer<coordinateTransformUBO_s> cameraBuffers);
+	DrawlistGraphicsContext createDrawlistGraphicsContext(DrawlistAllocationConfiguration allocationSettings, MappedDoubleBuffer<coordinateTransformUBO_s> cameraBuffers, vk::RenderPass renderTarget);
 
 	const vk::Format lightingPassFormat = vk::Format::eR16Unorm; //vk::Format::eR16Unorm;
 
@@ -278,7 +287,7 @@ private:
 
 	void recordSceneContextGraphics(const SceneGraphicsContext& ctx, std::shared_ptr<Scene> scene, const Camera& camera, vk::CommandBuffer& cmdBuffer);
 
-	void recordDrawlistContextGraphics(const DrawlistGraphicsContext& ctx, Drawlist& drawData, vk::CommandBuffer cmdBuffer);
+	void recordDrawlistContextGraphics(const DrawlistGraphicsContext& ctx, const Drawlist& drawData, vk::CommandBuffer cmdBuffer);
 
 	void bindQuadMesh(vk::CommandBuffer cmdBuffer) {
 		vk::Buffer vertexBuffers[] = { quadMeshBuffer.vertexBuffer };

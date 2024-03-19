@@ -428,6 +428,12 @@ int main() {
 	//sceneRenderCtx = engine->CreateSceneRenderContext(engine->getWindowSize(), useTileWorld, { 0.2, 0.3, 1.0, 1 });
 
 	SceneGraphicsAllocationConfiguration sceneConfig;
+	sceneConfig.Worldspace_Background_DrawlistLayerCount = 1;
+	sceneConfig.Worldspace_Background_LayerAllocations.push_back({});
+	sceneConfig.Worldspace_Foreground_DrawlistLayerCount = 1;
+	sceneConfig.Worldspace_Foreground_LayerAllocations.push_back({});
+
+
 	sceneConfig.AllocateTileWorld = useTileWorld;
 	//sceneConfig.Framebuffer_ClearColor = { 0.0, 0.0, 0.0, 1 };
 	sceneConfig.Framebuffer_ClearColor = { 0.2, 0.3, 1.0, 1 };
@@ -612,6 +618,11 @@ int main() {
 
 			drawlist->AddText(UI.smallfont, { 4, 4 }, vec4(1.0), "fps: %d", (int)engine->_getAverageFramerate());
 
+			auto backgroundList = engine->GetSceneBackgroundDrawlist(sceneRenderCtx);
+			backgroundList->AddCenteredSprite("test_cat", 0, { -10, 87 }, 1);
+
+			auto foregroundList = engine->GetSceneForegroundDrawlist(sceneRenderCtx);
+			foregroundList->AddCenteredQuad(vec4(0.5, 0.2, 0.7, 0.8), { -10.5, 87 }, vec2( 1.0 ));
 
 			if (useTileWorld) {
 				UI::DoUI(uiState);

@@ -94,7 +94,7 @@ Font::Font(const AssetPack::Font* f) {
 }
 
 
-void CalculateQuads(Font* f, std::string& text, charQuad* quads) {
+void CalculateQuads(Font* f, const std::string& text, charQuad* quads) {
 
 	glm::vec2 cursor = glm::vec2(0.0f);
 	for (int i = 0; i < text.length(); i++) {

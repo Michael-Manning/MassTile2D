@@ -108,4 +108,4 @@ public:
 	Font(const AssetPack::Font* f);
 };
 
-void CalculateQuads(Font* f, std::string& text, charQuad* quads);
+void CalculateQuads(Font* f, const std::string& text, charQuad* quads);
