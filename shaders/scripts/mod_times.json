@@ -1,0 +1,97 @@
+{
+    "particleSystem.vert": {
+        "mod_time": 1710531081.4853573,
+        "optimized": true,
+        "debug": false
+    },
+    "particleSystem.frag": {
+        "mod_time": 1710771383.0415106,
+        "optimized": true,
+        "debug": false
+    },
+    "coloredTriangles.vert": {
+        "mod_time": 1710971311.9504912,
+        "optimized": true,
+        "debug": false
+    },
+    "coloredTriangles.frag": {
+        "mod_time": 1710970857.5926995,
+        "optimized": true,
+        "debug": false
+    },
+    "texture.vert": {
+        "mod_time": 1710961021.079533,
+        "optimized": true,
+        "debug": false
+    },
+    "texture.frag": {
+        "mod_time": 1710960910.3110387,
+        "optimized": true,
+        "debug": false
+    },
+    "coloredQuad.vert": {
+        "mod_time": 1710771383.004609,
+        "optimized": true,
+        "debug": false
+    },
+    "coloredQuad.frag": {
+        "mod_time": 1694448308.1950624,
+        "optimized": true,
+        "debug": false
+    },
+    "tilemapLightRaster.vert": {
+        "mod_time": 1710771383.0824008,
+        "optimized": true,
+        "debug": false
+    },
+    "tilemapLightRaster.frag": {
+        "mod_time": 1710172728.8271034,
+        "optimized": true,
+        "debug": false
+    },
+    "tilemap.vert": {
+        "mod_time": 1710771383.0784113,
+        "optimized": true,
+        "debug": false
+    },
+    "tilemap.frag": {
+        "mod_time": 1709744630.977759,
+        "optimized": true,
+        "debug": false
+    },
+    "text.vert": {
+        "mod_time": 1710771383.068438,
+        "optimized": true,
+        "debug": false
+    },
+    "text.frag": {
+        "mod_time": 1710960856.1769025,
+        "optimized": true,
+        "debug": false
+    },
+    "particleSystem.comp": {
+        "mod_time": 1710970010.6071198,
+        "optimized": true,
+        "debug": false
+    },
+    "coloredQuadTransform.comp": {
+        "mod_time": 1694205531.7747586,
+        "optimized": true,
+        "debug": false
+    },
+    "lighting.comp": {
+        "mod_time": 1710172728.81314,
+        "optimized": true,
+        "debug": false
+    },
+    "lightingUpscale.comp": {
+        "mod_time": 1710971616.1007938,
+        "optimized": true,
+        "debug": false
+    },
+    "lightingBlur.comp": {
+        "mod_time": 1710172728.8161323,
+        "optimized": true,
+        "debug": false
+    }
+}

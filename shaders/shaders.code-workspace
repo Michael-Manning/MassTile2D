@@ -25,7 +25,9 @@
 			}
       },
       "glsllint.glslifyOptions": {
+
          
-      }
+      },
+      "glsllint.glslangValidatorArgs": "-V"
 	}
 }

@@ -21,6 +21,14 @@ void GraphicsTemplate::CreateGraphicsPipeline(const PipelineParameters& params, 
 
 	auto shaderStages = createGraphicsShaderStages(params.vertexSrc, params.fragmentSrc);
 
+	vk::SpecializationInfo  vertSpecInfo;
+	vector<uint8_t> vertSpecData;
+	vector<vk::SpecializationMapEntry> vertSpecEntries;
+	vk::SpecializationInfo fragSpecInfo;
+	vector<uint8_t> fragSpecData;
+	vector<vk::SpecializationMapEntry> fragSpecEntries;
+
+
 	// binding info provided using buffer bindings means that we must use reflection to infer the shader stages
 	{
 
@@ -34,19 +42,74 @@ void GraphicsTemplate::CreateGraphicsPipeline(const PipelineParameters& params, 
 		Reflection::GetShaderBufferBindings(params.vertexSrc, vertBufferInfos, vertPushInfo, vertSpecInfos);
 		Reflection::GetShaderBufferBindings(params.fragmentSrc, fragBufferInfos, fragPushInfo, fragSpecInfos);
 
-		if (vertPushInfo.size != 0 && fragPushInfo.size != 0) {
-			assert(vertPushInfo.size == fragPushInfo.size);
+		// specialization constants
+		{
+			vertSpecEntries.reserve(vertSpecInfos.size());
+			fragSpecEntries.reserve(fragSpecInfos.size());
+
+			for (auto& spec : resourceConfig.specConstBindings)
+			{
+				for (auto& info : vertSpecInfos)
+				{
+					if (spec.constantID == info.constantID) {
+
+						vk::SpecializationMapEntry entry;
+						entry.constantID = spec.constantID;
+						entry.offset = vertSpecData.size();
+						entry.size = spec.size;
+
+						const uint8_t* specData = spec.GetBindingData();
+						for (size_t i = 0; i < spec.size; i++)
+							vertSpecData.push_back(specData[i]);
+						
+						vertSpecEntries.push_back(entry);
+					}
+				}
+				for (auto& info : fragSpecInfos)
+				{
+					if (spec.constantID == info.constantID) {
+
+						vk::SpecializationMapEntry entry;
+						entry.constantID = spec.constantID;
+						entry.offset = fragSpecData.size();
+						entry.size = spec.size;
+
+						const uint8_t* specData = spec.GetBindingData();
+						for (size_t i = 0; i < spec.size; i++)
+							fragSpecData.push_back(specData[i]);
+
+						fragSpecEntries.push_back(entry);
+					}
+				}
+			}
+			vertSpecInfo.mapEntryCount = vertSpecEntries.size();
+			vertSpecInfo.pMapEntries = vertSpecEntries.data();
+			vertSpecInfo.dataSize = vertSpecData.size();
+			vertSpecInfo.pData = vertSpecData.data();
+
+			fragSpecInfo.mapEntryCount = fragSpecEntries.size();
+			fragSpecInfo.pMapEntries = fragSpecEntries.data();
+			fragSpecInfo.dataSize = fragSpecData.size();
+			fragSpecInfo.pData = fragSpecData.data();
 		}
 
-		if (vertPushInfo.size > 0) {
-			pushInfo.pushConstantSize = vertPushInfo.size;
-			pushInfo.pushConstantShaderStages |= vk::ShaderStageFlagBits::eVertex;
-		}
-		if (fragPushInfo.size > 0) {
-			pushInfo.pushConstantSize = fragPushInfo.size;
-			pushInfo.pushConstantShaderStages |= vk::ShaderStageFlagBits::eFragment;
+		// push constants
+		{
+			if (vertPushInfo.size != 0 && fragPushInfo.size != 0) {
+				assert(vertPushInfo.size == fragPushInfo.size);
+			}
+
+			if (vertPushInfo.size > 0) {
+				pushInfo.pushConstantSize = vertPushInfo.size;
+				pushInfo.pushConstantShaderStages |= vk::ShaderStageFlagBits::eVertex;
+			}
+			if (fragPushInfo.size > 0) {
+				pushInfo.pushConstantSize = fragPushInfo.size;
+				pushInfo.pushConstantShaderStages |= vk::ShaderStageFlagBits::eFragment;
+			}
 		}
 
+		// buffers
 		if (resourceConfig.bufferBindings.size() > 0) {
 			vector<vk::ShaderStageFlags> bindingShaderStages(resourceConfig.bufferBindings.size(), static_cast<vk::ShaderStageFlags>(0));
 
@@ -83,7 +146,6 @@ void GraphicsTemplate::CreateGraphicsPipeline(const PipelineParameters& params, 
 	descriptorManager.configureDescriptorSets(resourceConfig.descriptorInfos);
 	descriptorManager.buildDescriptorLayouts();
 
-
 	descriptorLayoutMap setLayouts;
 
 	for (auto& [set, layout] : descriptorManager.builderLayouts)
@@ -110,9 +172,15 @@ void GraphicsTemplate::CreateGraphicsPipeline(const PipelineParameters& params, 
 	if (params.flipFaces)
 		rasterizer.frontFace = vk::FrontFace::eClockwise;
 
+	if(vertSpecInfo.dataSize > 0)
+		shaderStages.vertex.pSpecializationInfo = &vertSpecInfo;
+	if(fragSpecInfo.dataSize > 0)
+		shaderStages.fragment.pSpecializationInfo = &fragSpecInfo;
+
+	std::array <vk::PipelineShaderStageCreateInfo, 2> stages = {shaderStages.vertex, shaderStages.fragment};
 	vk::GraphicsPipelineCreateInfo pipelineInfo;
-	pipelineInfo.stageCount = 2;
-	pipelineInfo.pStages = shaderStages.data();
+	pipelineInfo.stageCount = stages.size();
+	pipelineInfo.pStages = stages.data();
 	pipelineInfo.pVertexInputState = &vertexInputInfo;
 	pipelineInfo.pInputAssemblyState = &inputAssembly;
 	pipelineInfo.pViewportState = &viewportState;
@@ -130,9 +198,8 @@ void GraphicsTemplate::CreateGraphicsPipeline(const PipelineParameters& params, 
 		throw std::runtime_error("failed to create graphics pipeline!");
 	_pipeline = rv.value;
 
-	for (auto& stage : shaderStages) {
-		engine->devContext.device.destroyShaderModule(stage.module);
-	}
+	engine->devContext.device.destroyShaderModule(shaderStages.vertex.module);
+	engine->devContext.device.destroyShaderModule(shaderStages.fragment.module);
 
 	descriptorManager.buildDescriptorSets();
 

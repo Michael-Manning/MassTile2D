@@ -70,13 +70,13 @@ static std::vector<std::string> getAllFilesInDirectory(const std::filesystem::pa
 }
 
 static std::filesystem::path get_executable_directory() {
-    char buffer[MAX_PATH];
+    wchar_t buffer[MAX_PATH];
     HMODULE hModule = GetModuleHandle(nullptr);
     if (GetModuleFileName(hModule, buffer, MAX_PATH)) {
         std::filesystem::path exePath(buffer);
         return exePath.parent_path();
     }
-    return "";
+    return L"";
 }
 
 static std::string makePathAbsolute(std::filesystem::path originatingPath, std::string relativePath) {

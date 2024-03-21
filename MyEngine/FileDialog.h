@@ -6,7 +6,17 @@
 #include <filesystem>
 
 // show an open/save file dialog. optionally allow multi item select. Supplying an owner window will cause it to act as a modal dialog
-static bool FileDialog(char* buffer, int bufflen, const char* extention, const char* filter, bool open, bool multi, HWND owner = NULL, const char* windowTitle = NULL, std::vector<std::string>* multiFiles = nullptr) {
+static bool FileDialog(
+	wchar_t* buffer, 
+	int bufflen, 
+	const wchar_t* extension, 
+	const wchar_t* filter, 
+	bool open, 
+	bool multi, 
+	HWND owner = NULL, 
+	const wchar_t* windowTitle = NULL, 
+	std::vector<std::filesystem::path>* multiFiles = nullptr) {
+
 
 	std::filesystem::path initialPath = std::filesystem::current_path();
 
@@ -30,7 +40,7 @@ static bool FileDialog(char* buffer, int bufflen, const char* extention, const c
 	ofn.lpstrFilter = filter;
 	ofn.nFilterIndex = 1;
 	ofn.lpstrFileTitle = NULL;
-	ofn.lpstrDefExt = extention;
+	ofn.lpstrDefExt = extension;
 	ofn.nMaxFileTitle = 0;
 	ofn.lpstrInitialDir = NULL;
 	if (windowTitle != NULL) {
@@ -52,20 +62,19 @@ static bool FileDialog(char* buffer, int bufflen, const char* extention, const c
 			return true;
 		}
 
-		char* p = ofn.lpstrFile;
-		char* directory = p;
-
-		p += strlen(p) + 1;
+		wchar_t* p = ofn.lpstrFile;
+		std::filesystem::path directory = p;
+		p += wcslen(p) + 1;
 
 		if (*p) {
 			// Multiple files were selected
-			do {
-				multiFiles->push_back(std::string(directory) + "\\" + std::string(p));
-				p += strlen(p) + 1;
-			} while (*p);
+			while (*p) {
+				multiFiles->push_back(directory / p); // Use filesystem path concatenation
+				p += wcslen(p) + 1;
+			}
 		}
-		else if (multi) {
-			multiFiles->push_back(std::string(ofn.lpstrFile));
+		else {
+			multiFiles->push_back(directory);
 		}
 		return true;
 	}
@@ -74,15 +83,15 @@ static bool FileDialog(char* buffer, int bufflen, const char* extention, const c
 	}
 }
 
-static bool openFileDialog(char* buffer, int bufflen, const char* extention, const char* filter, HWND owner = NULL, const char* windowTitle = NULL) {
+static bool openFileDialog(wchar_t* buffer, int bufflen, const wchar_t* extention, const wchar_t* filter, HWND owner = NULL, const wchar_t* windowTitle = NULL) {
 	return FileDialog(buffer, bufflen, extention, filter, true, false, owner, windowTitle);
 }
-static std::vector<std::string> openFileDialogMulti(const char* extention, const char* filter, HWND owner = NULL, const char* windowTitle = NULL) {
-	char unusedBuffer[MAX_PATH * 100];
-	std::vector<std::string> filenames;
-	FileDialog(unusedBuffer, MAX_PATH * 100, extention, filter, true, true, owner, windowTitle, &filenames);
-	return filenames;
+static std::vector<std::filesystem::path> openFileDialogMulti(const wchar_t* extention, const wchar_t* filter, HWND owner = NULL, const wchar_t* windowTitle = NULL) {
+	wchar_t unusedBuffer[MAX_PATH * 100];
+	std::vector<std::filesystem::path> multiFiles;
+	FileDialog(unusedBuffer, MAX_PATH * 100, extention, filter, true, true, owner, windowTitle, &multiFiles);
+	return multiFiles;
 }
-static bool saveFileDialog(char* buffer, int bufflen, const char* extention, const char* filter, HWND owner = NULL, const char* windowTitle = NULL) {
+static bool saveFileDialog(wchar_t* buffer, int bufflen, const wchar_t* extention, const wchar_t* filter, HWND owner = NULL, const wchar_t* windowTitle = NULL) {
 	return FileDialog(buffer, bufflen, extention, filter, false, false, owner, windowTitle);
 }

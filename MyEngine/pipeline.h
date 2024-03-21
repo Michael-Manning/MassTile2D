@@ -16,6 +16,8 @@
 #include "globalBufferDefinitions.h"
 
 
+constexpr const char* shader_entry_point_name = "main";
+
 struct PushConstantInfo {
 	uint32_t pushConstantSize = 0;
 	vk::ShaderStageFlags pushConstantShaderStages = static_cast<vk::ShaderStageFlags>(0);
@@ -38,9 +40,27 @@ struct BufferBinding {
 	{}
 };
 
-struct ShaderConstantBinding {
+
+// Increase as needed. Just preallocating to keep the ShaderConstantBinding struct simple.
+constexpr size_t Max_spec_constant_size = 16;
+
+struct SpecConstantBinding {
 	const int constantID;
-	size_t size;
+	const size_t size;
+	const uint8_t* GetBindingData() {
+		return bindingData.data();
+	}
+
+	template<typename T>
+	SpecConstantBinding(int constantID, T bindingData)
+		: constantID(constantID), size(sizeof(T))
+	{
+		static_assert(sizeof(T) <= Max_spec_constant_size);
+		std::memcpy(this->bindingData.data(), &bindingData, sizeof(T));
+	}
+
+private:
+	std::array<uint8_t, Max_spec_constant_size> bindingData;
 };
 
 struct PipelineParameters {
@@ -56,6 +76,7 @@ struct PipelineResourceConfig {
 	std::vector<DescriptorManager::descriptorSetInfo> descriptorInfos;
 	std::vector<GlobalDescriptorBinding> globalDescriptors;
 	std::vector<BufferBinding> bufferBindings;
+	std::vector<SpecConstantBinding> specConstBindings;
 
 	// populate to overide default
 	std::optional< vk::PipelineColorBlendAttachmentState> colorBlendAttachment;
@@ -82,8 +103,9 @@ protected:
 	vk::Pipeline _pipeline;
 	vk::PipelineLayout pipelineLayout;
 
-	std::vector<vk::PipelineShaderStageCreateInfo> createGraphicsShaderStages(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc);
-	std::vector<vk::PipelineShaderStageCreateInfo> createComputeShaderStages(const std::vector<std::vector<uint8_t>>& computeSrcs);
+	struct GraphicsShaderInfo { vk::PipelineShaderStageCreateInfo vertex; vk::PipelineShaderStageCreateInfo fragment; };
+	GraphicsShaderInfo createGraphicsShaderStages(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc) const;
+	std::vector<vk::PipelineShaderStageCreateInfo> createComputeShaderStages(const std::vector<std::vector<uint8_t>>& computeSrcs) const;
 
 	vk::PipelineInputAssemblyStateCreateInfo defaultInputAssembly();
 	vk::PipelineViewportStateCreateInfo defaultViewportState();

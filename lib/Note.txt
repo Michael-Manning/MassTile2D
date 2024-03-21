@@ -1,0 +1,2 @@
+SPIRV-Reflect should be installed through vcpkg evenetually. 
+It is only here because I needed a more recent version that vcpkg could provide at the time.

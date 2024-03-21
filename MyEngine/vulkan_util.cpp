@@ -15,15 +15,6 @@
 
 namespace VKUtil {
 
-	vk::ShaderModule createShaderModule(const std::vector<uint8_t>& code, vk::Device device) {
-		vk::ShaderModuleCreateInfo createInfo;
-		createInfo.codeSize = code.size();
-		createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
-
-		vk::ShaderModule shaderModule;
-		shaderModule = device.createShaderModule(createInfo);
-
-		return shaderModule;
-	}
+	
 
 }

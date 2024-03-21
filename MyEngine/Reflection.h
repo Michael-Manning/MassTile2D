@@ -26,13 +26,12 @@ namespace Reflection {
 
 	struct spec_constant_info {
 		uint32_t constantID;
-		uint32_t size;
 	};
 
 	static void GetShaderBufferBindings(
-		const std::vector<uint8_t>& shaderSrc, 
-		std::vector<buffer_info>& bufferInfos, 
-		push_constant_info& pushInfo, 
+		const std::vector<uint8_t>& shaderSrc,
+		std::vector<buffer_info>& bufferInfos,
+		push_constant_info& pushInfo,
 		std::vector<spec_constant_info>& specInfos
 	) {
 
@@ -105,37 +104,29 @@ namespace Reflection {
 			}
 		}
 
-		// Specialization constants (assuming they could be input variables)
+		// Specialization constants
 		{
-			uint32_t variableCount = 0;
-			result = spvReflectEnumerateInterfaceVariables(&spvModule, &variableCount, nullptr);
+			uint32_t specConstantCount = 0;
+			result = spvReflectEnumerateSpecializationConstants(&spvModule, &specConstantCount, nullptr);
 			if (result != SPV_REFLECT_RESULT_SUCCESS) {
-				throw std::runtime_error("Failed to enumerate input variables");
+				throw std::runtime_error("Shader reflection failed");
 				spvReflectDestroyShaderModule(&spvModule);
 				return;
 			}
 
-			std::vector<SpvReflectInterfaceVariable*> variables(variableCount);
-			result = spvReflectEnumerateInterfaceVariables(&spvModule, &variableCount, variables.data());
+			std::vector<SpvReflectSpecializationConstant*> specConstants(specConstantCount);
+			result = spvReflectEnumerateSpecializationConstants(&spvModule, &specConstantCount, specConstants.data());
 			if (result != SPV_REFLECT_RESULT_SUCCESS) {
-				throw std::runtime_error("Failed to enumerate input variables");
+				throw std::runtime_error("Shader reflection failed");
 				spvReflectDestroyShaderModule(&spvModule);
 				return;
 			}
 
-			for (const auto& variable : variables) {
-
-				int bbreakl = 0;
-
-				//if (variable->decoration_flags & SPV_REFLECT_DECORATION_SPEC_ID) {
-				//	specInfos.push_back(spec_constant_info{
-				//		.location = variable->location,
-				//		.size = variable->numeric.scalar.width / 8 // Assuming 8 bits per byte
-				//		});
-				//}
+			for (auto& constant : specConstants)
+			{
+				specInfos.push_back(spec_constant_info{ .constantID = constant->constant_id });
 			}
 		}
-
 
 		spvReflectDestroyShaderModule(&spvModule);
 	}

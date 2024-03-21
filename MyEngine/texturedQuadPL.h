@@ -33,11 +33,11 @@ public:
 	};
 	static_assert(sizeof(ssboObjectInstanceData) % 16 == 0);
 
-	TexturedQuadPL(VKEngine* engine, int maxInstances) 
+	TexturedQuadPL(VKEngine* engine, int maxInstances)
 		: pipeline(engine), engine(engine), maxInstances(maxInstances) { }
 
-	void CreateGraphicsPipeline(const PipelineParameters& params, GlobalImageDescriptor* textureDescriptor, std::array<int, 2>& lightMapTextureIndexes) {
-		
+	void CreateGraphicsPipeline(const PipelineParameters& params, GlobalImageDescriptor* textureDescriptor, bool lightMapEnabled, std::array<int, 2> lightMapTextureIndexes = { 0, 0 }) {
+
 		engine->createMappedBuffer(sizeof(ssboObjectInstanceData) * maxInstances, vk::BufferUsageFlagBits::eStorageBuffer, ssboMappedDB);
 
 		engine->createMappedBuffer(vk::BufferUsageFlagBits::eUniformBuffer, lightmapIndexDB);
@@ -48,6 +48,8 @@ public:
 		con.bufferBindings.push_back(BufferBinding(1, 1, params.cameraDB));
 		con.bufferBindings.push_back(BufferBinding(1, 0, ssboMappedDB));
 		con.bufferBindings.push_back(BufferBinding(1, 2, lightmapIndexDB));
+
+		con.specConstBindings.push_back(SpecConstantBinding{ 0, static_cast<uint32_t>(lightMapEnabled ? 1: 0) });
 
 		con.globalDescriptors.push_back({ 0, textureDescriptor });
 

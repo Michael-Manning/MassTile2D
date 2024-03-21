@@ -678,12 +678,13 @@ void Editor::assetWindow() {
 
 			if (Button("Create")) {
 
-				char filename[MAX_PATH];
-				if (openFileDialog(filename, MAX_PATH, "image", "image file\0*.png\0")) {
-
-					std::string name = getFileRawName(string(filename));
+				wchar_t filename[MAX_PATH];
+				if (openFileDialog(filename, MAX_PATH, L"image", L"image file\0*.png\0")) {
+					std::wstring wsfn = std::wstring(filename);
+					std::string sfn = std::string(wsfn.begin(), wsfn.end());
+					std::string name = getFileRawName(sfn);
 					auto unidentified_sprite = generateSprite_unidentified(name, FilterMode::Linear);
-					spriteID sprID = engine->assetManager->ExportSprite(engine->assetManager->directories.assetDir + name, string(filename), unidentified_sprite);
+					spriteID sprID = engine->assetManager->ExportSprite(engine->assetManager->directories.assetDir + name, sfn, unidentified_sprite);
 					engine->assetManager->LoadSprite(sprID);
 				}
 			}

@@ -142,7 +142,7 @@ void Engine::initializeSceneGraphicsContext(SceneGraphicsContext& ctx, glm::ivec
 		prm.renderTarget = drawRenderpass;
 		prm.cameraDB = ctx.cameraBuffers;
 		std::array<int, 2> lightmapTextures = { lightingFramebuffer->textureIDs[0], lightingFramebuffer->textureIDs[1] };
-		ctx.texturePipeline->CreateGraphicsPipeline(prm, &GlobalTextureDesc, lightmapTextures);
+		ctx.texturePipeline->CreateGraphicsPipeline(prm, &GlobalTextureDesc, true, lightmapTextures);
 	}
 
 	if (ctx.allocationSettings.AllocateTileWorld) {
@@ -245,12 +245,11 @@ Engine::DrawlistGraphicsContext Engine::createDrawlistGraphicsContext(DrawlistAl
 	{
 		ctx.texturedQuadPipeline = make_unique<TexturedQuadPL>(rengine.get(), allocationSettings.TexturedQuad_MaxInstances);
 		PipelineParameters prm;
-		assetManager->LoadShaderFile("screenSpaceTexture_vert.spv", prm.vertexSrc);
-		assetManager->LoadShaderFile("screenSpaceTexture_frag.spv", prm.fragmentSrc);
+		assetManager->LoadShaderFile("texture_vert.spv", prm.vertexSrc);
+		assetManager->LoadShaderFile("texture_frag.spv", prm.fragmentSrc);
 		prm.renderTarget = renderTarget;
 		prm.cameraDB = cameraBuffers;
-		std::array<int, 2> unused = { 0, 0 };
-		ctx.texturedQuadPipeline->CreateGraphicsPipeline(prm, &GlobalTextureDesc, unused);
+		ctx.texturedQuadPipeline->CreateGraphicsPipeline(prm, &GlobalTextureDesc, false);
 	}
 
 	{

@@ -1,14 +1,6 @@
 #include "stdafx.h"
 
-#include <iostream>
-#include <stdexcept>
-#include <algorithm>
 #include <vector>
-#include <cstring>
-#include <cstdlib>
-#include <cstdint>
-#include <limits>
-#include <optional>
 #include <set>
 #include <fstream>
 #include <chrono>
@@ -16,39 +8,30 @@
 
 #include <vulkan/vulkan.hpp>
 #include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-
-#include <vma/vk_mem_alloc.h>
-
-#include <stb_image.h>
 
 #include "VKEngine.h"
 #include "pipeline.h"
-
-#include "vulkan_util.h"
 #include "Utils.h"
 
 using namespace std;
 
-std::vector<vk::PipelineShaderStageCreateInfo> Pipeline::createGraphicsShaderStages(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc) {
-
-	vk::ShaderModule vertShaderModule = VKUtil::createShaderModule(vertexSrc, engine->devContext.device);
-	vk::ShaderModule fragShaderModule = VKUtil::createShaderModule(fragmentSrc, engine->devContext.device);
-
-	vk::PipelineShaderStageCreateInfo vertShaderStageInfo;
-	vertShaderStageInfo.stage = vk::ShaderStageFlagBits::eVertex;
-	vertShaderStageInfo.module = vertShaderModule;
-	vertShaderStageInfo.pName = "main";
-
-	vk::PipelineShaderStageCreateInfo fragShaderStageInfo{};
-	fragShaderStageInfo.stage = vk::ShaderStageFlagBits::eFragment;
-	fragShaderStageInfo.module = fragShaderModule;
-	fragShaderStageInfo.pName = "main";
-
-	return { vertShaderStageInfo, fragShaderStageInfo };
+vk::ShaderModule createShaderModule(const std::vector<uint8_t>& code, const vk::Device& device) {
+	vk::ShaderModuleCreateInfo createInfo;
+	createInfo.codeSize = code.size();
+	createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
+	return device.createShaderModule(createInfo);
 }
 
-std::vector<vk::PipelineShaderStageCreateInfo> Pipeline::createComputeShaderStages(const std::vector<std::vector<uint8_t>>& computeSrcs) {
+Pipeline::GraphicsShaderInfo Pipeline::createGraphicsShaderStages(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc) const {
+	vk::ShaderModule vertShaderModule = createShaderModule(vertexSrc, engine->devContext.device);
+	vk::ShaderModule fragShaderModule = createShaderModule(fragmentSrc, engine->devContext.device);
+	return {
+		.vertex   = vk::PipelineShaderStageCreateInfo({}, vk::ShaderStageFlagBits::eVertex, vertShaderModule, shader_entry_point_name),
+		.fragment = vk::PipelineShaderStageCreateInfo({}, vk::ShaderStageFlagBits::eFragment, fragShaderModule, shader_entry_point_name)
+	};
+}
+
+std::vector<vk::PipelineShaderStageCreateInfo> Pipeline::createComputeShaderStages(const std::vector<std::vector<uint8_t>>& computeSrcs) const {
 
 	std::vector<vk::PipelineShaderStageCreateInfo> infos;
 	infos.reserve(computeSrcs.size());
@@ -57,8 +40,8 @@ std::vector<vk::PipelineShaderStageCreateInfo> Pipeline::createComputeShaderStag
 	{
 		vk::PipelineShaderStageCreateInfo& stageInfo = infos.emplace_back();
 		stageInfo.stage = vk::ShaderStageFlagBits::eCompute;
-		stageInfo.module = VKUtil::createShaderModule(src, engine->devContext.device);
-		stageInfo.pName = "main";
+		stageInfo.module = createShaderModule(src, engine->devContext.device);
+		stageInfo.pName = shader_entry_point_name;
 	}
 
 	return infos;

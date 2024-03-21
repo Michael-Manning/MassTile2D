@@ -13,7 +13,7 @@
 
 namespace VKUtil{
 
-	vk::ShaderModule createShaderModule(const std::vector<uint8_t>& code, vk::Device device);
+	//vk::ShaderModule createShaderModule(const std::vector<uint8_t>& code, const vk::Device& device);
 
 	// mapped double buffer wrapped with frame dirty logic
 	template<typename T>
