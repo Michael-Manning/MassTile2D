@@ -13,17 +13,18 @@
 #include "globalBufferDefinitions.h"
 #include "GraphicsTemplate.h"
 
+
 class TilemapLightRasterPL{
 public:
 
-	TilemapLightRasterPL(VKEngine* engine, TileWorld* world) : pipeline(engine), engine(engine), world(world) {
+	TilemapLightRasterPL(VKEngine* engine) : pipeline(engine), engine(engine) {
 	}
 
-	void CreateGraphicsPipeline(const PipelineParameters& params, GlobalImageDescriptor* textureDescriptor);
-	void recordCommandBuffer(vk::CommandBuffer commandBuffer, int textureIndex);
+	void CreateGraphicsPipeline(const PipelineParameters& params, GlobalImageDescriptor* textureDescriptor, TileWorldDeviceResources* tileWorldData);
+	void recordCommandBuffer(vk::CommandBuffer commandBuffer, int textureIndex, const TileWorldLightingSettings_pc& lightingSettings);
 
 private:
-	TileWorld* world = nullptr;
+	TileWorldDeviceResources* tileWorldData = nullptr;
 
 	GlobalImageDescriptor* textureDescriptor;
 	GraphicsTemplate pipeline;

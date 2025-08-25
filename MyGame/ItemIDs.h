@@ -16,4 +16,4 @@ constexpr itemID Pickaxe_ItemID = 102;
 constexpr itemID Apple_ItemID = 200;
 constexpr itemID Chest_ItemID = 400;
 
-spriteID Chest_spriteID = 4037286629;
+constexpr spriteID Chest_spriteID = 4037286629;

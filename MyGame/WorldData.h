@@ -66,9 +66,11 @@ private:
 		return builder.CreateVector(entVec.data(), entVec.size());
 	}
 
+	const int chunkCount;
+
 public:
 
-	WorldData() {
+	WorldData(int chunkCount) : chunkCount(chunkCount){
 		chunks.resize(chunkCount);
 	}
 

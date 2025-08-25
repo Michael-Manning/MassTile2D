@@ -391,3 +391,45 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+
+
+
+############################################################
+# vcpkg - Start
+############################################################
+
+.vscode/
+*.code-workspace
+buildtrees/
+build/
+build*/
+downloads/
+installed/
+installed*/
+vcpkg_installed/
+vcpkg_installed*/
+packages/
+scripts/buildsystems/tmp/
+#ignore custom triplets
+triplets/
+triplets/*
+#add vcpkg-designed triplets back in
+!/triplets/arm-uwp.cmake
+!/triplets/arm64-windows.cmake
+!/triplets/x64-linux.cmake
+!/triplets/x64-osx.cmake
+!/triplets/x64-uwp.cmake
+!/triplets/x64-windows-static.cmake
+!/triplets/x64-windows.cmake
+!/triplets/x86-windows.cmake
+
+!/triplets/community
+!/triplets/community/**
+
+*.exe
+*.zip
+
+############################################################
+# vcpkg - End
+############################################################
+vcpkg.disable-metrics

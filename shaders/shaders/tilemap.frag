@@ -100,6 +100,11 @@ void main() {
 
     float brightness = texture(texSampler[lightingBufferIndex], screenSpaceUV).r;
 
+    //  HACK
+    brightness = 1.0;
+
+
+
    //  //switch to sampling with padding to avoid branching
    //  if(xi > 1 && xi < mapw - 1 && yi > 1 && yi < maph - 1){
 

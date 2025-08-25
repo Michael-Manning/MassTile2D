@@ -17,14 +17,14 @@
 class TilemapPL{
 public:
 
-	TilemapPL(VKEngine* engine, TileWorld* world) : pipeline(engine), engine(engine), world(world) {}
+	TilemapPL(VKEngine* engine) : pipeline(engine), engine(engine) {}
 
-	void CreateGraphicsPipeline(const PipelineParameters& params, GlobalImageDescriptor* textureDescriptor) {
+	void CreateGraphicsPipeline(const PipelineParameters& params, GlobalImageDescriptor* textureDescriptor, TileWorldDeviceResources* tileWorldData) {
 		PipelineResourceConfig con;
 
 		con.bufferBindings.push_back(BufferBinding(1, 0, params.cameraDB));
-		con.bufferBindings.push_back(BufferBinding(1, 1, world->MapFGBuffer));
-		con.bufferBindings.push_back(BufferBinding(1, 2, world->MapBGBuffer));
+		con.bufferBindings.push_back(BufferBinding(1, 1, tileWorldData->MapFGBuffer));
+		con.bufferBindings.push_back(BufferBinding(1, 2, tileWorldData->MapBGBuffer));
 
 		con.globalDescriptors.push_back({ 0, textureDescriptor });
 
@@ -50,7 +50,6 @@ private:
 		int32_t lightMapIndex;
 	};
 
-	TileWorld* world = nullptr;
 	VKEngine* engine;
 	GraphicsTemplate pipeline;
 };

@@ -2,7 +2,7 @@
 
 #include <set>
 
-// has no error checking or validation. It's just fast if used correctly
+// has no error checking or validation. Please use responsibly 
 
 template<typename T>
 class SlotManager {
@@ -10,10 +10,10 @@ public:
 
     static_assert(std::is_arithmetic_v<T>, "SlotManager requires a numerical type.");
 
-    SlotManager(int maxSlots) : maxSlots(maxSlots), nextAvailableSlot(0) {
+    SlotManager(size_t maxSlots) : maxSlots(maxSlots), nextAvailableSlot(0) {
     }
 
-    int GetAvailableSlot() {
+    T GetAvailableSlot() {
         // If there are freed slots available, use one of those.
         if (!freedSlots.empty()) {
             auto it = freedSlots.begin();
@@ -37,8 +37,8 @@ public:
     }
 
 private:
-    int maxSlots;
-    int nextAvailableSlot; // Tracks the next available slot.
+    size_t maxSlots;
+    size_t nextAvailableSlot; // Tracks the next available slot.
 
     std::set<T> freedSlots; // Tracks freed (or available) slots.
 };

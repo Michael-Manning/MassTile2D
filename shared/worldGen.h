@@ -16,8 +16,8 @@ namespace Blocks {
 	constexpr tileID EntityReserve = 1010;
 }
 
-constexpr int typesPerTile = 16;
-constexpr int tileVariations = 3;
+constexpr int typesPerTile = 16; // maybe based on how many ways a tile can have adjent tiles?
+constexpr int tileVariations = 3; // variations of the same texture per adjecent config
 constexpr int tilesPerBlock = typesPerTile * tileVariations;
 
 //static tileID getTileID(blockID block) {
@@ -69,14 +69,14 @@ struct WorldGenSettings {
 
 class WorldGenerator {
 public:
-	WorldGenerator(TileWorld* worldMap) : world(worldMap) {
+	WorldGenerator(LargeTileWorld* worldMap) : world(worldMap) {
 	}
 
 	void GenerateTiles(WorldGenSettings& settings);
 	void PostProcess();
 
 private:
-	TileWorld* world;
+	LargeTileWorld* world;
 };
 
 static constexpr blockID GetBlock(tileID tile) {
@@ -84,14 +84,14 @@ static constexpr blockID GetBlock(tileID tile) {
 }
 
 static constexpr tileID GetFloatingTile(blockID block){
-	return block* tilesPerBlock;
+	return block * tilesPerBlock;
 }
 
-void CalcTileVariation(uint32_t x, uint32_t y);
-inline void CalcTileVariation(glm::ivec2 tile) { return CalcTileVariation(tile.x, tile.y); }
+void CalcTileVariation(uint32_t x, uint32_t y, LargeTileWorld* world);
+inline void CalcTileVariation(glm::ivec2 tile, LargeTileWorld* world) { return CalcTileVariation(tile.x, tile.y, world); }
 
 // updates the 9 texture variations around a center tile
-void UpdateTextureVariations(glm::ivec2 centerTile);
+void UpdateTextureVariations(glm::ivec2 centerTile, LargeTileWorld* world);
 
 //static void loadWorld() {
 //

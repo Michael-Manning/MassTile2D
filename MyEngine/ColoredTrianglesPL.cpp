@@ -19,7 +19,7 @@ using namespace std;
 
 void ColoredTrianglesPL::CreateGraphicsPipeline(PipelineParameters& params) {
 
-	engine->createMappedBuffer(sizeof(Vertex) * verticesPerMesh * maxTriangles, vk::BufferUsageFlagBits::eVertexBuffer, vertexDB);
+	engine->createMappedBuffer(sizeof(Vertex2D) * verticesPerMesh * maxTriangles, vk::BufferUsageFlagBits::eVertexBuffer, vertexDB);
 	engine->createMappedBuffer(sizeof(InstanceBufferData) * maxTriangles, vk::BufferUsageFlagBits::eStorageBuffer, instanceDB);
 
 	PipelineResourceConfig con;

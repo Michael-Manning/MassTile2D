@@ -129,7 +129,7 @@ public:
 		packLayoutData = readFile(assetPackPath, layoutOffset, layoutSize);
 		packageLayout = AssetPack::GetPackageLayout(packLayoutData.data());
 
-		// TEMP: just load all assets flatbuffer data immediatly. Replace with mapped pointer, at least optionally
+		// TEMP: just load all asset's flatbuffer data immediatly. Replace with mapped pointer, at least optionally
 		temp_packAssetData = readFile(assetPackPath, assetsOffset, assetsSize);
 		packageAssets = AssetPack::GetPackageAssets(temp_packAssetData.data());
 #endif
@@ -150,8 +150,10 @@ public:
 	void UnloadSprite(spriteID spriteID, bool freeResources = true);
 	Sprite* GetSprite(spriteID id) { return &spriteAssets.at(id); };
 	Sprite* GetSprite(std::string name) { return &spriteAssets.at(loadedSpritesByName.at(name)); }; // TODO: add debug assertiong 
-	std::optional<ImTextureID> getSpriteImTextureID(spriteID id) {
-		return resourceManager->GetTexture(spriteAssets[id].textureID)->imTexture;
+	ImTextureID getSpriteImTextureID(spriteID id) {
+		assert(resourceManager->GetTexture(spriteAssets[id].textureID)->imTexture.has_value());
+		ImTextureID tid = (ImTextureID)static_cast<VkDescriptorSet>(resourceManager->GetTexture(spriteAssets[id].textureID)->imTexture.value());
+		return tid;
 	};
 
 	/// <summary>

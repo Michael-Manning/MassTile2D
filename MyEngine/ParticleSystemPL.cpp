@@ -13,7 +13,7 @@
 #include <glm/glm.hpp>
 
 #include "texture.h"
-#include "Vertex.h"
+#include "Vertex2D.h"
 #include "VKEngine.h"
 #include "pipeline.h"
 #include "typedefs.h"

@@ -159,7 +159,7 @@ void GraphicsTemplate::CreateGraphicsPipeline(const PipelineParameters& params, 
 
 	vk::VertexInputBindingDescription VbindingDescription;
 	dbVertexAtribute Vattribute;
-	auto vertexInputInfo = Vertex::getVertexInputInfo(&VbindingDescription, &Vattribute);
+	auto vertexInputInfo = Vertex2D::getVertexInputInfo(&VbindingDescription, &Vattribute);
 
 	auto inputAssembly = defaultInputAssembly();
 	auto viewportState = defaultViewportState();

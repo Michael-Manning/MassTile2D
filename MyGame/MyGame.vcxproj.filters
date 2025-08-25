@@ -27,10 +27,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="MyGame.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="worldGen.cpp">
+    <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Menus.cpp">
@@ -40,9 +37,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="stdafx.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Benchmarking.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="global.cpp">
@@ -66,6 +60,12 @@
     <ClCompile Include="ItemIDs.cpp">
       <Filter>Source Files\Items</Filter>
     </ClCompile>
+    <ClCompile Include="..\shared\Benchmarking.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\worldGen.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CopyFileToFolders Include="..\lib\FastNoise2\lib\FastNoiseD.dll">
@@ -83,9 +83,6 @@
       <Filter>Behaviours</Filter>
     </ClInclude>
     <ClInclude Include="global.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="worldGen.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="demon.h">
@@ -107,9 +104,6 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="boidTestes.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Benchmarking.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="TestScript.h">
@@ -138,6 +132,12 @@
     </ClInclude>
     <ClInclude Include="Pickaxe.h">
       <Filter>Source Files\tools</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\Benchmarking.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\worldGen.h">
+      <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

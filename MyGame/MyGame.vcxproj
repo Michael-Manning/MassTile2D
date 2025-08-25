@@ -100,7 +100,7 @@
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>MultiByte</CharacterSet>
+    <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Publish|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -154,9 +154,16 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <VcpkgUseStatic>false</VcpkgUseStatic>
+    <VcpkgInstalledDir>$(SolutionDir)vcpkg_installed</VcpkgInstalledDir>
   </PropertyGroup>
   <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Publish|x64'">
     <VcpkgUseStatic>true</VcpkgUseStatic>
+  </PropertyGroup>
+  <PropertyGroup Label="Vcpkg">
+    <VcpkgEnableManifest>true</VcpkgEnableManifest>
+  </PropertyGroup>
+  <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <VcpkgInstalledDir>$(SolutionDir)vcpkg_installed</VcpkgInstalledDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -237,13 +244,13 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;NOMINMAX;_CRT_SECURE_NO_WARNINGS;USING_EDITOR;GLM_ENABLE_EXPERIMENTAL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)/MyEngine;$(SolutionDir)/Editor;$(VULKAN_SDK)/include;$(SolutionDir)/lib/FastNoise2/include;$(SolutionDir)$(ProjectName)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)/MyEngine;$(SolutionDir)/Editor;$(VULKAN_SDK)/include;$(SolutionDir)/lib/FastNoise2/include;$(SolutionDir)$(ProjectName);$(SolutionDir)shared</AdditionalIncludeDirectories>
       <PrecompiledHeader>Use</PrecompiledHeader>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(SolutionDir)$(Platform)/Debug/MyEngine.lib;$(SolutionDir)$(Platform)/Debug/Editor.lib;$(VULKAN_SDK)/Lib/vulkan-1.lib;$(SolutionDir)lib/FastNoise2/lib/FastNoiseD.lib;$(SolutionDir)lib/SPIRV-Reflect/lib_d/spirv-reflect-static.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(VULKAN_SDK)/Lib/vulkan-1.lib;$(SolutionDir)lib/FastNoise2/lib/FastNoiseD.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug-Tracy|x64'">
@@ -329,7 +336,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Benchmarking.cpp" />
+    <ClCompile Include="..\shared\Benchmarking.cpp" />
+    <ClCompile Include="..\shared\worldGen.cpp" />
     <ClCompile Include="Collision.cpp" />
     <ClCompile Include="demon.cpp" />
     <ClCompile Include="GameUI.cpp" />
@@ -337,14 +345,13 @@
     <ClCompile Include="Inventory.cpp" />
     <ClCompile Include="ItemIDs.cpp" />
     <ClCompile Include="Menus.cpp" />
-    <ClCompile Include="MyGame.cpp" />
+    <ClCompile Include="main.cpp" />
     <ClCompile Include="Player.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Publish|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="Tool.cpp" />
-    <ClCompile Include="worldGen.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CopyFileToFolders Include="..\lib\FastNoise2\lib\FastNoiseD.dll">
@@ -367,7 +374,8 @@
     </CopyFileToFolders>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Benchmarking.h" />
+    <ClInclude Include="..\shared\Benchmarking.h" />
+    <ClInclude Include="..\shared\worldGen.h" />
     <ClInclude Include="boidTestes.h" />
     <ClInclude Include="Chest.h" />
     <ClInclude Include="Collision.h" />
@@ -386,7 +394,6 @@
     <ClInclude Include="TestScript.h" />
     <ClInclude Include="Tool.h" />
     <ClInclude Include="WorldData.h" />
-    <ClInclude Include="worldGen.h" />
   </ItemGroup>
   <ItemGroup>
     <CopyFileToFolders Include="Assets.bin">
@@ -401,6 +408,14 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release-Tracy|x64'">true</ExcludedFromBuild>
     </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Editor\Editor.vcxproj">
+      <Project>{d699eaea-3910-4c29-b81f-0d3da4a80bc1}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\MyEngine\MyEngine.vcxproj">
+      <Project>{3c53b117-5f37-4cae-9212-50b3859ebe48}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

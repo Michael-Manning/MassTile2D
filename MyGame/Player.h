@@ -113,12 +113,12 @@ public:
 	}
 
 	bool queryTile(vec2 pos) {
-		int tileX = pos.x / tileWorldSize + mapW / 2;
-		int tileY = pos.y / tileWorldSize + mapH / 2;
 
-		if (tileX > 0 && tileX < mapW && tileY > 0 && tileY < mapH) {
+		ivec2 coord = global::tileWorld->WorldPosTile(pos);
 
-			tileID tile = global::tileWorld->getTile(tileX, tileY);
+		if (coord.x > 0 && coord.x < LargeTileWorldWidth && coord.y > 0 && coord.y < LargeTileWorldHeight) {
+
+			tileID tile = global::tileWorld->getTile(coord.x, coord.y);
 			return IsSolid(tile);
 		}
 		return false;
@@ -129,11 +129,10 @@ public:
 	}*/
 
 	ivec2 getTileXY(vec2 pos) {
-		int tileX = pos.x / tileWorldSize + mapW / 2;
-		int tileY = pos.y / tileWorldSize + mapH / 2;
+		ivec2 coord = global::tileWorld->WorldPosTile(pos);
 
-		if (tileX > 0 && tileX < mapW && tileY > 0 && tileY < mapH)
-			return ivec2(tileX, mapH - tileY - 1);
+		if (coord.x > 0 && coord.x < LargeTileWorldWidth && coord.y > 0 && coord.y < LargeTileWorldHeight)
+			return ivec2(coord.x, LargeTileWorldHeight - coord.y - 1);
 		return ivec2(-1, -1);
 	}
 
@@ -329,10 +328,10 @@ public:
 				assert(dy != 0 || dx != 0);
 				assert(slope != 0);
 
-				float left_x = (curTile.x - mapW / 2) * tileWorldSize - sx;
-				float right_x = left_x + tileWorldSize;
-				float bottom_y = (mapH / 2 - curTile.y - 1) * tileWorldSize - sy;
-				float top_y = bottom_y + tileWorldSize;
+				float left_x = (curTile.x - LargeTileWorldWidth / 2) * tileWorldBlockSize - sx;
+				float right_x = left_x + tileWorldBlockSize;
+				float bottom_y = (LargeTileWorldHeight / 2 - curTile.y - 1) * tileWorldBlockSize - sy;
+				float top_y = bottom_y + tileWorldBlockSize;
 
 				float left_y = slope * (left_x - x1) + y1;
 				float right_y = slope * (right_x - x1) + y1;
@@ -387,23 +386,23 @@ public:
 			}
 
 			if (resolveUp) {
-				resolvedYAvg += (mapH / 2 - curTile.y) * tileWorldSize - tpoints[i].y + skin;
+				resolvedYAvg += (LargeTileWorldHeight / 2 - curTile.y) * tileWorldBlockSize - tpoints[i].y + skin;
 				avgSamplesY++;
 				velocity.y = 0;
 				grounded = true;
 			}
 			else if (resolveLeft) {
-				resolvedXAvg += (curTile.x - mapW / 2) * tileWorldSize - tpoints[i].x - skin;
+				resolvedXAvg += (curTile.x - LargeTileWorldWidth / 2) * tileWorldBlockSize - tpoints[i].x - skin;
 				avgSamplesX++;
 				velocity.x = 0;
 			}
 			else if (resolveRight) {
-				resolvedXAvg += (curTile.x - mapW / 2 + 1) * tileWorldSize - tpoints[i].x + skin;
+				resolvedXAvg += (curTile.x - LargeTileWorldWidth / 2 + 1) * tileWorldBlockSize - tpoints[i].x + skin;
 				avgSamplesX++;
 				velocity.x = 0;
 			}
 			else if (resolveDown) {
-				resolvedYAvg += (mapH / 2 - curTile.y - 1) * tileWorldSize - tpoints[i].y - skin;
+				resolvedYAvg += (LargeTileWorldHeight / 2 - curTile.y - 1) * tileWorldBlockSize - tpoints[i].y - skin;
 				avgSamplesY++;
 				velocity.y = 0;
 			}
@@ -473,7 +472,7 @@ public:
 						if (adjacent) {
 
 							global::tileWorld->setTile(mouseTile, GetFloatingTile(itemLibrary.GetBlock(selectedItemStack->item)));
-							UpdateTextureVariations(mouseTile);
+							UpdateTextureVariations(mouseTile, global::tileWorld);
 
 							selectedItemStack->count--;
 							if (selectedItemStack->count == 0) {
@@ -524,18 +523,18 @@ for (size_t i = 0; i < 4; i++) {
 
 	if (dx != 0) {
 		if (dx > 0)
-			resolvedXAvg += (curTile.x - mapW / 2) * tileWorldSize - sx - 0.0001f;
+			resolvedXAvg += (curTile.x - mapW / 2) * tileWorldBlockSize - sx - 0.0001f;
 		else
-			resolvedXAvg += (curTile.x - mapW / 2 + 1) * tileWorldSize + sx + 0.0001f;
+			resolvedXAvg += (curTile.x - mapW / 2 + 1) * tileWorldBlockSize + sx + 0.0001f;
 		avgSamplesX++;
 		velocity.x = 0;
 	}
 	if (dy != 0) {
 		if (dy > 0) {
-			resolvedYAvg += (mapH / 2 - curTile.y - 1) * tileWorldSize - sy - 0.0001f;
+			resolvedYAvg += (mapH / 2 - curTile.y - 1) * tileWorldBlockSize - sy - 0.0001f;
 		}
 		else {
-			resolvedYAvg += (mapH / 2 - curTile.y) * tileWorldSize + sy + 0.0001f;
+			resolvedYAvg += (mapH / 2 - curTile.y) * tileWorldBlockSize + sy + 0.0001f;
 			grounded = true;
 		}
 		avgSamplesY++;

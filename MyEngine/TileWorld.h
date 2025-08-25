@@ -14,27 +14,34 @@
 #include "VKEngine.h"
 #include "RingBuffer.h"
 
-constexpr int largeChunkCount = 131072;
-constexpr int mapW = 1024 * 2;
-constexpr int mapH = 1024 * 1;
+constexpr int LargeTileWorldWidth = 1024 * 2;
+constexpr int LargeTileWorldHeight = 1024;
+
+constexpr int SmallTileWorldWidth = 128;
+constexpr int SmallTileWorldHeight = 128;
+
+
+//constexpr int mapW = 1024 * 2;
+//constexpr int mapH = 1024 * 1;
 //constexpr int mapPadding = (mapW + 2) * 2 + (mapH + 2) * 2 * 2;
 constexpr int mapPadding = 0;
 constexpr int mapOffset = mapPadding / 2;
-constexpr int mapCount = mapW * mapH + +mapPadding;
+
 
 constexpr int chunkSize = 32;
 constexpr int chunkTileCount = chunkSize * chunkSize;
 
+// size of transfer buffer for bulk GPU tile uploads
+constexpr int largeChunkCount = 131072; 
+static_assert(largeChunkCount % chunkSize == 0);
 
-constexpr int chunksX = mapW / chunkSize;
-constexpr int chunksY = mapH / chunkSize;
-constexpr int chunkCount = chunksX * chunksY;
+
+
 
 // size of an individual size in wold units
-constexpr float tileWorldSize = 0.25f;
+constexpr float tileWorldBlockSize = 0.25f;
 
-static_assert(mapW% chunkSize == 0);
-static_assert(mapH% chunkSize == 0);
+
 
 constexpr float ambiantLight = 1.00f;
 
@@ -51,7 +58,31 @@ static_assert(sizeof(chunkLightingUpdateinfo) % 16 == 0);
 
 constexpr int coolsize = sizeof(chunkLightingUpdateinfo);
 
+
+struct TileWorldDeviceResources {
+	DeviceBuffer MapFGBuffer;
+	DeviceBuffer MapBGBuffer;
+	DeviceBuffer MapLightUpscaleBuffer;
+	DeviceBuffer MapLightBlurBuffer;
+};
+
+struct TileWorldLightingSettings_pc { // push constant
+	int interpolationEnabled = 1;
+	int upscaleEnabled = 1;
+	int blurEnabled = 1;
+};
+
+template<int mapW, int mapH>
 class TileWorld {
+
+public:
+	static constexpr int mapCount = mapW * mapH + mapPadding;
+	static constexpr int chunksX = mapW / chunkSize;
+	static constexpr int chunksY = mapH / chunkSize;
+	static constexpr int chunkCount = chunksX * chunksY;
+
+	static_assert(mapW% chunkSize == 0);
+	static_assert(mapH% chunkSize == 0);
 
 private:
 
@@ -79,13 +110,7 @@ private:
 
 public:
 
-	struct lightingSettings_pc {
-		int interpolationEnabled = 1;
-		int upscaleEnabled = 1;
-		int blurEnabled = 1;
-	};
-
-	lightingSettings_pc lightingSettings;
+	TileWorldLightingSettings_pc lightingSettings;
 
 	// by chunk and then global position
 	std::vector< std::vector<glm::vec2>> torchPositions;
@@ -127,10 +152,10 @@ public:
 	};
 
 	void copyLargeFGChunkToDevice(int chunkIndex) {
-		engine->copyBuffer(largeChunkBuffer, MapFGBuffer.buffer, sizeof(worldTile_ssbo) * largeChunkCount, mapOffset * sizeof(worldTile_ssbo) + chunkIndex * sizeof(worldTile_ssbo) * largeChunkCount);
+		engine->copyBuffer(largeChunkBuffer, deviceResources.MapFGBuffer.buffer, sizeof(worldTile_ssbo) * largeChunkCount, mapOffset * sizeof(worldTile_ssbo) + chunkIndex * sizeof(worldTile_ssbo) * largeChunkCount);
 	};
 	void copyLargeBGChunkToDevice(int chunkIndex) {
-		engine->copyBuffer(largeChunkBuffer, MapBGBuffer.buffer, sizeof(worldTile_ssbo) * largeChunkCount, mapOffset * sizeof(worldTile_ssbo) + chunkIndex * sizeof(worldTile_ssbo) * largeChunkCount);
+		engine->copyBuffer(largeChunkBuffer, deviceResources.MapBGBuffer.buffer, sizeof(worldTile_ssbo) * largeChunkCount, mapOffset * sizeof(worldTile_ssbo) + chunkIndex * sizeof(worldTile_ssbo) * largeChunkCount);
 	};
 
 	void AllocateVulkanResources() {
@@ -161,7 +186,7 @@ public:
 		int cx = (x / chunkSize);
 		int cy = (y / chunkSize);
 		int chunk = cy * chunksX + cx;
-		int chuckIndexOffset = chunk * chunkTileCount;
+		int chuckIndexOffset = chunk * chunkTileCount; // could cache when scanning sequentially
 		uint32_t index = mapOffset + chuckIndexOffset + (y % chunkSize) * chunkSize + (x % chunkSize);
 		index %= mapCount;
 		return mapData[index] & 0xFFFF;
@@ -176,15 +201,15 @@ public:
 
 	inline glm::ivec2 WorldPosTile(const glm::vec2 pos) const {
 		return 	{
-			pos.x / tileWorldSize + mapW / 2,
-			pos.y / tileWorldSize + mapH / 2
+			pos.x / tileWorldBlockSize + mapW / 2,
+			pos.y / tileWorldBlockSize + mapH / 2
 		};
 	}
 
 	inline glm::vec2 TileWorldPos(const glm::ivec2 tile) const {
 		return{
-			(tile.x - mapW / 2) * tileWorldSize,
-			(tile.y - mapH / 2) * tileWorldSize
+			(tile.x - mapW / 2) * tileWorldBlockSize,
+			(tile.y - mapH / 2) * tileWorldBlockSize
 		};
 	}
 
@@ -355,6 +380,8 @@ public:
 		}
 	};
 
+	TileWorldDeviceResources deviceResources;
+
 	std::vector<chunkLightingUpdateinfo> baseChunkLightingJobs;
 	std::vector<chunkLightingUpdateinfo> blurChunkLightingJobs;
 
@@ -379,10 +406,7 @@ public:
 
 	void stageChunkUpdates(vk::CommandBuffer commandBuffer);
 
-	DeviceBuffer MapFGBuffer;
-	DeviceBuffer MapBGBuffer;
-	DeviceBuffer MapLightUpscaleBuffer;
-	DeviceBuffer MapLightBlurBuffer;
+
 
 	struct worldTile_ssbo {
 		tileID index;
@@ -393,10 +417,10 @@ private:
 	void createWorldBuffer() {
 		// create foreground and background VRAM buffers
 
-		engine->CreateDeviceOnlyStorageBuffer(sizeof(worldTile_ssbo) * (mapCount), true, MapFGBuffer);
-		engine->CreateDeviceOnlyStorageBuffer(sizeof(worldTile_ssbo) * (mapCount), true, MapBGBuffer);
-		engine->CreateDeviceOnlyStorageBuffer(sizeof(worldTile_ssbo) * (mapCount) * 4, true, MapLightUpscaleBuffer);
-		engine->CreateDeviceOnlyStorageBuffer(sizeof(worldTile_ssbo) * (mapCount) * 4, true, MapLightBlurBuffer);
+		engine->CreateDeviceOnlyStorageBuffer(sizeof(worldTile_ssbo) * (mapCount), true, deviceResources.MapFGBuffer);
+		engine->CreateDeviceOnlyStorageBuffer(sizeof(worldTile_ssbo) * (mapCount), true, deviceResources.MapBGBuffer);
+		engine->CreateDeviceOnlyStorageBuffer(sizeof(worldTile_ssbo) * (mapCount) * 4, true, deviceResources.MapLightUpscaleBuffer);
+		engine->CreateDeviceOnlyStorageBuffer(sizeof(worldTile_ssbo) * (mapCount) * 4, true, deviceResources.MapLightBlurBuffer);
 
 		/*MapFGBuffer.size = sizeof(worldTile_ssbo) * (mapCount);
 		MapBGBuffer.size = sizeof(worldTile_ssbo) * (mapCount);
@@ -420,10 +444,12 @@ private:
 	};
 
 	VKEngine* engine;
-
 	vk::Buffer largeChunkBuffer;
 	VmaAllocation largeChunkAllocation;
 	void* largeChunkBufferMapped;
 
 	MappedDoubleBuffer<worldTile_ssbo> chunkTransferBuffers;
 };
+
+using LargeTileWorld = TileWorld<LargeTileWorldWidth, LargeTileWorldHeight>;
+using SmallTileWorld = TileWorld<SmallTileWorldWidth, SmallTileWorldHeight>;

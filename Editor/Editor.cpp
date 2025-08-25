@@ -125,12 +125,12 @@ namespace {
 vec2 Editor::DrawSprite(spriteID id, glm::vec2 maxSize) {
 	const auto& sprite = engine->assetManager->GetSprite(id);
 	const auto& imTexture = engine->assetManager->getSpriteImTextureID(sprite->ID);
-	assert(imTexture.has_value());
+	//assert(imTexture.has_value());
 
-	if (imTexture.has_value() == false) {
-		Text("Could not display texture in Editor");
-		return ImGui::GetItemRectSize();
-	}
+	//if (imTexture.has_value() == false) {
+	//	Text("Could not display texture in Editor");
+	//	return ImGui::GetItemRectSize();
+	//}
 
 	vec2 imSize = sprite->resolution;
 	float iaspect = imSize.x / imSize.y;
@@ -147,17 +147,17 @@ vec2 Editor::DrawSprite(spriteID id, glm::vec2 maxSize) {
 		dispSize.x = maxSize.y * iaspect;
 	}
 
-	Image((ImTextureID)imTexture.value(), dispSize, vec2(0, 1), vec2(1, 0));
+	Image(imTexture, dispSize, vec2(0, 1), vec2(1, 0));
 	return dispSize;
 }
 vec2 Editor::DrawSpriteAtlas(spriteID id, glm::vec2 maxSize, int atlasIndex) {
 	const auto& sprite = engine->assetManager->GetSprite(id);
 	const auto& imTexture = engine->assetManager->getSpriteImTextureID(sprite->ID);
 
-	if (imTexture.has_value() == false) {
-		Text("Could not display texture in Editor");
-		return ImGui::GetItemRectSize();
-	}
+	//if (imTexture.has_value() == false) {
+	//	Text("Could not display texture in Editor");
+	//	return ImGui::GetItemRectSize();
+	//}
 
 	if (sprite->atlas.size() > 0) {
 		auto atlasEntry = sprite->atlas[atlasIndex];
@@ -178,7 +178,7 @@ vec2 Editor::DrawSpriteAtlas(spriteID id, glm::vec2 maxSize, int atlasIndex) {
 		}
 
 		Text(atlasEntry.name.c_str());
-		Image((ImTextureID)imTexture.value(), dispSize, vec2(atlasEntry.uv_min.x, 1.0 - atlasEntry.uv_min.y), vec2(atlasEntry.uv_max.x, 1.0 - atlasEntry.uv_max.y));
+		Image(imTexture, dispSize, vec2(atlasEntry.uv_min.x, 1.0 - atlasEntry.uv_min.y), vec2(atlasEntry.uv_max.x, 1.0 - atlasEntry.uv_max.y));
 		//Image((ImTextureID)imTexture.value(), dispSize, atlasEntry.uv_min, atlasEntry.uv_max);
 		return dispSize;
 	}
@@ -814,7 +814,7 @@ void Editor::Initialize(Engine* engine, std::shared_ptr<Scene> gameScene, sceneG
 	entityPrviewFrameSize = vec2(600);
 
 	SceneGraphicsAllocationConfiguration sceneConfig;
-	sceneConfig.AllocateTileWorld = false;
+	sceneConfig.AllocateLargeTileWorld = false;
 	sceneConfig.Framebuffer_ClearColor = glm::vec4(vec3(0.2), 1.0);
 	sceneConfig.Lightmap_ClearValue = 1.0f;
 

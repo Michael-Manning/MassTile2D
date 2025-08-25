@@ -94,7 +94,7 @@ private:
 		std::vector<DrawlistGraphicsContext> foregroundDrawlistContexts;
 		std::vector<Drawlist> foregroundDrawlistLayers;
 
-		std::unique_ptr<TileWorld> worldMap = nullptr;
+		LargeTileWorld* largeWorldMap = nullptr;
 
 		texID tilemapTextureAtlas;
 
@@ -184,7 +184,7 @@ public:
 	}
 
 	void setTilemapAtlasTexture(sceneGraphicsContextID contextID, texID texture) {
-		assert(sceneRenderContextMap.at(contextID).allocationSettings.AllocateTileWorld);
+		assert(sceneRenderContextMap.at(contextID).allocationSettings.AllocateLargeTileWorld);
 		sceneRenderContextMap.at(contextID).tilemapTextureAtlas = texture;
 	};
 
@@ -194,10 +194,12 @@ public:
 		//screenSpaceTransformUploader.Invalidate();
 	};
 
-	sceneGraphicsContextID CreateSceneRenderContext(glm::ivec2 framebufferSize, SceneGraphicsAllocationConfiguration allocationSettings) {
+	sceneGraphicsContextID CreateSceneRenderContext(glm::ivec2 framebufferSize, SceneGraphicsAllocationConfiguration allocationSettings, LargeTileWorld* largeMap = nullptr) {
 
 		sceneGraphicsContextID id = renderContextGenerator.GenerateID();
 		auto [iter, inserted] = sceneRenderContextMap.emplace(id, allocationSettings);
+
+		iter->second.largeWorldMap = largeMap;
 
 		initializeSceneGraphicsContext(iter->second, framebufferSize);
 
@@ -207,7 +209,7 @@ public:
 	void ResizeSceneRenderContext(sceneGraphicsContextID id, glm::ivec2 size) {
 		auto& ctx = sceneRenderContextMap.at(id);
 		resourceManager->ResizeFramebuffer(ctx.drawFramebuffer, size);
-		if (ctx.allocationSettings.AllocateTileWorld)
+		if (ctx.allocationSettings.AllocateLargeTileWorld)
 			resourceManager->ResizeFramebuffer(ctx.lightingFramebuffer, size);
 
 	}
@@ -224,10 +226,10 @@ public:
 		return resourceManager->GetFramebuffer(id)->targetSize;
 	}
 
-	TileWorld* GetSceneRenderContextTileWorld(sceneGraphicsContextID id) {
-		assert(sceneRenderContextMap.at(id).allocationSettings.AllocateTileWorld);
-		return sceneRenderContextMap.at(id).worldMap.get();
-	}
+	//TileWorld* GetSceneRenderContextTileWorld(sceneGraphicsContextID id) {
+	//	assert(sceneRenderContextMap.at(id).allocationSettings.AllocateTileWorld);
+	//	return sceneRenderContextMap.at(id).worldMap.get();
+	//}
 
 	glm::vec4 GetFramebufferClearColor(framebufferID id) {
 		return resourceManager->GetFramebuffer(id)->clearColor;
@@ -239,7 +241,12 @@ public:
 	void ImGuiFramebufferImage(framebufferID framebuffer, glm::ivec2 displaySize) {
 		auto fb = resourceManager->GetFramebuffer(framebuffer);
 		auto tex = fb->textures[rengine->currentFrame];
-		ImGui::Image((ImTextureID)tex->imTexture.value(), ImVec2(displaySize.x, displaySize.y), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f));
+		ImGui::Image(
+			(ImTextureID)static_cast<VkDescriptorSet>(tex->imTexture.value()), 
+			ImVec2(displaySize.x, displaySize.y), 
+			ImVec2(0.0f, 0.0f), 
+			ImVec2(1.0f, 1.0f)
+		);
 	};
 
 	Drawlist* GetScreenspaceDrawlist(int layer = 0) {
@@ -255,6 +262,8 @@ public:
 		assert(sceneRenderContextMap.at(id).foregroundDrawlistLayers.size() >= layer);
 		return &sceneRenderContextMap.at(id).foregroundDrawlistLayers.at(layer);
 	}
+
+	std::unique_ptr<LargeTileWorld> CreateLargeTileWorld();
 
 private:
 

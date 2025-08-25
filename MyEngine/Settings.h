@@ -57,7 +57,7 @@ struct SceneGraphicsAllocationConfiguration {
 
 	glm::vec4 Framebuffer_ClearColor = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 
-	bool AllocateTileWorld = true;
+	bool AllocateLargeTileWorld = true;
 	float Lightmap_ClearValue = 0.0f;
 
 	// layers which appear behind scene graphics components

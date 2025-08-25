@@ -48,5 +48,5 @@ namespace global {
 	InventoryContainer* inspectedInventory = nullptr; 
 	glm::vec2 inspectedInventoryLocation;
 	
-	TileWorld* tileWorld = nullptr;
+	LargeTileWorld* tileWorld = nullptr;
 }

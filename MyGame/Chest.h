@@ -27,7 +27,7 @@ private:
 		auto pos = global::tileWorld->TileWorldPos(position);
 
 		entityRef = global::mainScene->Instantiate(global::assetManager->GetPrefab("chest"), "",
-			global::tileWorld->TileWorldPos(position) + (glm::vec2(size / 2) * tileWorldSize));
+			global::tileWorld->TileWorldPos(position) + (glm::vec2(size / 2) * tileWorldBlockSize));
 	}
 
 public:

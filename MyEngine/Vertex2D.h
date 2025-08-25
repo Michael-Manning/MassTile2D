@@ -14,14 +14,14 @@ using dbVertexAtribute = std::array<vk::VertexInputAttributeDescription, 2>;
 /// <summary>
 /// Default vertex with 2D position and UVs
 /// </summary>
-struct Vertex {
+struct Vertex2D {
 	glm::vec2 pos;
 	glm::vec2 UVCoord;
 
 	static vk::VertexInputBindingDescription getBindingDescription() {
 		vk::VertexInputBindingDescription bindingDescription{};
 		bindingDescription.binding = 0;
-		bindingDescription.stride = sizeof(Vertex);
+		bindingDescription.stride = sizeof(Vertex2D);
 		bindingDescription.inputRate = vk::VertexInputRate::eVertex;
 
 		return bindingDescription;
@@ -33,12 +33,12 @@ struct Vertex {
 		attributeDescriptions[0].binding = 0;
 		attributeDescriptions[0].location = 0;
 		attributeDescriptions[0].format = vk::Format::eR32G32Sfloat;
-		attributeDescriptions[0].offset = offsetof(Vertex, pos);
+		attributeDescriptions[0].offset = offsetof(Vertex2D, pos);
 
 		attributeDescriptions[1].binding = 0;
 		attributeDescriptions[1].location = 2;
 		attributeDescriptions[1].format = vk::Format::eR32G32Sfloat;
-		attributeDescriptions[1].offset = offsetof(Vertex, UVCoord);
+		attributeDescriptions[1].offset = offsetof(Vertex2D, UVCoord);
 
 		return attributeDescriptions;
 	}
@@ -46,8 +46,8 @@ struct Vertex {
 	static vk::PipelineVertexInputStateCreateInfo getVertexInputInfo(vk::VertexInputBindingDescription * bindingDescription, dbVertexAtribute * attribute) {
 
 		vk::PipelineVertexInputStateCreateInfo vertexInputInfo;
-		*bindingDescription = Vertex::getBindingDescription();
-		*attribute = Vertex::getAttributeDescriptions();
+		*bindingDescription = Vertex2D::getBindingDescription();
+		*attribute = Vertex2D::getAttributeDescriptions();
 
 		vertexInputInfo.vertexBindingDescriptionCount = 1;
 		vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>((*attribute).size());
@@ -58,17 +58,12 @@ struct Vertex {
 };
 
 
-constexpr std::array<Vertex, 4> quadVertices = {
+constexpr std::array<Vertex2D, 4> quadVertices = {
 
-	Vertex{{-0.5f, -0.5f}, {0.0f, 0.0f}},
-	Vertex{{0.5f, -0.5f}, {1.0f, 0.0f}},
-	Vertex{{0.5f, 0.5f}, {1.0f, 1.0f}},
-	Vertex{{-0.5f, 0.5f}, {0.0f, 1.0f}}
-
-	//Vertex{{-0.5f, -0.5f}, {1.0f, 0.0f}},
-	//Vertex{{0.5f, -0.5f}, {0.0f, 0.0f}},
-	//Vertex{{0.5f, 0.5f}, {0.0f, 1.0f}},
-	//Vertex{{-0.5f, 0.5f}, {1.0f, 1.0f}}
+	Vertex2D{{-0.5f, -0.5f}, {0.0f, 0.0f}},
+	Vertex2D{{0.5f, -0.5f}, {1.0f, 0.0f}},
+	Vertex2D{{0.5f, 0.5f}, {1.0f, 1.0f}},
+	Vertex2D{{-0.5f, 0.5f}, {0.0f, 1.0f}}
 };
 
 constexpr std::array<uint16_t, 6> QuadIndices = {

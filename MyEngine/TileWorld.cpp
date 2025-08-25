@@ -15,8 +15,7 @@
 
 #include "TileWorld.h"
 
-
-void TileWorld::stageChunkUpdates(vk::CommandBuffer commandBuffer) {
+void LargeTileWorld::stageChunkUpdates(vk::CommandBuffer commandBuffer) {
 
 	// nothing updated
 	if (tileDirtyState.dirtyIndexes.size() == 0)
@@ -49,7 +48,7 @@ void TileWorld::stageChunkUpdates(vk::CommandBuffer commandBuffer) {
 
 	assert(copyRegions.size() > 0);
 
-	commandBuffer.copyBuffer(chunkTransferBuffers.buffers[engine->currentFrame], MapFGBuffer.buffer, copyRegions.size(), copyRegions.data());
+	commandBuffer.copyBuffer(chunkTransferBuffers.buffers[engine->currentFrame], deviceResources.MapFGBuffer.buffer, copyRegions.size(), copyRegions.data());
 
 	//must insure transfer is complete before lighting compute shader can access the world buffer
 	vk::BufferMemoryBarrier barrier;
@@ -57,7 +56,7 @@ void TileWorld::stageChunkUpdates(vk::CommandBuffer commandBuffer) {
 	barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eShaderWrite;
 	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	barrier.buffer = MapFGBuffer.buffer;
+	barrier.buffer = deviceResources.MapFGBuffer.buffer;
 	barrier.offset = 0;
 	barrier.size = VK_WHOLE_SIZE; // Could be changed to a portion, but I don't know if there would be a benefit
 
@@ -71,7 +70,8 @@ void TileWorld::stageChunkUpdates(vk::CommandBuffer commandBuffer) {
 	);
 };
 
-void TileWorld::updateBlurLighting(){
+
+void LargeTileWorld::updateBlurLighting(){
 	ZoneScoped;
 
 	// nothing updated
@@ -128,7 +128,7 @@ void TileWorld::updateBlurLighting(){
 	}
 }
 
-void TileWorld::updateBaseLighting() 
+void LargeTileWorld::updateBaseLighting()
 {
 	ZoneScoped;
 

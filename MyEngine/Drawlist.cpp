@@ -42,7 +42,7 @@ void Drawlist::AddTriangles(std::vector <glm::vec2>&vertices, std::vector<glm::v
 	int vertexIndex = coloredTrianglesInstanceIndex * ColoredTrianglesPL::verticesPerMesh;
 	for (auto& v : vertices)
 	{
-		coloredTriangleVertexData[vertexIndex] = Vertex{ .pos = v, .UVCoord = {0, 0} };
+		coloredTriangleVertexData[vertexIndex] = Vertex2D{ .pos = v, .UVCoord = {0, 0} };
 		vertexIndex++;
 	}
 

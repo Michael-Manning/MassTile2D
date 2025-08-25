@@ -9,7 +9,7 @@
 #include "VKEngine.h"
 #include "pipeline.h"
 #include "typedefs.h"
-#include "Vertex.h"
+#include "Vertex2D.h"
 #include "GraphicsTemplate.h"
 #include "globalBufferDefinitions.h"
 

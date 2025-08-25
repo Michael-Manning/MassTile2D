@@ -743,6 +743,9 @@ Texture VKEngine::genTexture(string imagePath, FilterMode filterMode, const Thre
 		}
 
 		genTexture(pixels, imageSize, filterMode, tex, context);
+
+		// why crash :(
+		//stbi_image_free(pixels);
 	}
 
 	return tex;

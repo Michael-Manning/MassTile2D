@@ -31,7 +31,7 @@ public:
 	void CreateGraphicsPipeline(PipelineParameters& params);
 	void recordCommandBuffer(vk::CommandBuffer commandBuffer, int triangleCount);
 
-	Vertex* GetVertexMappedBuffer(int frame) {
+	Vertex2D* GetVertexMappedBuffer(int frame) {
 		return vertexDB.buffersMapped[frame];
 	}
 	InstanceBufferData* GetColorMappedBuffer(int frame) {
@@ -44,7 +44,7 @@ public:
 private:
 	GraphicsTemplate pipeline;
 
-	MappedDoubleBuffer<Vertex> vertexDB;
+	MappedDoubleBuffer<Vertex2D> vertexDB;
 	MappedDoubleBuffer<InstanceBufferData> instanceDB;
 
 	VKEngine* engine;

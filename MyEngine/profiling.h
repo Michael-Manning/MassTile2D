@@ -15,6 +15,8 @@
 
 	USAGE: 
 	
+	place PROFILING_IMPL in a source file somewhere
+
 	Use PROFILE_START(something_unique) and PROFILE_END(something_unique) to output the time for a section
 
 	Use PROFILE_SCOPE; to profile a scope labled by function name, or PROFILE_SCOPEN(some_label) to profile a scope with a custom label
@@ -26,6 +28,7 @@
 #define _PROFILE_concat_impl(arg1, arg2) arg1 ## arg2
 #define _PROFILE_concat(arg1, arg2) _PROFILE_concat_impl(arg1, arg2)
 
+#define PROFILE_IN_RELEASE
 #if defined(_DEBUG) || defined(PROFILE_IN_RELEASE)
 
 static std::string autoTimeScale(unsigned long long microseconds) {
@@ -99,7 +102,7 @@ public:
 
 
 				printStack.push(profilePrintout{
-					.duration = res.duration,
+					.duration = static_cast<size_t>(res.duration),
 					.scopePercentage = (static_cast<double>(res.duration) / outerDuration) * 100,
 					.name = res.scopeName,
 					.depth = res.depth
@@ -226,6 +229,10 @@ private:
 
 #define PROFILE_END(s)
 
-#define PROFILE_SCOPE(s)
+#define PROFILE_SCOPE
+
+#define PROFILE_SCOPEN(s)
+
+#define PROFILING_IMPL
 
 #endif

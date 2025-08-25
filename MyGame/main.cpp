@@ -141,7 +141,7 @@ Input* input = nullptr;
 shared_ptr<Scene> scene = nullptr;
 sceneGraphicsContextID sceneRenderCtx = 0;
 AssetManager::AssetPaths AssetDirectories = {};
-TileWorld* worldMap;
+unique_ptr<LargeTileWorld> worldMap = nullptr;
 Camera mainCamera{
 	glm::vec2(-15.0f, 84.0f),
 	0.25f
@@ -193,13 +193,13 @@ bool initializeEngine(std::unique_ptr<Engine>& engine) {
 #endif
 
 	auto exePath = get_executable_directory();
-#ifndef USE_PACKED_ASSETS
+//#ifndef USE_PACKED_ASSETS
 	AssetDirectories.sceneDir = makePathAbsolute(exePath, "../../data/Scenes/") + "/";
 	AssetDirectories.prefabDir = makePathAbsolute(exePath, "../../data/Prefabs/") + "/";
 	AssetDirectories.assetDir = makePathAbsolute(exePath, "../../data/Assets/") + "/";
 	AssetDirectories.fontsDir = makePathAbsolute(exePath, "../../data/Fonts/") + "/";
 	AssetDirectories.shaderDir = makePathAbsolute(exePath, "../../shaders/compiled/") + "/";
-#endif
+//#endif
 	AssetDirectories.resourcePtr = resourcePtr;
 
 	WindowSetting windowSetting;
@@ -240,8 +240,9 @@ bool initializeEngine(std::unique_ptr<Engine>& engine) {
 void createTileWorld() {
 	{
 		// load this from packed resources. 
-		worldMap = engine->GetSceneRenderContextTileWorld(sceneRenderCtx);
-		WorldGenerator generator(worldMap);
+		//worldMap = engine->GetSceneRenderContextTileWorld(sceneRenderCtx);
+		worldMap = engine->CreateLargeTileWorld();
+		WorldGenerator generator(worldMap.get());
 #if NDEBUG
 		vector<uint8_t> worldGenData;
 		engine->assetManager->LoadResourceFile("worldgen.json", worldGenData);
@@ -261,11 +262,7 @@ void createTileWorld() {
 
 	}
 
-	engine->setTilemapAtlasTexture(sceneRenderCtx, engine->assetManager->GetSprite("tilemapSprites")->textureID);
-
-	worldMap->FullLightingUpdate();
-
-	global::tileWorld = worldMap;
+	global::tileWorld = worldMap.get();
 }
 
 void queueRenderTasks() {
@@ -320,8 +317,8 @@ void worldDebug() {
 
 	vec2 worldClick = engine->screenToWorldPos(input->getMousePos());
 	//cout << worldClick.x << " " << worldClick.y << endl;
-	int tileX = worldClick.x / tileWorldSize + mapW / 2;
-	int tileY = worldClick.y / tileWorldSize + mapH / 2;
+	int tileX = worldClick.x / tileWorldBlockSize + mapW / 2;
+	int tileY = worldClick.y / tileWorldBlockSize + mapH / 2;
 
 	if (tileX > 1 && tileX < mapW - 1 && tileY > 1 && tileY < mapH - 1) {
 		int x = tileX;
@@ -347,8 +344,8 @@ void worldDebug() {
 
 			//if (input->getMouseBtnDown(MouseBtn::Left)) {
 
-			float tileXf = worldClick.x / tileWorldSize + mapW / 2.0f;
-			float tileYf = mapH - (worldClick.y / tileWorldSize + mapH / 2.0f) - 1;
+			float tileXf = worldClick.x / tileWorldBlockSize + mapW / 2.0f;
+			float tileYf = mapH - (worldClick.y / tileWorldBlockSize + mapH / 2.0f) - 1;
 
 			engine.worldMap->setMovingTorch(vec2(tileXf, tileYf), true);
 
@@ -378,8 +375,8 @@ void worldDebug() {
 	if (showingEditor == false && input->getMouseBtn(MouseBtn::Right)) {
 		vec2 worldClick = engine.screenToWorldPos(input->getMousePos());
 
-		int tileX = worldClick.x / tileWorldSize + mapW / 2;
-		int tileY = worldClick.y / tileWorldSize + mapH / 2;
+		int tileX = worldClick.x / tileWorldBlockSize + mapW / 2;
+		int tileY = worldClick.y / tileWorldBlockSize + mapH / 2;
 
 		if (tileX > 1 && tileX < mapW - 1 && tileY > 1 && tileY < mapH - 1) {
 
@@ -427,18 +424,7 @@ int main() {
 	//sceneRenderCtx = engine->CreateSceneRenderContext(engine->getWindowSize(), useTileWorld, vec4(0, 0, 0, 1));
 	//sceneRenderCtx = engine->CreateSceneRenderContext(engine->getWindowSize(), useTileWorld, { 0.2, 0.3, 1.0, 1 });
 
-	SceneGraphicsAllocationConfiguration sceneConfig;
-	sceneConfig.Worldspace_Background_DrawlistLayerCount = 1;
-	sceneConfig.Worldspace_Background_LayerAllocations.push_back({});
-	sceneConfig.Worldspace_Foreground_DrawlistLayerCount = 1;
-	sceneConfig.Worldspace_Foreground_LayerAllocations.push_back({});
 
-
-	sceneConfig.AllocateTileWorld = useTileWorld;
-	//sceneConfig.Framebuffer_ClearColor = { 0.0, 0.0, 0.0, 1 };
-	sceneConfig.Framebuffer_ClearColor = { 0.2, 0.3, 1.0, 1 };
-
-	sceneRenderCtx = engine->CreateSceneRenderContext(engine->getWindowSize(), sceneConfig);
 
 
 	// load all resources 
@@ -450,6 +436,32 @@ int main() {
 		engine->assetManager->LoadScene("game_test");
 		scene = engine->assetManager->GetScene("game_test");
 	}
+
+
+	unique_ptr<WorldData> worldData = nullptr;
+	if (useTileWorld) {
+		createTileWorld();
+		worldData = make_unique<WorldData>(LargeTileWorld::chunkCount);
+	}
+
+	SceneGraphicsAllocationConfiguration sceneConfig;
+	sceneConfig.Worldspace_Background_DrawlistLayerCount = 1;
+	sceneConfig.Worldspace_Background_LayerAllocations.push_back({});
+	sceneConfig.Worldspace_Foreground_DrawlistLayerCount = 1;
+	sceneConfig.Worldspace_Foreground_LayerAllocations.push_back({});
+
+
+	sceneConfig.AllocateLargeTileWorld = useTileWorld;
+	//sceneConfig.Framebuffer_ClearColor = { 0.0, 0.0, 0.0, 1 };
+	sceneConfig.Framebuffer_ClearColor = { 0.2, 0.3, 1.0, 1 };
+
+	sceneRenderCtx = engine->CreateSceneRenderContext(engine->getWindowSize(), sceneConfig, worldMap.get());
+
+	if (useTileWorld) {
+		engine->setTilemapAtlasTexture(sceneRenderCtx, engine->assetManager->GetSprite("tilemapSprites")->textureID);
+		worldMap->FullLightingUpdate();
+	}
+
 
 	global::mainScene = scene.get();
 
@@ -467,14 +479,6 @@ int main() {
 	editor.editorCamera = mainCamera;
 #endif
 
-
-
-	unique_ptr<WorldData> worldData = nullptr;
-
-	if (useTileWorld) {
-		createTileWorld();
-		worldData = make_unique<WorldData>();
-	}
 
 	//const auto& myTest = worldData->chunks[0].chests.at(glm::ivec2(6, 8));
 
@@ -719,8 +723,8 @@ int main() {
 
 				if (input->getKey('u')) {
 					vec2 worldClick = gameSceneSreenToWorldPos(input->getMousePos());
-					float tileXf = worldClick.x / tileWorldSize + mapW / 2.0f;
-					float tileYf = worldClick.y / tileWorldSize + mapH / 2.0f;
+					float tileXf = worldClick.x / tileWorldBlockSize + LargeTileWorldWidth / 2.0f;
+					float tileYf = worldClick.y / tileWorldBlockSize + LargeTileWorldHeight / 2.0f;
 
 					worldMap->setMovingTorch(vec2(tileXf, tileYf), true);
 				}

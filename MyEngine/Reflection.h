@@ -4,11 +4,11 @@
 #include <stdint.h>
 #include <stdexcept>
 
-#ifndef SPIRV_REFLECT_USE_SYSTEM_SPIRV_H
-#define SPIRV_REFLECT_USE_SYSTEM_SPIRV_H
-#endif
+//#ifndef SPIRV_REFLECT_USE_SYSTEM_SPIRV_H
+//#define SPIRV_REFLECT_USE_SYSTEM_SPIRV_H
+//#endif
 
-#include <spirv_reflect.h>
+#include <spirv-reflect/spirv_reflect.h>
 #include <vulkan/vulkan.hpp>
 
 namespace Reflection {

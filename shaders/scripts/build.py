@@ -31,8 +31,6 @@ if not os.path.exists(src_folder):
 
 mod_time_file = os.path.join(scripts_folder, "mod_times.json")
 
-#shadersChanged, allShaders = checkMod(src_folder, os.path.join(scripts_folder, "mod_times.json"))
-
 
 changedShaders = set()
 allShaders = set()

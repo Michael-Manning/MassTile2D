@@ -21,7 +21,7 @@ public:
 		if (global::input->getMouseBtn(MouseBtn::Left)) {
 			glm::ivec2 tile = GetMouseTile();
 
-			if (tile.x > 1 && tile.x < mapW - 1 && tile.y > 1 && tile.y < mapH - 1) {
+			if (tile.x > 1 && tile.x < LargeTileWorldWidth - 1 && tile.y > 1 && tile.y < LargeTileWorldHeight - 1) {
 
 
 				tileID tileid = global::tileWorld->getTile(tile);
@@ -30,7 +30,7 @@ public:
 
 					blockID block = GetBlock(tileid);
 					global::tileWorld->setTile(tile, Blocks::Air);
-					UpdateTextureVariations(tile);
+					UpdateTextureVariations(tile, global::tileWorld);
 
 
 					// place block into inventory

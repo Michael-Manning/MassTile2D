@@ -28,7 +28,7 @@
 #include "SpriteRenderer.h"	
 #include "Physics.h"
 #include "Entity.h"
-#include "Vertex.h"
+#include "Vertex2D.h"
 #include "profiling.h"
 #include "Settings.h"
 #include "GlobalImageDescriptor.h"
@@ -145,43 +145,45 @@ void Engine::initializeSceneGraphicsContext(SceneGraphicsContext& ctx, glm::ivec
 		ctx.texturePipeline->CreateGraphicsPipeline(prm, &GlobalTextureDesc, true, lightmapTextures);
 	}
 
-	if (ctx.allocationSettings.AllocateTileWorld) {
+	if (ctx.allocationSettings.AllocateLargeTileWorld) {
+
+		assert(ctx.largeWorldMap != nullptr);
 
 		{
-			PROFILE_SCOPEN(Allocate_tileworld);
-			ctx.worldMap = make_unique<TileWorld>(rengine.get());
-			ctx.worldMap->AllocateVulkanResources();
+			//PROFILE_SCOPEN(Allocate_tileworld);
+			///*ctx.worldMap = make_unique<TileWorld>(rengine.get());*/
+			//ctx.largeWorldMap->AllocateVulkanResources();
 		}
 
 		{
 			PROFILE_SCOPEN(lightingPipeline);
-			ctx.lightingPipeline = make_unique<LightingComputePL>(rengine.get(), ctx.worldMap.get());
+			ctx.lightingPipeline = make_unique<LightingComputePL>(rengine.get());
 			vector<uint8_t> comp, upscale, blur;
 			assetManager->LoadShaderFile("lighting_comp.spv", comp);
 			assetManager->LoadShaderFile("lightingUpscale_comp.spv", upscale);
 			assetManager->LoadShaderFile("lightingBlur_comp.spv", blur);
-			ctx.lightingPipeline->CreateComputePipeline(comp, upscale, blur);
+			ctx.lightingPipeline->CreateComputePipeline(comp, upscale, blur, &ctx.largeWorldMap->deviceResources);
 		}
 		{
 			PROFILE_SCOPEN(tilemapLightRasterPipeline);
-			ctx.tilemapLightRasterPipeline = make_unique<TilemapLightRasterPL>(rengine.get(), ctx.worldMap.get());
+			ctx.tilemapLightRasterPipeline = make_unique<TilemapLightRasterPL>(rengine.get());
 			PipelineParameters prm;
 			assetManager->LoadShaderFile("tilemapLightRaster_vert.spv", prm.vertexSrc);
 			assetManager->LoadShaderFile("tilemapLightRaster_frag.spv", prm.fragmentSrc);
 			prm.renderTarget = lightingFramebuffer->renderpass;
 			prm.cameraDB = ctx.cameraBuffers;
-			ctx.tilemapLightRasterPipeline->CreateGraphicsPipeline(prm, &GlobalTextureDesc);
+			ctx.tilemapLightRasterPipeline->CreateGraphicsPipeline(prm, &GlobalTextureDesc, &ctx.largeWorldMap->deviceResources);
 		}
 		{
 			PROFILE_SCOPEN(tilemapPipeline);
-			ctx.tilemapPipeline = make_unique<TilemapPL>(rengine.get(), ctx.worldMap.get());
+			ctx.tilemapPipeline = make_unique<TilemapPL>(rengine.get());
 			PipelineParameters prm;
 			assetManager->LoadShaderFile("tilemap_vert.spv", prm.vertexSrc);
 			assetManager->LoadShaderFile("tilemap_frag.spv", prm.fragmentSrc);
 			prm.renderTarget = drawRenderpass;
 			prm.cameraDB = ctx.cameraBuffers;
 			prm.flipFaces = false;
-			ctx.tilemapPipeline->CreateGraphicsPipeline(prm, &GlobalTextureDesc);
+			ctx.tilemapPipeline->CreateGraphicsPipeline(prm, &GlobalTextureDesc, &ctx.largeWorldMap->deviceResources);
 		}
 	}
 	{
@@ -218,6 +220,13 @@ void Engine::initializeSceneGraphicsContext(SceneGraphicsContext& ctx, glm::ivec
 	}
 }
 
+
+std::unique_ptr<LargeTileWorld> Engine::CreateLargeTileWorld()
+{
+	auto tw = make_unique<LargeTileWorld>(rengine.get());
+	tw->AllocateVulkanResources();
+	return tw;
+}
 
 Engine::DrawlistGraphicsContext Engine::createDrawlistGraphicsContext(DrawlistAllocationConfiguration allocationSettings, MappedDoubleBuffer<coordinateTransformUBO_s> cameraBuffers, vk::RenderPass renderTarget) {
 
@@ -417,7 +426,7 @@ void Engine::recordSceneContextGraphics(const SceneGraphicsContext& ctx, std::sh
 	{
 		ZoneScopedN("tilemap PL");
 		rengine->beginRenderpass(lightingPass_fb, cmdBuffer);
-		ctx.tilemapLightRasterPipeline->recordCommandBuffer(cmdBuffer, ctx.tilemapTextureAtlas);
+		ctx.tilemapLightRasterPipeline->recordCommandBuffer(cmdBuffer, ctx.tilemapTextureAtlas, ctx.largeWorldMap->lightingSettings);
 		cmdBuffer.endRenderPass();
 		rengine->insertFramebufferTransitionBarrier(cmdBuffer, lightingPass_fb);
 	}
@@ -769,21 +778,21 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 		for (auto& job : sceneRenderJobs) {
 			//const auto& ctx = sceneRenderContextMap.find(job.sceneRenderCtxID)->second.pl; 
 			const auto& ctx = sceneRenderContextMap.at(job.sceneRenderCtxID);
-			if (ctx.worldMap == nullptr)
+			if (ctx.largeWorldMap == nullptr)
 				continue;
 
 			// transfer tiles to read-only memory before starting renderpass
 			{
 				ZoneScopedN("chunk updates");
-				ctx.worldMap->stageChunkUpdates(computeCmdBuffer);
+				ctx.largeWorldMap->stageChunkUpdates(computeCmdBuffer);
 			}
 
-			auto baseBightingtUpdates = ctx.worldMap->getBaseLightingUpdateData();
-			auto blurBightingtUpdates = ctx.worldMap->getBlurLightingUpdateData();
+			auto baseBightingtUpdates = ctx.largeWorldMap->getBaseLightingUpdateData();
+			auto blurBightingtUpdates = ctx.largeWorldMap->getBlurLightingUpdateData();
 			ctx.lightingPipeline->stageLightingUpdate(baseBightingtUpdates, blurBightingtUpdates);
-			ctx.lightingPipeline->recordCommandBuffer(computeCmdBuffer, baseBightingtUpdates.size(), blurBightingtUpdates.size());
-			ctx.worldMap->baseChunkLightingJobs.clear();
-			ctx.worldMap->blurChunkLightingJobs.clear();
+			ctx.lightingPipeline->recordCommandBuffer(computeCmdBuffer, baseBightingtUpdates.size(), blurBightingtUpdates.size(), ctx.largeWorldMap->lightingSettings);
+			ctx.largeWorldMap->baseChunkLightingJobs.clear();
+			ctx.largeWorldMap->blurChunkLightingJobs.clear();
 		}
 
 		// record particle compute for every particle system in every scene
@@ -1169,6 +1178,7 @@ void Engine::InitImgui() {
 	init_info.Instance = rengine->instance;
 	init_info.PhysicalDevice = rengine->physicalDevice;
 	init_info.Device = rengine->devContext.device;
+	init_info.RenderPass = rengine->swapchainRenderPass;
 	init_info.Queue = rengine->devContext.graphicsQueue;
 	init_info.DescriptorPool = imguiPool;
 	init_info.MinImageCount = rengine->swapChainImages.size();
@@ -1176,7 +1186,7 @@ void Engine::InitImgui() {
 	init_info.Subpass = 0;
 	init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 
-	ImGui_ImplVulkan_Init(&init_info, rengine->swapchainRenderPass);
+	ImGui_ImplVulkan_Init(&init_info);
 
 
 	//execute a gpu command to upload imgui font textures

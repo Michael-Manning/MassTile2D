@@ -16,7 +16,6 @@
 
 #include "worldGen.h"
 
-#include "global.h"
 
 
 namespace {
@@ -30,17 +29,17 @@ namespace {
 
 using namespace std;
 
-void CalcTileVariation(uint32_t x, uint32_t y) {
-	if (x > 1 && x < mapW - 1 && y > 1 && y < mapH - 1) {
+void CalcTileVariation(uint32_t x, uint32_t y, LargeTileWorld* world) {
+	if (x > 1 && x < LargeTileWorldWidth - 1 && y > 1 && y < LargeTileWorldHeight - 1) {
 
-		tileID curTile = global::tileWorld->getTile(x, y);
+		tileID curTile = world->getTile(x, y);
 
 		if (IsTransparent(curTile))
 			return;
 
 		blockID tileType = GetBlock(curTile);
 
-		uint8_t hash = global::tileWorld->getAdjacencyHash(x, y);
+		uint8_t hash = world->getAdjacencyHash(x, y);
 
 		uint32_t curHash = (curTile % tilesPerBlock) / tileVariations;
 		if (curHash == hash)
@@ -48,14 +47,14 @@ void CalcTileVariation(uint32_t x, uint32_t y) {
 
 
 		tileID tile = hash * tileVariations + tilesPerBlock * tileType + ran(0, 2);
-		global::tileWorld->setTile(x, y, tile);
+		world->setTile(x, y, tile);
 	}
 }
 
-void UpdateTextureVariations(glm::ivec2 centerTile) {
+void UpdateTextureVariations(glm::ivec2 centerTile, LargeTileWorld* world) {
 	for (int i = -1; i < 2; i++)
 		for (int j = -1; j < 2; j++)
-			CalcTileVariation(centerTile.x + i, centerTile.y + j);
+			CalcTileVariation(centerTile.x + i, centerTile.y + j, world);
 }
 
 
@@ -64,28 +63,28 @@ void WorldGenerator::GenerateTiles(WorldGenSettings& settings) {
 
 	PROFILE_START(World_Gen);
 
-	vector<float> noiseOutput(mapW * mapH);
-	vector<float> ironOutput(mapW * mapH);
-	vector<bool> blockPresence(mapW * mapH);
-	vector<bool> ironPresence(mapW * mapH);
+	vector<float> noiseOutput(LargeTileWorld::mapCount);
+	vector<float> ironOutput(LargeTileWorld::mapCount);
+	vector<bool> blockPresence(LargeTileWorld::mapCount);
+	vector<bool> ironPresence(LargeTileWorld::mapCount);
 
-	vector<int> indexes(mapCount - mapPadding);
+	vector<int> indexes(LargeTileWorld::mapCount - mapPadding);
 	std::iota(indexes.begin(), indexes.end(), 0);
 
 
 
 	FastNoise::SmartNode<> fnGenerator = FastNoise::NewFromEncodedNodeTree(settings.baseTerrain.nodeTree.c_str(), FastSIMD::CPUMaxSIMDLevel());
 	FastNoise::SmartNode<> ironGenerator = FastNoise::NewFromEncodedNodeTree(settings.ironOre.nodeTree.c_str(), FastSIMD::CPUMaxSIMDLevel());
-	fnGenerator->GenUniformGrid2D(noiseOutput.data(), -mapW / 2, -mapH / 2, mapW, mapH, settings.baseTerrain.frequency, 1337); // rd()
-	ironGenerator->GenUniformGrid2D(ironOutput.data(), -mapW / 2, -mapH / 2, mapW, mapH, settings.ironOre.frequency, 1337);
+	fnGenerator->GenUniformGrid2D(noiseOutput.data(), -LargeTileWorldWidth / 2, -LargeTileWorldHeight / 2, LargeTileWorldWidth, LargeTileWorldHeight, settings.baseTerrain.frequency, 1337); // rd()
+	ironGenerator->GenUniformGrid2D(ironOutput.data(), -LargeTileWorldWidth / 2, -LargeTileWorldHeight / 2, LargeTileWorldWidth, LargeTileWorldHeight, settings.ironOre.frequency, 1337);
 
-	vector<uint8_t> tData(mapW * mapH * 4);
+	vector<uint8_t> tData(LargeTileWorld::mapCount * 4);
 
-	for (size_t i = 0; i < mapW * mapH; i++) {
-		int y = i / mapW;
-		int x = i % mapW;
+	for (size_t i = 0; i < LargeTileWorld::mapCount; i++) {
+		int y = i / LargeTileWorldWidth;
+		int x = i % LargeTileWorldWidth;
 
-		int j = x + (y * mapW);
+		int j = x + (y * LargeTileWorldWidth);
 		//int j = x + ((mapH - y - 1) * mapW);
 		float f = glm::clamp(noiseOutput[j], -1.0f, 1.0f);
 		//float f = noiseOutput[j];
@@ -96,7 +95,7 @@ void WorldGenerator::GenerateTiles(WorldGenSettings& settings) {
 		tData[i * 4 + 3] = 255;
 	}
 
-	for (size_t i = 0; i < mapCount - mapPadding; i++) {
+	for (size_t i = 0; i < LargeTileWorld::mapCount - mapPadding; i++) {
 		blockPresence[i] = noiseOutput[i] > settings.baseTerrain.min;
 		ironPresence[i] = ironOutput[i] > settings.ironOre.min;
 	}
@@ -109,6 +108,9 @@ void WorldGenerator::GenerateTiles(WorldGenSettings& settings) {
 
 	auto tworld = world; // encapsolation only works in local scoope?!?
 	std::for_each(std::execution::par_unseq, indexes.begin(), indexes.end(), [&tworld, &blockPresence, &ironPresence](const int& i) {
+
+		const auto mapW = LargeTileWorldWidth;
+		const auto mapH = LargeTileWorldHeight;
 
 		int y = i / mapW;
 		int x = i % mapW;
@@ -144,7 +146,7 @@ void WorldGenerator::GenerateTiles(WorldGenSettings& settings) {
 
 		tworld->preloadTile(x, y, id);
 		//tworld->preloadTile(x, mapH - y - 1, id);
-		tworld->preloadBGTile(x, y, y > (mapH - 205) ? 1023 : 1022);
+		tworld->preloadBGTile(x, y, y > (LargeTileWorldHeight - 205) ? 1023 : 1022);
 		//tworld->preloadBGTile(x, mapH - y - 1, y > (mapH - 205) ? 1023 : 1022);
 
 
@@ -159,13 +161,13 @@ void WorldGenerator::PostProcess() {
 
 	//std::for_each(std::execution::seq, indexes.begin(), indexes.end(), [&engine, &blockPresence, &ironPresence](const int& i) {
 
-	for (size_t i = 0; i < mapCount - mapPadding; i++)
+	for (size_t i = 0; i < LargeTileWorld::mapCount - mapPadding; i++)
 	{
 
 
 
-		int y = i / mapW;
-		int x = i % mapW;
+		int y = i / LargeTileWorldWidth;
+		int x = i % LargeTileWorldWidth;
 
 		//if (y < mapH - 3 && y > 3 && x > 3 && x < mapW - 3)
 		{

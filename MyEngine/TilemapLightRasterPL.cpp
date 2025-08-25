@@ -21,7 +21,7 @@
 #include "typedefs.h"
 #include "vulkan_util.h"
 #include "globalBufferDefinitions.h"
-#include "Vertex.h"
+#include "Vertex2D.h"
 #include "GraphicsTemplate.h"
 
 #include "TilemapLightRasterPL.h"
@@ -29,14 +29,17 @@
 using namespace glm;
 using namespace std;
 
-void TilemapLightRasterPL::CreateGraphicsPipeline(const PipelineParameters& params, GlobalImageDescriptor* textureDescriptor) {
+
+void TilemapLightRasterPL::CreateGraphicsPipeline(const PipelineParameters& params, GlobalImageDescriptor* textureDescriptor, TileWorldDeviceResources* tileWorldData) {
+
+	this->tileWorldData = tileWorldData;
 
 	PipelineResourceConfig con;
 	con.bufferBindings.push_back(BufferBinding(1, 0, params.cameraDB));
-	con.bufferBindings.push_back(BufferBinding(1, 1, world->MapFGBuffer));
-	con.bufferBindings.push_back(BufferBinding(1, 2, world->MapBGBuffer));
-	con.bufferBindings.push_back(BufferBinding(1, 3, world->MapLightUpscaleBuffer));
-	con.bufferBindings.push_back(BufferBinding(1, 4, world->MapLightBlurBuffer));
+	con.bufferBindings.push_back(BufferBinding(1, 1, tileWorldData->MapFGBuffer));
+	con.bufferBindings.push_back(BufferBinding(1, 2, tileWorldData->MapBGBuffer));
+	con.bufferBindings.push_back(BufferBinding(1, 3, tileWorldData->MapLightUpscaleBuffer));
+	con.bufferBindings.push_back(BufferBinding(1, 4, tileWorldData->MapLightBlurBuffer));
 
 	con.globalDescriptors.push_back({ 0, textureDescriptor });
 
@@ -58,12 +61,12 @@ void TilemapLightRasterPL::CreateGraphicsPipeline(const PipelineParameters& para
 	pipeline.CreateGraphicsPipeline(params, con);
 }
 
-void TilemapLightRasterPL::recordCommandBuffer(vk::CommandBuffer commandBuffer, int textureIndex) {
+void TilemapLightRasterPL::recordCommandBuffer(vk::CommandBuffer commandBuffer, int textureIndex, const TileWorldLightingSettings_pc& lightingSettings) {
 	TracyVkZone(engine->tracyGraphicsContexts[engine->currentFrame], commandBuffer, "Tilemap lighting raster");
 
 	pipeline.bindPipelineResources(commandBuffer);
 
-	pipeline.UpdatePushConstant(commandBuffer, world->lightingSettings);
+	pipeline.UpdatePushConstant(commandBuffer, lightingSettings);
 
 	commandBuffer.drawIndexed(QuadIndices.size(), 1, 0, 0, 0);
 }

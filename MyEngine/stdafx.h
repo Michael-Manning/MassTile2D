@@ -43,7 +43,7 @@
 #include "ECS.h"
 #include "Physics.h"
 #include "Entity.h"
-#include "Vertex.h"
+#include "Vertex2D.h"
 #include "profiling.h"
 #include "Settings.h"
 #include "GlobalImageDescriptor.h"

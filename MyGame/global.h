@@ -47,5 +47,5 @@ namespace global {
 	extern InventoryContainer* inspectedInventory; // chests or any other additional inventory space you can open
 	extern glm::vec2 inspectedInventoryLocation;
 
-	extern TileWorld* tileWorld;
+	extern LargeTileWorld* tileWorld;
 }

@@ -218,9 +218,6 @@
     <ClInclude Include="tilemapPL.h">
       <Filter>Source Files\vulkan\piplines</Filter>
     </ClInclude>
-    <ClInclude Include="Vertex.h">
-      <Filter>Source Files\vulkan\piplines</Filter>
-    </ClInclude>
     <ClInclude Include="TileWorld.h">
       <Filter>Source Files\Engine</Filter>
     </ClInclude>
@@ -348,6 +345,12 @@
       <Filter>Source Files\vulkan\piplines</Filter>
     </ClInclude>
     <ClInclude Include="ParticleStructures.h">
+      <Filter>Source Files\vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Vertex2D.h">
+      <Filter>Source Files\vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="std140.h">
       <Filter>Source Files\vulkan</Filter>
     </ClInclude>
   </ItemGroup>

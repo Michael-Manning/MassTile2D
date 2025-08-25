@@ -7,7 +7,7 @@
 
 #include "pipelines.h"
 #include "Settings.h"
-#include "Vertex.h"
+#include "Vertex2D.h"
 #include "AssetManager.h"
 
 class Engine;
@@ -77,7 +77,7 @@ private:
 	int coloredQuadInstanceIndex = 0;
 
 	std::vector<ColoredTrianglesPL::InstanceBufferData> coloredTriangleColorData;
-	std::vector<Vertex> coloredTriangleVertexData;
+	std::vector<Vertex2D> coloredTriangleVertexData;
 	int coloredTrianglesInstanceIndex = 0;
 
 
