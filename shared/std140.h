@@ -5,7 +5,8 @@
 // helpers to create structures with types that align to std140
 
 union std140_scalerVec {
-	uint32_t i;
+	int32_t i;
+	uint32_t ui;
 	float f;
 	glm::vec2 v2;
 	glm::vec3 v3;
@@ -47,7 +48,8 @@ struct std140_mat3 {
 
 using std140_TexSmplrID = int32_t;
 
-using std140_int = int;
+using std140_int = int32_t;
+using std140_uint = uint32_t;
 using std140_float = float;
 
 #define std140_vec2 alignas(8)  glm::vec2
@@ -55,6 +57,7 @@ using std140_float = float;
 #define std140_vec4 alignas(16) glm::vec4
 
 using std140_intArray = std140_scalerVec;
+using std140_uintArray = std140_scalerVec;
 using std140_floatArray = std140_scalerVec;
 using std140_vec2Array = std140_scalerVec;
 using std140_vec3Array = std140_scalerVec;

@@ -10,13 +10,15 @@
 #include "GlobalImageDescriptor.h"
 #include "pipeline.h"
 
-class GraphicsTemplate : public Pipeline {
+class GraphicsTemplate {
 public:
 
-	GraphicsTemplate(VKEngine* engine) : Pipeline(engine), descriptorManager(engine)
-	{};
+	GraphicsTemplate(VKEngine* engine)
+		: layoutCtx(engine), descriptorManager(engine), engine(engine)
+	{
+	};
 
-	void CreateGraphicsPipeline(const PipelineParameters& params, PipelineResourceConfig& resourceConfig);
+	void CreateGraphicsPipeline(const PipelineParameters& params, PipelineResourceConfig& resourceConfig, const vkctx::PipelineOverrides& pipelineOverrides);
 
 	void bindPipelineResources(vk::CommandBuffer& commandBuffer);
 
@@ -27,16 +29,24 @@ public:
 
 		assert(pushInfo.pushConstantSize > 0);
 
-		// only push size of struct as reflection may have evaluated the push constant size including padding.
+		// only push the size of the struct as the reflection may have evaluated the push constant size including padding.
 		uint32_t size = sizeof(T);
 
 		assert(size > 0 && size <= pushInfo.pushConstantSize);
 
-		commandBuffer.pushConstants(pipelineLayout, pushInfo.pushConstantShaderStages, 0, size, &pushConstantData);
+		commandBuffer.pushConstants(layoutCtx.pipelineLayout, pushInfo.pushConstantShaderStages, 0, size, &pushConstantData);
 	}
 
+	void UpdatePushConstant(vk::CommandBuffer& commandBuffer, const void* data, uint32_t size) {
+		assert(pushInfo.pushConstantSize > 0);
+		assert(size > 0 && size <= pushInfo.pushConstantSize);
+		commandBuffer.pushConstants(layoutCtx.pipelineLayout, pushInfo.pushConstantShaderStages, 0, size, data);
+	}
 
 private:
+	VKEngine* engine;
+	vk::Pipeline gfxPipeline;
+	PipelineLayoutCtx layoutCtx;
 	DescriptorManager descriptorManager;
 	std::vector<GlobalDescriptorBinding> globalDescriptors;
 	PushConstantInfo pushInfo;

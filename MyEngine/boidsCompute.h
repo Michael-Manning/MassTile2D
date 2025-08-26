@@ -25,11 +25,11 @@
 #include "globalBufferDefinitions.h"
 
 
-class BoidsComputePL :public  Pipeline {
+class BoidsComputePL :public  PipelineLayoutCtx {
 
 public:
 
-	BoidsComputePL(std::shared_ptr<VKEngine>& engine, std::shared_ptr<TileWorld> world) : Pipeline(engine), world(world) {
+	BoidsComputePL(std::shared_ptr<VKEngine>& engine, std::shared_ptr<TileWorld> world) : PipelineLayoutCtx(engine), world(world) {
 	}
 
 	void createStagingBuffers();

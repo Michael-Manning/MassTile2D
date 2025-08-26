@@ -85,13 +85,39 @@ struct PipelineResourceConfig {
 // keyed by set number
 using descriptorLayoutMap = std::unordered_map<int, vk::DescriptorSetLayout>;
 
-class Pipeline {
+
+//// could move this function somewhere else
+//inline void SetViewport(vk::CommandBuffer commandBuffer, glm::vec2 pos, glm::vec2 size) {
+//	vk::Viewport viewport{};
+//	viewport.x = pos.x;
+//	viewport.y = pos.y;
+//	viewport.width = size.x;
+//	viewport.height = size.y;
+//	viewport.minDepth = 0.0f;
+//	viewport.maxDepth = 1.0f;
+//	commandBuffer.setViewport(0, 1, &viewport);
+//
+//	vk::Rect2D scissor{};
+//	scissor.offset = vk::Offset2D(0, 0);
+//	scissor.extent = vk::Extent2D(static_cast<uint32_t>(abs(size.x)), static_cast<uint32_t>(abs(size.y)));
+//	commandBuffer.setScissor(0, 1, &scissor);
+//};
+//
+//inline void BindVertexMesh(vk::CommandBuffer commandBuffer, const VertexMeshBuffer& mesh) {
+//	vk::Buffer vertexBuffers[] = { mesh.vertexBuffer };
+//	vk::DeviceSize offsets[] = { 0 };
+//	commandBuffer.bindVertexBuffers(0, 1, vertexBuffers, offsets);
+//	commandBuffer.bindIndexBuffer(mesh.indexBuffer, 0, vk::IndexType::eUint16);
+//};
+
+
+
+
+class PipelineLayoutCtx {
 public:
 
-	Pipeline(VKEngine* engine) : engine(engine), descriptorManager(engine) {
+	PipelineLayoutCtx(VKEngine* engine) : engine(engine), descriptorManager(engine) {
 	}
-
-protected:
 
 	DescriptorManager descriptorManager;
 

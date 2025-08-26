@@ -10,10 +10,10 @@
 #include "GlobalImageDescriptor.h"
 #include "pipeline.h"
 
-class ComputeTemplate : public Pipeline {
+class ComputeTemplate : public PipelineLayoutCtx {
 public:
 
-	ComputeTemplate(VKEngine* engine) : Pipeline(engine), descriptorManager(engine)
+	ComputeTemplate(VKEngine* engine) : PipelineLayoutCtx(engine), descriptorManager(engine)
 	{};
 
 	// will create multiple pipelines which are assumed to share the same descriptor sets

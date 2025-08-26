@@ -22,7 +22,7 @@ vk::ShaderModule createShaderModule(const std::vector<uint8_t>& code, const vk::
 	return device.createShaderModule(createInfo);
 }
 
-Pipeline::GraphicsShaderInfo Pipeline::createGraphicsShaderStages(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc) const {
+PipelineLayoutCtx::GraphicsShaderInfo PipelineLayoutCtx::createGraphicsShaderStages(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc) const {
 	vk::ShaderModule vertShaderModule = createShaderModule(vertexSrc, engine->devContext.device);
 	vk::ShaderModule fragShaderModule = createShaderModule(fragmentSrc, engine->devContext.device);
 	return {
@@ -31,7 +31,7 @@ Pipeline::GraphicsShaderInfo Pipeline::createGraphicsShaderStages(const std::vec
 	};
 }
 
-std::vector<vk::PipelineShaderStageCreateInfo> Pipeline::createComputeShaderStages(const std::vector<std::vector<uint8_t>>& computeSrcs) const {
+std::vector<vk::PipelineShaderStageCreateInfo> PipelineLayoutCtx::createComputeShaderStages(const std::vector<std::vector<uint8_t>>& computeSrcs) const {
 
 	std::vector<vk::PipelineShaderStageCreateInfo> infos;
 	infos.reserve(computeSrcs.size());
@@ -47,7 +47,7 @@ std::vector<vk::PipelineShaderStageCreateInfo> Pipeline::createComputeShaderStag
 	return infos;
 }
 
-vk::PipelineInputAssemblyStateCreateInfo Pipeline::defaultInputAssembly() {
+vk::PipelineInputAssemblyStateCreateInfo PipelineLayoutCtx::defaultInputAssembly() {
 	vk::PipelineInputAssemblyStateCreateInfo inputAssembly{};
 	inputAssembly.topology = vk::PrimitiveTopology::eTriangleList;
 	inputAssembly.primitiveRestartEnable = VK_FALSE;
@@ -55,7 +55,7 @@ vk::PipelineInputAssemblyStateCreateInfo Pipeline::defaultInputAssembly() {
 	return inputAssembly;
 }
 
-vk::PipelineViewportStateCreateInfo Pipeline::defaultViewportState() {
+vk::PipelineViewportStateCreateInfo PipelineLayoutCtx::defaultViewportState() {
 	vk::PipelineViewportStateCreateInfo viewportState;
 	viewportState.viewportCount = 1;
 	viewportState.scissorCount = 1;
@@ -63,7 +63,7 @@ vk::PipelineViewportStateCreateInfo Pipeline::defaultViewportState() {
 	return viewportState;
 }
 
-vk::PipelineRasterizationStateCreateInfo Pipeline::defaultRasterizer() {
+vk::PipelineRasterizationStateCreateInfo PipelineLayoutCtx::defaultRasterizer() {
 	vk::PipelineRasterizationStateCreateInfo rasterizer;
 	rasterizer.depthClampEnable = VK_FALSE;
 	rasterizer.rasterizerDiscardEnable = VK_FALSE;
@@ -76,7 +76,7 @@ vk::PipelineRasterizationStateCreateInfo Pipeline::defaultRasterizer() {
 	return rasterizer;
 }
 
-vk::PipelineMultisampleStateCreateInfo Pipeline::defaultMultisampling() {
+vk::PipelineMultisampleStateCreateInfo PipelineLayoutCtx::defaultMultisampling() {
 	vk::PipelineMultisampleStateCreateInfo multisampling;
 	multisampling.sampleShadingEnable = VK_FALSE;
 	multisampling.rasterizationSamples = vk::SampleCountFlagBits::e1;
@@ -84,7 +84,7 @@ vk::PipelineMultisampleStateCreateInfo Pipeline::defaultMultisampling() {
 	return multisampling;
 }
 
-vk::PipelineColorBlendAttachmentState Pipeline::defaultColorBlendAttachment(bool blendEnabled, bool transparentFramebuffer) {
+vk::PipelineColorBlendAttachmentState PipelineLayoutCtx::defaultColorBlendAttachment(bool blendEnabled, bool transparentFramebuffer) {
 	vk::PipelineColorBlendAttachmentState colorBlendAttachment;
 	colorBlendAttachment.colorWriteMask |= vk::ColorComponentFlagBits::eR;
 	colorBlendAttachment.colorWriteMask |= vk::ColorComponentFlagBits::eG;
@@ -120,7 +120,7 @@ vk::PipelineColorBlendAttachmentState Pipeline::defaultColorBlendAttachment(bool
 	return colorBlendAttachment;
 }
 
-vk::PipelineColorBlendStateCreateInfo Pipeline::defaultColorBlending(vk::PipelineColorBlendAttachmentState* attachment) {
+vk::PipelineColorBlendStateCreateInfo PipelineLayoutCtx::defaultColorBlending(vk::PipelineColorBlendAttachmentState* attachment) {
 	vk::PipelineColorBlendStateCreateInfo colorBlending;
 	colorBlending.logicOpEnable = VK_FALSE;
 	colorBlending.logicOp = vk::LogicOp::eCopy;
@@ -134,14 +134,14 @@ vk::PipelineColorBlendStateCreateInfo Pipeline::defaultColorBlending(vk::Pipelin
 	return colorBlending;
 }
 
-vk::PipelineDynamicStateCreateInfo Pipeline::defaultDynamicState() {
+vk::PipelineDynamicStateCreateInfo PipelineLayoutCtx::defaultDynamicState() {
 	vk::PipelineDynamicStateCreateInfo dynamicState;
 	dynamicState.dynamicStateCount = static_cast<uint32_t>(defaultDynamicStates.size());
 	dynamicState.pDynamicStates = defaultDynamicStates.data();
 	return dynamicState;
 }
 
-void Pipeline::buildPipelineLayout(descriptorLayoutMap& descriptorSetLayouts, uint32_t pushConstantSize, vk::ShaderStageFlags pushConstantStages) {
+void PipelineLayoutCtx::buildPipelineLayout(descriptorLayoutMap& descriptorSetLayouts, uint32_t pushConstantSize, vk::ShaderStageFlags pushConstantStages) {
 
 	// bind indexes are explicit in shaders, but set indexes are determined by their contiguous order in the layout array.
 	// This function accepts both the bind and set indexes explicitly, then validates and sorts them for the vulkan structures.

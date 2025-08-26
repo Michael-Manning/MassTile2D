@@ -14,7 +14,7 @@
 #include "globalBufferDefinitions.h"
 
 
-class QuadComputePL :public  Pipeline {
+class QuadComputePL :public  PipelineLayoutCtx {
 
 public:
 
@@ -29,7 +29,7 @@ public:
 	};
 	static_assert(sizeof(InstanceBufferData) % 16 == 0);
 
-	QuadComputePL(VKEngine* engine, int maxInstanceCount) : Pipeline(engine), maxInstanceCount(maxInstanceCount) {
+	QuadComputePL(VKEngine* engine, int maxInstanceCount) : PipelineLayoutCtx(engine), maxInstanceCount(maxInstanceCount) {
 	}
 
 	void allocateTransformBuffer(VkBuffer& buffer, VmaAllocation& allocation);
