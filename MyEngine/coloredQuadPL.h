@@ -12,26 +12,27 @@
 #include "Vertex2D.h"
 #include "GraphicsTemplate.h"
 #include "globalBufferDefinitions.h"
+#include "ShaderTypes.h"
 
 class ColoredQuadPL {
 public:
 
-	struct InstanceBufferData {
-		glm::vec4 color;
-		alignas(8)glm::vec2 position;
-		alignas(8)glm::vec2 scale;
-		int circle;
-		float rotation;
+	//struct InstanceBufferData {
+	//	glm::vec4 color;
+	//	alignas(8)glm::vec2 position;
+	//	alignas(8)glm::vec2 scale;
+	//	int circle;
+	//	float rotation;
 
-		int32_t padding[2];
-	};
-	static_assert(sizeof(InstanceBufferData) % 16 == 0);
+	//	int32_t padding[2];
+	//};
+	//static_assert(sizeof(InstanceBufferData) % 16 == 0);
 
 	ColoredQuadPL(VKEngine* engine, int maxInstances) 
 		: pipeline(engine), engine(engine), maxInstances(maxInstances) { }
 
 	void CreateGraphicsPipeline(const PipelineParameters& params) {
-		engine->createMappedBuffer(sizeof(InstanceBufferData) * maxInstances, vk::BufferUsageFlagBits::eStorageBuffer, instanceDataDB);
+		engine->createMappedBuffer(sizeof(ShaderTypes::ColoredQuadInstance) * maxInstances, vk::BufferUsageFlagBits::eStorageBuffer, instanceDataDB);
 
 		PipelineResourceConfig con;
 		con.bufferBindings.push_back(BufferBinding(0, 0, params.cameraDB));
@@ -47,14 +48,14 @@ public:
 		commandBuffer.drawIndexed(QuadIndices.size(), instanceCount, 0, 0, 0);
 	}
 
-	InstanceBufferData* getUploadMappedBuffer() {
+	ShaderTypes::ColoredQuadInstance* getUploadMappedBuffer() {
 		return instanceDataDB.buffersMapped[engine->currentFrame];
 	}
 
 	const int maxInstances;
 
 private:
-	MappedDoubleBuffer<InstanceBufferData> instanceDataDB;
+	MappedDoubleBuffer<ShaderTypes::ColoredQuadInstance> instanceDataDB;
 	GraphicsTemplate pipeline;
 	VKEngine* engine;
 };

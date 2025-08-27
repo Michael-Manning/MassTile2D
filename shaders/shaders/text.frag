@@ -1,14 +1,14 @@
 #version 460
 #extension GL_EXT_nonuniform_qualifier : enable
 
-struct charQuad {
+struct CharQuad {
 	vec2 uvmin;
 	vec2 uvmax;
 	vec2 scale;
 	vec2 position;
 };
 
-struct textHeader {
+struct TextHeader {
    vec4 color;
    vec2 position;
    vec2 scale;
@@ -17,12 +17,12 @@ struct textHeader {
    int textLength;
 };
 
-layout(std140, set = 1, binding = 1) readonly buffer headerInstaceBuffer{
-	textHeader headerData[];
+layout(std140, set = 1, binding = 1) readonly buffer TextHeaderInstaceBuffer{
+	TextHeader headerData[];
 };
 
-layout(std430, set = 1, binding = 2) readonly buffer textDataInstaceBuffer{
-	charQuad textData[];
+layout(std430, set = 1, binding = 2) readonly buffer TextDataInstaceBuffer{
+	CharQuad textData[];
 };
 
 layout(set = 0, binding = 0) uniform sampler2D texSampler[];

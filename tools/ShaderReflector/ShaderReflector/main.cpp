@@ -7,7 +7,9 @@
 #include <Windows.h>
 #include <variant>
 #include <unordered_map>
+#include <map>
 #include <unordered_set>
+#include <format>
 
 #include <spirv-reflect/spirv_reflect.h>
 #include <vulkan/vulkan.hpp>
@@ -90,9 +92,13 @@ static std::vector<uint8_t> readFile(const std::string& filename) {
 // get shader buffer bindings
 // get shader shader global texture binding usage
 // assert std140 before using std140 struct types
+// support push constant types
+// struct padding for allignement in array
+// equality must check class type and type array stride
 
+// sorted by size
 enum class primitiveShaderType {
-	e_int,
+	e_int = 0,
 	e_uint,
 	e_float,
 	e_vec2,
@@ -103,10 +109,23 @@ enum class primitiveShaderType {
 	e_mat4
 };
 
+enum class shaderTypeClassification {
+    unknown,
+    uniform,
+    ssbo,
+    structure
+};
+
+enum class shaderAlignment {
+    std140,
+    std430
+};
 
 struct memberArrayTraits {
-	uint32_t dims_count;
+	uint32_t dims_count = 0;
 	uint32_t dims[SPV_REFLECT_MAX_ARRAY_DIMS];
+    uint32_t stride = 0;
+    bool runtimeAr = false;
 };
 
 struct shaderMember {
@@ -115,16 +134,26 @@ struct shaderMember {
     // If struct     -> std::string holding the canonical struct type name.
     std::variant<primitiveShaderType, std::string> type;
     memberArrayTraits array{};
+
+    uint32_t size;
+    uint32_t offset;
 };
 
 struct shaderType {
     std::string memberName; // optional, not used for canonical entries
     std::string typeName;   // canonical key
+    shaderTypeClassification typeClass;
+    std::vector<shaderMember> members;
+    uint32_t arrayStride;
+};
+
+struct shaderPushConstant {
+    std::string name;
     std::vector<shaderMember> members;
 };
 
-
-unordered_map<string, shaderType> allTypes;
+std::vector<std::string> typeInsertionOrder;
+map<string, shaderType> allTypes;
 
 // ===== Additional globals: record which buffers use which struct =====
 
@@ -139,10 +168,14 @@ vector<bufferInfo> allBuffers;
 
 // ===== Helpers =====
 
-static inline memberArrayTraits CopyArrayTraits(const SpvReflectArrayTraits& a) {
+static inline memberArrayTraits CopyArrayTraits(const SpvReflectArrayTraits& a, SpvOp op) {
     memberArrayTraits t{};
     t.dims_count = a.dims_count;
-    for (uint32_t i = 0; i < a.dims_count && i < SPV_REFLECT_MAX_ARRAY_DIMS; ++i) t.dims[i] = a.dims[i];
+    t.stride = a.stride;
+    for (uint32_t i = 0; i < a.dims_count && i < SPV_REFLECT_MAX_ARRAY_DIMS; ++i) 
+        t.dims[i] = a.dims[i];
+    if (op == SpvOpTypeRuntimeArray)
+        t.runtimeAr = true;
     return t;
 }
 
@@ -273,17 +306,20 @@ static void EnsureCanonical(const shaderType& t) {
     auto it = allTypes.find(t.typeName);
     if (it == allTypes.end()) {
         allTypes.emplace(t.typeName, t);
+        typeInsertionOrder.push_back(t.typeName);
     }
     else if (!EqualTypes(it->second, t)) {
         throw std::runtime_error("Conflicting struct definitions with the same name: " + t.typeName);
     }
 }
 
-static shaderType BuildStructFromBlockVariable(const SpvReflectBlockVariable& v) {
+static shaderType BuildStructFromBlockVariable(const SpvReflectBlockVariable& v, shaderTypeClassification typeClass) {
     // Determine the struct's declared type name
     shaderType out{};
     out.typeName = BlockVariableTypeName(v);
+    out.typeClass = typeClass;
     out.memberName.clear();
+    out.arrayStride = v.type_description->traits.array.stride;
 
     if (out.typeName.empty()) {
         throw std::runtime_error("Encountered a struct with no type name (unnamed structs are not supported).");
@@ -297,18 +333,19 @@ static shaderType BuildStructFromBlockVariable(const SpvReflectBlockVariable& v)
     g_inProgress.insert(out.typeName);
 
     out.members.reserve(v.member_count);
-  //  out.arrayTraits.reserve(v.member_count);
 
     for (uint32_t i = 0; i < v.member_count; ++i) {
         const SpvReflectBlockVariable& m = v.members[i];
 
         shaderMember mem{};
         mem.name = m.name ? std::string(m.name) : std::string();
-        mem.array = CopyArrayTraits(m.array);
+        mem.array = CopyArrayTraits(m.array, m.type_description->op);
+        mem.size = m.size;
+        mem.offset = m.offset;
 
         if (UnderlyingStruct(m.type_description)) {
             // Build nested canonical definition (throws on conflict)
-            shaderType nested = BuildStructFromBlockVariable(m);
+            shaderType nested = BuildStructFromBlockVariable(m, shaderTypeClassification::structure);
             nested.memberName.clear(); // canonical form ignores memberName
 
             EnsureCanonical(nested);   // inserts or verifies allTypes[nested.typeName]
@@ -365,7 +402,7 @@ void PopulateShaderInfo(const std::vector<uint8_t>& shaderSrc) {
         if (!binding) continue;
 
         if (binding->descriptor_type != SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_BUFFER &&
-            binding->descriptor_type != SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
+            binding->descriptor_type != SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_BUFFER){
             continue; // Only buffers participate in our type discovery
         }
 
@@ -379,8 +416,17 @@ void PopulateShaderInfo(const std::vector<uint8_t>& shaderSrc) {
             continue;
         }
 
+        shaderTypeClassification typeClass = shaderTypeClassification::unknown;
+        if (binding->descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_BUFFER) 
+            typeClass = shaderTypeClassification::uniform;
+        else if (binding->descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+            typeClass = shaderTypeClassification::ssbo;
+        else {
+            cout << "Warning: unknown shader type classification " << blk.name << "\n";
+        }
+
         // Build the root struct (recursively discovers & catalogs nested structs)
-        shaderType root = BuildStructFromBlockVariable(blk);
+        shaderType root = BuildStructFromBlockVariable(blk, typeClass);
 
         // Record that this buffer uses this struct
         bufferInfo bi{};
@@ -493,50 +539,27 @@ static void GetShaderBufferBindings(
 			}
 		}
 	}
-
-	// Specialization constants
-	{
-		uint32_t specConstantCount = 0;
-		result = spvReflectEnumerateSpecializationConstants(&spvModule, &specConstantCount, nullptr);
-		if (result != SPV_REFLECT_RESULT_SUCCESS) {
-			throw std::runtime_error("Shader reflection failed");
-			spvReflectDestroyShaderModule(&spvModule);
-			return;
-		}
-
-		std::vector<SpvReflectSpecializationConstant*> specConstants(specConstantCount);
-		result = spvReflectEnumerateSpecializationConstants(&spvModule, &specConstantCount, specConstants.data());
-		if (result != SPV_REFLECT_RESULT_SUCCESS) {
-			throw std::runtime_error("Shader reflection failed");
-			spvReflectDestroyShaderModule(&spvModule);
-			return;
-		}
-
-		for (auto& constant : specConstants)
-		{
-			specInfos.push_back(spec_constant_info{ .constantID = constant->constant_id });
-		}
-	}
+	
 
 	spvReflectDestroyShaderModule(&spvModule);
 }
 
 
-string getStd140TypeStr(primitiveShaderType t, bool array) {
+string getShaderTypeStr(primitiveShaderType t, bool std140Array) {
     switch (t)
     {
-    case primitiveShaderType::e_int:
-        return array ? "std140_intArray" : "std140_int";
+    case primitiveShaderType::e_int:         
+        return std140Array ? "std140_intArray" : "int32_t";
     case primitiveShaderType::e_uint:
-        return array ? "std140_uintArray" : "std140_uint";
+        return std140Array ? "std140_uintArray" : "uint32_t";
     case primitiveShaderType::e_float:
-        return array ? "std140_floatArray" : "std140_float";
+        return std140Array ? "std140_floatArray" : "float";
     case primitiveShaderType::e_vec2:
-        return array ? "std140_vec2Array" : "std140_vec2";
+        return std140Array ? "std140_vec2Array" : "glm::vec2";
     case primitiveShaderType::e_vec3:
-        return array ? "std140_vec3Array" : "std140_vec3";
+        return std140Array ? "std140_vec3Array" : "glm::vec3";
     case primitiveShaderType::e_vec4:
-        return array ? "std140_vec4Array" : "std140_vec4";
+        return std140Array ? "std140_vec4Array" : "glm::vec4";
     case primitiveShaderType::e_mat2:
         return "std140_mat2";
     case primitiveShaderType::e_mat3:
@@ -548,6 +571,36 @@ string getStd140TypeStr(primitiveShaderType t, bool array) {
     }
 }
 
+// finds the smallest integer divisor of n greater than d
+int nextDivor(int n, int d) {
+    assert(d <= n);
+
+    if (d == n)
+        return d;
+
+    do {
+        d++;
+    } while (n % d != 0 && d < n);
+    return d;
+}
+
+// formats the brackets at the end of a mamber name eg. int num[12, 43];
+string formatArray(memberArrayTraits traits) {
+    if (traits.dims_count == 0) {
+        if (traits.runtimeAr)
+            return "[]";
+        return "";
+    }
+    string res = "[";
+    for (size_t i = 0; i < traits.dims_count; i++)
+    {
+        res += to_string(traits.dims[i]);
+        if (i + 1 < traits.dims_count)
+            res += ",";
+    }
+    res += "]";
+    return res;
+}
 
 int currentIndent = 0;
 string getIndent() {
@@ -558,6 +611,7 @@ string getIndent() {
     }
     return out;
 }
+
 
 int main()
 {
@@ -576,7 +630,15 @@ int main()
 
 		auto srcData = readFile(file);
 
-        PopulateShaderInfo(srcData);
+        try 
+        {
+            PopulateShaderInfo(srcData);
+        }
+        catch (const std::runtime_error& e) 
+        {
+            std::cerr << "Error: " << e.what() << std::endl;
+            return 1;
+        }
 
 		//std::vector<uint8_t> shaderSrc;
 		//std::vector<buffer_info> bufferInfos;
@@ -589,77 +651,152 @@ int main()
 		//	pushInfo,
 		//	specInfos
 		//);
-        break;
-		std::cout << "test\n";
 	}
 
 
-    vector<string> output;
-    output.push_back(
+    std::ostringstream out;
+    out <<
         R"(
-#include <stdint>
-#include <std140.h>
+#pragma once
+
+/*
+    Generated by ShaderReflector tool
+*/
+
+#include <stdint.h>
+#include <glm/glm.hpp>
+#include "std140.h"
 
 namespace ShaderTypes
 {
-    )");
+)";
 
-    currentIndent = 1;
+    currentIndent ++;
 
-    for (auto& [k,v] : allTypes)
+    for (auto& s : typeInsertionOrder)
     {
-        std::string out = "";
-        out += getIndent() + "struct " + v.typeName + "{\n";
+        const auto& v = allTypes[s];
+        
+        uint32_t typeSize = v.members.back().offset + v.members.back().size;
+
+        // comment block
+        {
+            out << getIndent() << "/*\n";
+            currentIndent ++;
+            out << getIndent();
+            if (v.typeClass == shaderTypeClassification::uniform)
+                out << "Uniform buffer ";
+            else if (v.typeClass == shaderTypeClassification::ssbo)
+                out << "Storage buffer ";
+            else if (v.typeClass == shaderTypeClassification::structure)
+                out << "Shader structure ";
+            else if (v.typeClass == shaderTypeClassification::unknown)
+                out << "Unknown type ";
+            out << v.typeName << "\n";
+                out << getIndent() << "Type size: " << to_string(typeSize) << "\n";
+            if (v.typeClass == shaderTypeClassification::structure) {
+                out << getIndent() << "Array stride: " << to_string(v.arrayStride) << "\n";
+            }
+            currentIndent --;
+            out << getIndent() << "*/\n";
+        }
+
+        out << getIndent() << "struct ";
+
+        if (v.typeClass == shaderTypeClassification::structure) {
+
+            // must be std140
+            if (v.arrayStride % typeSize != 0) {
+                out << "alignas(" << 16 << ") ";
+            }
+
+        }
+        
+        out << v.typeName << "\n";
+        out << getIndent() << "{\n";
         currentIndent++;
 
+        vector<string> prefixes;
+        vector<string> suffixes;
 
+        // also handle memory alignment, agnostic of whether struct is std140 or std430
+        uint32_t currentOffset = 0;
         for (const shaderMember& m : v.members) {
+
+            string prefix = "";
+
+            // not really analytical, but should work. Doesn't do matrices yet
+            if (currentOffset != m.offset) {
+                if (m.offset % 16 == 0 && ((currentOffset / 16) + 1) * 16 == m.offset)
+                    prefix += "alignas(16) ";
+                else if (m.offset % 8 == 0 && ((currentOffset / 8) + 1) * 8 == m.offset)
+                    prefix += "alignas(8) ";
+                else {
+                    cout << "Error: auto alignment for type " << s << " failed\n";
+                    return -1;
+                }
+                    
+            }
+
             // m.name is always the field name
             if (std::holds_alternative<primitiveShaderType>(m.type)) {
                 primitiveShaderType p = std::get<primitiveShaderType>(m.type);
-                out += getIndent() + getStd140TypeStr(p, m.array.dims_count > 0) + " " + m.name + ";\n";
+
+                if (m.array.dims_count > 0) {
+                    // should be set to the size if std430, or size of vec4 is std140
+                    assert(m.array.stride == m.size || m.array.stride ==  16);
+
+
+                }
+                bool std140Array = p < primitiveShaderType::e_vec4 && m.array.stride == 16;
+
+                prefix += getShaderTypeStr(p, std140Array);
+                prefixes.push_back(prefix);
             }
             else {
                 const shaderType& nested = allTypes[std::get<string>(m.type)];
                 // nested members have their own m2.name, etc.
-                out += getIndent() + nested.typeName + " " + m.name + ";\n";
+                prefix += nested.typeName;
+                prefixes.push_back(prefix);
             }
+            
+            suffixes.push_back(m.name + formatArray(m.array));
+
+            currentOffset += m.size;
         }
 
-
-        /*for (int i = 0; i < v.members.size(); i++)
+        uint32_t longestPrefix = 0;
+        for (size_t i = 0; i < prefixes.size(); i++) 
+            longestPrefix = std::max((size_t)longestPrefix, prefixes[i].size());
+        
+        // padding
+        for (size_t i = 0; i < prefixes.size(); i++)
         {
-            if (std::holds_alternative<primitiveShaderType>(v.members[i])) {
-                out += getIndent() + getStd140TypeStr(std::get<primitiveShaderType>(v.members[i]), v.arrayTraits[i].dims_count > 0);
-            }
-            else {
-                auto t = std::get<shaderType>(v.members[i]);
-                out += getIndent() + t.typeName + " " + t.memberName + ";\n";
-            }
-        }*/
-        currentIndent--;
-        out += getIndent() + "};\n\n";
+            std::string formatted_left = std::format("{:<{}}", prefixes[i], longestPrefix);
+            out << getIndent() << formatted_left << " " << suffixes[i] << ";\n";
+        }
 
-        output.push_back(out);
+        currentIndent--;
+        out << getIndent() << "};\n\n";
     }
 
-    output.push_back(
+    out <<
         R"(
 } // namespace
-    )");
+    )";
 
+    auto outpath =    makePathAbsolute(exePath, "../../../../shared");
 
-    std::ostringstream oss;
-    for (const auto& part : output) {
-        oss << part;
-    }
-
-    std::ofstream file("output.txt");
+    std::ofstream file(string(outpath.c_str()) + "/ShaderTypes.h");
     if (file.is_open()) {
-        file << oss.str();
+        file << out.str();
         file.close();
+	std::cout << "done\n";
+    }
+    else {
+        std::cout << "failed to write header\n";
     }
 
-	std::cout << "done\n";
 
 }
+

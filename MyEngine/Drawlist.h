@@ -73,7 +73,7 @@ private:
 	};
 
 	// drawlist data
-	std::vector<ColoredQuadPL::InstanceBufferData> coloredQuadInstanceData;
+	std::vector<ShaderTypes::ColoredQuadInstance> coloredQuadInstanceData;
 	int coloredQuadInstanceIndex = 0;
 
 	std::vector<ColoredTrianglesPL::InstanceBufferData> coloredTriangleColorData;

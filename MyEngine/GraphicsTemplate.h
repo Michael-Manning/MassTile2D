@@ -18,7 +18,7 @@ public:
 	{
 	};
 
-	void CreateGraphicsPipeline(const PipelineParameters& params, PipelineResourceConfig& resourceConfig, const vkctx::PipelineOverrides& pipelineOverrides);
+	void CreateGraphicsPipeline(const PipelineParameters& params, PipelineResourceConfig& resourceConfig);
 
 	void bindPipelineResources(vk::CommandBuffer& commandBuffer);
 

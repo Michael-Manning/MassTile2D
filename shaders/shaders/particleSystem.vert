@@ -12,7 +12,7 @@ layout(set = 0, binding = 1) uniform CamerUBO {
 #define MAX_PARTICLE_SYSTEMS_SMALL 10
 // #define MAX_PARTICLE_SYSTEMS_LARGE 4
 
-struct particle {
+struct Particle {
    vec2 position;
    vec2 velocity;
    float scale;
@@ -21,18 +21,18 @@ struct particle {
 };
 
 struct ParticleGroup_small {
-   particle particles[MAX_PARTICLES_SMALL];
+   Particle particles[MAX_PARTICLES_SMALL];
 };
 
 struct ParticleGroup_large{
-   particle particles[MAX_PARTICLES_LARGE];
+   Particle particles[MAX_PARTICLES_LARGE];
 };
 
-layout(std430, set = 0, binding = 0) readonly buffer ObjectInstaceBuffer_small{
+layout(std430, set = 0, binding = 0) readonly buffer ParticalSmallGroupInstanceBuffer{
 	ParticleGroup_small particleGroups_small[MAX_PARTICLE_SYSTEMS_SMALL];
 };
 
-layout(std430, set = 0, binding = 2) buffer ObjectInstaceBuffer_large{
+layout(std430, set = 0, binding = 2) buffer ParticalLargeGroupInstanceBuffer{
 	ParticleGroup_large particleGroups_large[];
 };
 
@@ -81,7 +81,7 @@ void main() {
     view *= scale(vec2(camera.zoom));
     view *= translate(camera.position);
 
-   particle p = systemSize == 0 ? particleGroups_small[systemIndex].particles[gl_InstanceIndex] : particleGroups_large[systemIndex].particles[gl_InstanceIndex];
+    Particle p = systemSize == 0 ? particleGroups_small[systemIndex].particles[gl_InstanceIndex] : particleGroups_large[systemIndex].particles[gl_InstanceIndex];
 
     mat4 model = mat4(1.0);
     model *= translate(p.position);

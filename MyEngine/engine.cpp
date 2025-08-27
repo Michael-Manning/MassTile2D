@@ -32,6 +32,7 @@
 #include "profiling.h"
 #include "Settings.h"
 #include "GlobalImageDescriptor.h"
+#include "ShaderTypes.h"
 
 PROFILING_IMPL
 
@@ -511,7 +512,7 @@ void Engine::recordSceneContextGraphics(const SceneGraphicsContext& ctx, std::sh
 		{
 			const auto& entity = scene->sceneData.entities.at(renderer.first);
 
-			ColoredQuadPL::InstanceBufferData& instanceData = buffer[bufferIndex++];
+			ShaderTypes::ColoredQuadInstance& instanceData = buffer[bufferIndex++];
 			instanceData.color = renderer.second.color;
 			instanceData.circle = renderer.second.shape == ColorRenderer::Shape::Circle;
 

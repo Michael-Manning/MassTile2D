@@ -16,7 +16,7 @@ void Drawlist::AddCenteredQuad(glm::vec4 color, glm::vec2 pos, glm::vec2 scale, 
 
 	assert(coloredQuadInstanceIndex < allocationSettings.ColoredQuad_MaxInstances);
 
-	ColoredQuadPL::InstanceBufferData& item = coloredQuadInstanceData[coloredQuadInstanceIndex % allocationSettings.ColoredQuad_MaxInstances];
+	ShaderTypes::ColoredQuadInstance& item = coloredQuadInstanceData[coloredQuadInstanceIndex % allocationSettings.ColoredQuad_MaxInstances];
 	item.color = color;
 	item.position = pos;
 	item.scale = scale;

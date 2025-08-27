@@ -1,11 +1,10 @@
 #version 450
 
 layout(binding = 0) uniform CamerUBO {
-   vec2 position;
-	float zoom;
-	float aspectRatio;
-
-   mat3 view;
+    vec2 position;  
+    float zoom;
+    float aspectRatio;
+    mat3 view;
 } camera;
 
 struct instanceDataObject{

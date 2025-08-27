@@ -243,7 +243,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;NOMINMAX;_CRT_SECURE_NO_WARNINGS;USING_EDITOR;GLM_ENABLE_EXPERIMENTAL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(VULKAN_SDK)/include;$(SolutionDir)$(ProjectName);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(VULKAN_SDK)/include;$(SolutionDir)$(ProjectName);$(SolutionDir)shared;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <DisableSpecificWarnings>26495; 26813</DisableSpecificWarnings>
       <PrecompiledHeader>Use</PrecompiledHeader>
@@ -350,6 +350,8 @@
     <ClCompile Include="Entity.cpp" />
     <ClCompile Include="Font.cpp" />
     <ClCompile Include="FontGenerator.cpp" />
+    <ClInclude Include="..\shared\ShaderTypes.h" />
+    <ClInclude Include="..\shared\std140.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Drawlist.h" />
     <ClInclude Include="globalBufferDefinitions.h">
@@ -366,6 +368,7 @@
     <ClCompile Include="Prefab.cpp" />
     <ClCompile Include="PrefabGenerator.cpp" />
     <ClCompile Include="quadComputePL.cpp" />
+    <ClCompile Include="Reflection.cpp" />
     <ClCompile Include="ResourceManager.cpp" />
     <ClCompile Include="SceneData.cpp" />
     <ClCompile Include="Sprite.cpp" />
@@ -432,7 +435,6 @@
     <ClInclude Include="Settings.h" />
     <ClInclude Include="SlotManager.h" />
     <ClInclude Include="SpriteGenerator.h" />
-    <ClInclude Include="std140.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="TextPL.h" />
     <ClInclude Include="TextRenderer.h" />

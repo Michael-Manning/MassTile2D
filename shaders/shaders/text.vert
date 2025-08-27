@@ -9,14 +9,14 @@ layout(set = 1, binding = 0) uniform CamerUBO {
 	float aspectRatio;
 } camera;
 
-struct charQuad {
+struct CharQuad {
 	vec2 uvmin;
 	vec2 uvmax;
 	vec2 scale;
 	vec2 position;
 };
 
-struct textHeader {
+struct TextHeader {
    vec4 color;
    vec2 position;
    vec2 scale;
@@ -25,21 +25,21 @@ struct textHeader {
    int textLength;
 };
 
-struct letterIndexInfo {
+struct LetterIndexInfo {
    uint headerIndex;
    uint letterIndex;
 };
 
-layout(std140, set = 1, binding = 1) readonly buffer headerInstaceBuffer{
-	textHeader headerData[];
+layout(std140, set = 1, binding = 1) readonly buffer TextHeaderInstaceBuffer{
+	TextHeader headerData[];
 };
 
-layout(std430, set = 1, binding = 2) readonly buffer textDataInstaceBuffer{
-	charQuad textData[];
+layout(std430, set = 1, binding = 2) readonly buffer TextDataInstaceBuffer{
+	CharQuad textData[];
 };
 
-layout(std140, set = 1, binding = 3) readonly buffer indexInstaceBuffer{
-	letterIndexInfo indexData[];
+layout(std140, set = 1, binding = 3) readonly buffer TextIndexInstaceBuffer{
+	LetterIndexInfo indexData[];
 };
 
 layout(location = 1) out vec2 uv;

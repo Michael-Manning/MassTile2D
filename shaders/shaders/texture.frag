@@ -1,7 +1,7 @@
 #version 460
 #extension GL_EXT_nonuniform_qualifier : enable
 
-struct ssboObject{
+struct TextureSSBOObject{
    vec2 uvMin;
    vec2 uvMax;
    vec2 translation;
@@ -15,9 +15,9 @@ layout(set = 1, binding = 2) uniform LightMapUBO {
    int lightMapIndex;
 };
 
-layout(std140, set = 1, binding = 0) readonly buffer ObjectInstaceBuffer{
-	ssboObject ssboData[];
-} ssboBuffer;
+layout(std140, set = 1, binding = 0) readonly buffer TextureInstaceBuffer{
+	TextureSSBOObject instanceData[];
+};
 
 
 layout(binding = 0) uniform sampler2D texSampler[];
@@ -32,8 +32,8 @@ layout(location = 0) out vec4 outColor;
 
 void main() {
 
-   vec2 umin = ssboBuffer.ssboData[instance_index].uvMin;
-   vec2 umax = ssboBuffer.ssboData[instance_index].uvMax;
+   vec2 umin = instanceData[instance_index].uvMin;
+   vec2 umax = instanceData[instance_index].uvMax;
 
    float xscale = (umax.x - umin.x);
    float sampleX = umin.x + xscale * (uv.x);
@@ -41,13 +41,13 @@ void main() {
    float yscale = (umax.y - umin.y);
    float sampleY = umin.y + yscale * (uv.y);
 
-   vec4 sampleColor = texture(texSampler[ssboBuffer.ssboData[instance_index].index], vec2( sampleX, sampleY));
+   vec4 sampleColor = texture(texSampler[instanceData[instance_index].index], vec2( sampleX, sampleY));
 
    if(lightmapEnabled == 0){
       outColor = vec4(sampleColor.rgb, sampleColor.a);
    }
    else{
-      if(ssboBuffer.ssboData[instance_index].useLightMap == 1){
+      if(instanceData[instance_index].useLightMap == 1){
          float brightness = texture(texSampler[lightMapIndex], screenSpaceUV).r;
          outColor = vec4(sampleColor.rgb * brightness, sampleColor.a);
       }

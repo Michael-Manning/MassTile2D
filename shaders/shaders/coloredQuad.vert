@@ -6,7 +6,7 @@ layout(binding = 0) uniform CamerUBO {
     float aspectRatio;
 } camera;
 
-struct ssboObject{
+struct ColoredQuadInstance{
    vec4 color;
    vec2 position;
    vec2 scale;
@@ -14,8 +14,8 @@ struct ssboObject{
    float rotation;
 };
 
-layout(std140, set = 1, binding = 0) readonly buffer ObjectInstaceBuffer{
-	ssboObject ssboData[];
+layout(std140, set = 1, binding = 0) readonly buffer ColoredQuadInstaceBuffer{
+	ColoredQuadInstance instanceData[];
 };
 
 
@@ -59,9 +59,9 @@ void main() {
     view *= translate(camera.position);
 
     mat4 model = mat4(1.0);
-    model *= translate(ssboData[gl_InstanceIndex].position);
-    model *= rotate(ssboData[gl_InstanceIndex].rotation);
-    model *= scale(ssboData[gl_InstanceIndex].scale);
+    model *= translate(instanceData[gl_InstanceIndex].position);
+    model *= rotate(instanceData[gl_InstanceIndex].rotation);
+    model *= scale(instanceData[gl_InstanceIndex].scale);
 
     gl_Position = view * model  * vec4(inPosition, 0.0, 1.0) * vec4(camera.aspectRatio, 1.0, 1.0, 1.0);
 

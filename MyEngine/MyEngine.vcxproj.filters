@@ -147,6 +147,9 @@
     <ClCompile Include="Drawlist.cpp">
       <Filter>Source Files\Engine</Filter>
     </ClCompile>
+    <ClCompile Include="Reflection.cpp">
+      <Filter>Source Files\vulkan\piplines</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pipeline.h">
@@ -350,7 +353,10 @@
     <ClInclude Include="Vertex2D.h">
       <Filter>Source Files\vulkan</Filter>
     </ClInclude>
-    <ClInclude Include="std140.h">
+    <ClInclude Include="..\shared\std140.h">
+      <Filter>Source Files\vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\ShaderTypes.h">
       <Filter>Source Files\vulkan</Filter>
     </ClInclude>
   </ItemGroup>

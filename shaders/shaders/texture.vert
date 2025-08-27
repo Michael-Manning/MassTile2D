@@ -9,7 +9,7 @@ layout(set = 1, binding = 1) uniform CamerUBO {
 	float aspectRatio;
 } camera;
 
-struct ssboObject{
+struct TextureSSBOObject{
    vec2 uvMin;
    vec2 uvMax;
    vec2 translation;
@@ -19,8 +19,8 @@ struct ssboObject{
    int index; // texture index
 };
 
-layout(std140, set = 1, binding = 0) readonly buffer ObjectInstaceBuffer{
-	ssboObject ssboData[];
+layout(std140, set = 1, binding = 0) readonly buffer TextureInstaceBuffer{
+	TextureSSBOObject instanceData[];
 };
 
 // compile time flag to optimize out lightmap sampling
@@ -64,9 +64,9 @@ void main() {
    view *= translate(camera.position);
 
    mat4 model = mat4(1.0);
-   model *= translate(ssboData[gl_InstanceIndex].translation);
-   model *= rotate(ssboData[gl_InstanceIndex].rotation);
-   model *= scale(ssboData[gl_InstanceIndex].scale);
+   model *= translate(instanceData[gl_InstanceIndex].translation);
+   model *= rotate(instanceData[gl_InstanceIndex].rotation);
+   model *= scale(instanceData[gl_InstanceIndex].scale);
 
    gl_Position = view * model  * vec4(inPosition, 0.0, 1.0) * vec4(vec2( camera.aspectRatio, 1.0), 1.0, 1.0);
 

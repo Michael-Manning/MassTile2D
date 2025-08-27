@@ -56,16 +56,16 @@ using std140_float = float;
 #define std140_vec3 alignas(16) glm::vec3
 #define std140_vec4 alignas(16) glm::vec4
 
-using std140_intArray = std140_scalerVec;
-using std140_uintArray = std140_scalerVec;
-using std140_floatArray = std140_scalerVec;
-using std140_vec2Array = std140_scalerVec;
-using std140_vec3Array = std140_scalerVec;
-using std140_vec4Array = glm::vec4;
+using std140_intArray     = std140_scalerVec;
+using std140_uintArray    = std140_scalerVec;
+using std140_floatArray   = std140_scalerVec;
+using std140_vec2Array    = std140_scalerVec;
+using std140_vec3Array    = std140_scalerVec;
+using std140_vec4Array    = glm::vec4;
 using std140_textureArray = std140_scalerVec;
 
-struct coordinateTransformUBO_s {
-	glm::vec2 position;
-	float zoom;
-	float aspectRatio = 1.0f;
-};
+//struct coordinateTransformUBO_s {
+//	glm::vec2 position;
+//	float zoom;
+//	float aspectRatio = 1.0f;
+//};

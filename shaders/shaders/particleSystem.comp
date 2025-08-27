@@ -5,7 +5,7 @@
 
 // #define MAX_PARTICLE_SYSTEMS_LARGE 4
 
-struct particle {
+struct Particle {
    vec2 position;
    vec2 velocity;
    float scale;
@@ -27,14 +27,14 @@ struct ParticleSystemConfiguration {
 };
 
 struct ParticleGroup_large{
-   particle particles[MAX_PARTICLES_LARGE];
+   Particle particles[MAX_PARTICLES_LARGE];
 };
 
-layout(std140, set = 0, binding = 0) buffer ObjectInstaceBuffer_config{
+layout(std140, set = 0, binding = 0) buffer ParticalInstanceConfigBuffer{
 	ParticleSystemConfiguration configs[];
 };
 
-layout(std430, set = 0, binding = 1) buffer ObjectInstaceBuffer_large{
+layout(std430, set = 0, binding = 1) buffer ParticalLargeGroupInstanceBuffer{
 	ParticleGroup_large particleGroups_large[];
 };
 
