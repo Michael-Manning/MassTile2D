@@ -36,7 +36,7 @@ layout(std430, set = 0, binding = 2) buffer ParticalLargeGroupInstanceBuffer{
 	ParticleGroup_large particleGroups_large[];
 };
 
-layout(push_constant) uniform constants{
+layout(push_constant) uniform ParticleSystemInfo{
    int systemIndex;
    int systemSize; // small = 0, large  = 1;
 };

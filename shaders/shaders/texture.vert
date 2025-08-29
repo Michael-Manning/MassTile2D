@@ -9,18 +9,18 @@ layout(set = 1, binding = 1) uniform CamerUBO {
 	float aspectRatio;
 } camera;
 
-struct TextureSSBOObject{
+struct TexturedQuadInstance{
    vec2 uvMin;
    vec2 uvMax;
    vec2 translation;
    vec2 scale;
    float rotation;
    int useLightMap;
-   int index; // texture index
+   int tex; // texture index
 };
 
-layout(std140, set = 1, binding = 0) readonly buffer TextureInstaceBuffer{
-	TextureSSBOObject instanceData[];
+layout(std140, set = 1, binding = 0) readonly buffer TexturedQuadInstaceBuffer{
+	TexturedQuadInstance instanceData[];
 };
 
 // compile time flag to optimize out lightmap sampling

@@ -9,6 +9,7 @@
 #include "Settings.h"
 #include "Vertex2D.h"
 #include "AssetManager.h"
+#include "ShaderTypes.h"
 
 class Engine;
 
@@ -66,7 +67,7 @@ private:
 	};
 
 	struct screenSpaceTextDrawItem {
-		TextPL::textHeader header;
+		ShaderTypes::TextHeader header;
 		std::string text;
 		fontID font;
 		float scaleFactor = 1.0f;
@@ -76,12 +77,12 @@ private:
 	std::vector<ShaderTypes::ColoredQuadInstance> coloredQuadInstanceData;
 	int coloredQuadInstanceIndex = 0;
 
-	std::vector<ColoredTrianglesPL::InstanceBufferData> coloredTriangleColorData;
+	std::vector<ShaderTypes::ColoredTriangleInstance> coloredTriangleColorData;
 	std::vector<Vertex2D> coloredTriangleVertexData;
 	int coloredTrianglesInstanceIndex = 0;
 
 
-	std::vector<TexturedQuadPL::ssboObjectInstanceData> texturedQuadInstanceData;
+	std::vector<ShaderTypes::TexturedQuadInstance> texturedQuadInstanceData;
 	int texturedQuadInstanceIndex = 0;
 
 	std::vector<screenSpaceTextDrawItem> textInstanceData;

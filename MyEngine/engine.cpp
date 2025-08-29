@@ -330,7 +330,7 @@ void Engine::Start(const VideoSettings& initialSettings, AssetManager::AssetPath
 		// allocated dedicated device memory for compute driven particle systems
 		{
 			// todo: use less ambigous size. ParticleGroup_larg is not labled as being device only
-			rengine->CreateDeviceOnlyStorageBuffer(sizeof(Particle) * MAX_PARTICLES_LARGE * MAX_PARTICLE_SYSTEMS_LARGE, false, computerParticleBuffer);
+			rengine->CreateDeviceOnlyStorageBuffer(sizeof(ShaderTypes::Particle) * MAX_PARTICLES_LARGE * MAX_PARTICLE_SYSTEMS_LARGE, false, computerParticleBuffer);
 
 			//computerParticleBuffer.size = sizeof(ParticleSystemPL::device_particle_ssbo);
 
@@ -450,10 +450,10 @@ void Engine::recordSceneContextGraphics(const SceneGraphicsContext& ctx, std::sh
 		ZoneScopedN("Textured quad PL");
 
 		if (scene->sceneData.spriteRenderers.size() > 0) {
-			vector<TexturedQuadPL::ssboObjectInstanceData> drawlist;
+			vector<ShaderTypes::TexturedQuadInstance> drawlist;
 			drawlist.reserve(scene->sceneData.spriteRenderers.size());
 
-			TexturedQuadPL::ssboObjectInstanceData* GPUBuffer = ctx.texturePipeline->getUploadMappedBuffer();
+			ShaderTypes::TexturedQuadInstance* GPUBuffer = ctx.texturePipeline->getUploadMappedBuffer();
 			int instanceIndex = 0;
 
 			assert(scene->sceneData.spriteRenderers.size() < ctx.allocationSettings.TexturedQuad_MaxInstances);
@@ -602,7 +602,7 @@ void Engine::recordSceneContextGraphics(const SceneGraphicsContext& ctx, std::sh
 					r.dirty = false;
 				}
 
-				TextPL::textHeader header;
+				ShaderTypes::TextHeader header;
 				header.color = r.color;
 				header.textLength = glm::min(ctx.allocationSettings.Text_MaxStringLength, (uint32_t)r.quads.size());
 				header._textureIndex = sprite->textureID;
@@ -704,12 +704,12 @@ void Engine::recordDrawlistContextGraphics(const DrawlistGraphicsContext& ctx, c
 				auto sprite = assetManager->GetSprite(f->atlas);
 
 				//TextPL::textObject textData;
-				vector<charQuad> quads;
+				vector<ShaderTypes::CharQuad> quads;
 				quads.resize(item.text.length());
 				//CalculateQuads(f, item.text, textData.quads);
 				CalculateQuads(f, item.text, quads.data());
 
-				TextPL::textHeader header = item.header;
+				ShaderTypes::TextHeader header = item.header;
 				header.scale = vec2(f->fontHeight * 2) * item.scaleFactor;
 				header._textureIndex = sprite->textureID;
 

@@ -41,13 +41,13 @@ void TextPL::recordCommandBuffer(vk::CommandBuffer commandBuffer) {
 
 	int indexBufferIndex = 0;
 	for (int i = 0; i < maxObjects; i++) {
-		int objInstances = textHeadersDB.buffersMapped[engine->currentFrame][i].textLength;
+		int objInstances = textHeadersDB.buffersMapped[engine->currentFrame]->headerData[i].textLength;
 		instanceCount += objInstances;
 
 		for (size_t j = 0; j < objInstances; j++)
 		{
-			letterIndexDB.buffersMapped[engine->currentFrame][indexBufferIndex].headerIndex = i;
-			letterIndexDB.buffersMapped[engine->currentFrame][indexBufferIndex].letterIndex = i * maxStringLength + j;
+			letterIndexDB.buffersMapped[engine->currentFrame]->indexData[indexBufferIndex].headerIndex = i;
+			letterIndexDB.buffersMapped[engine->currentFrame]->indexData[indexBufferIndex].letterIndex = i * maxStringLength + j;
 			indexBufferIndex++;
 		}
 	}

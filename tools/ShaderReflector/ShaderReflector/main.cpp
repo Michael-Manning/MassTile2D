@@ -9,6 +9,7 @@
 #include <unordered_map>
 #include <map>
 #include <unordered_set>
+#include <set>
 #include <format>
 
 #include <spirv-reflect/spirv_reflect.h>
@@ -56,7 +57,7 @@ static std::string makePathAbsolute(std::filesystem::path originatingPath, std::
 }
 
 
-static std::string getFileRawName(std::string fullPath) {
+static std::string getFileRawName(std::string fullPath) { // not actually raw. Just file without extension
 	std::string name = std::filesystem::path(fullPath).filename().string();
 	size_t lastindex = name.find_last_of(".");
 	std::string rawname = name.substr(0, lastindex);
@@ -113,7 +114,8 @@ enum class shaderTypeClassification {
     unknown,
     uniform,
     ssbo,
-    structure
+    structure,
+    pushConstant
 };
 
 enum class shaderAlignment {
@@ -145,9 +147,12 @@ struct shaderType {
     shaderTypeClassification typeClass;
     std::vector<shaderMember> members;
     uint32_t arrayStride;
+
+    std::set<string> shaderAttributions;
 };
 
 struct shaderPushConstant {
+    std::string shaderName;
     std::string name;
     std::vector<shaderMember> members;
 };
@@ -157,14 +162,14 @@ map<string, shaderType> allTypes;
 
 // ===== Additional globals: record which buffers use which struct =====
 
-struct bufferInfo {
-    string bufferName; // descriptor binding name (if any)
-    string typeName;   // root struct type of the buffer
-    uint32_t set{};
-    uint32_t binding{};
-    SpvReflectDescriptorType descriptorType{};
-};
-vector<bufferInfo> allBuffers;
+//struct bufferInfo {
+//    string bufferName; // descriptor binding name (if any)
+//    string typeName;   // root struct type of the buffer
+//    uint32_t set{};
+//    uint32_t binding{};
+//    SpvReflectDescriptorType descriptorType{};
+//};
+//vector<bufferInfo> allBuffers;
 
 // ===== Helpers =====
 
@@ -302,7 +307,7 @@ static unordered_set<string> g_inProgress;
 static shaderType BuildStructFromBlockVariable(const SpvReflectBlockVariable& v);
 
 // Ensure that a canonical definition for 't.typeName' exists in allTypes and matches structurally if already present.
-static void EnsureCanonical(const shaderType& t) {
+static void EnsureCanonical(const shaderType& t, string shaderSourceName) {
     auto it = allTypes.find(t.typeName);
     if (it == allTypes.end()) {
         allTypes.emplace(t.typeName, t);
@@ -311,9 +316,10 @@ static void EnsureCanonical(const shaderType& t) {
     else if (!EqualTypes(it->second, t)) {
         throw std::runtime_error("Conflicting struct definitions with the same name: " + t.typeName);
     }
+    allTypes[t.typeName].shaderAttributions.insert(shaderSourceName);
 }
 
-static shaderType BuildStructFromBlockVariable(const SpvReflectBlockVariable& v, shaderTypeClassification typeClass) {
+static shaderType BuildStructFromBlockVariable(const SpvReflectBlockVariable& v, shaderTypeClassification typeClass, string shaderSourceName) {
     // Determine the struct's declared type name
     shaderType out{};
     out.typeName = BlockVariableTypeName(v);
@@ -345,10 +351,10 @@ static shaderType BuildStructFromBlockVariable(const SpvReflectBlockVariable& v,
 
         if (UnderlyingStruct(m.type_description)) {
             // Build nested canonical definition (throws on conflict)
-            shaderType nested = BuildStructFromBlockVariable(m, shaderTypeClassification::structure);
+            shaderType nested = BuildStructFromBlockVariable(m, shaderTypeClassification::structure, shaderSourceName);
             nested.memberName.clear(); // canonical form ignores memberName
 
-            EnsureCanonical(nested);   // inserts or verifies allTypes[nested.typeName]
+            EnsureCanonical(nested, shaderSourceName);   // inserts or verifies allTypes[nested.typeName]
             mem.type = nested.typeName; // <-- store only the type name
         }
         else {
@@ -360,7 +366,7 @@ static shaderType BuildStructFromBlockVariable(const SpvReflectBlockVariable& v,
     }
 
     // Insert/validate canonical definition now
-    EnsureCanonical(out);
+    EnsureCanonical(out, shaderSourceName);
 
     g_inProgress.erase(out.typeName);
     return out;
@@ -368,7 +374,7 @@ static shaderType BuildStructFromBlockVariable(const SpvReflectBlockVariable& v,
 
 // ===== Main entry point =====
 
-void PopulateShaderInfo(const std::vector<uint8_t>& shaderSrc) {
+void PopulateShaderInfo(const std::vector<uint8_t>& shaderSrc, string shaderName) {
     SpvReflectShaderModule spvModule;
     SpvReflectResult result =
         spvReflectCreateShaderModule(shaderSrc.size(),
@@ -426,17 +432,46 @@ void PopulateShaderInfo(const std::vector<uint8_t>& shaderSrc) {
         }
 
         // Build the root struct (recursively discovers & catalogs nested structs)
-        shaderType root = BuildStructFromBlockVariable(blk, typeClass);
+        shaderType root = BuildStructFromBlockVariable(blk, typeClass, shaderName);
 
         // Record that this buffer uses this struct
-        bufferInfo bi{};
-        bi.bufferName = (binding->name ? string(binding->name) : string());
-        bi.typeName = root.typeName;
-        bi.set = binding->set;
-        bi.binding = binding->binding;
-        bi.descriptorType = binding->descriptor_type;
-        allBuffers.emplace_back(std::move(bi));
+        //bufferInfo bi{};
+        //bi.bufferName = (binding->name ? string(binding->name) : string());
+        //bi.typeName = root.typeName;
+        //bi.set = binding->set;
+        //bi.binding = binding->binding;
+        //bi.descriptorType = binding->descriptor_type;
+        //allBuffers.emplace_back(std::move(bi));
     }
+
+    // push constant
+    {
+
+        uint32_t blockCount = 0;
+        result = spvReflectEnumeratePushConstantBlocks(&spvModule, &blockCount, nullptr);
+        if (result != SPV_REFLECT_RESULT_SUCCESS) {
+            throw std::runtime_error("Shader reflection failed");
+            spvReflectDestroyShaderModule(&spvModule);
+            return;
+        }
+
+        if (blockCount > 0) {
+            std::vector<SpvReflectBlockVariable*> pushConstants(blockCount);
+            result = spvReflectEnumeratePushConstantBlocks(&spvModule, &blockCount, pushConstants.data());
+            if (result != SPV_REFLECT_RESULT_SUCCESS) {
+                throw std::runtime_error("Shader reflection failed");
+                spvReflectDestroyShaderModule(&spvModule);
+                return;
+            }
+
+            for (const auto& block : pushConstants) {
+
+                // Build the root struct (recursively discovers & catalogs nested structs)
+                shaderType root = BuildStructFromBlockVariable(*block, shaderTypeClassification::pushConstant, shaderName);
+            }
+        }
+    }
+
 
     spvReflectDestroyShaderModule(&spvModule);
 }
@@ -587,8 +622,8 @@ int nextDivor(int n, int d) {
 // formats the brackets at the end of a mamber name eg. int num[12, 43];
 string formatArray(memberArrayTraits traits) {
     if (traits.dims_count == 0) {
-        if (traits.runtimeAr)
-            return "[]";
+        /*if (traits.runtimeAr)
+            return "[]";*/
         return "";
     }
     string res = "[";
@@ -630,9 +665,11 @@ int main()
 
 		auto srcData = readFile(file);
 
+        string shaderName = getFileRawName(file);
+
         try 
         {
-            PopulateShaderInfo(srcData);
+            PopulateShaderInfo(srcData, shaderName);
         }
         catch (const std::runtime_error& e) 
         {
@@ -676,7 +713,7 @@ namespace ShaderTypes
     for (auto& s : typeInsertionOrder)
     {
         const auto& v = allTypes[s];
-        
+
         uint32_t typeSize = v.members.back().offset + v.members.back().size;
 
         // comment block
@@ -690,9 +727,19 @@ namespace ShaderTypes
                 out << "Storage buffer ";
             else if (v.typeClass == shaderTypeClassification::structure)
                 out << "Shader structure ";
+            else if (v.typeClass == shaderTypeClassification::pushConstant)
+                out << "Push constant ";
             else if (v.typeClass == shaderTypeClassification::unknown)
                 out << "Unknown type ";
             out << v.typeName << "\n";
+            out << getIndent() << "Used in:\n";
+            currentIndent ++;
+            for (auto& s : v.shaderAttributions)            
+                out << getIndent() << "- " << s << "\n";
+            currentIndent --;
+
+
+
                 out << getIndent() << "Type size: " << to_string(typeSize) << "\n";
             if (v.typeClass == shaderTypeClassification::structure) {
                 out << getIndent() << "Array stride: " << to_string(v.arrayStride) << "\n";
@@ -706,7 +753,9 @@ namespace ShaderTypes
         if (v.typeClass == shaderTypeClassification::structure) {
 
             // must be std140
-            if (v.arrayStride % typeSize != 0) {
+            if (v.arrayStride != typeSize) {
+                assert(v.arrayStride > typeSize);
+
                 out << "alignas(" << 16 << ") ";
             }
 
@@ -751,15 +800,19 @@ namespace ShaderTypes
                 bool std140Array = p < primitiveShaderType::e_vec4 && m.array.stride == 16;
 
                 prefix += getShaderTypeStr(p, std140Array);
-                prefixes.push_back(prefix);
             }
             else {
                 const shaderType& nested = allTypes[std::get<string>(m.type)];
                 // nested members have their own m2.name, etc.
                 prefix += nested.typeName;
-                prefixes.push_back(prefix);
             }
             
+            // just make the type a pointer instead of an unspecified array []
+            if (m.array.dims_count == 0 && m.array.runtimeAr)
+                prefix += "*";
+                
+
+            prefixes.push_back(prefix);
             suffixes.push_back(m.name + formatArray(m.array));
 
             currentOffset += m.size;

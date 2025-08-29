@@ -38,7 +38,7 @@ public:
 		return r;
 	};
 
-	std::vector<charQuad> quads;
+	std::vector<ShaderTypes::CharQuad> quads;
 
 	static TextRenderer deserializeFlatbuffers(const AssetPack::TextRenderer* t) {
 		TextRenderer r;

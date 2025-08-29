@@ -10,6 +10,7 @@
 #include "typedefs.h"
 #include "globalBufferDefinitions.h"
 #include "ComputeTemplate.h"
+#include "ShaderTypes.h"
 
 #include "LightingComputePL.h"
 
@@ -20,8 +21,8 @@ void LightingComputePL::CreateComputePipeline(const std::vector<uint8_t>& comput
 
 	this->tileWorldData = tileWorldData;
 
-	engine->createMappedBuffer(sizeof(chunkLightingUpdateinfo) * maxChunkBaseLightingUpdatesPerFrame, vk::BufferUsageFlagBits::eStorageBuffer, baseLightUpdateDB);
-	engine->createMappedBuffer(sizeof(chunkLightingUpdateinfo) * maxChunkBaseLightingUpdatesPerFrame, vk::BufferUsageFlagBits::eStorageBuffer, blurLightUpdateDB);
+	engine->createMappedBuffer(sizeof(ShaderTypes::LightingUpdate) * maxChunkBaseLightingUpdatesPerFrame, vk::BufferUsageFlagBits::eStorageBuffer, baseLightUpdateDB);
+	engine->createMappedBuffer(sizeof(ShaderTypes::LightingUpdate) * maxChunkBaseLightingUpdatesPerFrame, vk::BufferUsageFlagBits::eStorageBuffer, blurLightUpdateDB);
 
 	PipelineParameters params;
 	params.computeSrcStages = { computeSrc_firstPass, computeSrc_secondPass, computeSrc_thirdPass };
@@ -38,7 +39,7 @@ void LightingComputePL::CreateComputePipeline(const std::vector<uint8_t>& comput
 	pipelines.CreateComputePipeline(params, con);
 }
 
-void LightingComputePL::recordCommandBuffer(vk::CommandBuffer commandBuffer, int baseUpdates, int blurUpdates, const TileWorldLightingSettings_pc& lightingSettings) {
+void LightingComputePL::recordCommandBuffer(vk::CommandBuffer commandBuffer, int baseUpdates, int blurUpdates, const ShaderTypes::LightingSettings& lightingSettings) {
 
 	if (baseUpdates == 0 && blurUpdates == 0)
 		return;

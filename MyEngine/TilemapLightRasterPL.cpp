@@ -61,7 +61,7 @@ void TilemapLightRasterPL::CreateGraphicsPipeline(const PipelineParameters& para
 	pipeline.CreateGraphicsPipeline(params, con);
 }
 
-void TilemapLightRasterPL::recordCommandBuffer(vk::CommandBuffer commandBuffer, int textureIndex, const TileWorldLightingSettings_pc& lightingSettings) {
+void TilemapLightRasterPL::recordCommandBuffer(vk::CommandBuffer commandBuffer, int textureIndex, const ShaderTypes::LightingSettings& lightingSettings) {
 	TracyVkZone(engine->tracyGraphicsContexts[engine->currentFrame], commandBuffer, "Tilemap lighting raster");
 
 	pipeline.bindPipelineResources(commandBuffer);

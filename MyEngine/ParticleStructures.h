@@ -5,15 +5,15 @@
 
 #include "nlohmann/json.hpp"
 #include "serialization.h"
-
-struct alignas(16) Particle {
-	glm::vec2 position;
-	glm::vec2 velocity;
-	float scale;
-	float life;
-	alignas(16) glm::vec4 color;
-	//int32_t padding[2];
-};
+//
+//struct alignas(16) Particle {
+//	glm::vec2 position;
+//	glm::vec2 velocity;
+//	float scale;
+//	float life;
+//	alignas(16) glm::vec4 color;
+//	//int32_t padding[2];
+//};
 
 struct ParticleSystemConfiguration {
 	int32_t particleCount = 200;

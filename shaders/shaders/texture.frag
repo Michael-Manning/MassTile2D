@@ -1,22 +1,22 @@
 #version 460
 #extension GL_EXT_nonuniform_qualifier : enable
 
-struct TextureSSBOObject{
+struct TexturedQuadInstance{
    vec2 uvMin;
    vec2 uvMax;
    vec2 translation;
    vec2 scale;
    float rotation;
    int useLightMap;
-   int index; // texture index
+   int tex; // texture index
 };
 
 layout(set = 1, binding = 2) uniform LightMapUBO {
    int lightMapIndex;
 };
 
-layout(std140, set = 1, binding = 0) readonly buffer TextureInstaceBuffer{
-	TextureSSBOObject instanceData[];
+layout(std140, set = 1, binding = 0) readonly buffer TextureQuadInstaceBuffer{
+	TexturedQuadInstance instanceData[];
 };
 
 
@@ -41,7 +41,7 @@ void main() {
    float yscale = (umax.y - umin.y);
    float sampleY = umin.y + yscale * (uv.y);
 
-   vec4 sampleColor = texture(texSampler[instanceData[instance_index].index], vec2( sampleX, sampleY));
+   vec4 sampleColor = texture(texSampler[instanceData[instance_index].tex], vec2( sampleX, sampleY));
 
    if(lightmapEnabled == 0){
       outColor = vec4(sampleColor.rgb, sampleColor.a);

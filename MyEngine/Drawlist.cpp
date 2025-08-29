@@ -53,7 +53,7 @@ void Drawlist::AddCenteredSprite(Sprite* sprite, int atlasIndex, glm::vec2 pos, 
 
 	assert(texturedQuadInstanceIndex < allocationSettings.TexturedQuad_MaxInstances);
 
-	TexturedQuadPL::ssboObjectInstanceData& item = texturedQuadInstanceData[texturedQuadInstanceIndex % allocationSettings.TexturedQuad_MaxInstances];
+	ShaderTypes::TexturedQuadInstance& item = texturedQuadInstanceData[texturedQuadInstanceIndex % allocationSettings.TexturedQuad_MaxInstances];
 	item.uvMin = glm::vec2(0.0f);
 	item.uvMax = glm::vec2(1.0f);
 	item.translation = pos;

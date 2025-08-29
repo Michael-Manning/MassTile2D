@@ -20,13 +20,13 @@ const auto Font_extension = ".font";
 // Serialize using json on creation for asset packager to automatically convert to flatbuffer
 // serialize serialize flatbuffer during published build with packed assets
 
-struct alignas(16) charQuad {
-	alignas(8) glm::vec2 uvmin;
-	alignas(8) glm::vec2 uvmax;
-	alignas(8) glm::vec2 scale;
-	alignas(8) glm::vec2 position;
-};
-static_assert(sizeof(charQuad) % 16 == 0);
+//struct alignas(16) charQuad {
+//	alignas(8) glm::vec2 uvmin;
+//	alignas(8) glm::vec2 uvmax;
+//	alignas(8) glm::vec2 scale;
+//	alignas(8) glm::vec2 position;
+//};
+//static_assert(sizeof(charQuad) % 16 == 0);
 
 struct packedChar {
 	glm::vec2 uvmin;
@@ -108,4 +108,4 @@ public:
 	Font(const AssetPack::Font* f);
 };
 
-void CalculateQuads(Font* f, const std::string& text, charQuad* quads);
+void CalculateQuads(Font* f, const std::string& text, ShaderTypes::CharQuad* quads);

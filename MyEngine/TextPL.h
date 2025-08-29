@@ -17,18 +17,6 @@
 class TextPL {
 public:
 
-	struct textHeader {
-		glm::vec4 color;
-		alignas(8) glm::vec2 position;
-		alignas(8) glm::vec2 scale;
-		float rotation;
-		int _textureIndex;
-		int textLength;
-
-		uint32_t padding[1];
-	};
-	static_assert(sizeof(textHeader) % 16 == 0);
-
 	TextPL(VKEngine* engine, int maxObjects, int maxStringLength) 
 		: pipeline(engine), engine(engine), maxObjects(maxObjects), maxStringLength(maxStringLength) {}
 
@@ -38,15 +26,15 @@ public:
 
 	void ClearTextData(int frame) {
 		for (size_t i = 0; i < maxObjects; i++)
-			textHeadersDB.buffersMapped[frame][i].textLength = 0;
+			textHeadersDB.buffersMapped[frame]->headerData[i].textLength = 0;
 	}
 
 	// TODO replace with function to get pointers to a given memory slot for direct memory access to avoid copy
-	void UploadTextData(int frame, int memorySlot, const textHeader& header, fontID font, std::vector<charQuad>& quads) {
+	void UploadTextData(int frame, int memorySlot, const ShaderTypes::TextHeader& header, fontID font, std::vector<ShaderTypes::CharQuad>& quads) {
 
 		// transfers memory to GPU 
-		textHeadersDB.buffersMapped[frame][memorySlot] = header;
-		std::copy(quads.begin(), quads.end(), textQuadsDB.buffersMapped[frame] + memorySlot * maxStringLength);
+		textHeadersDB.buffersMapped[frame]->headerData[memorySlot] = header;
+		std::copy(quads.begin(), quads.end(), textQuadsDB.buffersMapped[frame]->textData + memorySlot * maxStringLength);
 	};
 
 	const int maxObjects;
@@ -54,18 +42,13 @@ public:
 
 private:
 
-	struct alignas(16) letterIndexInfo {
-		uint32_t headerIndex;
-		uint32_t letterIndex;
-	};
-
 	GlobalImageDescriptor* textureDescriptor = nullptr;
 
 	VKEngine* engine;
 
 	GraphicsTemplate pipeline;
 
-	MappedDoubleBuffer<textHeader> textHeadersDB;
-	MappedDoubleBuffer<charQuad> textQuadsDB;
-	MappedDoubleBuffer<letterIndexInfo> letterIndexDB;
+	MappedDoubleBuffer<ShaderTypes::TextHeaderInstaceBuffer> textHeadersDB;
+	MappedDoubleBuffer<ShaderTypes::TextDataInstaceBuffer> textQuadsDB;
+	MappedDoubleBuffer<ShaderTypes::TextIndexInstaceBuffer> letterIndexDB;
 };

@@ -17,7 +17,7 @@ layout(std430, set = 1, binding = 4) buffer mapBlurObjectBuffer {
 	int tileMapBlurData[];
 } ;
 
-layout(push_constant) uniform constants{
+layout(push_constant) uniform LightingSettings{
 	int interpolationEnabled;
 	int upscaleEnabled;
 	int blurEnabled;

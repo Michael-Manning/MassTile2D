@@ -20,11 +20,6 @@
 class ColoredTrianglesPL {
 public:
 
-	struct InstanceBufferData {
-		glm::vec4 color;
-	};
-	static_assert(sizeof(InstanceBufferData) % 16 == 0);
-
 	ColoredTrianglesPL(VKEngine* engine, int maxTriangles) : pipeline(engine), engine(engine), maxTriangles(maxTriangles) {
 	}
 
@@ -34,8 +29,8 @@ public:
 	Vertex2D* GetVertexMappedBuffer(int frame) {
 		return vertexDB.buffersMapped[frame];
 	}
-	InstanceBufferData* GetColorMappedBuffer(int frame) {
-		return instanceDB.buffersMapped[frame];
+	ShaderTypes::ColoredTriangleInstance* GetColorMappedBuffer(int frame) {
+		return instanceDB.buffersMapped[frame]->instanceData;
 	}
 
 	const static int verticesPerMesh = 3;
@@ -45,7 +40,7 @@ private:
 	GraphicsTemplate pipeline;
 
 	MappedDoubleBuffer<Vertex2D> vertexDB;
-	MappedDoubleBuffer<InstanceBufferData> instanceDB;
+	MappedDoubleBuffer<ShaderTypes::ColoredTriangleInstaceBuffer> instanceDB;
 
 	VKEngine* engine;
 };

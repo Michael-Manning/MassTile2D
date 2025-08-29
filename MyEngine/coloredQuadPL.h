@@ -17,17 +17,6 @@
 class ColoredQuadPL {
 public:
 
-	//struct InstanceBufferData {
-	//	glm::vec4 color;
-	//	alignas(8)glm::vec2 position;
-	//	alignas(8)glm::vec2 scale;
-	//	int circle;
-	//	float rotation;
-
-	//	int32_t padding[2];
-	//};
-	//static_assert(sizeof(InstanceBufferData) % 16 == 0);
-
 	ColoredQuadPL(VKEngine* engine, int maxInstances) 
 		: pipeline(engine), engine(engine), maxInstances(maxInstances) { }
 
@@ -49,13 +38,13 @@ public:
 	}
 
 	ShaderTypes::ColoredQuadInstance* getUploadMappedBuffer() {
-		return instanceDataDB.buffersMapped[engine->currentFrame];
+		return instanceDataDB.buffersMapped[engine->currentFrame]->instanceData;
 	}
 
 	const int maxInstances;
 
 private:
-	MappedDoubleBuffer<ShaderTypes::ColoredQuadInstance> instanceDataDB;
+	MappedDoubleBuffer<ShaderTypes::ColoredQuadInstaceBuffer> instanceDataDB;
 	GraphicsTemplate pipeline;
 	VKEngine* engine;
 };

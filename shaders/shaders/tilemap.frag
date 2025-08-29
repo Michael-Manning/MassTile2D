@@ -13,7 +13,7 @@ layout(std430, set = 1, binding = 2) buffer mapBGObjectBuffer {
 
 layout(binding = 0) uniform sampler2D texSampler[];
 
-layout(push_constant) uniform constants{
+layout(push_constant) uniform TilemapLightingSourceInfo{
    int textureIndex;
    int lightingBufferIndex;
 };

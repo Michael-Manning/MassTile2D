@@ -21,7 +21,7 @@ public:
 	}
 
 	void CreateGraphicsPipeline(const PipelineParameters& params, GlobalImageDescriptor* textureDescriptor, TileWorldDeviceResources* tileWorldData);
-	void recordCommandBuffer(vk::CommandBuffer commandBuffer, int textureIndex, const TileWorldLightingSettings_pc& lightingSettings);
+	void recordCommandBuffer(vk::CommandBuffer commandBuffer, int textureIndex, const ShaderTypes::LightingSettings& lightingSettings);
 
 private:
 	TileWorldDeviceResources* tileWorldData = nullptr;

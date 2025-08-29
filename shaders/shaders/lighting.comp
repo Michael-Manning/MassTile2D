@@ -34,7 +34,7 @@ layout(std430, set = 1, binding = 2) readonly buffer mapUpscaleObjectBuffer {
 	int tileMapUpscaleData[];
 } ;
 
-layout(push_constant) uniform constants{
+layout(push_constant) uniform LightingSettings{
 	int interpolationEnabled;
 	int upscaleEnabled;
 	int blurEnabled;

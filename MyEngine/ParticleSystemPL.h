@@ -25,6 +25,7 @@
 #include "globalBufferDefinitions.h"
 #include "GraphicsTemplate.h"
 #include "ParticleStructures.h"
+#include "ShaderTypes.h"
 
 constexpr int MAX_PARTICLES_SMALL = 400;
 //constexpr int MAX_PARTICLE_SYSTEMS_SMALL = 20;
@@ -36,7 +37,7 @@ class ParticleSystemPL {
 public:
 	// for cpu driven particle systems
 	struct ParticleGroup_small {
-		Particle particles[MAX_PARTICLES_SMALL];
+		ShaderTypes::Particle particles[MAX_PARTICLES_SMALL];
 	};
 
 	ParticleSystemPL(VKEngine* engine, int maxSystemsSmall) :

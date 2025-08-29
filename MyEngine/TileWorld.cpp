@@ -115,7 +115,7 @@ void LargeTileWorld::updateBlurLighting(){
 
 		blurLightingDirtyState.flags[chunk] = ChunkState::Clean;
 
-		chunkLightingUpdateinfo update;
+		ShaderTypes::LightingUpdate update;
 		update.chunkIndex = chunk;
 		update.lightCount = 0;
 	
@@ -154,7 +154,7 @@ void LargeTileWorld::updateBaseLighting()
 		uint32_t chunkX = chunk % chunksX;
 		uint32_t chunkY = chunk / chunksX;
 
-		chunkLightingUpdateinfo update;
+		ShaderTypes::LightingUpdate update;
 		update.chunkIndex = chunk;
 
 		int t = 0;
@@ -168,14 +168,14 @@ void LargeTileWorld::updateBaseLighting()
 				{
 					if (t >= maxLightsPerChunk)
 						continue;
-					update.lightPositions[t++] = glm::vec4(v.x, v.y, 0, 0);
+					update.lightPositions[t++].v2 = v;
 				}
 				/*std::copy(torchPositions[chunkSearch].begin(), torchPositions[chunkSearch].end(), update.lightPositions + t);
 				t += torchPositions[chunkSearch].size();*/
 			}
 		}
 		if (useMovingTorch) {
-			update.lightPositions[t++] = glm::vec4(movingTorch.x, movingTorch.y, 0.0f, 0.0f);
+			update.lightPositions[t++].v2 = movingTorch;
 		}
 		update.lightCount = t;
 		//std::cout << "light update chunk " << chunk << "\n";

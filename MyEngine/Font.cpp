@@ -11,6 +11,7 @@
 #include "serialization.h"
 #include "BinaryWriter.h"
 #include "typedefs.h"
+#include "ShaderTypes.h"
 
 #include <assetPack/Font_generated.h>
 
@@ -94,7 +95,7 @@ Font::Font(const AssetPack::Font* f) {
 }
 
 
-void CalculateQuads(Font* f, const std::string& text, charQuad* quads) {
+void CalculateQuads(Font* f, const std::string& text, ShaderTypes::CharQuad* quads) {
 
 	glm::vec2 cursor = glm::vec2(0.0f);
 	for (int i = 0; i < text.length(); i++) {
@@ -107,7 +108,7 @@ void CalculateQuads(Font* f, const std::string& text, charQuad* quads) {
 		}
 
 		auto packed = f->operator[](c);
-		charQuad q;
+		ShaderTypes::CharQuad q;
 		q.uvmax = packed.uvmax;
 		q.uvmin = packed.uvmin;
 		q.scale = packed.scale;

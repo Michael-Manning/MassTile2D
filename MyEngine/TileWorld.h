@@ -21,12 +21,9 @@ constexpr int SmallTileWorldWidth = 128;
 constexpr int SmallTileWorldHeight = 128;
 
 
-//constexpr int mapW = 1024 * 2;
-//constexpr int mapH = 1024 * 1;
 //constexpr int mapPadding = (mapW + 2) * 2 + (mapH + 2) * 2 * 2;
 constexpr int mapPadding = 0;
 constexpr int mapOffset = mapPadding / 2;
-
 
 constexpr int chunkSize = 32;
 constexpr int chunkTileCount = chunkSize * chunkSize;
@@ -36,27 +33,14 @@ constexpr int largeChunkCount = 131072;
 static_assert(largeChunkCount % chunkSize == 0);
 
 
-
-
 // size of an individual size in wold units
 constexpr float tileWorldBlockSize = 0.25f;
-
-
 
 constexpr float ambiantLight = 1.00f;
 
 const static int maxChunkTransfersPerFrame = 16;
 const static int maxChunkBaseLightingUpdatesPerFrame = 16;
 const static int maxLightsPerChunk = 100;
-
-struct chunkLightingUpdateinfo {
-	uint32_t chunkIndex;
-	int lightCount;
-	alignas(16) glm::vec4 lightPositions[maxLightsPerChunk]; // std140 alignment
-};
-static_assert(sizeof(chunkLightingUpdateinfo) % 16 == 0);
-
-constexpr int coolsize = sizeof(chunkLightingUpdateinfo);
 
 
 struct TileWorldDeviceResources {
@@ -66,11 +50,6 @@ struct TileWorldDeviceResources {
 	DeviceBuffer MapLightBlurBuffer;
 };
 
-struct TileWorldLightingSettings_pc { // push constant
-	int interpolationEnabled = 1;
-	int upscaleEnabled = 1;
-	int blurEnabled = 1;
-};
 
 template<int mapW, int mapH>
 class TileWorld {
@@ -110,7 +89,7 @@ private:
 
 public:
 
-	TileWorldLightingSettings_pc lightingSettings;
+	ShaderTypes::LightingSettings lightingSettings;
 
 	// by chunk and then global position
 	std::vector< std::vector<glm::vec2>> torchPositions;
@@ -382,8 +361,8 @@ public:
 
 	TileWorldDeviceResources deviceResources;
 
-	std::vector<chunkLightingUpdateinfo> baseChunkLightingJobs;
-	std::vector<chunkLightingUpdateinfo> blurChunkLightingJobs;
+	std::vector<ShaderTypes::LightingUpdate> baseChunkLightingJobs;
+	std::vector<ShaderTypes::LightingUpdate> blurChunkLightingJobs;
 
 	void updateBaseLighting();
 
@@ -394,12 +373,12 @@ public:
 		updateBlurLighting();
 	};
 
-	std::vector<chunkLightingUpdateinfo> getBaseLightingUpdateData() {
+	std::vector<ShaderTypes::LightingUpdate> getBaseLightingUpdateData() {
 		ZoneScoped;
 		return baseChunkLightingJobs;
 	}
 
-	std::vector<chunkLightingUpdateinfo> getBlurLightingUpdateData() {
+	std::vector<ShaderTypes::LightingUpdate> getBlurLightingUpdateData() {
 		ZoneScoped;
 		return blurChunkLightingJobs;
 	}

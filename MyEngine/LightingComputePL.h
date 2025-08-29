@@ -39,15 +39,15 @@ public:
 		TileWorldDeviceResources* tileWorldData
 	);
 
-	void recordCommandBuffer(vk::CommandBuffer commandBuffer, int baseUpdates, int blurUpdates, const TileWorldLightingSettings_pc& lightingSettings);
+	void recordCommandBuffer(vk::CommandBuffer commandBuffer, int baseUpdates, int blurUpdates, const ShaderTypes::LightingSettings& lightingSettings);
 
-	void stageLightingUpdate(std::vector<chunkLightingUpdateinfo>& baseUpdates, std::vector<chunkLightingUpdateinfo>& blurUpdates) {
+	void stageLightingUpdate(std::vector<ShaderTypes::LightingUpdate>& baseUpdates, std::vector<ShaderTypes::LightingUpdate>& blurUpdates) {
 		ZoneScoped;
 		if (baseUpdates.size() != 0)
-			std::copy(baseUpdates.begin(), baseUpdates.end(), baseLightUpdateDB.buffersMapped[engine->currentFrame]);
+			std::copy(baseUpdates.begin(), baseUpdates.end(), baseLightUpdateDB.buffersMapped[engine->currentFrame]->baseLightingUpdates);
 
 		if (blurUpdates.size() != 0)
-			std::copy(blurUpdates.begin(), blurUpdates.end(), blurLightUpdateDB.buffersMapped[engine->currentFrame]);
+			std::copy(blurUpdates.begin(), blurUpdates.end(), blurLightUpdateDB.buffersMapped[engine->currentFrame]->blurLightingUpdates);
 	}
 
 private:
@@ -58,6 +58,6 @@ private:
 
 	ComputeTemplate pipelines;
 
-	MappedDoubleBuffer<chunkLightingUpdateinfo> baseLightUpdateDB;
-	MappedDoubleBuffer<chunkLightingUpdateinfo> blurLightUpdateDB;
+	MappedDoubleBuffer<ShaderTypes::baseLightingObjectBuffer> baseLightUpdateDB;
+	MappedDoubleBuffer<ShaderTypes::blueLightingObjectBuffer> blurLightUpdateDB;
 };

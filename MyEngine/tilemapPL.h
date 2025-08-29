@@ -13,6 +13,7 @@
 #include "TileWorld.h"
 #include "globalBufferDefinitions.h"
 #include "GraphicsTemplate.h"
+#include "ShaderTypes.h"
 
 class TilemapPL{
 public:
@@ -36,19 +37,15 @@ public:
 
 		pipeline.bindPipelineResources(commandBuffer);
 
-		pipeline.UpdatePushConstant(commandBuffer, pushConstant_s{
+		pipeline.UpdatePushConstant(commandBuffer, ShaderTypes::TilemapLightingSourceInfo{
 			.textureIndex = textureIndex,
-			.lightMapIndex = lightMapIndex
+			.lightingBufferIndex = lightMapIndex
 			});
 
 		commandBuffer.drawIndexed(QuadIndices.size(), 1, 0, 0, 0);
 	}
 
 private:
-	struct pushConstant_s {
-		int32_t textureIndex;
-		int32_t lightMapIndex;
-	};
 
 	VKEngine* engine;
 	GraphicsTemplate pipeline;

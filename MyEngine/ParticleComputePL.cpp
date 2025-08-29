@@ -8,6 +8,7 @@
 #include "typedefs.h"
 #include "Constants.h"
 #include "globalBufferDefinitions.h"
+#include "ShaderTypes.h"
 #include "ParticleSystemPL.h"
 #include "ParticleStructures.h"
 #include "ParticleComputePL.h"
@@ -17,20 +18,6 @@ namespace {
 	inline float randomNormal() {
 		return static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
 	}
-
-	struct pushConstant_s {
-		int32_t systemIndex;
-		int32_t particlesToSpawn;
-		float deltaTime;
-		float seedX;
-		float seedY;
-		int32_t init;
-		alignas(8)glm::vec2 spawnPosition;
-	};
-
-	struct atomicCounter_ssbo {
-		uint32_t activeCount;
-	};
 }
 
 void ParticleComputePL::CreateComputePipeline(const std::vector<uint8_t>& compSrc, DeviceBuffer& particleDataBuffer) {
@@ -51,7 +38,7 @@ void ParticleComputePL::CreateComputePipeline(const std::vector<uint8_t>& compSr
 	//	atomicCounterBuffer.allocation,
 	//	true);
 
-	engine->CreateDeviceOnlyStorageBuffer(sizeof(atomicCounter_ssbo), true, atomicCounterBuffer);
+	engine->CreateDeviceOnlyStorageBuffer(sizeof(ShaderTypes::AtomicCounterBuffer), true, atomicCounterBuffer);
 
 	/*auto deviceDB = particleDataBuffer->GetDoubleBuffer();
 	auto atomicDB = atomicCounterBuffer.GetDoubleBuffer();*/
@@ -64,15 +51,6 @@ void ParticleComputePL::CreateComputePipeline(const std::vector<uint8_t>& compSr
 	con.bufferBindings.push_back(BufferBinding(0, 0, sysConfigDB));
 	con.bufferBindings.push_back(BufferBinding(0, 1, particleDataBuffer));
 	con.bufferBindings.push_back(BufferBinding(0, 2, atomicCounterBuffer));
-
-	//con.descriptorInfos.push_back(DescriptorManager::descriptorSetInfo(0, 0, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eCompute, &sysConfigDB.buffers, sysConfigDB.size));
-	//con.descriptorInfos.push_back(DescriptorManager::descriptorSetInfo(0, 1, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eCompute, &deviceDB, particleDataBuffer->size));
-	//con.descriptorInfos.push_back(DescriptorManager::descriptorSetInfo(0, 2, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eCompute, &atomicDB, atomicCounterBuffer.size));
-
-	//con.pushInfo = PushConstantInfo{
-	//	.pushConstantSize = sizeof(pushConstant_s),
-	//	.pushConstantShaderStages = vk::ShaderStageFlagBits::eCompute
-	//};
 
 	pipeline.CreateComputePipeline(params, con);
 }
@@ -88,7 +66,7 @@ void ParticleComputePL::RecordCommandBuffer(vk::CommandBuffer commandBuffer, flo
 
 	for (auto& info : dispatchInfo)
 	{
-		pipeline.UpdatePushConstant(commandBuffer, pushConstant_s{
+		pipeline.UpdatePushConstant(commandBuffer, ShaderTypes::ParticleDispatchInfo{
 			.systemIndex = info.systemIndex,
 			.particlesToSpawn = info.particlesToSpawn,
 			.deltaTime = deltaTime,

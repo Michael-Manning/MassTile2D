@@ -18,17 +18,18 @@
 #include "pipeline.h"
 #include "typedefs.h"
 #include "Constants.h"
+#include "ShaderTypes.h"
 #include "BindingManager.h"
 #include "GlobalImageDescriptor.h"
 #include "globalBufferDefinitions.h"
 #include "ParticleSystemPL.h"
 
-namespace {
-	struct pushConstant_s {
-		int systemIndex;
-		int systemSize; // small = 0, large  = 1;
-	};
-}
+//namespace {
+//	struct pushConstant_s {
+//		int systemIndex;
+//		int systemSize; // small = 0, large  = 1;
+//	};
+//}
 
 void ParticleSystemPL::CreateGraphicsPipeline(const PipelineParameters& params, const DeviceBuffer& deviceParticleDataBuffer) {
 
@@ -54,7 +55,7 @@ void ParticleSystemPL::recordCommandBuffer(vk::CommandBuffer commandBuffer, std:
 
 	for (size_t i = 0; i < systemIndexes.size(); i++)
 	{
-		pipeline.UpdatePushConstant(commandBuffer, pushConstant_s{
+		pipeline.UpdatePushConstant(commandBuffer, ShaderTypes::ParticleSystemInfo{
 			.systemIndex = systemIndexes[i],
 			.systemSize = systemSizes[i]
 			});
