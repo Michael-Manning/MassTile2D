@@ -26,7 +26,7 @@ layout(std430, set = 0, binding = 0) readonly buffer ParticalSmallGroupInstanceB
 	ParticleGroup_small particleGroups_small[MAX_PARTICLE_SYSTEMS_SMALL];
 };
 
-layout(std430, set = 0, binding = 2) buffer ObjectInstaceBuffer_large{
+layout(std430, set = 0, binding = 2) buffer ParticalLargeGroupInstanceBuffer{
 	ParticleGroup_large particleGroups_large[];
 };
 

@@ -10,6 +10,7 @@
 #include "typedefs.h"
 #include "globalBufferDefinitions.h"
 #include "ComputeTemplate.h"
+#include "ShaderUtility.h"
 #include "ShaderTypes.h"
 
 #include "LightingComputePL.h"
@@ -21,8 +22,8 @@ void LightingComputePL::CreateComputePipeline(const std::vector<uint8_t>& comput
 
 	this->tileWorldData = tileWorldData;
 
-	engine->createMappedBuffer(sizeof(ShaderTypes::LightingUpdate) * maxChunkBaseLightingUpdatesPerFrame, vk::BufferUsageFlagBits::eStorageBuffer, baseLightUpdateDB);
-	engine->createMappedBuffer(sizeof(ShaderTypes::LightingUpdate) * maxChunkBaseLightingUpdatesPerFrame, vk::BufferUsageFlagBits::eStorageBuffer, blurLightUpdateDB);
+	ShaderUtil::CreateMappedInstanceBuffer(engine, maxChunkBaseLightingUpdatesPerFrame, baseLightUpdateDB);
+	ShaderUtil::CreateMappedInstanceBuffer(engine, maxChunkBaseLightingUpdatesPerFrame, blurLightUpdateDB);
 
 	PipelineParameters params;
 	params.computeSrcStages = { computeSrc_firstPass, computeSrc_secondPass, computeSrc_thirdPass };

@@ -198,7 +198,7 @@ bool initializeEngine(std::unique_ptr<Engine>& engine) {
 	AssetDirectories.prefabDir = makePathAbsolute(exePath, "../../data/Prefabs/") + "/";
 	AssetDirectories.assetDir = makePathAbsolute(exePath, "../../data/Assets/") + "/";
 	AssetDirectories.fontsDir = makePathAbsolute(exePath, "../../data/Fonts/") + "/";
-	AssetDirectories.shaderDir = makePathAbsolute(exePath, "../../shaders/compiled/") + "/";
+	AssetDirectories.shaderDir = makePathAbsolute(exePath, "../../shaders/compiled/debug/") + "/";
 //#endif
 	AssetDirectories.resourcePtr = resourcePtr;
 

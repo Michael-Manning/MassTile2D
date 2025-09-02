@@ -32,13 +32,12 @@ constexpr int MAX_PARTICLES_SMALL = 400;
 constexpr int MAX_PARTICLES_LARGE = 400000;
 constexpr int MAX_PARTICLE_SYSTEMS_LARGE = 4;
 
+// shader parity
+static_assert(sizeof(ShaderTypes::ParticleGroup_small) == sizeof(ShaderTypes::Particle) * MAX_PARTICLES_SMALL);
+static_assert(sizeof(ShaderTypes::ParticleGroup_large) == sizeof(ShaderTypes::Particle) * MAX_PARTICLES_LARGE);
 
 class ParticleSystemPL {
 public:
-	// for cpu driven particle systems
-	struct ParticleGroup_small {
-		ShaderTypes::Particle particles[MAX_PARTICLES_SMALL];
-	};
 
 	ParticleSystemPL(VKEngine* engine, int maxSystemsSmall) :
 		pipeline(engine), engine(engine), maxSystemsSmall(maxSystemsSmall) { }
@@ -48,9 +47,9 @@ public:
 	// indexes should be within particle size group
 	void recordCommandBuffer(vk::CommandBuffer commandBuffer, std::vector<int>& systemIndexes, std::vector<int>& systemSizes, std::vector<int>& systemParticleCounts);
 
-	void UploadInstanceData(ParticleGroup_small& psystem, int index) {
+	void UploadInstanceData(ShaderTypes::ParticleGroup_small& psystem, int index) {
 		assert(index < maxSystemsSmall);
-		particleDB.buffersMapped[engine->currentFrame][index] = psystem;
+		particleDB.buffersMapped[engine->currentFrame]->particleGroups_small[index] = psystem;
 	}
 
 	const int maxSystemsSmall;
@@ -65,7 +64,7 @@ private:
 
 	GlobalImageDescriptor* textureDescriptor = nullptr;
 
-	MappedDoubleBuffer<ParticleGroup_small> particleDB;
+	MappedDoubleBuffer<ShaderTypes::ParticalSmallGroupInstanceBuffer> particleDB;
 
 	GraphicsTemplate pipeline;
 

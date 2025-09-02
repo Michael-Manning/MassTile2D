@@ -22,6 +22,7 @@
 #include <robin_hood.h>
 #include <imgui.h>
 #include <Windows.h>
+#include "ShaderUtility.h"
 
 
 #include "VKEngine.h"
@@ -159,7 +160,7 @@ bool initializeEngine(std::unique_ptr<Engine>& engine) {
 	AssetDirectories.prefabDir = makePathAbsolute(exePath, "../../data/Prefabs/") + "/";
 	AssetDirectories.assetDir = makePathAbsolute(exePath, "../../data/Assets/") + "/";
 	AssetDirectories.fontsDir = makePathAbsolute(exePath, "../../data/Fonts/") + "/";
-	AssetDirectories.shaderDir = makePathAbsolute(exePath, "../../shaders/compiled/") + "/";
+	AssetDirectories.shaderDir = makePathAbsolute(exePath, "../../shaders/compiled/debug") + "/";
 #endif
 	AssetDirectories.resourcePtr = resourcePtr;
 
@@ -250,7 +251,7 @@ int main()
 
 		// load all resources 
 	engine->assetManager->LoadAllSprites();
-	//engine->assetManager->LoadAllFonts();
+	engine->assetManager->LoadAllFonts();
 	//engine->assetManager->LoadAllPrefabs(false);
 
 	//engine->assetManager->LoadScene("game_test");

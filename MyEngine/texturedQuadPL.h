@@ -13,6 +13,14 @@
 #include "GlobalImageDescriptor.h"
 #include "globalBufferDefinitions.h"
 #include "GraphicsTemplate.h"
+#include "ShaderTypes.h"
+#include "ShaderUtility.h"
+
+// just a hack until this whole files functionality gets moved into a source somehwere
+namespace ShaderUtil {
+template<>
+void CreateMappedInstanceBuffer<ShaderTypes::TexturedQuadInstaceBuffer>(VKEngine* engine, uint32_t instanceCount, MappedDoubleBuffer<ShaderTypes::TexturedQuadInstaceBuffer>& buffer);
+}
 
 class TexturedQuadPL {
 public:
@@ -22,7 +30,7 @@ public:
 
 	void CreateGraphicsPipeline(const PipelineParameters& params, GlobalImageDescriptor* textureDescriptor, bool lightMapEnabled, std::array<int, 2> lightMapTextureIndexes = { 0, 0 }) {
 
-		engine->createMappedBuffer(sizeof(ShaderTypes::TexturedQuadInstance) * maxInstances, vk::BufferUsageFlagBits::eStorageBuffer, ssboMappedDB);
+		ShaderUtil::CreateMappedInstanceBuffer(engine, maxInstances, instanceDB);
 
 		engine->createMappedBuffer(vk::BufferUsageFlagBits::eUniformBuffer, lightmapIndexDB);
 		for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++)
@@ -30,7 +38,7 @@ public:
 
 		PipelineResourceConfig con;
 		con.bufferBindings.push_back(BufferBinding(1, 1, params.cameraDB));
-		con.bufferBindings.push_back(BufferBinding(1, 0, ssboMappedDB));
+		con.bufferBindings.push_back(BufferBinding(1, 0, instanceDB));
 		con.bufferBindings.push_back(BufferBinding(1, 2, lightmapIndexDB));
 
 		con.specConstBindings.push_back(SpecConstantBinding{ 0, static_cast<uint32_t>(lightMapEnabled ? 1: 0) });
@@ -51,7 +59,7 @@ public:
 	}
 
 	ShaderTypes::TexturedQuadInstance* getUploadMappedBuffer() {
-		return ssboMappedDB.buffersMapped[engine->currentFrame]->instanceData;
+		return instanceDB.buffersMapped[engine->currentFrame]->instanceData;
 	}
 
 	const int maxInstances;
@@ -63,6 +71,6 @@ private:
 
 	GlobalImageDescriptor* textureDescriptor = nullptr;
 
-	MappedDoubleBuffer<ShaderTypes::TexturedQuadInstaceBuffer> ssboMappedDB;
+	MappedDoubleBuffer<ShaderTypes::TexturedQuadInstaceBuffer> instanceDB;
 	MappedDoubleBuffer<ShaderTypes::LightMapUBO> lightmapIndexDB;
 };

@@ -339,6 +339,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\shared\ShaderUtility.cpp" />
     <ClCompile Include="AssetManager.cpp" />
     <ClCompile Include="Audio.cpp" />
     <ClCompile Include="Behaviour.cpp" />
@@ -351,6 +352,7 @@
     <ClCompile Include="Font.cpp" />
     <ClCompile Include="FontGenerator.cpp" />
     <ClInclude Include="..\shared\ShaderTypes.h" />
+    <ClInclude Include="..\shared\ShaderUtility.h" />
     <ClInclude Include="..\shared\std140.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Drawlist.h" />

@@ -2,190 +2,210 @@ import subprocess
 import sys
 import os
 import json
-import time
 
 opimization_enabled = False
 source_debuging_enabled = False
 
-
 n = len(sys.argv)
-if(n > 3):
-   raise Exception("too many arguments")
+if n > 3:
+    raise Exception("too many arguments")
 
-if(n > 1):
-   opimization_enabled = int(sys.argv[1]) == 1
-if(n > 2):
-   source_debuging_enabled = int(sys.argv[2]) == 1
+if n > 1:
+    opimization_enabled = int(sys.argv[1]) == 1
+if n > 2:
+    source_debuging_enabled = int(sys.argv[2]) == 1
+
+if not (opimization_enabled or source_debuging_enabled):
+    raise Exception("no build option selected; enable optimization and/or source debugging")
 
 current_directory = os.path.dirname(os.path.abspath(__file__))
-src_folder = os.path.join(os.path.dirname(current_directory), "shaders")
-out_folder = os.path.join(os.path.dirname(current_directory), "compiled")
-scripts_folder = os.path.join(os.path.dirname(current_directory), "scripts")
+root_directory = os.path.dirname(current_directory)
+src_folder = os.path.join(root_directory, "source")
+out_folder = os.path.join(root_directory, "compiled")
+scripts_folder = os.path.join(root_directory, "scripts")
+reflectToolPath = os.path.join(os.path.dirname(root_directory), "tools/ShaderReflector/x64/Debug/ShaderReflector.exe")
 
-#assums this python file is in a folder called scripts
-if(current_directory != scripts_folder):
-   raise Exception("Invalid folder layout in shader workspace")
+# assumes this python file is in a folder called scripts
+if current_directory != scripts_folder:
+    raise Exception("Invalid folder layout in shader workspace")
 
 if not os.path.exists(src_folder):
-   raise Exception('Expected folder "shaders"')
+    raise Exception('Expected folder "source"')
 
 mod_time_file = os.path.join(scripts_folder, "mod_times.json")
 
+# flavors to build
+flavors = []
+if opimization_enabled:
+    flavors.append({"name": "optimized", "opts": ["-O"]})
+if source_debuging_enabled:
+    flavors.append({"name": "debug", "opts": ["-g"]})
 
+# ensure output root and flavor subfolders exist
+os.makedirs(out_folder, exist_ok=True)
+for f in flavors:
+    os.makedirs(os.path.join(out_folder, f["name"]), exist_ok=True)
+
+# track shader files
+extensions = ['.frag', '.vert', '.comp']
 changedShaders = set()
 allShaders = set()
 
-# Define the file extensions to monitor
-extensions = ['.frag', '.vert', '.comp']
+# load or init mod times
+mod_times = {}
+if os.path.exists(mod_time_file):
+    try:
+        with open(mod_time_file) as f:
+            mod_times = json.load(f)
+    except Exception:
+        mod_times = {}
 
-outstructure = json.loads("{}")
-
-# Create the mod time file if it doesn't exist
-if not os.path.exists(mod_time_file):
-   for filename in os.listdir(src_folder):
-      if any(filename.endswith(ext) for ext in extensions):
-         basename = os.path.basename(filename)
-         allShaders.add(basename)
-         changedShaders.add(basename)
-else:
-   try:
-      with open(mod_time_file) as f:
-            j = json.load(f)
-            outstructure = j
-      for filename in os.listdir(src_folder):
-         if any(filename.endswith(ext) for ext in extensions):
-            basename = os.path.basename(filename)
-            mod_time = os.path.getmtime(os.path.join(src_folder, filename))
-            allShaders.add(basename)
-            if(basename not in j or j[basename]["mod_time"] != mod_time or j[basename]["optimized"] != opimization_enabled or j[basename]["debug"] != source_debuging_enabled):
-               changedShaders.add(basename)
-   except:
-      #json was probably edited or inavlid
-      for filename in os.listdir(src_folder):
-         if any(filename.endswith(ext) for ext in extensions):
-            basename = os.path.basename(filename)
-            allShaders.add(basename)
-            changedShaders.add(basename)
-      outstructure = json.loads("{}")
-
-
-# create compiled folder to put spv files if it doesn't exist
-if not os.path.exists(out_folder):
-   os.mkdir(out_folder) 
-   # assume all files invalid
-   changedShaders = allShaders
-
-# check if the number of shaders and compiled shaders is the same
-compiledFileCount = 0
-for file in os.listdir(out_folder):
-   if file.endswith(".spv"):
-      compiledFileCount += 1
-if compiledFileCount < len(allShaders):
-   # new shader or deleted spv file. assume all files invalid
-   changedShaders = allShaders
-elif compiledFileCount > len(allShaders):
-   # shader file could have been deleted. Clear compiled folder an rebuild
-   print("rebuilding all shaders...")
-   for file in os.listdir(out_folder):
-      if file.endswith(".spv"):
-         file_path = os.path.join(out_folder, file)
-         if os.path.isfile(file_path):
-            os.remove(file_path)
-   changedShaders = allShaders
-
-
-if(len(changedShaders) == 0):
-   print("nothing to compile")
-   exit(0)
-
-frag_files = set()
-vert_files = set()
-comp_files = set()
-
-# Scan directory for .frag and .vert files
+# scan sources and detect changes
 for filename in os.listdir(src_folder):
-   if filename.endswith('.frag'):
-      frag_files.add(filename[:-5])
-   elif filename.endswith('.vert'):
-      vert_files.add(filename[:-5])
-   elif filename.endswith('.comp'):
-      comp_files.add(filename[:-5])
+    if any(filename.endswith(ext) for ext in extensions):
+        basename = os.path.basename(filename)
+        allShaders.add(basename)
+        fullpath = os.path.join(src_folder, filename)
+        mt = os.path.getmtime(fullpath)
+        if basename not in mod_times or mod_times[basename] != mt:
+            changedShaders.add(basename)
 
-# Group files
+# classify by type
+frag_files = {f[:-5] for f in os.listdir(src_folder) if f.endswith('.frag')}
+vert_files = {f[:-5] for f in os.listdir(src_folder) if f.endswith('.vert')}
+comp_files = {f[:-5] for f in os.listdir(src_folder) if f.endswith('.comp')}
+
 paired_files = frag_files & vert_files
 unpaired_files = (frag_files | vert_files) - paired_files
-
 if unpaired_files:
-   print(f"Error: Found unpaired files with extensions '.frag' or '.vert': {', '.join(unpaired_files)}")
-   exit(1)
+    print(f"Error: Found unpaired files with extensions '.frag' or '.vert': {', '.join(sorted(unpaired_files))}")
+    sys.exit(1)
 
-compilerPath = os.getenv('VULKAN_SDK') + "/Bin/glslc.exe"
+# expected .spv names (per flavor)
+expected_spv = set()
+for base in paired_files:
+    expected_spv.add(f"{base}_vert.spv")
+    expected_spv.add(f"{base}_frag.spv")
+for base in comp_files:
+    expected_spv.add(f"{base}_comp.spv")
+
+# clean stale outputs in each flavor folder
+for f in flavors:
+    fdir = os.path.join(out_folder, f["name"])
+    for file in os.listdir(fdir):
+        if file.endswith(".spv") and file not in expected_spv:
+            try:
+                os.remove(os.path.join(fdir, file))
+            except FileNotFoundError:
+                pass
+
+# compiler path
+sdk = os.getenv('VULKAN_SDK')
+if not sdk:
+    raise Exception("VULKAN_SDK environment variable not set")
+if sys.platform.startswith("win"):
+    compilerPath = os.path.join(sdk, "Bin", "glslc.exe")
+else:
+    compilerPath = os.path.join(sdk, "bin", "glslc")
+
+if not os.path.exists(compilerPath):
+    raise Exception(f"glslc not found at: {compilerPath}")
 
 errors = False
 
-options = ""
+def run_compile(src_path, out_path, opts):
+    args = [compilerPath, src_path] + opts + ["-o", out_path]
+    result = subprocess.run(args, capture_output=True, text=True)
+    if result.returncode != 0:
+        print(result.stderr)
+        return False
+    return True
+
+# track first-flavor failures per shader file to skip later flavors
+failed_first_flavor = set()  # keys like "name.vert", "name.frag", "name.comp"
+
+# build message
+msg_parts = []
 if opimization_enabled:
-   options += " -O "
-
+    msg_parts.append("optimized")
 if source_debuging_enabled:
-   options += " -g "
-options += " -o "
+    msg_parts.append("debug")
+print("Building " + " and ".join(msg_parts) + " shaders\n")
 
-str = "Building "
-if(opimization_enabled):
-   str += "optimized "
-str += "shaders"
-if(source_debuging_enabled):
-   str += " with source debugging enabled"
-str += "\n"
-print(str);
+# compile paired vert/frag
+for base_name in sorted(paired_files):
+    vert_file = os.path.join(src_folder, base_name + '.vert')
+    frag_file = os.path.join(src_folder, base_name + '.frag')
 
-for base_name in paired_files:
-   vert_file = os.path.join(src_folder, base_name + '.vert')
-   frag_file = os.path.join(src_folder, base_name + '.frag')
-   vchanged = (base_name + '.vert') in changedShaders
-   fchanged = (base_name + '.frag') in changedShaders
-   if(fchanged or vchanged):
-      print(f"compiling: {base_name}")
-   if(vchanged):
-      cmd = compilerPath + " " + vert_file + options + os.path.join(out_folder, base_name + '_vert.spv')
-      result = subprocess.run(cmd, capture_output=True, text=True, shell=True)
-      if result.returncode != 0:
-         errors = True
-         print(result.stderr)
-      else:
-         cur_time =  os.path.getmtime(vert_file)
-         outstructure[(base_name + '.vert')] = {"mod_time": cur_time, "optimized": opimization_enabled, "debug": source_debuging_enabled}
-   if(fchanged):
-      cmd = compilerPath + " " + frag_file + options + os.path.join(out_folder, base_name + '_frag.spv')
-      result = subprocess.run(cmd, capture_output=True, text=True, shell=True)
-      if result.returncode != 0:
-         errors = True
-         print(result.stderr)
-      else:
-         cur_time =  os.path.getmtime(frag_file)
-         outstructure[(base_name + '.frag')] = {"mod_time": cur_time, "optimized": opimization_enabled, "debug": source_debuging_enabled}
-   
-for base_name in comp_files:
-   comp_file = os.path.join(src_folder, base_name + '.comp')
-   changed = (base_name + '.comp') in changedShaders
-   if(changed):
-      print(f"compiling: {base_name}")
-      cmd = compilerPath + " " + comp_file + options + os.path.join(out_folder, base_name + '_comp.spv')
-      result = subprocess.run(cmd, capture_output=True, text=True, shell=True)
-      if result.returncode != 0:
-         errors = True
-         print(result.stderr)
-      else: 
-         cur_time =  os.path.getmtime(comp_file)
-         outstructure[(base_name + '.comp')] = {"mod_time": cur_time, "optimized": opimization_enabled, "debug": source_debuging_enabled}
+    v_key = base_name + '.vert'
+    f_key = base_name + '.frag'
+    v_changed = v_key in changedShaders
+    f_changed = f_key in changedShaders
 
-if(errors):
-   print("\ncompleted with some errors")
+    for fl in flavors:
+        fdir = os.path.join(out_folder, fl["name"])
+        v_out = os.path.join(fdir, base_name + '_vert.spv')
+        f_out = os.path.join(fdir, base_name + '_frag.spv')
+
+        # decide if we need to build each stage for this flavor
+        need_v = (v_changed or not os.path.exists(v_out)) and (v_key not in failed_first_flavor)
+        need_f = (f_changed or not os.path.exists(f_out)) and (f_key not in failed_first_flavor)
+
+        if need_v or need_f:
+            print(f"compiling: {base_name} [{fl['name']}]")
+
+        if need_v:
+            ok = run_compile(vert_file, v_out, fl["opts"])
+            if not ok:
+                errors = True
+                # mark so later flavors are skipped for this shader file
+                failed_first_flavor.add(v_key)
+            else:
+                mod_times[v_key] = os.path.getmtime(vert_file)
+
+        if need_f:
+            ok = run_compile(frag_file, f_out, fl["opts"])
+            if not ok:
+                errors = True
+                failed_first_flavor.add(f_key)
+            else:
+                mod_times[f_key] = os.path.getmtime(frag_file)
+
+# compile compute
+for base_name in sorted(comp_files):
+    comp_file = os.path.join(src_folder, base_name + '.comp')
+    c_key = base_name + '.comp'
+    c_changed = c_key in changedShaders
+
+    for fl in flavors:
+        fdir = os.path.join(out_folder, fl["name"])
+        c_out = os.path.join(fdir, base_name + '_comp.spv')
+
+        need_c = (c_changed or not os.path.exists(c_out)) and (c_key not in failed_first_flavor)
+
+        if need_c:
+            print(f"compiling: {base_name} [{fl['name']}]")
+            ok = run_compile(comp_file, c_out, fl["opts"])
+            if not ok:
+                errors = True
+                failed_first_flavor.add(c_key)
+            else:
+                mod_times[c_key] = os.path.getmtime(comp_file)
+
+if errors:
+    print("\ncompleted with some errors")
 else:
-   print("\nnice :)")
 
+    print("\nRunning reflection tool\n")
+    args = [reflectToolPath]
+    result = subprocess.run(args, capture_output=True, text=True)
+    if result.returncode != 0:
+        print(result.stderr)
+    else:
+        print("Done :)")
+
+# persist mod times (per source file only)
 with open(mod_time_file, 'w') as f:
-   json.dump(outstructure, f, indent=4)
+    json.dump(mod_times, f, indent=4)
 
-exit(0)
+sys.exit(0)

@@ -9,6 +9,7 @@
 #include "Constants.h"
 #include "globalBufferDefinitions.h"
 #include "ShaderTypes.h"
+#include "ShaderUtility.h"
 #include "ParticleSystemPL.h"
 #include "ParticleStructures.h"
 #include "ParticleComputePL.h"

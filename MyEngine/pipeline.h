@@ -23,12 +23,51 @@ struct PushConstantInfo {
 	vk::ShaderStageFlags pushConstantShaderStages = static_cast<vk::ShaderStageFlags>(0);
 };
 
+template<typename T>
+struct LinkedBindableBuffer {
+	const std::array<vk::Buffer, FRAMES_IN_FLIGHT>* buffers;
+	const vk::DeviceSize size;
+	const vk::BufferUsageFlags usage;
+
+	LinkedBindableBuffer(const MappedDoubleBuffer<T>& mappedBuffer)
+		: buffers(&mappedBuffer.buffers), size(mappedBuffer.size), usage(mappedBuffer.usage) {
+	}
+	LinkedBindableBuffer(const LinkedDeviceBuffer<T>& buffer)
+		: buffers(&buffer.doubleBuffer), size(buffer.size), usage(buffer.usage) {
+	}
+};
+
+//struct BindableBuffer {
+//	const std::array<vk::Buffer, FRAMES_IN_FLIGHT>* buffers;
+//	const vk::DeviceSize size;
+//	const vk::BufferUsageFlags usage;
+//
+//	// converting constructors
+//	template<typename T>
+//	BindableBuffer(const MappedDoubleBuffer<T>& mappedBuffer) 
+//		: buffers(&mappedBuffer.buffers), size(mappedBuffer.size), usage(mappedBuffer.usage) {}
+//	BindableBuffer(const DeviceBuffer& buffer) 
+//		: buffers(&buffer.doubleBuffer), size(buffer.size), usage(buffer.usage) {}
+//	template<typename T>
+//	BindableBuffer(const LinkedBindableBuffer<T>& buffer)
+//		: buffers(buffer.buffers), size(buffer.size), usage(buffer.usage) {
+//	}
+//};
+//
+
+
 struct BufferBinding {
 	const int set;
 	const int binding;
 	const std::array<vk::Buffer, FRAMES_IN_FLIGHT>* buffers;
 	const vk::DeviceSize size;
 	const vk::BufferUsageFlags usage;
+
+	template<typename T>
+	BufferBinding(int set, int binding, const LinkedBindableBuffer<T>& buffer)
+		: set(set), binding(binding), buffers(buffer.buffers), size(buffer.size), usage(buffer.usage)
+	{}
+
 
 	template<typename T>
 	BufferBinding(int set, int binding, const MappedDoubleBuffer<T>& mappedBuffer)

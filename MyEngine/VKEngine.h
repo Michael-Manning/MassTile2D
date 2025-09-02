@@ -65,6 +65,22 @@ struct DeviceBuffer {
 	}
 };
 
+// device buffer with compile time association with shader type
+template<typename T>
+struct LinkedDeviceBuffer {
+	VmaAllocation allocation;
+	vk::Buffer buffer;
+	vk::DeviceSize size;
+	vk::BufferUsageFlags usage;
+
+	std::array<vk::Buffer, FRAMES_IN_FLIGHT> doubleBuffer;
+
+	// Deprecate
+	std::array<vk::Buffer, FRAMES_IN_FLIGHT> GetDoubleBuffer() const {
+		return { buffer, buffer };
+	}
+};
+
 struct VertexMeshBuffer {
 	vk::Buffer vertexBuffer;
 	VmaAllocation vertexBufferAllocation;

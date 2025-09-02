@@ -1,6 +1,6 @@
 #version 450
 
-layout(binding = 0) uniform CamerUBO {
+layout(binding = 0) uniform PrecomputedCamerUBO {
     vec2 position;  
     float zoom;
     float aspectRatio;

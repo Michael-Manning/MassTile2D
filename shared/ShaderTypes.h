@@ -12,6 +12,70 @@
 namespace ShaderTypes
 {
 	/*
+		Uniform buffer PrecomputedCamerUBO
+		Used in:
+			- coloredQuadTransform_comp
+		Type size: 64
+	*/
+	struct PrecomputedCamerUBO
+	{
+		glm::vec2 position;
+		float     zoom;
+		float     aspectRatio;
+		glm::vec3 view;
+	};
+
+	/*
+		Shader structure transformObject
+		Used in:
+			- coloredQuadTransform_comp
+		Type size: 48
+		Array stride: 48
+	*/
+	struct transformObject
+	{
+		glm::vec3 transform;
+	};
+
+	/*
+		Storage buffer ObjectTransformBuffer
+		Used in:
+			- coloredQuadTransform_comp
+		Type size: 48
+	*/
+	struct ObjectTransformBuffer
+	{
+		transformObject transformData[];
+	};
+
+	/*
+		Shader structure instanceDataObject
+		Used in:
+			- coloredQuadTransform_comp
+		Type size: 40
+		Array stride: 48
+	*/
+	struct alignas(16) instanceDataObject
+	{
+		glm::vec4 color;
+		glm::vec2 position;
+		glm::vec2 scale;
+		int32_t   circle;
+		float     rotation;
+	};
+
+	/*
+		Storage buffer ObjectInstaceBuffer
+		Used in:
+			- coloredQuadTransform_comp
+		Type size: 40
+	*/
+	struct ObjectInstaceBuffer
+	{
+		instanceDataObject instanceData[];
+	};
+
+	/*
 		Shader structure ColoredQuadInstance
 		Used in:
 			- coloredQuad_frag
@@ -37,7 +101,7 @@ namespace ShaderTypes
 	*/
 	struct ColoredQuadInstaceBuffer
 	{
-		ColoredQuadInstance* instanceData;
+		ColoredQuadInstance instanceData[];
 	};
 
 	/*
@@ -79,7 +143,7 @@ namespace ShaderTypes
 	*/
 	struct ColoredTriangleInstaceBuffer
 	{
-		ColoredTriangleInstance* instanceData;
+		ColoredTriangleInstance instanceData[];
 	};
 
 	/*
@@ -94,7 +158,7 @@ namespace ShaderTypes
 	*/
 	struct mapFGObjectBuffer
 	{
-		int32_t* tileMapFGData;
+		int32_t tileMapFGData[];
 	};
 
 	/*
@@ -123,7 +187,7 @@ namespace ShaderTypes
 	*/
 	struct baseLightingObjectBuffer
 	{
-		LightingUpdate* baseLightingUpdates;
+		LightingUpdate baseLightingUpdates[];
 	};
 
 	/*
@@ -136,7 +200,7 @@ namespace ShaderTypes
 	*/
 	struct blueLightingObjectBuffer
 	{
-		LightingUpdate* blurLightingUpdates;
+		LightingUpdate blurLightingUpdates[];
 	};
 
 	/*
@@ -151,7 +215,7 @@ namespace ShaderTypes
 	*/
 	struct mapBGObjectBuffer
 	{
-		int32_t* tileMapBGData;
+		int32_t tileMapBGData[];
 	};
 
 	/*
@@ -165,7 +229,7 @@ namespace ShaderTypes
 	*/
 	struct mapUpscaleObjectBuffer
 	{
-		int32_t* tileMapUpscaleData;
+		int32_t tileMapUpscaleData[];
 	};
 
 	/*
@@ -178,7 +242,7 @@ namespace ShaderTypes
 	*/
 	struct mapBlurObjectBuffer
 	{
-		int32_t* tileMapBlurData;
+		int32_t tileMapBlurData[];
 	};
 
 	/*
@@ -226,7 +290,7 @@ namespace ShaderTypes
 	*/
 	struct ParticalInstanceConfigBuffer
 	{
-		ParticleSystemConfiguration* configs;
+		ParticleSystemConfiguration configs[];
 	};
 
 	/*
@@ -265,12 +329,13 @@ namespace ShaderTypes
 		Storage buffer ParticalLargeGroupInstanceBuffer
 		Used in:
 			- particleSystem_comp
+			- particleSystem_frag
 			- particleSystem_vert
 		Type size: 19200000
 	*/
 	struct ParticalLargeGroupInstanceBuffer
 	{
-		ParticleGroup_large* particleGroups_large;
+		ParticleGroup_large particleGroups_large[];
 	};
 
 	/*
@@ -327,17 +392,6 @@ namespace ShaderTypes
 	};
 
 	/*
-		Storage buffer ObjectInstaceBuffer_large
-		Used in:
-			- particleSystem_frag
-		Type size: 19200000
-	*/
-	struct ObjectInstaceBuffer_large
-	{
-		ParticleGroup_large* particleGroups_large;
-	};
-
-	/*
 		Push constant ParticleSystemInfo
 		Used in:
 			- particleSystem_frag
@@ -370,14 +424,15 @@ namespace ShaderTypes
 	};
 
 	/*
-		Storage buffer TextureQuadInstaceBuffer
+		Storage buffer TexturedQuadInstaceBuffer
 		Used in:
 			- texture_frag
+			- texture_vert
 		Type size: 44
 	*/
-	struct TextureQuadInstaceBuffer
+	struct TexturedQuadInstaceBuffer
 	{
-		TexturedQuadInstance* instanceData;
+		TexturedQuadInstance instanceData[];
 	};
 
 	/*
@@ -389,17 +444,6 @@ namespace ShaderTypes
 	struct LightMapUBO
 	{
 		int32_t lightMapIndex;
-	};
-
-	/*
-		Storage buffer TexturedQuadInstaceBuffer
-		Used in:
-			- texture_vert
-		Type size: 44
-	*/
-	struct TexturedQuadInstaceBuffer
-	{
-		TexturedQuadInstance* instanceData;
 	};
 
 	/*
@@ -429,7 +473,7 @@ namespace ShaderTypes
 	*/
 	struct TextHeaderInstaceBuffer
 	{
-		TextHeader* headerData;
+		TextHeader headerData[];
 	};
 
 	/*
@@ -457,7 +501,7 @@ namespace ShaderTypes
 	*/
 	struct TextDataInstaceBuffer
 	{
-		CharQuad* textData;
+		CharQuad textData[];
 	};
 
 	/*
@@ -481,7 +525,7 @@ namespace ShaderTypes
 	*/
 	struct TextIndexInstaceBuffer
 	{
-		LetterIndexInfo* indexData;
+		LetterIndexInfo indexData[];
 	};
 
 	/*

@@ -9,7 +9,9 @@
 
 #include "VKengine.h"
 #include "typedefs.h"
-#include "globalBufferDefinitions.h"
+#include "globalBufferDefinitions.h"a
+#include "ShaderTypes.h"
+#include "ShaderUtility.h"
 
 #include "TextPL.h"
 
@@ -18,9 +20,9 @@ using namespace std;
 
 void TextPL::CreateGraphicsPipeline(const PipelineParameters& params, GlobalImageDescriptor* textureDescriptor) {
 
-	engine->createMappedBuffer(sizeof(textHeadersDB) * maxObjects, vk::BufferUsageFlagBits::eStorageBuffer, textHeadersDB);
-	engine->createMappedBuffer(sizeof(textQuadsDB) * maxObjects * maxStringLength, vk::BufferUsageFlagBits::eStorageBuffer, textQuadsDB);
-	engine->createMappedBuffer(sizeof(letterIndexDB) * maxObjects * maxStringLength, vk::BufferUsageFlagBits::eStorageBuffer, letterIndexDB);
+	ShaderUtil::CreateMappedInstanceBuffer(engine, maxObjects, textHeadersDB);
+	ShaderUtil::CreateMappedInstanceBuffer(engine, maxObjects * maxStringLength, textQuadsDB);
+	ShaderUtil::CreateMappedInstanceBuffer(engine, maxObjects * maxStringLength, letterIndexDB);
 
 	PipelineResourceConfig con;
 	con.bufferBindings.push_back(BufferBinding{ 1, 0, params.cameraDB });

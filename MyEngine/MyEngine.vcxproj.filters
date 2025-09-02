@@ -150,6 +150,9 @@
     <ClCompile Include="Reflection.cpp">
       <Filter>Source Files\vulkan\piplines</Filter>
     </ClCompile>
+    <ClCompile Include="..\shared\ShaderUtility.cpp">
+      <Filter>Source Files\Engine</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pipeline.h">
@@ -358,6 +361,9 @@
     </ClInclude>
     <ClInclude Include="..\shared\ShaderTypes.h">
       <Filter>Source Files\vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\ShaderUtility.h">
+      <Filter>Source Files\Engine</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

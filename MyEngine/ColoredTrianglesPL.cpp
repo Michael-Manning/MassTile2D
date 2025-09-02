@@ -11,6 +11,8 @@
 #include "typedefs.h"
 #include "globalBufferDefinitions.h"
 #include "GraphicsTemplate.h"
+#include "ShaderTypes.h"
+#include "ShaderUtility.h"
 
 #include "ColoredTrianglesPL.h"
 
@@ -20,14 +22,11 @@ using namespace std;
 void ColoredTrianglesPL::CreateGraphicsPipeline(PipelineParameters& params) {
 
 	engine->createMappedBuffer(sizeof(Vertex2D) * verticesPerMesh * maxTriangles, vk::BufferUsageFlagBits::eVertexBuffer, vertexDB);
-	engine->createMappedBuffer(sizeof(ShaderTypes::ColoredTriangleInstance) * maxTriangles, vk::BufferUsageFlagBits::eStorageBuffer, instanceDB);
+	ShaderUtil::CreateMappedInstanceBuffer(engine, maxTriangles, instanceDB);
 
 	PipelineResourceConfig con;
 	con.bufferBindings.push_back(BufferBinding( 0, 0, params.cameraDB ));
 	con.bufferBindings.push_back(BufferBinding( 0, 1, instanceDB ));
-
-	/*con.descriptorInfos.push_back(DescriptorManager::descriptorSetInfo(0, 0, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eVertex, &params.cameraDB.buffers, params.cameraDB.size));
-	con.descriptorInfos.push_back(DescriptorManager::descriptorSetInfo(0, 1, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eFragment, &instanceDB.buffers, instanceDB.size));*/
 
 	pipeline.CreateGraphicsPipeline(params, con);
 }

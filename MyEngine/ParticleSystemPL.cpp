@@ -6,7 +6,6 @@
 #include <stdint.h>
 #include <unordered_map>
 #include <set>
-#include <string>
 #include <utility>
 
 #include <vulkan/vulkan.hpp>
@@ -18,10 +17,12 @@
 #include "pipeline.h"
 #include "typedefs.h"
 #include "Constants.h"
-#include "ShaderTypes.h"
 #include "BindingManager.h"
 #include "GlobalImageDescriptor.h"
 #include "globalBufferDefinitions.h"
+#include "ShaderTypes.h"
+#include "ShaderUtility.h"
+
 #include "ParticleSystemPL.h"
 
 //namespace {
@@ -33,8 +34,7 @@
 
 void ParticleSystemPL::CreateGraphicsPipeline(const PipelineParameters& params, const DeviceBuffer& deviceParticleDataBuffer) {
 
-	engine->createMappedBuffer(sizeof(ParticleGroup_small) * maxSystemsSmall, vk::BufferUsageFlagBits::eStorageBuffer, particleDB);
-
+	ShaderUtil::CreateMappedInstanceBuffer(engine, particleDB);
 
 	PipelineResourceConfig con;
 

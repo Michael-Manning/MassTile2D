@@ -8,7 +8,7 @@
             "args": [
                 "${workspaceFolder}/scripts/build.py",
                 "1",
-                "0"
+                "1"
             ],
             "problemMatcher": [],
             "group": {

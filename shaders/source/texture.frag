@@ -15,7 +15,7 @@ layout(set = 1, binding = 2) uniform LightMapUBO {
    int lightMapIndex;
 };
 
-layout(std140, set = 1, binding = 0) readonly buffer TextureQuadInstaceBuffer{
+layout(std140, set = 1, binding = 0) readonly buffer TexturedQuadInstaceBuffer{
 	TexturedQuadInstance instanceData[];
 };
 

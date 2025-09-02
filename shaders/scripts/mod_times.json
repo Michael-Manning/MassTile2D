@@ -1,97 +1,21 @@
 {
-    "particleSystem.vert": {
-        "mod_time": 1756402596.6021783,
-        "optimized": false,
-        "debug": true
-    },
-    "particleSystem.frag": {
-        "mod_time": 1756402587.1863935,
-        "optimized": false,
-        "debug": true
-    },
-    "coloredTriangles.vert": {
-        "mod_time": 1710971311.9504912,
-        "optimized": false,
-        "debug": true
-    },
-    "coloredTriangles.frag": {
-        "mod_time": 1756389330.7602367,
-        "optimized": false,
-        "debug": true
-    },
-    "texture.vert": {
-        "mod_time": 1756392105.0395248,
-        "optimized": false,
-        "debug": true
-    },
-    "texture.frag": {
-        "mod_time": 1756392102.1498911,
-        "optimized": false,
-        "debug": true
-    },
-    "coloredQuad.vert": {
-        "mod_time": 1756331078.4898536,
-        "optimized": false,
-        "debug": true
-    },
-    "coloredQuad.frag": {
-        "mod_time": 1756331070.3766453,
-        "optimized": false,
-        "debug": true
-    },
-    "tilemapLightRaster.vert": {
-        "mod_time": 1710771383.0824008,
-        "optimized": false,
-        "debug": true
-    },
-    "tilemapLightRaster.frag": {
-        "mod_time": 1756402633.8873117,
-        "optimized": false,
-        "debug": true
-    },
-    "tilemap.vert": {
-        "mod_time": 1710771383.0784113,
-        "optimized": false,
-        "debug": true
-    },
-    "tilemap.frag": {
-        "mod_time": 1756402656.234292,
-        "optimized": false,
-        "debug": true
-    },
-    "text.vert": {
-        "mod_time": 1756304600.2035477,
-        "optimized": false,
-        "debug": true
-    },
-    "text.frag": {
-        "mod_time": 1756304439.166016,
-        "optimized": false,
-        "debug": true
-    },
-    "particleSystem.comp": {
-        "mod_time": 1756402561.730301,
-        "optimized": false,
-        "debug": true
-    },
-    "coloredQuadTransform.comp": {
-        "mod_time": 1756315219.9920986,
-        "optimized": false,
-        "debug": true
-    },
-    "lighting.comp": {
-        "mod_time": 1756402505.070084,
-        "optimized": false,
-        "debug": true
-    },
-    "lightingUpscale.comp": {
-        "mod_time": 1756402505.9966626,
-        "optimized": false,
-        "debug": true
-    },
-    "lightingBlur.comp": {
-        "mod_time": 1756402505.528663,
-        "optimized": false,
-        "debug": true
-    }
+    "coloredQuad.vert": 1756824262.351938,
+    "coloredQuad.frag": 1756331070.3766453,
+    "coloredTriangles.vert": 1710971311.9504912,
+    "coloredTriangles.frag": 1756389330.7602367,
+    "particleSystem.vert": 1756402596.6021783,
+    "particleSystem.frag": 1756840867.6055043,
+    "text.vert": 1756304600.2035477,
+    "text.frag": 1756304439.166016,
+    "texture.vert": 1756392105.0395248,
+    "texture.frag": 1756845687.4831212,
+    "tilemap.vert": 1710771383.0784113,
+    "tilemap.frag": 1756402656.234292,
+    "tilemapLightRaster.vert": 1710771383.0824008,
+    "tilemapLightRaster.frag": 1756402633.8873117,
+    "coloredQuadTransform.comp": 1756823587.4283924,
+    "lighting.comp": 1756402505.070084,
+    "lightingBlur.comp": 1756402505.528663,
+    "lightingUpscale.comp": 1756823927.1193266,
+    "particleSystem.comp": 1756402561.730301
 }

@@ -61,7 +61,7 @@ public:
 
 			// allocate host memory for particle data
 			if (hostParticleBuffer == nullptr) {
-				hostParticleBuffer = std::make_unique< ParticleSystemPL::ParticleGroup_small>();
+				hostParticleBuffer = std::make_unique< ShaderTypes::ParticleGroup_small>();
 
 				// initialize all paritcles innactive
 				for (size_t i = 0; i < MAX_PARTICLES_SMALL; i++)
@@ -86,7 +86,7 @@ public:
 
 	// for CPU simulation only
 	// change to smart pointer and dynamically allocate only if running simulation on CPU
-	std::unique_ptr<ParticleSystemPL::ParticleGroup_small> hostParticleBuffer = nullptr;
+	std::unique_ptr<ShaderTypes::ParticleGroup_small> hostParticleBuffer = nullptr;
 
 	ParticleSystemConfiguration configuration;
 
