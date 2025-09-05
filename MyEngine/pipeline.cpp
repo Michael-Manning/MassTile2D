@@ -31,20 +31,11 @@ PipelineLayoutCtx::GraphicsShaderInfo PipelineLayoutCtx::createGraphicsShaderSta
 	};
 }
 
-std::vector<vk::PipelineShaderStageCreateInfo> PipelineLayoutCtx::createComputeShaderStages(const std::vector<std::vector<uint8_t>>& computeSrcs) const {
+vk::PipelineShaderStageCreateInfo PipelineLayoutCtx::createComputeShaderStage(const std::vector<uint8_t>& computeSrcs) const {
 
-	std::vector<vk::PipelineShaderStageCreateInfo> infos;
-	infos.reserve(computeSrcs.size());
+	vk::ShaderModule shaderModule = createShaderModule(computeSrcs, engine->devContext.device);
 
-	for (auto& src : computeSrcs)
-	{
-		vk::PipelineShaderStageCreateInfo& stageInfo = infos.emplace_back();
-		stageInfo.stage = vk::ShaderStageFlagBits::eCompute;
-		stageInfo.module = createShaderModule(src, engine->devContext.device);
-		stageInfo.pName = shader_entry_point_name;
-	}
-
-	return infos;
+	return  vk::PipelineShaderStageCreateInfo({}, vk::ShaderStageFlagBits::eCompute, shaderModule, shader_entry_point_name);
 }
 
 vk::PipelineInputAssemblyStateCreateInfo PipelineLayoutCtx::defaultInputAssembly() {

@@ -28,10 +28,7 @@
 #include "texture.h"
 #include "VKEngine.h"
 
-#include "coloredQuadPL.h"
-#include "texturedQuadPL.h"
-#include "tilemapPL.h"
-#include "LightingComputePL.h"
+#include "pipelines.h"
 #include "TextPL.h"
 
 #include "Sprite.h"

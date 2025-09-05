@@ -13,6 +13,7 @@
 #include "typedefs.h"
 #include "VKEngine.h"
 #include "RingBuffer.h"
+#include "ShaderTypes.h"
 
 constexpr int LargeTileWorldWidth = 1024 * 2;
 constexpr int LargeTileWorldHeight = 1024;
@@ -44,10 +45,10 @@ const static int maxLightsPerChunk = 100;
 
 
 struct TileWorldDeviceResources {
-	DeviceBuffer MapFGBuffer;
-	DeviceBuffer MapBGBuffer;
-	DeviceBuffer MapLightUpscaleBuffer;
-	DeviceBuffer MapLightBlurBuffer;
+	LinkedDeviceBuffer<ShaderTypes::mapFGObjectBuffer> MapFGBuffer;
+	LinkedDeviceBuffer<ShaderTypes::mapBGObjectBuffer> MapBGBuffer;
+	LinkedDeviceBuffer<ShaderTypes::mapUpscaleObjectBuffer> MapLightUpscaleBuffer;
+	LinkedDeviceBuffer<ShaderTypes::mapBlurObjectBuffer> MapLightBlurBuffer;
 };
 
 
@@ -396,10 +397,10 @@ private:
 	void createWorldBuffer() {
 		// create foreground and background VRAM buffers
 
-		engine->CreateDeviceOnlyStorageBuffer(sizeof(worldTile_ssbo) * (mapCount), true, deviceResources.MapFGBuffer);
-		engine->CreateDeviceOnlyStorageBuffer(sizeof(worldTile_ssbo) * (mapCount), true, deviceResources.MapBGBuffer);
-		engine->CreateDeviceOnlyStorageBuffer(sizeof(worldTile_ssbo) * (mapCount) * 4, true, deviceResources.MapLightUpscaleBuffer);
-		engine->CreateDeviceOnlyStorageBuffer(sizeof(worldTile_ssbo) * (mapCount) * 4, true, deviceResources.MapLightBlurBuffer);
+		engine->CreateLinkedDeviceOnlyStorageBuffer(sizeof(worldTile_ssbo) * (mapCount), true, deviceResources.MapFGBuffer);
+		engine->CreateLinkedDeviceOnlyStorageBuffer(sizeof(worldTile_ssbo) * (mapCount), true, deviceResources.MapBGBuffer);
+		engine->CreateLinkedDeviceOnlyStorageBuffer(sizeof(worldTile_ssbo) * (mapCount) * 4, true, deviceResources.MapLightUpscaleBuffer);
+		engine->CreateLinkedDeviceOnlyStorageBuffer(sizeof(worldTile_ssbo) * (mapCount) * 4, true, deviceResources.MapLightBlurBuffer);
 
 		/*MapFGBuffer.size = sizeof(worldTile_ssbo) * (mapCount);
 		MapBGBuffer.size = sizeof(worldTile_ssbo) * (mapCount);

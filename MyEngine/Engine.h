@@ -37,8 +37,8 @@
 
 #else
 #include <Windows.h>
-static HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-#define DebugLog(msg) SetConsoleTextAttribute(hConsole, 10); std::cout << "DEBUG: " << (msg) << std::endl;  SetConsoleTextAttribute(hConsole, 15)
+static HANDLE _hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+#define DebugLog(msg) SetConsoleTextAttribute(_hConsole, 10); std::cout << "DEBUG: " << (msg) << std::endl;  SetConsoleTextAttribute(_hConsole, 15)
 #endif
 
 
@@ -75,7 +75,7 @@ private:
 
 		const SceneGraphicsAllocationConfiguration allocationSettings;
 
-		MappedDoubleBuffer<coordinateTransformUBO_s> cameraBuffers;
+		MappedDoubleBuffer<ShaderTypes::CamerUBO> cameraBuffers;
 
 		std::unique_ptr<LightingComputePL> lightingPipeline = nullptr;
 
@@ -267,7 +267,7 @@ public:
 
 private:
 
-	DrawlistGraphicsContext createDrawlistGraphicsContext(DrawlistAllocationConfiguration allocationSettings, MappedDoubleBuffer<coordinateTransformUBO_s> cameraBuffers, vk::RenderPass renderTarget);
+	DrawlistGraphicsContext createDrawlistGraphicsContext(DrawlistAllocationConfiguration allocationSettings, MappedDoubleBuffer<ShaderTypes::CamerUBO> cameraBuffers, vk::RenderPass renderTarget);
 
 	const vk::Format lightingPassFormat = vk::Format::eR16Unorm; //vk::Format::eR16Unorm;
 
@@ -311,7 +311,7 @@ private:
 	std::vector<DrawlistGraphicsContext> screenspaceDrawlistContexts;
 	std::vector<Drawlist> screenspaceDrawlistLayers;
 
-	MappedDoubleBuffer<coordinateTransformUBO_s> screenSpaceTransformCameraBuffer;
+	MappedDoubleBuffer<ShaderTypes::CamerUBO> screenSpaceTransformCameraBuffer;
 
 	uint32_t frameCounter = 0;
 	bool firstFrame = true;

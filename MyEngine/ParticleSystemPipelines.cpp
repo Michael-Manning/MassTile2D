@@ -1,21 +1,65 @@
-#include "stdafx.h"
+#include <stdafx.h>
+
+#include <string>
+#include <memory>
+#include <stdint.h>
+#include <unordered_map>
+#include <set>
+#include <utility>
 
 #include <vulkan/vulkan.hpp>
 #include <glm/glm.hpp>
 
+#include "texture.h"
+#include "Vertex2D.h"
 #include "VKEngine.h"
 #include "pipeline.h"
 #include "typedefs.h"
 #include "Constants.h"
+#include "BindingManager.h"
+#include "GlobalImageDescriptor.h"
 #include "globalBufferDefinitions.h"
 #include "ShaderTypes.h"
 #include "ShaderUtility.h"
-#include "ParticleSystemPL.h"
 #include "ParticleStructures.h"
-#include "ParticleComputePL.h"
+
+#include "pipelines.h"
+
+void ParticleSystemPL::CreateGraphicsPipeline(const PipelineParameters& params, const DeviceBuffer& deviceParticleDataBuffer) {
+
+	ShaderUtil::CreateMappedInstanceBuffer(engine, particleDB);
+
+	PipelineResourceConfig con;
+
+	con.bufferBindings.push_back(BufferBinding(0, 1, params.cameraDB));
+	con.bufferBindings.push_back(BufferBinding(0, 0, particleDB));
+	con.bufferBindings.push_back(BufferBinding(0, 2, deviceParticleDataBuffer));
+
+	pipeline.CreateGraphicsPipeline(params, con);
+}
+
+void ParticleSystemPL::recordCommandBuffer(vk::CommandBuffer commandBuffer, std::vector<int>& systemIndexes, std::vector<int>& systemSizes, std::vector<int>& systemParticleCounts) {
+
+	TracyVkZone(engine->tracyGraphicsContexts[engine->currentFrame], commandBuffer, "particle system render");
+
+	pipeline.bindPipelineResources(commandBuffer);
+
+	assert(systemIndexes.size() == systemParticleCounts.size());
+
+	for (size_t i = 0; i < systemIndexes.size(); i++)
+	{
+		pipeline.UpdatePushConstant(commandBuffer, ShaderTypes::ParticleSystemInfo{
+			.systemIndex = systemIndexes[i],
+			.systemSize = systemSizes[i]
+			});
+
+		commandBuffer.drawIndexed(static_cast<int32_t>(QuadIndices.size()), systemParticleCounts[i], 0, 0, 0);
+	}
+}
+
 
 namespace {
-		
+
 	inline float randomNormal() {
 		return static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
 	}
@@ -45,7 +89,7 @@ void ParticleComputePL::CreateComputePipeline(const std::vector<uint8_t>& compSr
 	auto atomicDB = atomicCounterBuffer.GetDoubleBuffer();*/
 
 	PipelineParameters params;
-	params.computeSrcStages = { compSrc };
+	params.computeSrc = { compSrc };
 
 	PipelineResourceConfig con;
 
@@ -56,12 +100,12 @@ void ParticleComputePL::CreateComputePipeline(const std::vector<uint8_t>& compSr
 	pipeline.CreateComputePipeline(params, con);
 }
 
-void ParticleComputePL::RecordCommandBuffer(vk::CommandBuffer commandBuffer, float deltaTime, std::vector<DispatchInfo>& dispatchInfo) {
+void ParticleComputePL::RecordCommandBuffer(vk::CommandBuffer commandBuffer, float deltaTime, std::vector<ShaderTypes::ParticleDispatchInfo>& dispatchInfo) {
 	TracyVkZone(engine->tracyGraphicsContexts[engine->currentFrame], commandBuffer, "particle system compute");
 
 	assert(dispatchInfo.size() > 0);
 
-	pipeline.BindPipelineStage(commandBuffer, 0);
+	pipeline.BindPipelineStage(commandBuffer);
 	pipeline.BindDescriptorSets(commandBuffer);
 
 
@@ -80,7 +124,7 @@ void ParticleComputePL::RecordCommandBuffer(vk::CommandBuffer commandBuffer, flo
 		// reset atomic counter device buffer
 		commandBuffer.fillBuffer(atomicCounterBuffer.buffer, 0, VK_WHOLE_SIZE, 0);
 
-		pipeline.DispatchGrid(commandBuffer, { info.particleCount, 1, 1 }, { 32, 1, 1 });
+		pipeline.DispatchGrid(commandBuffer, { info.particlesToSpawn, 1, 1 }, { 32, 1, 1 });
 	}
 
 	// should be unnecessary because they are on different queues which are synchronized

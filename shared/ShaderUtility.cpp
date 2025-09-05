@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 #include <VKEngine.h>
-
+#include "pipeline.h"
 #include "std140.h"
 #include "ShaderTypes.h"
 
@@ -53,7 +53,7 @@ namespace ShaderUtil
 	}
 
 	template<>
-	void CreateMappedInstanceBuffer<ShaderTypes::blueLightingObjectBuffer>(VKEngine* engine, uint32_t instanceCount, MappedDoubleBuffer<ShaderTypes::blueLightingObjectBuffer>& buffer)
+	void CreateMappedInstanceBuffer<ShaderTypes::blurLightingObjectBuffer>(VKEngine* engine, uint32_t instanceCount, MappedDoubleBuffer<ShaderTypes::blurLightingObjectBuffer>& buffer)
 	{
 		engine->createMappedBuffer(sizeof(ShaderTypes::LightingUpdate) * instanceCount, vk::BufferUsageFlagBits::eStorageBuffer, buffer);
 	}
@@ -116,6 +116,208 @@ namespace ShaderUtil
 	void CreateMappedInstanceBuffer<ShaderTypes::TextIndexInstaceBuffer>(VKEngine* engine, uint32_t instanceCount, MappedDoubleBuffer<ShaderTypes::TextIndexInstaceBuffer>& buffer)
 	{
 		engine->createMappedBuffer(sizeof(ShaderTypes::LetterIndexInfo) * instanceCount, vk::BufferUsageFlagBits::eStorageBuffer, buffer);
+	}
+
+	PipelineResourceConfig coloredQuad_CreateBufferBindings(
+		LinkedBindableBuffer<ShaderTypes::ColoredQuadInstaceBuffer>  _ColoredQuadInstaceBuffer,
+		LinkedBindableBuffer<ShaderTypes::CamerUBO>                  _CamerUBO
+	){
+		PipelineResourceConfig con;
+		con.bufferBindings = std::vector<BufferBinding> {
+			BufferBinding(1, 0, _ColoredQuadInstaceBuffer),
+			BufferBinding(0, 0, _CamerUBO),
+		};
+		return con;
+	}
+
+	PipelineResourceConfig coloredQuadTransform_CreateBufferBindings(
+		LinkedBindableBuffer<ShaderTypes::PrecomputedCamerUBO>    _PrecomputedCamerUBO,
+		LinkedBindableBuffer<ShaderTypes::ObjectTransformBuffer>  _ObjectTransformBuffer,
+		LinkedBindableBuffer<ShaderTypes::ObjectInstaceBuffer>    _ObjectInstaceBuffer
+	){
+		PipelineResourceConfig con;
+		con.bufferBindings = std::vector<BufferBinding> {
+			BufferBinding(0, 0, _PrecomputedCamerUBO),
+			BufferBinding(1, 0, _ObjectTransformBuffer),
+			BufferBinding(0, 1, _ObjectInstaceBuffer),
+		};
+		return con;
+	}
+
+	PipelineResourceConfig coloredTriangles_CreateBufferBindings(
+		LinkedBindableBuffer<ShaderTypes::ColoredTriangleInstaceBuffer>  _ColoredTriangleInstaceBuffer,
+		LinkedBindableBuffer<ShaderTypes::CamerUBO>                      _CamerUBO
+	){
+		PipelineResourceConfig con;
+		con.bufferBindings = std::vector<BufferBinding> {
+			BufferBinding(0, 1, _ColoredTriangleInstaceBuffer),
+			BufferBinding(0, 0, _CamerUBO),
+		};
+		return con;
+	}
+
+	PipelineResourceConfig lighting_CreateBufferBindings(
+		LinkedBindableBuffer<ShaderTypes::mapFGObjectBuffer>         _mapFGObjectBuffer,
+		LinkedBindableBuffer<ShaderTypes::baseLightingObjectBuffer>  _baseLightingObjectBuffer,
+		LinkedBindableBuffer<ShaderTypes::mapBGObjectBuffer>         _mapBGObjectBuffer,
+		LinkedBindableBuffer<ShaderTypes::blurLightingObjectBuffer>  _blurLightingObjectBuffer,
+		LinkedBindableBuffer<ShaderTypes::mapUpscaleObjectBuffer>    _mapUpscaleObjectBuffer
+	){
+		PipelineResourceConfig con;
+		con.bufferBindings = std::vector<BufferBinding> {
+			BufferBinding(1, 0, _mapFGObjectBuffer),
+			BufferBinding(0, 0, _baseLightingObjectBuffer),
+			BufferBinding(1, 1, _mapBGObjectBuffer),
+			BufferBinding(0, 1, _blurLightingObjectBuffer),
+			BufferBinding(1, 2, _mapUpscaleObjectBuffer),
+		};
+		return con;
+	}
+
+	PipelineResourceConfig lightingBlur_CreateBufferBindings(
+		LinkedBindableBuffer<ShaderTypes::mapFGObjectBuffer>         _mapFGObjectBuffer,
+		LinkedBindableBuffer<ShaderTypes::baseLightingObjectBuffer>  _baseLightingObjectBuffer,
+		LinkedBindableBuffer<ShaderTypes::blurLightingObjectBuffer>  _blurLightingObjectBuffer,
+		LinkedBindableBuffer<ShaderTypes::mapBGObjectBuffer>         _mapBGObjectBuffer,
+		LinkedBindableBuffer<ShaderTypes::mapUpscaleObjectBuffer>    _mapUpscaleObjectBuffer,
+		LinkedBindableBuffer<ShaderTypes::mapBlurObjectBuffer>       _mapBlurObjectBuffer
+	){
+		PipelineResourceConfig con;
+		con.bufferBindings = std::vector<BufferBinding> {
+			BufferBinding(1, 0, _mapFGObjectBuffer),
+			BufferBinding(0, 0, _baseLightingObjectBuffer),
+			BufferBinding(0, 1, _blurLightingObjectBuffer),
+			BufferBinding(1, 1, _mapBGObjectBuffer),
+			BufferBinding(1, 2, _mapUpscaleObjectBuffer),
+			BufferBinding(1, 3, _mapBlurObjectBuffer),
+		};
+		return con;
+	}
+
+	PipelineResourceConfig lightingUpscale_CreateBufferBindings(
+		LinkedBindableBuffer<ShaderTypes::mapFGObjectBuffer>         _mapFGObjectBuffer,
+		LinkedBindableBuffer<ShaderTypes::baseLightingObjectBuffer>  _baseLightingObjectBuffer,
+		LinkedBindableBuffer<ShaderTypes::blurLightingObjectBuffer>  _blurLightingObjectBuffer,
+		LinkedBindableBuffer<ShaderTypes::mapBGObjectBuffer>         _mapBGObjectBuffer,
+		LinkedBindableBuffer<ShaderTypes::mapUpscaleObjectBuffer>    _mapUpscaleObjectBuffer,
+		LinkedBindableBuffer<ShaderTypes::mapBlurObjectBuffer>       _mapBlurObjectBuffer
+	){
+		PipelineResourceConfig con;
+		con.bufferBindings = std::vector<BufferBinding> {
+			BufferBinding(1, 0, _mapFGObjectBuffer),
+			BufferBinding(0, 0, _baseLightingObjectBuffer),
+			BufferBinding(0, 1, _blurLightingObjectBuffer),
+			BufferBinding(1, 1, _mapBGObjectBuffer),
+			BufferBinding(1, 2, _mapUpscaleObjectBuffer),
+			BufferBinding(1, 3, _mapBlurObjectBuffer),
+		};
+		return con;
+	}
+
+	PipelineResourceConfig particleSystem_CreateBufferBindings(
+		LinkedBindableBuffer<ShaderTypes::ParticalSmallGroupInstanceBuffer>  _ParticalSmallGroupInstanceBuffer,
+		LinkedBindableBuffer<ShaderTypes::ParticalLargeGroupInstanceBuffer>  _ParticalLargeGroupInstanceBuffer,
+		LinkedBindableBuffer<ShaderTypes::CamerUBO>                          _CamerUBO
+	){
+		PipelineResourceConfig con;
+		con.bufferBindings = std::vector<BufferBinding> {
+			BufferBinding(0, 0, _ParticalSmallGroupInstanceBuffer),
+			BufferBinding(0, 2, _ParticalLargeGroupInstanceBuffer),
+			BufferBinding(0, 1, _CamerUBO),
+		};
+		return con;
+	}
+
+	PipelineResourceConfig particleSystemCompute_CreateBufferBindings(
+		LinkedBindableBuffer<ShaderTypes::ParticalInstanceConfigBuffer>      _ParticalInstanceConfigBuffer,
+		LinkedBindableBuffer<ShaderTypes::ParticalLargeGroupInstanceBuffer>  _ParticalLargeGroupInstanceBuffer,
+		LinkedBindableBuffer<ShaderTypes::AtomicCounterBuffer>               _AtomicCounterBuffer
+	){
+		PipelineResourceConfig con;
+		con.bufferBindings = std::vector<BufferBinding> {
+			BufferBinding(0, 0, _ParticalInstanceConfigBuffer),
+			BufferBinding(0, 1, _ParticalLargeGroupInstanceBuffer),
+			BufferBinding(0, 2, _AtomicCounterBuffer),
+		};
+		return con;
+	}
+
+	PipelineResourceConfig text_CreateBufferBindings(
+		LinkedBindableBuffer<ShaderTypes::TextHeaderInstaceBuffer>  _TextHeaderInstaceBuffer,
+		LinkedBindableBuffer<ShaderTypes::TextDataInstaceBuffer>    _TextDataInstaceBuffer,
+		LinkedBindableBuffer<ShaderTypes::CamerUBO>                 _CamerUBO,
+		LinkedBindableBuffer<ShaderTypes::TextIndexInstaceBuffer>   _TextIndexInstaceBuffer,
+		GlobalImageDescriptor*                                      _texSampler
+	){
+		PipelineResourceConfig con;
+		con.bufferBindings = std::vector<BufferBinding> {
+			BufferBinding(1, 1, _TextHeaderInstaceBuffer),
+			BufferBinding(1, 2, _TextDataInstaceBuffer),
+			BufferBinding(1, 0, _CamerUBO),
+			BufferBinding(1, 3, _TextIndexInstaceBuffer),
+		};
+		con.globalDescriptors = std::vector<GlobalDescriptorBinding>{
+			{0, _texSampler},
+		};
+		return con;
+	}
+
+	PipelineResourceConfig texture_CreateBufferBindings(
+		LinkedBindableBuffer<ShaderTypes::TexturedQuadInstaceBuffer>  _TexturedQuadInstaceBuffer,
+		LinkedBindableBuffer<ShaderTypes::LightMapUBO>                _LightMapUBO,
+		LinkedBindableBuffer<ShaderTypes::CamerUBO>                   _CamerUBO,
+		GlobalImageDescriptor*                                        _texSampler
+	){
+		PipelineResourceConfig con;
+		con.bufferBindings = std::vector<BufferBinding> {
+			BufferBinding(1, 0, _TexturedQuadInstaceBuffer),
+			BufferBinding(1, 2, _LightMapUBO),
+			BufferBinding(1, 1, _CamerUBO),
+		};
+		con.globalDescriptors = std::vector<GlobalDescriptorBinding>{
+			{0, _texSampler},
+		};
+		return con;
+	}
+
+	PipelineResourceConfig tilemap_CreateBufferBindings(
+		LinkedBindableBuffer<ShaderTypes::mapFGObjectBuffer>  _mapFGObjectBuffer,
+		LinkedBindableBuffer<ShaderTypes::mapBGObjectBuffer>  _mapBGObjectBuffer,
+		LinkedBindableBuffer<ShaderTypes::CamerUBO>           _CamerUBO,
+		GlobalImageDescriptor*                                _texSampler
+	){
+		PipelineResourceConfig con;
+		con.bufferBindings = std::vector<BufferBinding> {
+			BufferBinding(1, 1, _mapFGObjectBuffer),
+			BufferBinding(1, 2, _mapBGObjectBuffer),
+			BufferBinding(1, 0, _CamerUBO),
+		};
+		con.globalDescriptors = std::vector<GlobalDescriptorBinding>{
+			{0, _texSampler},
+		};
+		return con;
+	}
+
+	PipelineResourceConfig tilemapLightRaster_CreateBufferBindings(
+		LinkedBindableBuffer<ShaderTypes::mapFGObjectBuffer>       _mapFGObjectBuffer,
+		LinkedBindableBuffer<ShaderTypes::mapBGObjectBuffer>       _mapBGObjectBuffer,
+		LinkedBindableBuffer<ShaderTypes::mapUpscaleObjectBuffer>  _mapUpscaleObjectBuffer,
+		LinkedBindableBuffer<ShaderTypes::mapBlurObjectBuffer>     _mapBlurObjectBuffer,
+		LinkedBindableBuffer<ShaderTypes::CamerUBO>                _CamerUBO,
+		GlobalImageDescriptor*                                     _texSampler
+	){
+		PipelineResourceConfig con;
+		con.bufferBindings = std::vector<BufferBinding> {
+			BufferBinding(1, 1, _mapFGObjectBuffer),
+			BufferBinding(1, 2, _mapBGObjectBuffer),
+			BufferBinding(1, 3, _mapUpscaleObjectBuffer),
+			BufferBinding(1, 4, _mapBlurObjectBuffer),
+			BufferBinding(1, 0, _CamerUBO),
+		};
+		con.globalDescriptors = std::vector<GlobalDescriptorBinding>{
+			{0, _texSampler},
+		};
+		return con;
 	}
 
 

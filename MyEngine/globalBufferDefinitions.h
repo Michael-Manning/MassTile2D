@@ -21,11 +21,11 @@ struct std140Mat3 {
 	}
 };
 
-struct coordinateTransformUBO_s {
-	glm::vec2 position;
-	float zoom;
-	float aspectRatio = 1.0f;
-};
+//struct coordinateTransformUBO_s {
+//	glm::vec2 position;
+//	float zoom;
+//	float aspectRatio = 1.0f;
+//};
 
 struct transformSSBO_430 {
 	glm::mat3 transform;

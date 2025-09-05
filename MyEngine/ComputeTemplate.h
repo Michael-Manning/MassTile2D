@@ -27,7 +27,7 @@ public:
 	// wraps standard dispatch command
 	void DispatchGroups(vk::CommandBuffer& commandBuffer, glm::ivec3 workGroupCounts);
 
-	void BindPipelineStage(vk::CommandBuffer& commandBuffer, int index);
+	void BindPipelineStage(vk::CommandBuffer& commandBuffer);
 
 	template<typename T>
 	void UpdatePushConstant(vk::CommandBuffer& commandBuffer, T&& pushConstantData) {
@@ -45,7 +45,7 @@ public:
 	}
 
 private:
-	std::vector<vk::Pipeline> compPipelines;
+	vk::Pipeline compPipeline;
 	DescriptorManager descriptorManager;
 	std::vector<GlobalDescriptorBinding> globalDescriptors;
 	PushConstantInfo pushInfo;

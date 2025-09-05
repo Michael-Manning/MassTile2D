@@ -69,14 +69,8 @@
     <ClCompile Include="Physics.cpp">
       <Filter>Source Files\Engine\ECS\Components</Filter>
     </ClCompile>
-    <ClCompile Include="LightingComputePL.cpp">
-      <Filter>Source Files\vulkan\piplines</Filter>
-    </ClCompile>
     <ClCompile Include="TracyClient.cpp">
       <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="quadComputePL.cpp">
-      <Filter>Source Files\vulkan\piplines</Filter>
     </ClCompile>
     <ClCompile Include="FontGenerator.cpp">
       <Filter>Source Files\Editor</Filter>
@@ -108,14 +102,8 @@
     <ClCompile Include="GraphicsTemplate.cpp">
       <Filter>Source Files\vulkan\piplines</Filter>
     </ClCompile>
-    <ClCompile Include="ParticleSystemPL.cpp">
-      <Filter>Source Files\vulkan\piplines</Filter>
-    </ClCompile>
     <ClCompile Include="ParticleSystemRenderer.cpp">
       <Filter>Source Files\Engine\ECS\Components</Filter>
-    </ClCompile>
-    <ClCompile Include="ParticleComputePL.cpp">
-      <Filter>Source Files\vulkan\piplines</Filter>
     </ClCompile>
     <ClCompile Include="SceneData.cpp">
       <Filter>Source Files\Engine\ECS\Assets</Filter>
@@ -132,14 +120,8 @@
     <ClCompile Include="Behaviour.cpp">
       <Filter>Source Files\Engine\ECS</Filter>
     </ClCompile>
-    <ClCompile Include="ColoredTrianglesPL.cpp">
-      <Filter>Source Files\vulkan\piplines</Filter>
-    </ClCompile>
     <ClCompile Include="Sprite.cpp">
       <Filter>Source Files\Engine\ECS\Assets</Filter>
-    </ClCompile>
-    <ClCompile Include="TilemapLightRasterPL.cpp">
-      <Filter>Source Files\vulkan\piplines</Filter>
     </ClCompile>
     <ClCompile Include="TileWorld.cpp">
       <Filter>Source Files\Engine</Filter>
@@ -152,6 +134,15 @@
     </ClCompile>
     <ClCompile Include="..\shared\ShaderUtility.cpp">
       <Filter>Source Files\Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="ShapePipelines.cpp">
+      <Filter>Source Files\vulkan\piplines</Filter>
+    </ClCompile>
+    <ClCompile Include="ParticleSystemPipelines.cpp">
+      <Filter>Source Files\vulkan\piplines</Filter>
+    </ClCompile>
+    <ClCompile Include="TilemapPipelines.cpp">
+      <Filter>Source Files\vulkan\piplines</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -215,23 +206,8 @@
     <ClInclude Include="BehaviorRegistry.h">
       <Filter>Source Files\Engine</Filter>
     </ClInclude>
-    <ClInclude Include="coloredQuadPL.h">
-      <Filter>Source Files\vulkan\piplines</Filter>
-    </ClInclude>
-    <ClInclude Include="texturedQuadPL.h">
-      <Filter>Source Files\vulkan\piplines</Filter>
-    </ClInclude>
-    <ClInclude Include="tilemapPL.h">
-      <Filter>Source Files\vulkan\piplines</Filter>
-    </ClInclude>
     <ClInclude Include="TileWorld.h">
       <Filter>Source Files\Engine</Filter>
-    </ClInclude>
-    <ClInclude Include="LightingComputePL.h">
-      <Filter>Source Files\vulkan\piplines</Filter>
-    </ClInclude>
-    <ClInclude Include="quadComputePL.h">
-      <Filter>Source Files\vulkan\piplines</Filter>
     </ClInclude>
     <ClInclude Include="Settings.h">
       <Filter>Source Files</Filter>
@@ -284,17 +260,11 @@
     <ClInclude Include="GraphicsTemplate.h">
       <Filter>Source Files\vulkan\piplines</Filter>
     </ClInclude>
-    <ClInclude Include="ParticleSystemPL.h">
-      <Filter>Source Files\vulkan\piplines</Filter>
-    </ClInclude>
     <ClInclude Include="pipelines.h">
       <Filter>Source Files\vulkan\piplines</Filter>
     </ClInclude>
     <ClInclude Include="ParticleSystemRenderer.h">
       <Filter>Source Files\Engine\ECS\Components</Filter>
-    </ClInclude>
-    <ClInclude Include="ParticleComputePL.h">
-      <Filter>Source Files\vulkan\piplines</Filter>
     </ClInclude>
     <ClInclude Include="SceneData.h">
       <Filter>Source Files\Engine\ECS\Assets</Filter>
@@ -317,14 +287,8 @@
     <ClInclude Include="GlobalImageDescriptor.h">
       <Filter>Source Files\vulkan</Filter>
     </ClInclude>
-    <ClInclude Include="ColoredTrianglesPL.h">
-      <Filter>Source Files\vulkan\piplines</Filter>
-    </ClInclude>
     <ClInclude Include="Camera.h">
       <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="TilemapLightRasterPL.h">
-      <Filter>Source Files\vulkan\piplines</Filter>
     </ClInclude>
     <ClInclude Include="ConcurrentQueue.h">
       <Filter>Source Files\Util</Filter>
@@ -364,6 +328,9 @@
     </ClInclude>
     <ClInclude Include="..\shared\ShaderUtility.h">
       <Filter>Source Files\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Timer.h">
+      <Filter>Source Files\Util</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

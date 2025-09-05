@@ -191,14 +191,14 @@ namespace ShaderTypes
 	};
 
 	/*
-		Storage buffer blueLightingObjectBuffer
+		Storage buffer blurLightingObjectBuffer
 		Used in:
 			- lightingBlur_comp
 			- lightingUpscale_comp
 			- lighting_comp
 		Type size: 1616
 	*/
-	struct blueLightingObjectBuffer
+	struct blurLightingObjectBuffer
 	{
 		LightingUpdate blurLightingUpdates[];
 	};
@@ -264,7 +264,7 @@ namespace ShaderTypes
 	/*
 		Shader structure ParticleSystemConfiguration
 		Used in:
-			- particleSystem_comp
+			- particleSystemCompute_comp
 		Type size: 64
 		Array stride: 64
 	*/
@@ -285,7 +285,7 @@ namespace ShaderTypes
 	/*
 		Storage buffer ParticalInstanceConfigBuffer
 		Used in:
-			- particleSystem_comp
+			- particleSystemCompute_comp
 		Type size: 64
 	*/
 	struct ParticalInstanceConfigBuffer
@@ -296,7 +296,7 @@ namespace ShaderTypes
 	/*
 		Shader structure Particle
 		Used in:
-			- particleSystem_comp
+			- particleSystemCompute_comp
 			- particleSystem_frag
 			- particleSystem_vert
 		Type size: 48
@@ -314,7 +314,7 @@ namespace ShaderTypes
 	/*
 		Shader structure ParticleGroup_large
 		Used in:
-			- particleSystem_comp
+			- particleSystemCompute_comp
 			- particleSystem_frag
 			- particleSystem_vert
 		Type size: 19200000
@@ -328,7 +328,7 @@ namespace ShaderTypes
 	/*
 		Storage buffer ParticalLargeGroupInstanceBuffer
 		Used in:
-			- particleSystem_comp
+			- particleSystemCompute_comp
 			- particleSystem_frag
 			- particleSystem_vert
 		Type size: 19200000
@@ -341,7 +341,7 @@ namespace ShaderTypes
 	/*
 		Storage buffer AtomicCounterBuffer
 		Used in:
-			- particleSystem_comp
+			- particleSystemCompute_comp
 		Type size: 4
 	*/
 	struct AtomicCounterBuffer
@@ -352,7 +352,7 @@ namespace ShaderTypes
 	/*
 		Push constant ParticleDispatchInfo
 		Used in:
-			- particleSystem_comp
+			- particleSystemCompute_comp
 		Type size: 32
 	*/
 	struct ParticleDispatchInfo

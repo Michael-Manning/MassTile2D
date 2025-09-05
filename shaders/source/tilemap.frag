@@ -79,7 +79,13 @@ void main() {
 
         vec2 umin = localUV * atlasUvSize + vec2(float(atlasX), float(atlasY)) * atlasUvSize;
 
-        fgCol = texture(texSampler[textureIndex], umin);
+        if(bufferValue == 1022) // water
+        {
+            fgCol = vec4(0.2, 0.2, 1.0, 0.8);
+        }
+        else{
+            fgCol = texture(texSampler[textureIndex], umin);
+        }
     }
     {
         int bufferValue = getBGTile(xi, yi);
@@ -133,6 +139,10 @@ void main() {
    //  else{
    //       brightness = sampleBrightnessGrid(xi, yi);
    //  }
+
+
+    // HACK: Disable background layer for now (because I don't have an api to set individual tiles yet)
+    bgCol = vec4(0.0);
 
     vec3 col = mix(bgCol.rgb, fgCol.rgb, fgCol.a);
 

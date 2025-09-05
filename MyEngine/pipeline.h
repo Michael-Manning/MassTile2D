@@ -14,7 +14,7 @@
 #include "descriptorManager.h"
 #include "GlobalImageDescriptor.h"
 #include "globalBufferDefinitions.h"
-
+#include "ShaderTypes.h"
 
 constexpr const char* shader_entry_point_name = "main";
 
@@ -25,9 +25,9 @@ struct PushConstantInfo {
 
 template<typename T>
 struct LinkedBindableBuffer {
-	const std::array<vk::Buffer, FRAMES_IN_FLIGHT>* buffers;
-	const vk::DeviceSize size;
-	const vk::BufferUsageFlags usage;
+	const std::array<vk::Buffer, FRAMES_IN_FLIGHT>* buffers = {};
+	const vk::DeviceSize size = 0;
+	const vk::BufferUsageFlags usage = (vk::BufferUsageFlags)0;
 
 	LinkedBindableBuffer(const MappedDoubleBuffer<T>& mappedBuffer)
 		: buffers(&mappedBuffer.buffers), size(mappedBuffer.size), usage(mappedBuffer.usage) {
@@ -35,25 +35,8 @@ struct LinkedBindableBuffer {
 	LinkedBindableBuffer(const LinkedDeviceBuffer<T>& buffer)
 		: buffers(&buffer.doubleBuffer), size(buffer.size), usage(buffer.usage) {
 	}
+	LinkedBindableBuffer() {};
 };
-
-//struct BindableBuffer {
-//	const std::array<vk::Buffer, FRAMES_IN_FLIGHT>* buffers;
-//	const vk::DeviceSize size;
-//	const vk::BufferUsageFlags usage;
-//
-//	// converting constructors
-//	template<typename T>
-//	BindableBuffer(const MappedDoubleBuffer<T>& mappedBuffer) 
-//		: buffers(&mappedBuffer.buffers), size(mappedBuffer.size), usage(mappedBuffer.usage) {}
-//	BindableBuffer(const DeviceBuffer& buffer) 
-//		: buffers(&buffer.doubleBuffer), size(buffer.size), usage(buffer.usage) {}
-//	template<typename T>
-//	BindableBuffer(const LinkedBindableBuffer<T>& buffer)
-//		: buffers(buffer.buffers), size(buffer.size), usage(buffer.usage) {
-//	}
-//};
-//
 
 
 struct BufferBinding {
@@ -105,9 +88,9 @@ private:
 struct PipelineParameters {
 	std::vector<uint8_t> vertexSrc;
 	std::vector<uint8_t> fragmentSrc;
-	std::vector<std::vector<uint8_t>> computeSrcStages;
+	std::vector<uint8_t> computeSrc;
 	vk::RenderPass renderTarget;
-	MappedDoubleBuffer<coordinateTransformUBO_s> cameraDB;
+	MappedDoubleBuffer<ShaderTypes::CamerUBO> cameraDB;
 	bool flipFaces = false;
 };
 
@@ -170,7 +153,7 @@ public:
 
 	struct GraphicsShaderInfo { vk::PipelineShaderStageCreateInfo vertex; vk::PipelineShaderStageCreateInfo fragment; };
 	GraphicsShaderInfo createGraphicsShaderStages(const std::vector<uint8_t>& vertexSrc, const std::vector<uint8_t>& fragmentSrc) const;
-	std::vector<vk::PipelineShaderStageCreateInfo> createComputeShaderStages(const std::vector<std::vector<uint8_t>>& computeSrcs) const;
+	vk::PipelineShaderStageCreateInfo createComputeShaderStage(const std::vector<uint8_t>& computeSrcs) const;
 
 	vk::PipelineInputAssemblyStateCreateInfo defaultInputAssembly();
 	vk::PipelineViewportStateCreateInfo defaultViewportState();

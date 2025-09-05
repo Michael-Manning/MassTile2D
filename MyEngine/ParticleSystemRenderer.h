@@ -9,7 +9,7 @@
 #include "typedefs.h"
 #include "Component.h"
 #include "serialization.h"
-#include "ParticleSystemPL.h"
+//#include "ParticleSystemPL.h"
 #include "ParticleStructures.h"
 
 #include <assetPack/common_generated.h>

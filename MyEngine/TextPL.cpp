@@ -24,11 +24,13 @@ void TextPL::CreateGraphicsPipeline(const PipelineParameters& params, GlobalImag
 	ShaderUtil::CreateMappedInstanceBuffer(engine, maxObjects * maxStringLength, textQuadsDB);
 	ShaderUtil::CreateMappedInstanceBuffer(engine, maxObjects * maxStringLength, letterIndexDB);
 
-	PipelineResourceConfig con;
-	con.bufferBindings.push_back(BufferBinding{ 1, 0, params.cameraDB });
-	con.bufferBindings.push_back(BufferBinding{ 1, 1, textHeadersDB });
-	con.bufferBindings.push_back(BufferBinding{ 1, 2, textQuadsDB });
-	con.bufferBindings.push_back(BufferBinding{ 1, 3, letterIndexDB });
+	PipelineResourceConfig con = ShaderUtil::text_CreateBufferBindings(
+		textHeadersDB, 
+		textQuadsDB, 
+		params.cameraDB, 
+		letterIndexDB, 
+		textureDescriptor
+	);
 
 	con.globalDescriptors.push_back({ 0, textureDescriptor });
 

@@ -241,6 +241,20 @@ public:
 		buffer.usage = usage;
 		buffer.doubleBuffer = { buffer.buffer, buffer.buffer };
 	}
+	
+	template<typename T>
+	void CreateLinkedDeviceOnlyStorageBuffer(vk::DeviceSize size, bool transferDst, LinkedDeviceBuffer<T>& buffer) {
+
+		vk::BufferUsageFlags usage = vk::BufferUsageFlagBits::eStorageBuffer;
+		if (transferDst)
+			usage |= vk::BufferUsageFlagBits::eTransferDst;
+
+		createBuffer(size, usage, VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT, buffer.buffer, buffer.allocation, true);
+
+		buffer.size = size;
+		buffer.usage = usage;
+		buffer.doubleBuffer = { buffer.buffer, buffer.buffer };
+	}
 
 	void WaitForComputeSubmission();
 	void WaitForComputeCompletion();

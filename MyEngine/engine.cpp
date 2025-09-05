@@ -198,7 +198,7 @@ void Engine::initializeSceneGraphicsContext(SceneGraphicsContext& ctx, glm::ivec
 		ctx.textPipeline->CreateGraphicsPipeline(prm, &GlobalTextureDesc);
 	}
 	{
-		PROFILE_SCOPEN(textPipeline);
+		PROFILE_SCOPEN(pariclePipeline);
 		ctx.particlePipeline = make_unique<ParticleSystemPL>(rengine.get(), ctx.allocationSettings.ParticleSystem_MaxSmallSystems);
 		PipelineParameters prm;
 		assetManager->LoadShaderFile("particleSystem_vert.spv", prm.vertexSrc);
@@ -229,7 +229,7 @@ std::unique_ptr<LargeTileWorld> Engine::CreateLargeTileWorld()
 	return tw;
 }
 
-Engine::DrawlistGraphicsContext Engine::createDrawlistGraphicsContext(DrawlistAllocationConfiguration allocationSettings, MappedDoubleBuffer<coordinateTransformUBO_s> cameraBuffers, vk::RenderPass renderTarget) {
+Engine::DrawlistGraphicsContext Engine::createDrawlistGraphicsContext(DrawlistAllocationConfiguration allocationSettings, MappedDoubleBuffer<ShaderTypes::CamerUBO> cameraBuffers, vk::RenderPass renderTarget) {
 
 	DrawlistGraphicsContext ctx = DrawlistGraphicsContext(allocationSettings);
 
@@ -354,7 +354,7 @@ void Engine::Start(const VideoSettings& initialSettings, AssetManager::AssetPath
 	{
 		particleComputePipeline = make_unique<ParticleComputePL>(rengine.get());
 		vector<uint8_t> comp;
-		assetManager->LoadShaderFile("particleSystem_comp.spv", comp);
+		assetManager->LoadShaderFile("particleSystemCompute_comp.spv", comp);
 		particleComputePipeline->CreateComputePipeline(comp, computerParticleBuffer);
 	}
 
@@ -798,7 +798,7 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 
 		// record particle compute for every particle system in every scene
 		{
-			vector<ParticleComputePL::DispatchInfo> dispachInfos;
+			vector<ShaderTypes::ParticleDispatchInfo> dispachInfos;
 
 
 			for (auto& job : sceneRenderJobs)
@@ -836,9 +836,9 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 						int particlesToSpawn = static_cast<int>(renderer.spawntimer / step);
 						renderer.spawntimer -= particlesToSpawn * step;
 
-						ParticleComputePL::DispatchInfo info{
+						ShaderTypes::ParticleDispatchInfo info{
 							.systemIndex = renderer.token->index,
-							.particleCount = renderer.configuration.particleCount,
+							/*.particleCount = renderer.configuration.particleCount,*/
 							.particlesToSpawn = particlesToSpawn,
 							.init = renderer.computeContextDirty,
 							//.spawnPosition = entity.transform.position
@@ -1026,7 +1026,7 @@ bool Engine::QueueNextFrame(const std::vector<SceneRenderJob>& sceneRenderJobs, 
 
 	// screen space transformer
 	{
-		coordinateTransformUBO_s* transform = screenSpaceTransformCameraBuffer.buffersMapped[rengine->currentFrame];
+		ShaderTypes::CamerUBO* transform = screenSpaceTransformCameraBuffer.buffersMapped[rengine->currentFrame];
 
 		transform->aspectRatio = (float)winH / (float)winW;
 		transform->position = vec2(-(float)winW / 2.0f, -(float)winH / 2.0f);

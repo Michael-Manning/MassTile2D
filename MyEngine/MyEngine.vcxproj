@@ -343,7 +343,6 @@
     <ClCompile Include="AssetManager.cpp" />
     <ClCompile Include="Audio.cpp" />
     <ClCompile Include="Behaviour.cpp" />
-    <ClCompile Include="ColoredTrianglesPL.cpp" />
     <ClCompile Include="ComputeTemplate.cpp" />
     <ClCompile Include="descriptorManager.cpp" />
     <ClCompile Include="boidsCompute.cpp" />
@@ -363,16 +362,14 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
     </ClInclude>
     <ClCompile Include="GraphicsTemplate.cpp" />
-    <ClCompile Include="LightingComputePL.cpp" />
-    <ClCompile Include="ParticleComputePL.cpp" />
-    <ClCompile Include="ParticleSystemPL.cpp" />
+    <ClCompile Include="ParticleSystemPipelines.cpp" />
     <ClCompile Include="ParticleSystemRenderer.cpp" />
     <ClCompile Include="Prefab.cpp" />
     <ClCompile Include="PrefabGenerator.cpp" />
-    <ClCompile Include="quadComputePL.cpp" />
     <ClCompile Include="Reflection.cpp" />
     <ClCompile Include="ResourceManager.cpp" />
     <ClCompile Include="SceneData.cpp" />
+    <ClCompile Include="ShapePipelines.cpp" />
     <ClCompile Include="Sprite.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug-Tracy|x64'">Create</PrecompiledHeader>
@@ -386,7 +383,7 @@
     <ClCompile Include="Physics.cpp" />
     <ClCompile Include="pipeline.cpp" />
     <ClCompile Include="Scene.cpp" />
-    <ClCompile Include="TilemapLightRasterPL.cpp" />
+    <ClCompile Include="TilemapPipelines.cpp" />
     <ClCompile Include="TileWorld.cpp" />
     <ClCompile Include="TracyClient.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
@@ -405,8 +402,6 @@
     <ClInclude Include="BinaryWriter.h" />
     <ClInclude Include="BindingManager.h" />
     <ClInclude Include="boidsCompute.h" />
-    <ClInclude Include="coloredQuadPL.h" />
-    <ClInclude Include="ColoredTrianglesPL.h" />
     <ClInclude Include="ColorRenderer.h" />
     <ClInclude Include="Component.h" />
     <ClInclude Include="ComputeTemplate.h" />
@@ -422,14 +417,10 @@
     <ClInclude Include="GraphicsTemplate.h" />
     <ClInclude Include="IDGenerator.h" />
     <ClInclude Include="Input.h" />
-    <ClInclude Include="LightingComputePL.h" />
-    <ClInclude Include="ParticleComputePL.h" />
     <ClInclude Include="ParticleStructures.h" />
-    <ClInclude Include="ParticleSystemPL.h" />
     <ClInclude Include="ParticleSystemRenderer.h" />
     <ClInclude Include="pipelines.h" />
     <ClInclude Include="PrefabGenerator.h" />
-    <ClInclude Include="quadComputePL.h" />
     <ClInclude Include="Reflection.h" />
     <ClInclude Include="ResourceManager.h" />
     <ClInclude Include="RingBuffer.h" />
@@ -440,7 +431,6 @@
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="TextPL.h" />
     <ClInclude Include="TextRenderer.h" />
-    <ClInclude Include="texturedQuadPL.h" />
     <ClInclude Include="MyMath.h" />
     <ClInclude Include="Physics.h" />
     <ClInclude Include="Prefab.h" />
@@ -449,9 +439,8 @@
     <ClInclude Include="serialization.h" />
     <ClInclude Include="Sprite.h" />
     <ClInclude Include="SpriteRenderer.h" />
-    <ClInclude Include="TilemapLightRasterPL.h" />
-    <ClInclude Include="tilemapPL.h" />
     <ClInclude Include="TileWorld.h" />
+    <ClInclude Include="Timer.h" />
     <ClInclude Include="Transform.h" />
     <ClInclude Include="typedefs.h" />
     <ClInclude Include="Utils.h" />

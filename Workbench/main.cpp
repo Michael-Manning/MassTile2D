@@ -229,7 +229,106 @@ void createTileWorld() {
 }
 
 
+glm::vec2 gameSceneWorldToScreenPos(glm::vec2 pos) {
+
+	if (showingEditor)
+		return editor.gameSceneWorldToScreenPos(pos);
+
+	return worldToScreenPos(pos, mainCamera, engine->getWindowSize());
+}
+glm::vec2 gameSceneSreenToWorldPos(glm::vec2 pos) {
+
+	if (showingEditor)
+		return editor.gameSceneSreenToWorldPos(pos);
+
+	return screenToWorldPos(pos, mainCamera, engine->getWindowSize());
+}
+
+glm::ivec2 GetMouseTile() {
+	vec2 mpos = gameSceneSreenToWorldPos(input->getMousePos());
+	return worldMap->WorldPosTile(mpos);
+}
+
+
 Scene* mainScene = nullptr;
+
+uint32 waterMassA[mapw * maph];
+uint32 waterMassB[mapw * maph];
+uint32_t* currentWaterMass = waterMassA;
+uint32_t* newWaterMass = waterMassB;
+bool waterMassToggle = false;
+
+uint32_t getMass(ivec2 tile) {
+	return currentWaterMass[mapw * tile.y + tile.x];
+}
+void setMass(ivec2 tile, uint32_t mass) {
+	newWaterMass[mapw * tile.y + tile.x] = mass;
+}
+
+bool isBlock(ivec2 tile) {
+	tileID t = worldMap->getTile({ tile.x, LargeTileWorldHeight - (maph - tile.y - 1) - 1 });
+	return t != Blocks::Water && t != Blocks::Air;
+}
+
+ivec2 up{ 0, -1 };
+ivec2 down{ 0, -1 };
+ivec2 left{ -1, 0 };
+ivec2 right{ 1, 0 };
+
+void simulateWater() {
+	
+	// sample within padded area
+	for (int x = 1; x < mapw - 1; x++)
+	{
+		for (int y = 1; y < maph - 1; y++)
+		{
+			ivec2 tile = { x, y };
+
+			/*if (isBlock(tile) == false) {
+				setMass(tile, 1);
+			}*/
+
+			auto m = getMass(tile);
+			
+			if (m > 0) {
+				if (!isBlock(tile + down)  && getMass(tile + down) == 0) {
+					setMass(tile + down, m);
+					setMass(tile, 0);
+				}
+				else {
+					setMass(tile, m);
+				}
+			}
+
+		}
+	}
+
+	if (waterMassToggle) {
+		currentWaterMass = waterMassA;
+		newWaterMass = waterMassB;
+	}
+	else {
+		currentWaterMass = waterMassB;
+		newWaterMass = waterMassA;
+	}
+	waterMassToggle = !waterMassToggle;
+
+	for (int x = 1; x < mapw - 1; x++) {
+
+		for (int y = 1; y < maph - 1; y++) {
+
+			if (isBlock({ x, y }) == false) {
+				setMass({x, y}, 0);
+				auto m = getMass({ x, y });
+
+				worldMap->setTile({ x, LargeTileWorldHeight - (maph - y - 1) - 1 }, m > 0 ? Blocks::Water : Blocks::Air);
+			}
+		}
+	}
+}
+
+
+
 
 int main()
 {
@@ -249,7 +348,7 @@ int main()
 
 
 
-		// load all resources 
+	// load all resources 
 	engine->assetManager->LoadAllSprites();
 	engine->assetManager->LoadAllFonts();
 	//engine->assetManager->LoadAllPrefabs(false);
@@ -280,8 +379,8 @@ int main()
 	sceneRenderCtx = engine->CreateSceneRenderContext(engine->getWindowSize(), sceneConfig, worldMap.get());
 
 	//if (useTileWorld) {
-		engine->setTilemapAtlasTexture(sceneRenderCtx, engine->assetManager->GetSprite("tilemapSprites")->textureID);
-		
+	engine->setTilemapAtlasTexture(sceneRenderCtx, engine->assetManager->GetSprite("tilemapSprites")->textureID);
+
 	//}
 
 	worldMap->uploadWorldPreloadData();
@@ -300,8 +399,9 @@ int main()
 		{
 			for (size_t j = 0; j < maph; j++)
 			{
-				worldMap->setTile(i, LargeTileWorldHeight - 1 - j, GetFloatingTile(Blocks::Stone));
-			//	worldMap->preloadBrightness(i, LargeTileWorldHeight - 1, UINT16_MAX); // ???
+				if(glm::distance(vec2(i, j), vec2(mapw/2, maph/2)) > 10)
+					worldMap->setTile(i, LargeTileWorldHeight - 1 - j, GetFloatingTile(Blocks::Stone));
+				//	worldMap->preloadBrightness(i, LargeTileWorldHeight - 1, UINT16_MAX); // ???
 			}
 		}
 		//worldMap->uploadWorldPreloadData();
@@ -322,7 +422,7 @@ int main()
 		}
 	);
 	editor.editorCamera = mainCamera;
-	editor.editorCamera.position = vec2(-(LargeTileWorldWidth * tileWorldBlockSize) / 2, (LargeTileWorldHeight * tileWorldBlockSize) / 2 );
+	editor.editorCamera.position = vec2(-(LargeTileWorldWidth * tileWorldBlockSize) / 2, (LargeTileWorldHeight * tileWorldBlockSize) / 2);
 
 
 
@@ -330,7 +430,7 @@ int main()
 
 	//worldMap->FullLightingUpdate();
 	//mainCamera.position = vec2(-LargeTileWorldWidth / 2, LargeTileWorldHeight / 2);
-	
+
 
 	engine->ShowWindow();
 
@@ -340,6 +440,16 @@ int main()
 	//auto en = scene->CreateEntity();
 	//auto cco = ParticleSystemPL::ParticleSystemConfiguration{};
 	//scene->registerComponent(en->ID, ParticleSystemRenderer::Size::Large, cco);
+
+
+	for (int x = 1; x < mapw - 1; x++)
+	{
+		for (int y = 1; y < maph - 1; y++)
+		{
+			currentWaterMass[mapw * y + x] = 0;
+			newWaterMass[mapw * y + x] = 0;
+		}
+	}
 
 	bool firstFrame = true;
 	while (!engine->ShouldClose())
@@ -483,6 +593,45 @@ int main()
 		//}
 
 		//worldDebug();
+
+
+		glm::ivec2 tile = GetMouseTile();
+
+		if (tile.x > 1 && tile.x < LargeTileWorldWidth - 1 && tile.y > 1 && tile.y < LargeTileWorldHeight - 1) {
+
+
+			tileID tileid = worldMap->getTile(tile);
+
+			if (input->getMouseBtn(MouseBtn::Left)) {
+
+				
+				worldMap->setTile(tile, Blocks::Air);
+				
+			}
+			else if (input->getKey('c')) {
+
+				//worldMap->setTile(tile, Blocks::Water);
+				setMass({ tile.x, maph - (LargeTileWorldHeight - tile.y - 1) - 1 }, 1);
+			}
+		}
+
+		static float lastUpdate = 0;
+		if (engine->time - lastUpdate >= (1.0f / 60.0f)) {
+			lastUpdate = engine->time;
+			simulateWater();
+		}
+
+		//for (int x = 1; x < mapw - 1; x++)
+		//{
+		//	for (int y = 1; y < maph - 1; y++)
+		//	{
+		//		if (getMass(x, y) > 0) {
+		//			worldMap->setTile()
+		//		}
+		//		currentWaterMass[mapw * y + x] = 0;
+		//		newWaterMass[mapw * y + x] = 0;
+		//	}
+		//}
 
 
 		queueRenderTasks();

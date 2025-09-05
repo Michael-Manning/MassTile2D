@@ -14,38 +14,30 @@ using namespace std;
 
 void ComputeTemplate::CreateComputePipeline(const PipelineParameters& params, PipelineResourceConfig& resourceConfig) {
 
-	assert(params.computeSrcStages.size() > 0);
 	assert(init == false);
 	init = true;
 
-	auto computeStages = createComputeShaderStages(params.computeSrcStages);
+	auto computeStage = createComputeShaderStage(params.computeSrc);
 
 	// use reflection to get push constant size 
 	{
 
 		std::vector<Reflection::buffer_info> unused;
-		std::vector<Reflection::push_constant_info> compPushInfos;
-		compPushInfos.resize(params.computeSrcStages.size());
+		Reflection::push_constant_info compPushInfo;
 
-		int i = 0;
-		for (auto& stage : params.computeSrcStages)
-		{
-			Reflection::GetShaderBindings(stage, unused, compPushInfos[i]);
-			i++;
-		}
+		Reflection::GetShaderBindings(params.computeSrc, unused, compPushInfo);
 
 		// only support one push constant definition accross all stages
 		pushInfo.pushConstantSize = 0;
-		for (auto& info : compPushInfos)
-		{
-			if (info.size > 0) {
-				assert(pushInfo.pushConstantSize == 0 || pushInfo.pushConstantSize == info.size);
-				pushInfo.pushConstantSize = info.size;
-			}
+
+
+		if (compPushInfo.size > 0) {
+			assert(pushInfo.pushConstantSize == 0 || pushInfo.pushConstantSize == compPushInfo.size);
+			pushInfo.pushConstantSize = compPushInfo.size;
 		}
 
-		pushInfo.pushConstantShaderStages |= vk::ShaderStageFlagBits::eCompute;
 
+		pushInfo.pushConstantShaderStages |= vk::ShaderStageFlagBits::eCompute;
 	}
 	
 	// fill in buffer binding stage and type
@@ -81,14 +73,11 @@ void ComputeTemplate::CreateComputePipeline(const PipelineParameters& params, Pi
 	vk::ComputePipelineCreateInfo pipelineInfo;
 	pipelineInfo.layout = pipelineLayout;
 
-	compPipelines.reserve(computeStages.size());
-	for (auto& stage : computeStages)
-	{
-		pipelineInfo.stage = stage;
-		auto ret = engine->devContext.device.createComputePipeline({}, pipelineInfo);
-		assert(ret.result == vk::Result::eSuccess);
-		compPipelines.push_back(ret.value);
-	}
+
+	pipelineInfo.stage = computeStage;
+	auto ret = engine->devContext.device.createComputePipeline({}, pipelineInfo);
+	assert(ret.result == vk::Result::eSuccess);
+	compPipeline = ret.value;
 
 	descriptorManager.buildDescriptorSets();
 
@@ -97,10 +86,9 @@ void ComputeTemplate::CreateComputePipeline(const PipelineParameters& params, Pi
 }
 
 
-void ComputeTemplate::BindPipelineStage(vk::CommandBuffer& commandBuffer, int index) {
+void ComputeTemplate::BindPipelineStage(vk::CommandBuffer& commandBuffer) {
 	assert(init == true);
-	assert(index >= 0 && index < compPipelines.size());
-	commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, compPipelines[index]);
+	commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, compPipeline);
 }
 
 void ComputeTemplate::BindDescriptorSets(vk::CommandBuffer& commandBuffer) {

@@ -12,6 +12,7 @@ namespace Blocks {
 	constexpr blockID Dirt = 1;
 	constexpr blockID Stone = 2;
 	constexpr blockID Iron = 3;
+	constexpr tileID Water = 1022;
 	constexpr tileID Air = 1023;
 	constexpr tileID EntityReserve = 1010;
 }

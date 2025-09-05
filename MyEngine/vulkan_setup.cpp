@@ -63,6 +63,229 @@ const bool enableValidationLayers = true;
 #endif
 
 
+
+
+
+
+
+
+// everything in this ifdef block is to make the vulkan validator output more readable in the console
+#ifdef _WIN32
+
+HANDLE hConsole = NULL;
+WORD originalConsoleAttributes = 0;
+
+void setConsoleColor(int color) {
+	SetConsoleTextAttribute(hConsole, color);
+}
+void clearConsoleColor() {
+	SetConsoleTextAttribute(hConsole, originalConsoleAttributes);
+}
+
+enum ConsoleColors {
+	Default = 7,
+	LightRed = 12,
+	Yellow = 14,
+	LightGreen = 10,
+	LightBlue = 9
+};
+
+struct colorToken {
+	int color;
+	std::string token;
+};
+
+// source: chatGPT
+void printWithColors(const std::string& text, const std::vector<colorToken>& tokens, ConsoleColors VK_enumColor) {
+
+	struct TokenOccurrence {
+		size_t position;
+		size_t length;
+		int color;
+	};
+
+	// Vector to hold all token occurrences
+	std::vector<TokenOccurrence> occurrences;
+
+	// Find all occurrences of each token in the text
+	for (const auto& ct : tokens) {
+		size_t pos = 0;
+		while ((pos = text.find(ct.token, pos)) != std::string::npos) {
+			occurrences.push_back(TokenOccurrence{ pos, ct.token.length(), ct.color });
+			pos += ct.token.length(); // Move past the current match
+		}
+	}
+
+	{
+		size_t pos = 0;
+		while ((pos = text.find("VK_", pos)) != std::string::npos) {
+
+			size_t i = pos + 3;
+			for (; i < text.length(); i++)
+			{
+				if ((text[i] >= 'A' && text[i] <= 'Z') || (text[i] >= 'a' && text[i] <= 'z') || text[i] == '_')
+					continue;
+				break;
+			}
+
+			occurrences.push_back(TokenOccurrence{ pos, i - pos, VK_enumColor });
+			pos += i - pos; // Move past the current match
+		}
+	}
+
+	// Sort the occurrences based on their starting positions
+	std::sort(occurrences.begin(), occurrences.end(),
+		[](const TokenOccurrence& a, const TokenOccurrence& b) -> bool {
+			return a.position < b.position;
+		});
+
+	// Remove overlapping occurrences
+	std::vector<TokenOccurrence> nonOverlapping;
+	size_t lastEnd = 0;
+	for (const auto& occ : occurrences) {
+		if (occ.position >= lastEnd) {
+			nonOverlapping.push_back(occ);
+			lastEnd = occ.position + occ.length;
+		}
+		// If overlapping, you can implement prioritization logic here
+		// For now, we skip overlapping tokens
+	}
+
+	// Iterate through the non-overlapping occurrences and print the text
+	size_t currentPos = 0;
+	for (const auto& occ : nonOverlapping) {
+		if (occ.position > currentPos) {
+			// Print the text before the token
+			std::cout << text.substr(currentPos, occ.position - currentPos);
+		}
+
+		// Set the console color
+		setConsoleColor(occ.color);
+
+		// Print the token
+		std::cout << text.substr(occ.position, occ.length);
+
+		// Reset the console color
+		clearConsoleColor();
+
+		// Update the current position
+		currentPos = occ.position + occ.length;
+	}
+
+	// Print any remaining text after the last token
+	if (currentPos < text.length()) {
+		std::cout << text.substr(currentPos);
+	}
+}
+
+
+int getConsoleWidth() {
+	CONSOLE_SCREEN_BUFFER_INFO csbi;
+	int columns = 80; // Default
+	if (GetConsoleScreenBufferInfo(hConsole, &csbi)) {
+		columns = csbi.srWindow.Right - csbi.srWindow.Left + 1;
+	}
+	return columns;
+}
+
+std::string insertBeforeMatch(const std::string& mainStr, const std::string& match, const char* token) {
+	std::string result = mainStr;
+	size_t pos = result.find(match);
+
+	if (pos != std::string::npos && pos > 0) {  // If match is found and it's not at the beginning
+		result.insert(pos, token);
+	}
+
+	return result;
+}
+
+
+// source: chatGPT
+// Function to wrap text without splitting words
+std::vector<std::string> wrapText(const std::string& text, int maxWidth) {
+	std::vector<std::string> lines;
+	std::string currentLine;
+	size_t pos = 0;
+
+	while (pos < text.length()) {
+
+		size_t nlPos = text.find('\n', pos);
+		if (nlPos != std::string::npos) {
+			if (currentLine.length() + (nlPos - pos) <= maxWidth) {
+				currentLine += text.substr(pos, nlPos - pos);
+				lines.push_back(currentLine);
+				currentLine.clear();
+				pos = nlPos + 1;
+			}
+		}
+
+		// Find the next space
+		size_t spacePos = text.find(' ', pos);
+		if (spacePos == std::string::npos)
+			spacePos = text.length();
+
+		// Get the next word
+		std::string word = text.substr(pos, spacePos - pos);
+		if (currentLine.length() + word.length() + 1 > static_cast<size_t>(maxWidth)) {
+			if (!currentLine.empty()) {
+				lines.push_back(currentLine);
+				currentLine.clear();
+			}
+			// If the word itself is longer than maxWidth, split it
+			while (word.length() > static_cast<size_t>(maxWidth)) {
+				lines.push_back(word.substr(0, maxWidth));
+				word = word.substr(maxWidth);
+			}
+		}
+
+		if (!currentLine.empty()) {
+			currentLine += ' ';
+		}
+		currentLine += word;
+		pos = spacePos + 1;
+	}
+
+	if (!currentLine.empty()) {
+		lines.push_back(currentLine);
+	}
+
+	return lines;
+}
+
+void formatValidatorOutput(const char* text) {
+
+	cout << "\n";
+	string msgStr = string(text);
+
+	// place the spec reference on a new line
+	msgStr = insertBeforeMatch(msgStr, "The Vulkan spec states", "\n");
+	auto lines = wrapText(msgStr, getConsoleWidth());
+
+	std::vector<colorToken> tokens = {
+		{ ConsoleColors::LightRed, "Validation Error:" },
+		{ ConsoleColors::LightGreen, "The Vulkan spec states:" }
+	};
+
+	for (auto& line : lines) {
+
+		printWithColors(line, tokens, ConsoleColors::Yellow);
+		std::cout << "\n";
+	}
+	cout << "\n";
+}
+
+#endif
+
+
+
+
+
+
+
+
+
+
+
 struct SwapChainSupportDetails {
 	vk::SurfaceCapabilitiesKHR capabilities;
 	std::vector<vk::SurfaceFormatKHR> formats;
@@ -85,22 +308,35 @@ std::string insertBeforeMatch(const std::string& mainStr, const std::string& mat
 	return result;
 }
 
-
 static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
+
+#ifdef  _WIN32
+
+	if (hConsole == NULL) {
+		hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+		CONSOLE_SCREEN_BUFFER_INFO consoleInfo;
+		GetConsoleScreenBufferInfo(hConsole, &consoleInfo);
+		originalConsoleAttributes = consoleInfo.wAttributes;
+	}
+
 	if (messageSeverity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) {
 
-		cout << endl;
-		string msgStr = string(pCallbackData->pMessage);
-		cout << insertBeforeMatch(msgStr, "The Vulkan spec states");
-		cout << endl;
+		formatValidatorOutput(pCallbackData->pMessage);
 
 	}
 	else {
-		std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
+		setConsoleColor(ConsoleColors::LightGreen);
+		std::cerr << "validation layer: ";
+		clearConsoleColor();
+		std::cout << pCallbackData->pMessage << std::endl;
 	}
+#else
+	std::cerr << "validation layer: " << pCallbackData->pMessage << "\n";
+#endif
 
 	return VK_FALSE;
 }
+
 
 void populateDebugMessengerCreateInfo(vk::DebugUtilsMessengerCreateInfoEXT& createInfo) {
 
